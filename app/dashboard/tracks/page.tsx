@@ -170,6 +170,7 @@ export default function TracksPage() {
   const [loading,   setLoading]   = useState(true);
   const [query,     setQuery]     = useState('');
   const [catFilter, setCatFilter] = useState('all');
+  const [tagFilter, setTagFilter] = useState('');
   const [toggling,  setToggling]  = useState<string | null>(null);
   const [deleting,  setDeleting]  = useState<string | null>(null);
 
@@ -250,12 +251,20 @@ export default function TracksPage() {
     }));
   };
 
+  // ── 태그 집계 (태그 → 곡 수) ──
+  const tagCounts = tracks.reduce<Record<string, number>>((acc, t) => {
+    (t.mood_tags || []).forEach(tag => { acc[tag] = (acc[tag] || 0) + 1; });
+    return acc;
+  }, {});
+  const sortedTags = Object.entries(tagCounts).sort((a, b) => b[1] - a[1]);
+
   // ── 필터 ──
   const filtered = tracks.filter(t => {
     const q = query.toLowerCase();
     const matchQ = !q || t.title.toLowerCase().includes(q) || t.artist.toLowerCase().includes(q) || t.mood.toLowerCase().includes(q);
     const matchC = catFilter === 'all' || t.store_category === catFilter || t.store_category === 'all';
-    return matchQ && matchC;
+    const matchT = !tagFilter || (t.mood_tags || []).includes(tagFilter);
+    return matchQ && matchC && matchT;
   });
 
   // ── 폼 헬퍼 ──
@@ -454,6 +463,31 @@ export default function TracksPage() {
           <Plus size={15} /> 새 트랙 등록
         </button>
       </div>
+
+      {/* 무드 태그 필터 */}
+      {sortedTags.length > 0 && (
+        <div className="flex items-center gap-2 px-6 py-2.5 border-b border-white/5 overflow-x-auto scrollbar-none">
+          <button
+            onClick={() => setTagFilter('')}
+            className={`shrink-0 flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold transition ${
+              !tagFilter ? 'bg-[#FF6F0F] text-white' : 'bg-white/5 text-gray-400 hover:text-white'
+            }`}>
+            전체 <span className="opacity-60">{tracks.length}</span>
+          </button>
+          {sortedTags.map(([tag, count]) => (
+            <button key={tag}
+              onClick={() => setTagFilter(tagFilter === tag ? '' : tag)}
+              className={`shrink-0 flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold transition whitespace-nowrap ${
+                tagFilter === tag
+                  ? 'bg-[#FF6F0F] text-white'
+                  : 'bg-white/5 text-gray-400 hover:text-white'
+              }`}>
+              {tag}
+              <span className={`text-[10px] ${tagFilter === tag ? 'opacity-70' : 'opacity-50'}`}>{count}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* 필터 바 */}
       <div className="flex items-center gap-3 px-6 py-3 border-b border-white/5">
