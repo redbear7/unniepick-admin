@@ -1,32 +1,78 @@
 'use client';
 
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
 import {
   LayoutDashboard, Store, FileText, Music, Ticket,
-  Users, LogOut, ChevronRight, ScrollText, MapPin, PlaySquare, Zap, Map, ListMusic, Tag,
+  Users, LogOut, ChevronRight, ScrollText, MapPin, PlaySquare, Zap, Map, ListMusic, Tag, GripVertical,
 } from 'lucide-react';
 
-const NAV = [
-  { href: '/dashboard',             icon: LayoutDashboard, label: '대시보드' },
-  { href: '/dashboard/map',         icon: Map,             label: '지도' },
-  { href: '/dashboard/stores',      icon: Store,           label: '가게 관리' },
-  { href: '/dashboard/contexts',    icon: MapPin,          label: '매장 컨텍스트' },
-  { href: '/dashboard/tracks',      icon: ListMusic,       label: '트랙 관리' },
-  { href: '/dashboard/references',  icon: PlaySquare,      label: '레퍼런스 음악' },
-  { href: '/dashboard/posts',       icon: FileText,        label: '게시물 관리' },
-  { href: '/dashboard/coupons',     icon: Ticket,          label: '쿠폰 관리' },
-  { href: '/dashboard/playlists',   icon: Music,           label: '플레이리스트' },
-  { href: '/dashboard/users',       icon: Users,           label: '회원 관리' },
-  { href: '/dashboard/propagation',  icon: Zap,             label: '학습 & 전파' },
-  { href: '/dashboard/opensource',  icon: ScrollText,      label: '오픈소스' },
-  { href: '/dashboard/tags',        icon: Tag,             label: '태그관리' },
+const NAV_DEFAULT = [
+  { href: '/dashboard',            icon: LayoutDashboard, label: '대시보드' },
+  { href: '/dashboard/map',        icon: Map,             label: '지도' },
+  { href: '/dashboard/stores',     icon: Store,           label: '가게 관리' },
+  { href: '/dashboard/contexts',   icon: MapPin,          label: '매장 컨텍스트' },
+  { href: '/dashboard/tracks',     icon: ListMusic,       label: '트랙 관리' },
+  { href: '/dashboard/references', icon: PlaySquare,      label: '레퍼런스 음악' },
+  { href: '/dashboard/posts',      icon: FileText,        label: '게시물 관리' },
+  { href: '/dashboard/coupons',    icon: Ticket,          label: '쿠폰 관리' },
+  { href: '/dashboard/playlists',  icon: Music,           label: '플레이리스트' },
+  { href: '/dashboard/users',      icon: Users,           label: '회원 관리' },
+  { href: '/dashboard/propagation',icon: Zap,             label: '학습 & 전파' },
+  { href: '/dashboard/opensource', icon: ScrollText,      label: '오픈소스' },
+  { href: '/dashboard/tags',       icon: Tag,             label: '태그관리' },
 ];
 
+const LS_NAV_ORDER = 'dashboard_nav_order';
+
+function loadOrder(): string[] {
+  try {
+    const saved = localStorage.getItem(LS_NAV_ORDER);
+    if (saved) return JSON.parse(saved);
+  } catch {}
+  return NAV_DEFAULT.map(n => n.href);
+}
+
 export default function Sidebar() {
-  const pathname  = usePathname();
-  const router    = useRouter();
+  const pathname = usePathname();
+  const router   = useRouter();
+
+  const [order,     setOrder]     = useState<string[]>(() => NAV_DEFAULT.map(n => n.href));
+  const [dragOver,  setDragOver]  = useState<string | null>(null);
+  const dragItem = useRef<string | null>(null);
+
+  // localStorage는 클라이언트에서만 읽음
+  useEffect(() => { setOrder(loadOrder()); }, []);
+
+  const navMap = Object.fromEntries(NAV_DEFAULT.map(n => [n.href, n]));
+  const navItems = order.map(href => navMap[href]).filter(Boolean);
+
+  const saveOrder = (next: string[]) => {
+    setOrder(next);
+    localStorage.setItem(LS_NAV_ORDER, JSON.stringify(next));
+  };
+
+  const handleDragStart = (href: string) => { dragItem.current = href; };
+
+  const handleDragOver = (e: React.DragEvent, href: string) => {
+    e.preventDefault();
+    setDragOver(href);
+  };
+
+  const handleDrop = (targetHref: string) => {
+    const from = dragItem.current;
+    if (!from || from === targetHref) { setDragOver(null); return; }
+    const next = [...order];
+    const fi = next.indexOf(from);
+    const ti = next.indexOf(targetHref);
+    next.splice(fi, 1);
+    next.splice(ti, 0, from);
+    saveOrder(next);
+    dragItem.current = null;
+    setDragOver(null);
+  };
 
   const handleLogout = async () => {
     const supabase = createClient();
@@ -48,24 +94,39 @@ export default function Sidebar() {
 
       {/* 네비게이션 */}
       <nav className="flex-1 px-3 py-4 space-y-0.5">
-        {NAV.map(({ href, icon: Icon, label }) => {
+        {navItems.map(({ href, icon: Icon, label }) => {
           const isActive = href === '/dashboard'
             ? pathname === '/dashboard'
             : pathname.startsWith(href);
           return (
-            <Link
+            <div
               key={href}
-              href={href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition group ${
-                isActive
-                  ? 'bg-[#FF6F0F]/15 text-[#FF6F0F]'
-                  : 'text-gray-400 hover:bg-white/5 hover:text-white'
+              draggable
+              onDragStart={() => handleDragStart(href)}
+              onDragOver={e => handleDragOver(e, href)}
+              onDrop={() => handleDrop(href)}
+              onDragEnd={() => setDragOver(null)}
+              className={`rounded-lg transition-all ${
+                dragOver === href ? 'ring-1 ring-[#FF6F0F]/50 bg-[#FF6F0F]/5' : ''
               }`}
             >
-              <Icon size={16} className="shrink-0" />
-              <span className="flex-1">{label}</span>
-              {isActive && <ChevronRight size={12} />}
-            </Link>
+              <Link
+                href={href}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition group ${
+                  isActive
+                    ? 'bg-[#FF6F0F]/15 text-[#FF6F0F]'
+                    : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                }`}
+              >
+                <GripVertical
+                  size={12}
+                  className="shrink-0 text-gray-700 opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing -ml-1 transition-opacity"
+                />
+                <Icon size={16} className="shrink-0" />
+                <span className="flex-1">{label}</span>
+                {isActive && <ChevronRight size={12} />}
+              </Link>
+            </div>
           );
         })}
       </nav>
