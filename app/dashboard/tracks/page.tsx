@@ -534,132 +534,108 @@ export default function TracksPage() {
             <p className="text-gray-500 text-sm">트랙이 없어요</p>
           </div>
         ) : (
-          <table className="w-full text-sm">
-            <thead className="sticky top-0 bg-[#0D0F14] border-b border-white/5 z-10">
-              <tr className="text-left text-xs text-gray-500 font-semibold">
-                <th className="px-4 py-3 w-14">커버</th>
-                <th className="px-3 py-3">트랙</th>
-                <th className="px-3 py-3">무드 / 태그</th>
-                <th className="px-3 py-3 w-24">카테고리</th>
-                <th className="px-3 py-3 w-20">BPM</th>
-                <th className="px-3 py-3 w-16">재생</th>
-                <th className="px-3 py-3 w-20">상태</th>
-                <th className="px-3 py-3 w-24">액션</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/[0.04]">
-              {filtered.map(track => (
-                <tr key={track.id} className="hover:bg-white/[0.02] transition">
-                  {/* 커버 (이미지 or 이모지) */}
-                  <td className="px-4 py-3">
+          <div className="p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+            {filtered.map(track => {
+              const isActive  = player.track?.id === track.id;
+              const isPlaying = isActive && player.isPlaying;
+              const dur = track.duration_sec > 0
+                ? `${Math.floor(track.duration_sec / 60)}:${String(track.duration_sec % 60).padStart(2, '0')}`
+                : null;
+              return (
+                <div key={track.id}
+                  className={`group relative flex flex-col rounded-xl overflow-hidden bg-white/[0.03] border transition hover:bg-white/[0.06] ${
+                    !track.is_active ? 'opacity-50' : 'border-white/5 hover:border-white/10'
+                  }`}>
+
+                  {/* 커버 */}
+                  <div className="relative aspect-square bg-white/5">
                     {track.cover_image_url ? (
                       <img src={track.cover_image_url} alt={track.title}
-                        className="w-10 h-10 rounded-lg object-cover border border-white/10" />
+                        className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-xl">
+                      <div className="w-full h-full flex items-center justify-center text-4xl">
                         {track.cover_emoji}
                       </div>
                     )}
-                  </td>
 
-                  {/* 트랙 정보 */}
-                  <td className="px-3 py-3">
-                    <p className="text-white font-semibold truncate max-w-[180px]">{track.title}</p>
-                    <p className="text-gray-500 text-xs mt-0.5 truncate max-w-[180px]">{track.artist}</p>
-                    {track.duration_sec > 0 && (
-                      <p className="text-gray-600 text-[10px] mt-0.5">
-                        {Math.floor(track.duration_sec / 60)}:{String(track.duration_sec % 60).padStart(2, '0')}
-                      </p>
-                    )}
-                  </td>
-
-                  {/* 무드 / 태그 */}
-                  <td className="px-3 py-3">
-                    <p className="text-[#FF6F0F] text-xs font-semibold">{track.mood}</p>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {(track.mood_tags ?? []).slice(0, 4).map(t => (
-                        <span key={t} className="text-[10px] px-1.5 py-0.5 bg-white/5 border border-white/10 text-gray-400 rounded">{t}</span>
-                      ))}
-                      {(track.mood_tags ?? []).length > 4 && (
-                        <span className="text-[10px] px-1.5 py-0.5 bg-[#FF6F0F]/10 border border-[#FF6F0F]/20 text-[#FF6F0F] rounded">
-                          +{(track.mood_tags ?? []).length - 4}
-                        </span>
-                      )}
-                      {(track.time_tags ?? []).map(t => (
-                        <span key={t} className="text-[10px] px-1.5 py-0.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded">{TIME_KO[t] ?? t}</span>
-                      ))}
-                    </div>
-                  </td>
-
-                  {/* 카테고리 */}
-                  <td className="px-3 py-3">
-                    <span className="text-xs px-2 py-1 bg-white/5 border border-white/10 text-gray-400 rounded-lg">
-                      {CATEGORY_KO[track.store_category] ?? track.store_category}
-                    </span>
-                  </td>
-
-                  {/* BPM */}
-                  <td className="px-3 py-3 text-gray-400 text-sm">
-                    {track.bpm ? `${track.bpm}` : '—'}
-                    {track.energy_level && (
-                      <span className={`ml-1 text-[10px] font-bold ${
-                        track.energy_level === 'high' ? 'text-red-400' :
-                        track.energy_level === 'medium' ? 'text-yellow-400' : 'text-green-400'
-                      }`}>
-                        {ENERGY_KO[track.energy_level]}
+                    {/* 런타임 오버레이 */}
+                    {dur && (
+                      <span className="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-black/60 text-white/90 leading-none">
+                        {dur}
                       </span>
                     )}
-                  </td>
 
-                  {/* 재생 */}
-                  <td className="px-3 py-3">
-                    {(() => {
-                      const isActive = player.track?.id === track.id;
-                      const isPlaying = isActive && player.isPlaying;
-                      return (
-                        <button onClick={() => togglePlay(track)}
-                          disabled={!track.audio_url}
-                          className={`w-8 h-8 rounded-full flex items-center justify-center transition ${
-                            isActive
-                              ? 'bg-[#FF6F0F] text-white'
-                              : 'bg-white/5 border border-white/10 text-gray-400 hover:text-white disabled:opacity-30'
-                          }`}>
-                          {isPlaying ? <Pause size={12} /> : <Play size={12} />}
-                        </button>
-                      );
-                    })()}
-                  </td>
-
-                  {/* 상태 */}
-                  <td className="px-3 py-3">
-                    <button onClick={() => handleToggle(track)} disabled={toggling === track.id}
-                      className="flex items-center gap-1.5 text-xs font-semibold transition">
-                      {toggling === track.id
-                        ? <div className="w-4 h-4 border border-gray-500 border-t-white rounded-full animate-spin" />
-                        : track.is_active
-                          ? <><ToggleRight size={18} className="text-green-400" /><span className="text-green-400">활성</span></>
-                          : <><ToggleLeft  size={18} className="text-gray-500"  /><span className="text-gray-500">비활성</span></>
-                      }
+                    {/* 재생 버튼 오버레이 */}
+                    <button
+                      onClick={() => togglePlay(track)}
+                      disabled={!track.audio_url}
+                      className={`absolute inset-0 flex items-center justify-center transition ${
+                        isActive
+                          ? 'bg-black/20'
+                          : 'bg-black/0 group-hover:bg-black/40'
+                      } disabled:cursor-not-allowed`}>
+                      <span className={`w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition ${
+                        isActive
+                          ? 'bg-[#FF6F0F] opacity-100'
+                          : 'bg-white opacity-0 group-hover:opacity-100'
+                      }`}>
+                        {isPlaying
+                          ? <Pause size={14} className={isActive ? 'text-white' : 'text-[#0D0F14]'} />
+                          : <Play  size={14} className={isActive ? 'text-white' : 'text-[#0D0F14] ml-0.5'} />
+                        }
+                      </span>
                     </button>
-                  </td>
+                  </div>
 
-                  {/* 액션 */}
-                  <td className="px-3 py-3">
-                    <div className="flex gap-1.5">
-                      <button onClick={() => openEdit(track)}
-                        className="w-7 h-7 flex items-center justify-center rounded-lg bg-white/5 border border-white/10 text-gray-400 hover:text-white transition">
-                        <Pencil size={12} />
+                  {/* 트랙 정보 */}
+                  <div className="p-2.5 flex flex-col gap-1 flex-1">
+                    <p className="text-white text-xs font-semibold truncate leading-tight">{track.title}</p>
+                    <p className="text-gray-500 text-[10px] truncate">{track.artist}</p>
+                    {track.mood && (
+                      <p className="text-[#FF6F0F] text-[10px] font-semibold truncate">{track.mood}</p>
+                    )}
+
+                    {/* 태그 */}
+                    {(track.mood_tags ?? []).length > 0 && (
+                      <div className="flex flex-wrap gap-0.5 mt-0.5">
+                        {(track.mood_tags ?? []).slice(0, 3).map(t => (
+                          <span key={t} className="text-[9px] px-1 py-0.5 bg-white/5 border border-white/10 text-gray-500 rounded leading-none">{t}</span>
+                        ))}
+                        {(track.mood_tags ?? []).length > 3 && (
+                          <span className="text-[9px] px-1 py-0.5 bg-[#FF6F0F]/10 text-[#FF6F0F] rounded leading-none">
+                            +{(track.mood_tags ?? []).length - 3}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* 액션 바 */}
+                    <div className="flex items-center justify-between mt-auto pt-1.5 border-t border-white/5">
+                      <button onClick={() => handleToggle(track)} disabled={toggling === track.id}
+                        className="flex items-center gap-1 text-[10px] font-semibold transition">
+                        {toggling === track.id
+                          ? <div className="w-3 h-3 border border-gray-500 border-t-white rounded-full animate-spin" />
+                          : track.is_active
+                            ? <><ToggleRight size={14} className="text-green-400" /><span className="text-green-400">활성</span></>
+                            : <><ToggleLeft  size={14} className="text-gray-600"  /><span className="text-gray-600">비활성</span></>
+                        }
                       </button>
-                      <button onClick={() => handleDelete(track)} disabled={deleting === track.id}
-                        className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:text-red-300 transition disabled:opacity-50">
-                        <Trash2 size={12} />
-                      </button>
+                      <div className="flex gap-1">
+                        <button onClick={() => openEdit(track)}
+                          className="w-6 h-6 flex items-center justify-center rounded bg-white/5 text-gray-500 hover:text-white transition">
+                          <Pencil size={11} />
+                        </button>
+                        <button onClick={() => handleDelete(track)} disabled={deleting === track.id}
+                          className="w-6 h-6 flex items-center justify-center rounded bg-red-500/10 text-red-400 hover:text-red-300 transition disabled:opacity-50">
+                          <Trash2 size={11} />
+                        </button>
+                      </div>
                     </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
 
