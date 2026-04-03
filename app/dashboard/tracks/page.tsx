@@ -251,21 +251,30 @@ export default function TracksPage() {
     }));
   };
 
-  // ── 태그 집계 (태그 → 곡 수) ──
+  // ── 태그 집계 (mood_tags 배열 + mood 텍스트 필드 모두 집계) ──
   const tagCounts = tracks.reduce<Record<string, number>>((acc, t) => {
-    (t.mood_tags || []).forEach(tag => { acc[tag] = (acc[tag] || 0) + 1; });
+    // mood_tags 배열
+    (t.mood_tags || []).forEach(tag => {
+      if (MOOD_OPTIONS.includes(tag)) acc[tag] = (acc[tag] || 0) + 1;
+    });
+    // mood 텍스트 필드 → MOOD_OPTIONS 매칭 단어 추출
+    if (t.mood) {
+      const words = t.mood.toLowerCase().split(/[\s,/]+/);
+      words.forEach(w => {
+        if (MOOD_OPTIONS.includes(w)) acc[w] = (acc[w] || 0) + 1;
+      });
+    }
     return acc;
   }, {});
-  const sortedTags = Object.entries(tagCounts)
-    .filter(([tag]) => MOOD_OPTIONS.includes(tag))
-    .sort((a, b) => b[1] - a[1]);
+  const sortedTags = Object.entries(tagCounts).sort((a, b) => b[1] - a[1]);
 
   // ── 필터 ──
   const filtered = tracks.filter(t => {
     const q = query.toLowerCase();
     const matchQ = !q || t.title.toLowerCase().includes(q) || t.artist.toLowerCase().includes(q) || t.mood.toLowerCase().includes(q);
     const matchC = catFilter === 'all' || t.store_category === catFilter || t.store_category === 'all';
-    const matchT = !tagFilter || (t.mood_tags || []).includes(tagFilter);
+    const moodWords = t.mood ? t.mood.toLowerCase().split(/[\s,/]+/) : [];
+    const matchT = !tagFilter || (t.mood_tags || []).includes(tagFilter) || moodWords.includes(tagFilter);
     return matchQ && matchC && matchT;
   });
 
