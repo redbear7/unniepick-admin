@@ -160,88 +160,94 @@ export default function CouponsPage() {
 
       {/* ── 목록 뷰 ── */}
       {view === 'list' && (
-        <div className="bg-[#1A1D23] border border-white/5 rounded-2xl overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-white/5">
-                <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-500">쿠폰</th>
-                <th className="text-left px-4 py-3.5 text-xs font-semibold text-gray-500">가게</th>
-                <th className="text-center px-4 py-3.5 text-xs font-semibold text-gray-500">할인</th>
-                <th className="text-center px-4 py-3.5 text-xs font-semibold text-gray-500">발급 현황</th>
-                <th className="text-left px-4 py-3.5 text-xs font-semibold text-gray-500">만료일</th>
-                <th className="text-center px-4 py-3.5 text-xs font-semibold text-gray-500">상태</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                [...Array(5)].map((_, i) => (
-                  <tr key={i} className="border-b border-white/5">
-                    {[...Array(6)].map((_, j) => (
-                      <td key={j} className="px-5 py-4">
-                        <div className="h-4 bg-white/5 rounded animate-pulse" />
-                      </td>
-                    ))}
-                  </tr>
-                ))
-              ) : filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="text-center py-12 text-gray-600">쿠폰이 없어요</td>
-                </tr>
-              ) : (
-                filtered.map(coupon => {
-                  const isExpired = new Date(coupon.expires_at) < now;
-                  const usageRate = coupon.total_quantity > 0
-                    ? Math.round((coupon.issued_count / coupon.total_quantity) * 100)
-                    : 0;
-                  return (
-                    <tr key={coupon.id} className="border-b border-white/5 hover:bg-white/[0.02] transition">
-                      <td className="px-5 py-4">
-                        <p className="font-semibold text-white">{coupon.title}</p>
-                      </td>
-                      <td className="px-4 py-4 text-gray-400">
-                        <span>{coupon.stores?.name ?? '-'}</span>
-                        {coupon.stores?.latitude && (
-                          <span className="ml-1.5 text-[10px] text-[#FF6F0F]/60">📍</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-4 text-center">
-                        <span className="font-bold text-[#FF6F0F]">{discountLabel(coupon)}</span>
-                      </td>
-                      <td className="px-4 py-4">
-                        <div className="flex flex-col items-center gap-1">
-                          <span className="text-xs text-gray-400">{coupon.issued_count} / {coupon.total_quantity}</span>
-                          <div className="w-20 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                            <div className="h-full bg-[#FF6F0F] rounded-full" style={{ width: `${usageRate}%` }} />
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-4">
-                        <span className={`text-xs ${isExpired ? 'text-red-400' : 'text-gray-400'}`}>
-                          {isExpired ? '⚠️ ' : ''}{new Date(coupon.expires_at).toLocaleDateString('ko-KR')}
-                        </span>
-                      </td>
-                      <td className="px-4 py-4 text-center">
-                        <button
-                          onClick={() => toggleActive(coupon)}
-                          disabled={toggling === coupon.id}
-                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition disabled:opacity-50 ${
-                            coupon.is_active && !isExpired
-                              ? 'bg-green-500/15 text-green-400'
-                              : 'bg-red-500/10 text-red-400'
-                          }`}
-                        >
-                          {coupon.is_active && !isExpired
-                            ? <><ToggleRight size={13} /> 활성</>
-                            : <><ToggleLeft  size={13} /> {isExpired ? '만료' : '비활성'}</>}
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+        loading ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            {[...Array(10)].map((_, i) => (
+              <div key={i} className="rounded-xl bg-white/[0.03] border border-white/5 overflow-hidden animate-pulse">
+                <div className="h-28 bg-white/5" />
+                <div className="p-3 space-y-2">
+                  <div className="h-3 bg-white/5 rounded w-3/4" />
+                  <div className="h-2 bg-white/5 rounded w-1/2" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-40 gap-2">
+            <span className="text-3xl">🎟</span>
+            <p className="text-gray-500 text-sm">쿠폰이 없어요</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+            {filtered.map(coupon => {
+              const isExpired = new Date(coupon.expires_at) < now;
+              const usageRate = coupon.total_quantity > 0
+                ? Math.round((coupon.issued_count / coupon.total_quantity) * 100)
+                : 0;
+              const statusOk = coupon.is_active && !isExpired;
+              return (
+                <div key={coupon.id}
+                  className={`flex flex-col rounded-xl overflow-hidden border transition hover:bg-white/[0.06] ${
+                    statusOk ? 'bg-white/[0.03] border-white/5 hover:border-white/10' : 'bg-white/[0.02] border-white/5 opacity-60'
+                  }`}>
+
+                  {/* 할인율 배너 */}
+                  <div className={`flex items-center justify-center py-6 relative ${
+                    statusOk ? 'bg-[#FF6F0F]/10' : 'bg-white/5'
+                  }`}>
+                    <span className={`text-3xl font-black tracking-tight ${statusOk ? 'text-[#FF6F0F]' : 'text-gray-600'}`}>
+                      {discountLabel(coupon)}
+                    </span>
+                    {isExpired && (
+                      <span className="absolute top-2 right-2 text-[9px] font-bold px-1.5 py-0.5 rounded bg-red-500/20 text-red-400">만료</span>
+                    )}
+                  </div>
+
+                  {/* 정보 */}
+                  <div className="p-2.5 flex flex-col gap-1.5 flex-1">
+                    <p className="text-white text-xs font-semibold truncate leading-tight">{coupon.title}</p>
+                    <p className="text-gray-500 text-[10px] truncate">
+                      {coupon.stores?.name ?? '-'}
+                      {coupon.stores?.latitude && <span className="ml-1 text-[#FF6F0F]/60">📍</span>}
+                    </p>
+
+                    {/* 사용률 바 */}
+                    <div className="space-y-0.5">
+                      <div className="flex justify-between text-[9px] text-gray-600">
+                        <span>발급</span>
+                        <span>{coupon.issued_count} / {coupon.total_quantity}</span>
+                      </div>
+                      <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full transition-all ${usageRate >= 90 ? 'bg-red-400' : 'bg-[#FF6F0F]'}`}
+                          style={{ width: `${usageRate}%` }} />
+                      </div>
+                    </div>
+
+                    {/* 만료일 + 상태토글 */}
+                    <div className="flex items-center justify-between mt-auto pt-1.5 border-t border-white/5">
+                      <span className={`text-[9px] ${isExpired ? 'text-red-400' : 'text-gray-600'}`}>
+                        {new Date(coupon.expires_at).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', year: '2-digit' })}
+                      </span>
+                      <button
+                        onClick={() => toggleActive(coupon)}
+                        disabled={toggling === coupon.id}
+                        className={`flex items-center gap-0.5 text-[10px] font-semibold transition disabled:opacity-50 ${
+                          statusOk ? 'text-green-400' : 'text-gray-600'
+                        }`}>
+                        {toggling === coupon.id
+                          ? <div className="w-3 h-3 border border-gray-500 border-t-white rounded-full animate-spin" />
+                          : statusOk
+                            ? <><ToggleRight size={14} /> 활성</>
+                            : <><ToggleLeft  size={14} /> {isExpired ? '만료' : '비활성'}</>
+                        }
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )
       )}
     </div>
   );
