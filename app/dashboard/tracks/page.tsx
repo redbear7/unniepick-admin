@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { createClient } from '@/lib/supabase';
-import { Search, Plus, Pencil, Trash2, ToggleLeft, ToggleRight, X, Check, Play, Pause, Upload, ImagePlus, Link } from 'lucide-react';
+import { Search, Plus, Pencil, Trash2, ToggleLeft, ToggleRight, X, Check, Play, Pause, Upload, ImagePlus, Link, Heart, ListMusic as ListMusicIcon, ArrowDownUp, Headphones } from 'lucide-react';
 import { usePlayer } from '@/contexts/PlayerContext';
 
 // ─── 타입 ──────────────────────────────────────────────────────
@@ -23,6 +23,8 @@ interface MusicTrack {
   is_active:       boolean;
   created_at:      string;
   reference_url:   string | null;
+  play_count?:     number | null;
+  like_count?:     number | null;
 }
 
 // ─── 태그 옵션 ─────────────────────────────────────────────────
@@ -166,13 +168,15 @@ export default function TracksPage() {
   const audioInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
-  const [tracks,    setTracks]    = useState<MusicTrack[]>([]);
-  const [loading,   setLoading]   = useState(true);
-  const [query,     setQuery]     = useState('');
-  const [catFilter, setCatFilter] = useState('all');
-  const [tagFilter, setTagFilter] = useState('');
-  const [toggling,  setToggling]  = useState<string | null>(null);
-  const [deleting,  setDeleting]  = useState<string | null>(null);
+  const [tracks,         setTracks]         = useState<MusicTrack[]>([]);
+  const [loading,        setLoading]        = useState(true);
+  const [query,          setQuery]          = useState('');
+  const [catFilter,      setCatFilter]      = useState('all');
+  const [tagFilter,      setTagFilter]      = useState('');
+  const [toggling,       setToggling]       = useState<string | null>(null);
+  const [deleting,       setDeleting]       = useState<string | null>(null);
+  const [playlistCounts, setPlaylistCounts] = useState<Record<string, number>>({});
+  const [sortOrder,      setSortOrder]      = useState<'latest' | 'plays' | 'likes' | 'playlists'>('latest');
 
   // 모달
   const [modal,  setModal]  = useState(false);
@@ -203,8 +207,18 @@ export default function TracksPage() {
 
   const load = async () => {
     setLoading(true);
-    const { data } = await sb.from('music_tracks').select('*').order('created_at', { ascending: false });
-    setTracks((data ?? []) as MusicTrack[]);
+    const [tracksRes, plRes] = await Promise.all([
+      sb.from('music_tracks').select('*').order('created_at', { ascending: false }),
+      sb.from('playlist_tracks').select('track_id'),
+    ]);
+    const trackList = (tracksRes.data ?? []) as MusicTrack[];
+    setTracks(trackList);
+    // playlist_tracks 집계
+    const counts: Record<string, number> = {};
+    (plRes.data ?? []).forEach((row: { track_id: string }) => {
+      counts[row.track_id] = (counts[row.track_id] ?? 0) + 1;
+    });
+    setPlaylistCounts(counts);
     setLoading(false);
   };
 
@@ -251,32 +265,39 @@ export default function TracksPage() {
     }));
   };
 
-  // ── 태그 집계 (mood_tags 배열 + mood 텍스트 필드 모두 집계) ──
+  // ── 태그 집계 (mood_tags 배열만) ──
   const tagCounts = tracks.reduce<Record<string, number>>((acc, t) => {
-    // mood_tags 배열
     (t.mood_tags || []).forEach(tag => {
       if (MOOD_OPTIONS.includes(tag)) acc[tag] = (acc[tag] || 0) + 1;
     });
-    // mood 텍스트 필드 → MOOD_OPTIONS 매칭 단어 추출
-    if (t.mood) {
-      const words = t.mood.toLowerCase().split(/[\s,/]+/);
-      words.forEach(w => {
-        if (MOOD_OPTIONS.includes(w)) acc[w] = (acc[w] || 0) + 1;
-      });
-    }
     return acc;
   }, {});
   const sortedTags = Object.entries(tagCounts).sort((a, b) => b[1] - a[1]);
 
-  // ── 필터 ──
+  // ── 필터 + 정렬 ──
+  const todayStr = new Date().toISOString().slice(0, 10);
+
   const filtered = tracks.filter(t => {
     const q = query.toLowerCase();
     const matchQ = !q || t.title.toLowerCase().includes(q) || t.artist.toLowerCase().includes(q) || t.mood.toLowerCase().includes(q);
     const matchC = catFilter === 'all' || t.store_category === catFilter || t.store_category === 'all';
-    const moodWords = t.mood ? t.mood.toLowerCase().split(/[\s,/]+/) : [];
-    const matchT = !tagFilter || (t.mood_tags || []).includes(tagFilter) || moodWords.includes(tagFilter);
+    const matchT = !tagFilter || (t.mood_tags || []).includes(tagFilter);
     return matchQ && matchC && matchT;
   });
+
+  const sorted = [...filtered].sort((a, b) => {
+    if (sortOrder === 'plays')     return (b.play_count ?? 0) - (a.play_count ?? 0);
+    if (sortOrder === 'likes')     return (b.like_count ?? 0) - (a.like_count ?? 0);
+    if (sortOrder === 'playlists') return (playlistCounts[b.id] ?? 0) - (playlistCounts[a.id] ?? 0);
+    // latest: today first, then by created_at desc
+    const aToday = a.created_at.startsWith(todayStr) ? 1 : 0;
+    const bToday = b.created_at.startsWith(todayStr) ? 1 : 0;
+    if (bToday !== aToday) return bToday - aToday;
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
+
+  const todayTracks   = sorted.filter(t => t.created_at.startsWith(todayStr));
+  const olderTracks   = sorted.filter(t => !t.created_at.startsWith(todayStr));
 
   // ── 폼 헬퍼 ──
   const setF = (key: keyof typeof EMPTY_FORM, val: any) => setForm(f => ({ ...f, [key]: val }));
@@ -501,7 +522,7 @@ export default function TracksPage() {
       )}
 
       {/* 필터 바 */}
-      <div className="flex items-center gap-3 px-6 py-3 border-b border-white/5">
+      <div className="flex items-center gap-3 px-6 py-3 border-b border-white/5 flex-wrap">
         <div className="relative flex-1 max-w-xs">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
           <input value={query} onChange={e => setQuery(e.target.value)}
@@ -518,7 +539,19 @@ export default function TracksPage() {
             </button>
           ))}
         </div>
-        <span className="text-xs text-gray-600 ml-auto">{filtered.length}개</span>
+        {/* 정렬 */}
+        <div className="flex gap-1 ml-auto">
+          <ArrowDownUp size={13} className="text-gray-600 self-center" />
+          {([['latest','최신순'],['plays','재생순'],['likes','좋아요순'],['playlists','플리순']] as const).map(([v,label]) => (
+            <button key={v} onClick={() => setSortOrder(v)}
+              className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition ${
+                sortOrder === v ? 'bg-[#FF6F0F] text-white' : 'bg-white/5 text-gray-400 hover:text-white'
+              }`}>
+              {label}
+            </button>
+          ))}
+        </div>
+        <span className="text-xs text-gray-600">{sorted.length}개</span>
       </div>
 
       {/* 트랙 목록 */}
@@ -534,111 +567,32 @@ export default function TracksPage() {
             <p className="text-gray-500 text-sm">트랙이 없어요</p>
           </div>
         ) : (
-          <div className="p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-            {filtered.map(track => {
-              const isActive  = player.track?.id === track.id;
-              const isPlaying = isActive && player.isPlaying;
-              const dur = track.duration_sec > 0
-                ? `${Math.floor(track.duration_sec / 60)}:${String(track.duration_sec % 60).padStart(2, '0')}`
-                : null;
-              return (
-                <div key={track.id}
-                  className={`group relative flex flex-col rounded-xl overflow-hidden bg-white/[0.03] border transition hover:bg-white/[0.06] ${
-                    !track.is_active ? 'opacity-50' : 'border-white/5 hover:border-white/10'
-                  }`}>
-
-                  {/* 커버 */}
-                  <div className="relative aspect-square bg-white/5">
-                    {track.cover_image_url ? (
-                      <img src={track.cover_image_url} alt={track.title}
-                        className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-4xl">
-                        {track.cover_emoji}
-                      </div>
-                    )}
-
-                    {/* 런타임 오버레이 */}
-                    {dur && (
-                      <span className="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-black/60 text-white/90 leading-none">
-                        {dur}
-                      </span>
-                    )}
-
-                    {/* 재생 버튼 오버레이 */}
-                    <button
-                      onClick={() => togglePlay(track)}
-                      disabled={!track.audio_url}
-                      className={`absolute inset-0 flex items-center justify-center transition ${
-                        isActive
-                          ? 'bg-black/20'
-                          : 'bg-black/0 group-hover:bg-black/40'
-                      } disabled:cursor-not-allowed`}>
-                      <span className={`w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition ${
-                        isActive
-                          ? 'bg-[#FF6F0F] opacity-100'
-                          : 'bg-white opacity-0 group-hover:opacity-100'
-                      }`}>
-                        {isPlaying
-                          ? <Pause size={14} className={isActive ? 'text-white' : 'text-[#0D0F14]'} />
-                          : <Play  size={14} className={isActive ? 'text-white' : 'text-[#0D0F14] ml-0.5'} />
-                        }
-                      </span>
-                    </button>
-                  </div>
-
-                  {/* 트랙 정보 */}
-                  <div className="p-2.5 flex flex-col gap-1 flex-1">
-                    <p className="text-white text-xs font-semibold truncate leading-tight">{track.title}</p>
-                    <p className="text-gray-500 text-[10px] truncate">{track.artist}</p>
-                    {track.mood && (
-                      <p className="text-[#FF6F0F] text-[10px] font-semibold truncate">{track.mood}</p>
-                    )}
-
-                    {/* 태그 */}
-                    {(track.mood_tags ?? []).length > 0 && (
-                      <div className="flex flex-wrap gap-0.5 mt-0.5">
-                        {(track.mood_tags ?? []).slice(0, 3).map(t => (
-                          <span key={t} className="text-[9px] px-1 py-0.5 bg-white/5 border border-white/10 text-gray-500 rounded leading-none">{t}</span>
-                        ))}
-                        {(track.mood_tags ?? []).length > 3 && (
-                          <span className="text-[9px] px-1 py-0.5 bg-[#FF6F0F]/10 text-[#FF6F0F] rounded leading-none">
-                            +{(track.mood_tags ?? []).length - 3}
-                          </span>
-                        )}
-                      </div>
-                    )}
-
-                    {/* 액션 바 */}
-                    <div className="flex items-center justify-between mt-auto pt-1.5 border-t border-white/5">
-                      <button onClick={() => handleToggle(track)} disabled={toggling === track.id}
-                        className="flex items-center gap-1 text-[10px] font-semibold transition">
-                        {toggling === track.id
-                          ? <div className="w-3 h-3 border border-gray-500 border-t-white rounded-full animate-spin" />
-                          : track.is_active
-                            ? <><ToggleRight size={14} className="text-green-400" /><span className="text-green-400">활성</span></>
-                            : <><ToggleLeft  size={14} className="text-gray-600"  /><span className="text-gray-600">비활성</span></>
-                        }
-                      </button>
-                      <div className="flex gap-1">
-                        <button onClick={() => openEdit(track)}
-                          className="w-6 h-6 flex items-center justify-center rounded bg-white/5 text-gray-500 hover:text-white transition">
-                          <Pencil size={11} />
-                        </button>
-                        <button onClick={() => handleDelete(track)} disabled={deleting === track.id}
-                          className="w-6 h-6 flex items-center justify-center rounded bg-red-500/10 text-red-400 hover:text-red-300 transition disabled:opacity-50">
-                          <Trash2 size={11} />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+          <div className="p-4 space-y-4">
+            {/* 오늘 등록 섹션 */}
+            {sortOrder === 'latest' && todayTracks.length > 0 && (
+              <>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-bold text-[#FF6F0F] uppercase tracking-wide">오늘 등록 · {todayTracks.length}개</span>
+                  <div className="flex-1 h-px bg-[#FF6F0F]/20" />
                 </div>
-              );
-            })}
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                  {todayTracks.map(track => renderCard(track))}
+                </div>
+                {olderTracks.length > 0 && (
+                  <div className="flex items-center gap-2 pt-2">
+                    <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">이전 트랙 · {olderTracks.length}개</span>
+                    <div className="flex-1 h-px bg-white/5" />
+                  </div>
+                )}
+              </>
+            )}
+            {/* 이전 트랙 or 전체(비최신순) */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+              {(sortOrder === 'latest' ? olderTracks : sorted).map(track => renderCard(track))}
+            </div>
           </div>
         )}
       </div>
-
       {/* ── 등록/편집 모달 ── */}
       {modal && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
@@ -808,7 +762,7 @@ export default function TracksPage() {
                       {audioFileName ? `✅ ${audioFileName}` : form.audio_url}
                     </a>
                     <button onClick={() => {
-                      audioRef.current?.pause();
+                      // no audioRef
                       const a = new Audio(form.audio_url);
                       a.play().catch(() => alert('재생 실패 — URL을 확인해주세요'));
                     }}
@@ -981,4 +935,114 @@ export default function TracksPage() {
       )}
     </div>
   );
+
+  // ── 카드 렌더러 ──────────────────────────────────────────────
+  function renderCard(track: MusicTrack) {
+    const isActive  = player.track?.id === track.id;
+    const isPlaying = isActive && player.isPlaying;
+    const dur = track.duration_sec > 0
+      ? `${Math.floor(track.duration_sec / 60)}:${String(track.duration_sec % 60).padStart(2, '0')}`
+      : null;
+    const plCount = playlistCounts[track.id] ?? 0;
+    return (
+      <div key={track.id}
+        className={`group relative flex flex-col rounded-xl overflow-hidden bg-white/[0.03] border transition hover:bg-white/[0.06] ${
+          !track.is_active ? 'opacity-50' : 'border-white/5 hover:border-white/10'
+        }`}>
+
+                  {/* 커버 */}
+                  <div className="relative aspect-square bg-white/5">
+                    {track.cover_image_url ? (
+                      <img src={track.cover_image_url} alt={track.title}
+                        className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-4xl">
+                        {track.cover_emoji}
+                      </div>
+                    )}
+
+                    {/* 런타임 오버레이 */}
+                    {dur && (
+                      <span className="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-black/60 text-white/90 leading-none">
+                        {dur}
+                      </span>
+                    )}
+
+                    {/* 재생 버튼 오버레이 */}
+                    <button
+                      onClick={() => togglePlay(track)}
+                      disabled={!track.audio_url}
+                      className={`absolute inset-0 flex items-center justify-center transition ${
+                        isActive
+                          ? 'bg-black/20'
+                          : 'bg-black/0 group-hover:bg-black/40'
+                      } disabled:cursor-not-allowed`}>
+                      <span className={`w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition ${
+                        isActive
+                          ? 'bg-[#FF6F0F] opacity-100'
+                          : 'bg-white opacity-0 group-hover:opacity-100'
+                      }`}>
+                        {isPlaying
+                          ? <Pause size={14} className={isActive ? 'text-white' : 'text-[#0D0F14]'} />
+                          : <Play  size={14} className={isActive ? 'text-white' : 'text-[#0D0F14] ml-0.5'} />
+                        }
+                      </span>
+                    </button>
+                  </div>
+
+                  {/* 트랙 정보 */}
+                  <div className="p-2.5 flex flex-col gap-1 flex-1">
+                    <p className="text-white text-xs font-semibold truncate leading-tight">{track.title}</p>
+                    <p className="text-gray-500 text-[10px] truncate">{track.artist}</p>
+                    {track.mood && (
+                      <p className="text-[#FF6F0F] text-[10px] font-semibold truncate">{track.mood}</p>
+                    )}
+
+                    {/* 태그 */}
+                    {(track.mood_tags ?? []).length > 0 && (
+                      <div className="flex flex-wrap gap-0.5 mt-0.5">
+                        {(track.mood_tags ?? []).slice(0, 3).map(t => (
+                          <span key={t} className="text-[9px] px-1 py-0.5 bg-white/5 border border-white/10 text-gray-500 rounded leading-none">{t}</span>
+                        ))}
+                        {(track.mood_tags ?? []).length > 3 && (
+                          <span className="text-[9px] px-1 py-0.5 bg-[#FF6F0F]/10 text-[#FF6F0F] rounded leading-none">
+                            +{(track.mood_tags ?? []).length - 3}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* 통계 뱃지 */}
+                    <div className="flex items-center gap-2 text-[10px] text-gray-600 mt-0.5">
+                      <span className="flex items-center gap-0.5"><Headphones size={9} />{(track.play_count ?? 0).toLocaleString()}</span>
+                      <span className="flex items-center gap-0.5"><Heart size={9} />{(track.like_count ?? 0).toLocaleString()}</span>
+                      <span className="flex items-center gap-0.5"><ListMusicIcon size={9} />{plCount}</span>
+                    </div>
+
+                    {/* 액션 바 */}
+                    <div className="flex items-center justify-between mt-auto pt-1.5 border-t border-white/5">
+                      <button onClick={() => handleToggle(track)} disabled={toggling === track.id}
+                        className="flex items-center gap-1 text-[10px] font-semibold transition">
+                        {toggling === track.id
+                          ? <div className="w-3 h-3 border border-gray-500 border-t-white rounded-full animate-spin" />
+                          : track.is_active
+                            ? <><ToggleRight size={14} className="text-green-400" /><span className="text-green-400">활성</span></>
+                            : <><ToggleLeft  size={14} className="text-gray-600"  /><span className="text-gray-600">비활성</span></>
+                        }
+                      </button>
+                      <div className="flex gap-1">
+                        <button onClick={() => openEdit(track)}
+                          className="w-6 h-6 flex items-center justify-center rounded bg-white/5 text-gray-500 hover:text-white transition">
+                          <Pencil size={11} />
+                        </button>
+                        <button onClick={() => handleDelete(track)} disabled={deleting === track.id}
+                          className="w-6 h-6 flex items-center justify-center rounded bg-red-500/10 text-red-400 hover:text-red-300 transition disabled:opacity-50">
+                          <Trash2 size={11} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+  }
 }

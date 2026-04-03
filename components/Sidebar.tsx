@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
 import {
   LayoutDashboard, Store, FileText, Music, Ticket,
-  Users, LogOut, ChevronRight, ScrollText, MapPin, PlaySquare, Zap, Map, ListMusic, Tag, GripVertical,
+  Users, LogOut, ChevronRight, ScrollText, MapPin, PlaySquare, Zap, Map, ListMusic, Tag, GripVertical, Building2,
 } from 'lucide-react';
 
 const NAV_DEFAULT = [
@@ -23,6 +23,7 @@ const NAV_DEFAULT = [
   { href: '/dashboard/propagation',icon: Zap,             label: '학습 & 전파' },
   { href: '/dashboard/opensource', icon: ScrollText,      label: '오픈소스' },
   { href: '/dashboard/tags',       icon: Tag,             label: '태그관리' },
+  { href: '/dashboard/brands',     icon: Building2,       label: '브랜드관' },
 ];
 
 const LS_NAV_ORDER = 'dashboard_nav_order';
