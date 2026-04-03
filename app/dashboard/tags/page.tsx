@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase';
-import { Trash2, Plus, TrendingUp, Tag, Hash } from 'lucide-react';
+import { Trash2, Plus, TrendingUp, Tag, Hash, Music, Headphones } from 'lucide-react';
 
 // ─── 태그 정의 (tracks/page.tsx와 동일) ─────────────────────────────
 const SUNO_STYLE_TAGS: Record<string, Record<string, string[]>> = {
@@ -36,12 +36,13 @@ interface TagStat { tag: string; count: number; isNew: boolean; isCustom: boolea
 export default function TagsPage() {
   const sb = createClient();
 
-  const [tagStats,     setTagStats]     = useState<Record<string, number>>({});
-  const [customTags,   setCustomTags]   = useState<LibTag[]>([]);
-  const [hiddenTags,   setHiddenTags]   = useState<Set<string>>(new Set());
-  const [loading,      setLoading]      = useState(true);
-  const [newTagInput,  setNewTagInput]  = useState('');
-  const [adding,       setAdding]       = useState(false);
+  const [tagStats,      setTagStats]      = useState<Record<string, number>>({});  // 태그 → 제작 곡 수
+  const [tagPlayStats,  setTagPlayStats]  = useState<Record<string, number>>({});  // 태그 → 총 재생 수
+  const [customTags,    setCustomTags]    = useState<LibTag[]>([]);
+  const [hiddenTags,    setHiddenTags]    = useState<Set<string>>(new Set());
+  const [loading,       setLoading]       = useState(true);
+  const [newTagInput,   setNewTagInput]   = useState('');
+  const [adding,        setAdding]        = useState(false);
 
   // ── 로드 ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -57,16 +58,20 @@ export default function TagsPage() {
     const loadTagStats = async () => {
       const { data } = await sb
         .from('music_tracks')
-        .select('mood_tags')
+        .select('mood_tags, play_count')
         .eq('is_active', true);
 
       const counts: Record<string, number> = {};
+      const plays:  Record<string, number> = {};
       (data || []).forEach(row => {
+        const pc = (row as any).play_count ?? 0;
         (row.mood_tags as string[] || []).forEach(t => {
           counts[t] = (counts[t] || 0) + 1;
+          plays[t]  = (plays[t]  || 0) + pc;
         });
       });
       setTagStats(counts);
+      setTagPlayStats(plays);
       setLoading(false);
     };
 
@@ -111,12 +116,22 @@ export default function TagsPage() {
     saveCustomTags(customTags.filter(c => c.tag !== tag));
   };
 
-  // ── 인기 태그 top N ───────────────────────────────────────────
-  const sorted = Object.entries(tagStats)
+  // ── 인기 태그 (제작순) ────────────────────────────────────────
+  const topByMake = Object.entries(tagStats)
+    .filter(([, c]) => c > 0)
     .sort((a, b) => b[1] - a[1])
-    .filter(([, c]) => c > 0);
-  const topTags = sorted.slice(0, 15);
-  const maxCount = topTags[0]?.[1] || 1;
+    .slice(0, 15);
+  const maxMake = topByMake[0]?.[1] || 1;
+
+  // ── 인기 태그 (재생순) ────────────────────────────────────────
+  const topByPlay = Object.entries(tagPlayStats)
+    .filter(([, c]) => c > 0)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 15);
+  const maxPlay = topByPlay[0]?.[1] || 1;
+
+  // 기존 sorted (통계 카드용)
+  const sorted = topByMake;
 
   // ── 전체 태그 수 ──────────────────────────────────────────────
   const totalBuiltin  = ALL_SUNO_TAGS.length - hiddenTags.size;
@@ -155,32 +170,64 @@ export default function TagsPage() {
         ))}
       </div>
 
-      {/* ── 인기 태그 ── */}
-      <div className="bg-white/[0.03] border border-white/5 rounded-xl p-5">
-        <h2 className="text-sm font-bold text-white flex items-center gap-1.5 mb-4">
-          <TrendingUp size={14} className="text-[#FF6F0F]" /> 인기 태그 Top {topTags.length}
-        </h2>
-        {loading ? (
-          <p className="text-xs text-gray-500">불러오는 중...</p>
-        ) : topTags.length === 0 ? (
-          <p className="text-xs text-gray-500">아직 태그가 사용된 트랙이 없습니다.</p>
-        ) : (
-          <div className="space-y-2">
-            {topTags.map(([tag, count], i) => (
-              <div key={tag} className="flex items-center gap-3">
-                <span className="text-[10px] text-gray-600 w-4 text-right shrink-0">{i + 1}</span>
-                <div className="flex-1 relative h-6 flex items-center">
-                  <div
-                    className="absolute inset-y-0 left-0 rounded-md bg-[#FF6F0F]/15"
-                    style={{ width: `${(count / maxCount) * 100}%` }}
-                  />
-                  <span className="relative text-xs text-gray-300 px-2 truncate">{tag}</span>
+      {/* ── 인기 태그 2열 ── */}
+      <div className="grid grid-cols-2 gap-4">
+
+        {/* 제작순 */}
+        <div className="bg-white/[0.03] border border-white/5 rounded-xl p-5">
+          <h2 className="text-sm font-bold text-white flex items-center gap-1.5 mb-4">
+            <Music size={14} className="text-[#FF6F0F]" /> 인기 태그 <span className="text-gray-500 font-normal text-xs">제작순</span>
+          </h2>
+          {loading ? (
+            <p className="text-xs text-gray-500">불러오는 중...</p>
+          ) : topByMake.length === 0 ? (
+            <p className="text-xs text-gray-500">데이터 없음</p>
+          ) : (
+            <div className="space-y-2">
+              {topByMake.map(([tag, count], i) => (
+                <div key={tag} className="flex items-center gap-3">
+                  <span className="text-[10px] text-gray-600 w-4 text-right shrink-0">{i + 1}</span>
+                  <div className="flex-1 relative h-6 flex items-center">
+                    <div className="absolute inset-y-0 left-0 rounded-md bg-[#FF6F0F]/15"
+                      style={{ width: `${(count / maxMake) * 100}%` }} />
+                    <span className="relative text-xs text-gray-300 px-2 truncate">{tag}</span>
+                  </div>
+                  <span className="text-xs font-semibold text-[#FF6F0F] w-8 text-right shrink-0">{count}</span>
                 </div>
-                <span className="text-xs font-semibold text-[#FF6F0F] w-8 text-right shrink-0">{count}</span>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* 재생순 */}
+        <div className="bg-white/[0.03] border border-white/5 rounded-xl p-5">
+          <h2 className="text-sm font-bold text-white flex items-center gap-1.5 mb-4">
+            <Headphones size={14} className="text-sky-400" /> 인기 태그 <span className="text-gray-500 font-normal text-xs">재생순</span>
+          </h2>
+          {loading ? (
+            <p className="text-xs text-gray-500">불러오는 중...</p>
+          ) : topByPlay.length === 0 ? (
+            <p className="text-xs text-gray-500 text-[10px] leading-relaxed">
+              재생 데이터 없음<br />
+              <span className="text-gray-700">music_tracks.play_count 컬럼 필요</span>
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {topByPlay.map(([tag, count], i) => (
+                <div key={tag} className="flex items-center gap-3">
+                  <span className="text-[10px] text-gray-600 w-4 text-right shrink-0">{i + 1}</span>
+                  <div className="flex-1 relative h-6 flex items-center">
+                    <div className="absolute inset-y-0 left-0 rounded-md bg-sky-500/15"
+                      style={{ width: `${(count / maxPlay) * 100}%` }} />
+                    <span className="relative text-xs text-gray-300 px-2 truncate">{tag}</span>
+                  </div>
+                  <span className="text-xs font-semibold text-sky-400 w-10 text-right shrink-0">{count.toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
       </div>
 
       {/* ── 커스텀 태그 섹션 ── */}
