@@ -256,7 +256,9 @@ export default function TracksPage() {
     (t.mood_tags || []).forEach(tag => { acc[tag] = (acc[tag] || 0) + 1; });
     return acc;
   }, {});
-  const sortedTags = Object.entries(tagCounts).sort((a, b) => b[1] - a[1]);
+  const sortedTags = Object.entries(tagCounts)
+    .filter(([tag]) => MOOD_OPTIONS.includes(tag))
+    .sort((a, b) => b[1] - a[1]);
 
   // ── 필터 ──
   const filtered = tracks.filter(t => {
