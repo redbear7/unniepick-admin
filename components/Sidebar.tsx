@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
 import {
   LayoutDashboard, Store, FileText, Music, Ticket,
-  Users, LogOut, ChevronRight, ScrollText, MapPin, PlaySquare, Zap, Map, Wand2, ListMusic, Tag,
+  Users, LogOut, ChevronRight, ScrollText, MapPin, PlaySquare, Zap, Map, ListMusic, Tag,
 } from 'lucide-react';
 
 const NAV = [
@@ -13,7 +13,6 @@ const NAV = [
   { href: '/dashboard/map',         icon: Map,             label: '지도' },
   { href: '/dashboard/stores',      icon: Store,           label: '가게 관리' },
   { href: '/dashboard/contexts',    icon: MapPin,          label: '매장 컨텍스트' },
-  { href: '/dashboard/music',       icon: Wand2,           label: '음악 제작' },
   { href: '/dashboard/tracks',      icon: ListMusic,       label: '트랙 관리' },
   { href: '/dashboard/references',  icon: PlaySquare,      label: '레퍼런스 음악' },
   { href: '/dashboard/posts',       icon: FileText,        label: '게시물 관리' },
