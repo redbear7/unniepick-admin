@@ -43,14 +43,26 @@ async function uploadFromUrl(
   }
 }
 
-// Suno 스타일 태그 파싱 → mood / mood_tags
-function parseTags(tagsStr: string) {
-  const all = tagsStr
+// BPM 추출: "120 BPM", "120bpm", "bpm 120" 등
+function extractBpm(str: string): number | null {
+  const m = str.match(/\b(\d{2,3})\s*bpm\b/i) || str.match(/\bbpm\s*(\d{2,3})\b/i);
+  return m ? Number(m[1]) : null;
+}
+
+// Suno 스타일 태그 파싱 → mood / mood_tags / bpm
+// tags + prompt 합산, 중복 제거, BPM 태그는 별도 추출
+function parseTags(tagsStr: string, promptStr: string = '') {
+  const bpm = extractBpm(tagsStr) ?? extractBpm(promptStr) ?? null;
+
+  const combined = [tagsStr, promptStr].join(', ');
+  const all = combined
     .split(',')
     .map(t => t.trim().toLowerCase())
-    .filter(Boolean);
-  const mood = all[0] || 'chill';
-  return { mood, mood_tags: all };
+    .filter(t => t && !/^\d+\s*bpm$/i.test(t) && !/^bpm\s*\d+$/i.test(t)); // BPM 토큰 제거
+
+  const unique = [...new Set(all)].filter(Boolean);
+  const mood = unique[0] || 'chill';
+  return { mood, mood_tags: unique, bpm };
 }
 
 // 제목에서 [핸들] 접두사 분리 → { pureTitle, referenceUrl }
@@ -75,16 +87,17 @@ export async function POST(req: NextRequest) {
   const supabase = getSupabase();
 
   let songs: {
-    id: string;
-    title: string;
+    id:           string;
+    title:        string;
     display_name: string;
-    image_url: string | null;
-    audio_url: string | null;
-    prompt: string;
-    tags: string;
-    duration: number | null;
-    created_at: string | null;
-    suno_url: string;
+    image_url:    string | null;
+    audio_url:    string | null;
+    prompt:       string;
+    tags:         string;
+    lyrics:       string;
+    duration:     number | null;
+    created_at:   string | null;
+    suno_url:     string;
   }[];
 
   try {
@@ -132,22 +145,25 @@ export async function POST(req: NextRequest) {
         audioUrl = uploaded || song.audio_url; // 업로드 실패 시 원본 URL 유지
       }
 
-      // ── 태그 파싱 ──────────────────────────────────────────────────────
-      const { mood, mood_tags } = parseTags(song.tags || '');
+      // ── 태그 파싱 (tags + prompt 합산, BPM 추출) ──────────────────────
+      const { mood, mood_tags, bpm } = parseTags(song.tags || '', song.prompt || '');
 
       // ── music_tracks 테이블 삽입 ──────────────────────────────────────
       const { data: track, error } = await supabase
         .from('music_tracks')
         .insert({
-          title: pureTitle,                       // 순수 제목 (핸들 제거)
-          artist: song.display_name || 'Suno AI',
+          title:          pureTitle,    // 순수 제목 (핸들 제거)
+          artist:         '언니픽',      // 아티스트 고정
           mood,
           mood_tags,
-          audio_url: audioUrl,
+          bpm,
+          audio_url:      audioUrl,
           cover_image_url: coverUrl,
-          duration_sec: song.duration ? Math.round(song.duration) : null,
-          is_active: true,
-          reference_url: referenceUrl,            // YouTube 채널 레퍼런스
+          duration_sec:   song.duration ? Math.round(song.duration) : null,
+          is_active:      true,
+          reference_url:  referenceUrl || null,   // YouTube 핸들 URL만
+          suno_url:       song.suno_url || null,  // Suno 원본 링크 별도 저장
+          lyrics:         song.lyrics?.trim() || null,
         })
         .select('id')
         .single();

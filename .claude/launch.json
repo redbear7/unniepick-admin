@@ -2,10 +2,11 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "unniepick-admin",
+      "name": "웹 어드민 (unniepick-admin)",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "--", "-p", "3001"],
-      "port": 3001
+      "runtimeArgs": ["run", "dev"],
+      "port": 3001,
+      "autoPort": false
     }
   ]
 }

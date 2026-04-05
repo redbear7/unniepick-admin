@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
 import {
   LayoutDashboard, Store, FileText, Music, Ticket,
-  Users, LogOut, ChevronRight, ScrollText, MapPin, PlaySquare, Zap, Map, ListMusic, Tag, GripVertical, Building2,
+  Users, LogOut, ChevronRight, ScrollText, MapPin, PlaySquare, Zap, Map, ListMusic, Tag, GripVertical, Building2, Megaphone,
 } from 'lucide-react';
 
 const NAV_DEFAULT = [
@@ -14,7 +14,8 @@ const NAV_DEFAULT = [
   { href: '/dashboard/map',        icon: Map,             label: '지도' },
   { href: '/dashboard/stores',     icon: Store,           label: '가게 관리' },
   { href: '/dashboard/contexts',   icon: MapPin,          label: '매장 컨텍스트' },
-  { href: '/dashboard/tracks',     icon: ListMusic,       label: '트랙 관리' },
+  { href: '/dashboard/tracks',          icon: ListMusic,   label: '트랙 관리' },
+  { href: '/dashboard/announcements',   icon: Megaphone,   label: 'AI음성안내' },
   { href: '/dashboard/references', icon: PlaySquare,      label: '레퍼런스 음악' },
   { href: '/dashboard/posts',      icon: FileText,        label: '게시물 관리' },
   { href: '/dashboard/coupons',    icon: Ticket,          label: '쿠폰 관리' },
@@ -29,11 +30,16 @@ const NAV_DEFAULT = [
 const LS_NAV_ORDER = 'dashboard_nav_order';
 
 function loadOrder(): string[] {
+  const defaults = NAV_DEFAULT.map(n => n.href);
   try {
     const saved = localStorage.getItem(LS_NAV_ORDER);
-    if (saved) return JSON.parse(saved);
+    if (saved) {
+      const parsed: string[] = JSON.parse(saved);
+      const missing = defaults.filter(h => !parsed.includes(h));
+      return [...parsed, ...missing];
+    }
   } catch {}
-  return NAV_DEFAULT.map(n => n.href);
+  return defaults;
 }
 
 export default function Sidebar() {

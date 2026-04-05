@@ -16,10 +16,10 @@ function fmtTime(sec: number) {
 
 export default function BottomPlayer() {
   const {
-    track, queue, queueIndex,
+    track, lastTrack, queue, queueIndex,
     isPlaying, currentTime, duration,
     volume, shuffle, repeat,
-    togglePlay, next, prev, seek, setVolume,
+    togglePlay, play, next, prev, seek, setVolume,
     toggleShuffle, toggleRepeat, close,
   } = usePlayer();
 
@@ -27,57 +27,58 @@ export default function BottomPlayer() {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (!track) return;
-      // input/textarea/contenteditable 에서는 무시
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.isContentEditable) return;
-      if (e.code === 'Space') {
-        e.preventDefault();
-        togglePlay();
-      }
+      if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [track, togglePlay]);
 
-  if (!track) return null;
+  // 표시할 트랙: 현재 재생 중 or 마지막 재생 트랙
+  const displayTrack = track ?? lastTrack;
+  if (!displayTrack) return null; // 한 번도 재생한 적 없으면 숨김
 
+  const inactive = !track; // 재생 대기 상태
   const progress = duration > 0 ? currentTime / duration : 0;
 
   return (
-    <div className="shrink-0 h-[72px] bg-[#111318]/95 backdrop-blur-xl border-t border-white/[0.06] flex items-center gap-4 z-40">
+    <div className={`shrink-0 h-[72px] backdrop-blur-xl border-t border-white/[0.06] flex items-center gap-4 z-40 transition-colors ${
+      inactive ? 'bg-[#0D0F14]/90' : 'bg-[#111318]/95'
+    }`}>
 
-      {/* 사이드바 너비(w-56) 만큼 빈 공간 — 플레이어는 메인 컨텐츠 영역부터 시작 */}
+      {/* 사이드바 너비(w-56) 만큼 빈 공간 */}
       <div className="w-56 shrink-0" />
 
-      {/* 플레이어 내용 — 사이드바 오른쪽 경계에서 시작 */}
+      {/* 플레이어 내용 */}
       <div className="flex-1 flex items-center gap-4 pr-4 min-w-0">
 
       {/* ── 왼쪽: 커버 + 곡 정보 + 셔플 ── */}
-      <div className="flex items-center gap-3 w-[260px] shrink-0">
+      <div className={`flex items-center gap-3 w-[260px] shrink-0 ${inactive ? 'opacity-50' : ''}`}>
         {/* 커버 */}
         <div className="w-11 h-11 rounded-lg overflow-hidden bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
-          {track.cover_image_url
-            ? <img src={track.cover_image_url} alt={track.title} className="w-full h-full object-cover" />
-            : <span className="text-xl">{track.cover_emoji ?? '🎵'}</span>
+          {displayTrack.cover_image_url
+            ? <img src={displayTrack.cover_image_url} alt={displayTrack.title} className="w-full h-full object-cover" />
+            : <span className="text-xl">{displayTrack.cover_emoji ?? '🎵'}</span>
           }
         </div>
         {/* 제목/아티스트 */}
         <div className="min-w-0 flex-1">
-          <p className="text-white text-sm font-semibold truncate">{track.title}</p>
-          <p className="text-gray-500 text-xs truncate">{track.artist}</p>
-          {track.mood && (
-            <p className="text-[#FF6F0F] text-[10px] font-semibold truncate">{track.mood}</p>
+          <p className="text-white text-sm font-semibold truncate">{displayTrack.title}</p>
+          <p className="text-gray-500 text-xs truncate">{displayTrack.artist}</p>
+          {displayTrack.mood && (
+            <p className="text-[#FF6F0F] text-[10px] font-semibold truncate">{displayTrack.mood}</p>
           )}
         </div>
         {/* 셔플 */}
         <button
           onClick={toggleShuffle}
           title={shuffle ? '셔플 켜짐' : '셔플 꺼짐'}
-          className={`shrink-0 transition relative ${shuffle ? 'text-[#FF6F0F]' : 'text-gray-600 hover:text-gray-400'}`}>
+          className={`shrink-0 transition flex flex-col items-center gap-0.5 ${shuffle ? 'text-[#FF6F0F]' : 'text-gray-600 hover:text-gray-400'}`}>
           <Shuffle size={15} />
-          {shuffle && (
-            <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#FF6F0F]" />
-          )}
+          <span className="text-[8px] font-semibold leading-none">
+            {shuffle ? '랜덤 On' : '랜덤 Off'}
+          </span>
         </button>
       </div>
 
@@ -93,7 +94,8 @@ export default function BottomPlayer() {
           </button>
 
           {/* Play / Pause */}
-          <button onClick={togglePlay}
+          <button
+            onClick={() => inactive ? play(displayTrack) : togglePlay()}
             className="w-9 h-9 rounded-full bg-white flex items-center justify-center hover:bg-white/90 transition shadow-lg">
             {isPlaying
               ? <Pause size={15} className="text-[#0D0F14]" />
@@ -109,8 +111,13 @@ export default function BottomPlayer() {
           </button>
         </div>
 
+        {/* 대기 상태 안내 */}
+        {inactive && (
+          <p className="text-[10px] text-gray-600">▶ 눌러서 마지막 재생 트랙 시작</p>
+        )}
+
         {/* 시크바 */}
-        <div className="flex items-center gap-2 w-full max-w-lg">
+        <div className={`flex items-center gap-2 w-full max-w-lg ${inactive ? 'opacity-30 pointer-events-none' : ''}`}>
           <span className="text-[10px] text-gray-600 w-8 text-right shrink-0">{fmtTime(currentTime)}</span>
           <div className="relative flex-1 h-1 group">
             {/* 배경 트랙 */}
@@ -143,11 +150,11 @@ export default function BottomPlayer() {
         <button
           onClick={toggleRepeat}
           title={repeat === 'none' ? '반복 없음' : repeat === 'all' ? '전체 반복' : '1곡 반복'}
-          className={`shrink-0 transition relative ${repeat !== 'none' ? 'text-[#FF6F0F]' : 'text-gray-600 hover:text-gray-400'}`}>
+          className={`shrink-0 transition flex flex-col items-center gap-0.5 ${repeat !== 'none' ? 'text-[#FF6F0F]' : 'text-gray-600 hover:text-gray-400'}`}>
           {repeat === 'one' ? <Repeat1 size={15} /> : <Repeat size={15} />}
-          {repeat !== 'none' && (
-            <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#FF6F0F]" />
-          )}
+          <span className="text-[8px] font-semibold leading-none">
+            {repeat === 'none' ? '반복 Off' : repeat === 'all' ? '전체반복' : '1곡반복'}
+          </span>
         </button>
 
         {/* 큐 정보 */}

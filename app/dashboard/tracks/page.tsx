@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { createClient } from '@/lib/supabase';
-import { Search, Plus, Pencil, Trash2, ToggleLeft, ToggleRight, X, Check, Play, Pause, Upload, ImagePlus, Link, Heart, ListMusic as ListMusicIcon, ArrowDownUp, Headphones } from 'lucide-react';
+import { Search, Plus, Pencil, Trash2, ToggleLeft, ToggleRight, X, Check, Play, Pause, Upload, ImagePlus, Link, Heart, ListMusic as ListMusicIcon, ArrowDownUp, Headphones, GripVertical, Copy, ClipboardCheck } from 'lucide-react';
 import { usePlayer } from '@/contexts/PlayerContext';
 
 // ─── 타입 ──────────────────────────────────────────────────────
@@ -23,8 +23,13 @@ interface MusicTrack {
   is_active:       boolean;
   created_at:      string;
   reference_url:   string | null;
-  play_count?:     number | null;
-  like_count?:     number | null;
+  suno_url?:           string | null;
+  play_count?:         number | null;
+  like_count?:         number | null;
+  energy_score?:       number | null;
+  valence_score?:      number | null;
+  danceability_score?: number | null;
+  lyrics?:             string | null;
 }
 
 // ─── 태그 옵션 ─────────────────────────────────────────────────
@@ -75,9 +80,14 @@ const EMPTY_FORM = {
   audio_url:       '',
   cover_image_url: '',
   duration_sec:    '' as string,
-  cover_emoji:     '🎵',
-  is_active:       true,
-  reference_url:   '',
+  cover_emoji:        '🎵',
+  is_active:          true,
+  reference_url:      '',
+  suno_url:           '',
+  energy_score:       '' as string,
+  valence_score:      '' as string,
+  danceability_score: '' as string,
+  lyrics:             '',
 };
 
 // ─── localStorage 키 ────────────────────────────────────────────
@@ -176,7 +186,14 @@ export default function TracksPage() {
   const [toggling,       setToggling]       = useState<string | null>(null);
   const [deleting,       setDeleting]       = useState<string | null>(null);
   const [playlistCounts, setPlaylistCounts] = useState<Record<string, number>>({});
-  const [sortOrder,      setSortOrder]      = useState<'latest' | 'plays' | 'likes' | 'playlists'>('latest');
+  const [sortOrder,      setSortOrder]      = useState<'latest' | 'plays' | 'likes' | 'playlists' | 'manual'>('latest');
+  const [manualOrder,    setManualOrder]    = useState<string[]>([]);
+  const dragTrackId       = useRef<string | null>(null);
+  const [dragOverTrack, setDragOverTrack]  = useState<string | null>(null);
+
+  // ── 재생수 카운팅 ─────────────────────────────────────────────
+  const playCountTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const countedTrackRef   = useRef<string | null>(null); // 이미 +1 카운팅한 트랙 ID
 
   // 모달
   const [modal,  setModal]  = useState(false);
@@ -189,10 +206,16 @@ export default function TracksPage() {
   const [hiddenTags,    setHiddenTags]    = useState<Set<string>>(new Set());
   const [sunoTagsOpen,  setSunoTagsOpen]  = useState(false);
 
+  // Suno 프롬프트 복사 피드백
+  const [copied,      setCopied]      = useState(false);
+  const [analyzing,   setAnalyzing]   = useState(false);
+
   // 업로드 상태
   const [audioUploading, setAudioUploading] = useState(false);
   const [imageUploading, setImageUploading] = useState(false);
   const [audioFileName,  setAudioFileName]  = useState('');
+  const [testPlaying,    setTestPlaying]    = useState(false);
+  const testAudioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     load();
@@ -203,7 +226,51 @@ export default function TracksPage() {
       setCustomLibTags(ct);
       setHiddenTags(new Set(ht));
     } catch {}
+    // 수동 순서 로드
+    try {
+      const mo: string[] = JSON.parse(localStorage.getItem('dashboard_tracks_manual_order') || '[]');
+      setManualOrder(mo);
+    } catch {}
   }, []);
+
+  // ── 10초 재생 시 play_count +1 ──────────────────────────────
+  useEffect(() => {
+    const trackId = player.track?.id;
+
+    // 이전 타이머 초기화
+    if (playCountTimerRef.current) {
+      clearTimeout(playCountTimerRef.current);
+      playCountTimerRef.current = null;
+    }
+
+    // 재생 중이 아니거나 이미 카운팅된 트랙이면 종료
+    if (!trackId || !player.isPlaying) return;
+    if (countedTrackRef.current === trackId) return;
+
+    playCountTimerRef.current = setTimeout(async () => {
+      if (countedTrackRef.current === trackId) return;
+      countedTrackRef.current = trackId;
+
+      // DB에서 현재 count 조회 후 +1
+      const { data } = await sb.from('music_tracks')
+        .select('play_count').eq('id', trackId).single();
+      const newCount = (data?.play_count ?? 0) + 1;
+      await sb.from('music_tracks')
+        .update({ play_count: newCount }).eq('id', trackId);
+
+      // 로컬 상태 즉시 반영
+      setTracks(prev => prev.map(t =>
+        t.id === trackId ? { ...t, play_count: newCount } : t,
+      ));
+    }, 10000);
+
+    return () => {
+      if (playCountTimerRef.current) {
+        clearTimeout(playCountTimerRef.current);
+        playCountTimerRef.current = null;
+      }
+    };
+  }, [player.track?.id, player.isPlaying]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const load = async () => {
     setLoading(true);
@@ -265,14 +332,21 @@ export default function TracksPage() {
     }));
   };
 
-  // ── 태그 집계 (mood_tags 배열만) ──
+  // ── 태그 집계 (mood_tags 배열 전체 — MOOD_OPTIONS 제한 없음) ──
+  const genreTagSet = new Set(tracks.map(t => (t.mood_tags ?? [])[0]).filter(Boolean));
   const tagCounts = tracks.reduce<Record<string, number>>((acc, t) => {
     (t.mood_tags || []).forEach(tag => {
-      if (MOOD_OPTIONS.includes(tag)) acc[tag] = (acc[tag] || 0) + 1;
+      if (tag) acc[tag] = (acc[tag] || 0) + 1;
     });
     return acc;
   }, {});
-  const sortedTags = Object.entries(tagCounts).sort((a, b) => b[1] - a[1]);
+  // 장르 태그(mood_tags[0]) 먼저 count 순, 나머지 태그 count 순
+  const sortedTags = Object.entries(tagCounts).sort((a, b) => {
+    const aGenre = genreTagSet.has(a[0]) ? 1 : 0;
+    const bGenre = genreTagSet.has(b[0]) ? 1 : 0;
+    if (bGenre !== aGenre) return bGenre - aGenre;
+    return b[1] - a[1];
+  });
 
   // ── 필터 + 정렬 ──
   const todayStr = new Date().toISOString().slice(0, 10);
@@ -298,6 +372,38 @@ export default function TracksPage() {
 
   const todayTracks   = sorted.filter(t => t.created_at.startsWith(todayStr));
   const olderTracks   = sorted.filter(t => !t.created_at.startsWith(todayStr));
+
+  // 수동 순서: filtered 기준으로 manualOrder 적용
+  const manualSorted = sortOrder === 'manual' ? (() => {
+    const idSet = new Set(filtered.map(t => t.id));
+    const ordered = manualOrder.filter(id => idSet.has(id));
+    const orderedSet = new Set(ordered);
+    const rest = filtered.filter(t => !orderedSet.has(t.id));
+    return [...ordered.map(id => filtered.find(t => t.id === id)!), ...rest];
+  })() : [];
+
+  // 화면에 표시되는 순서 기준 큐 (next/prev가 화면 순서를 따르도록)
+  const displayList = sortOrder === 'manual' ? manualSorted : sorted;
+
+  const saveManualOrder = (ids: string[]) => {
+    setManualOrder(ids);
+    localStorage.setItem('dashboard_tracks_manual_order', JSON.stringify(ids));
+  };
+
+  const handleTrackDragStart = (id: string) => { dragTrackId.current = id; };
+  const handleTrackDragOver  = (e: React.DragEvent, id: string) => { e.preventDefault(); setDragOverTrack(id); };
+  const handleTrackDrop      = (targetId: string) => {
+    const fromId = dragTrackId.current;
+    if (!fromId || fromId === targetId) { setDragOverTrack(null); return; }
+    const ids = manualSorted.map(t => t.id);
+    const fi = ids.indexOf(fromId);
+    const ti = ids.indexOf(targetId);
+    ids.splice(fi, 1);
+    ids.splice(ti, 0, fromId);
+    saveManualOrder(ids);
+    dragTrackId.current = null;
+    setDragOverTrack(null);
+  };
 
   // ── 폼 헬퍼 ──
   const setF = (key: keyof typeof EMPTY_FORM, val: any) => setForm(f => ({ ...f, [key]: val }));
@@ -390,11 +496,39 @@ export default function TracksPage() {
       audio_url:       t.audio_url,
       cover_image_url: t.cover_image_url ?? '',
       duration_sec:    t.duration_sec != null ? String(t.duration_sec) : '',
-      cover_emoji:     t.cover_emoji,
-      is_active:       t.is_active,
-      reference_url:   t.reference_url ?? '',
+      cover_emoji:        t.cover_emoji,
+      is_active:          t.is_active,
+      reference_url:      t.reference_url ?? '',
+      suno_url:           t.suno_url ?? '',
+      energy_score:       t.energy_score != null ? String(Math.round(t.energy_score * 100)) : '',
+      valence_score:      t.valence_score != null ? String(Math.round(t.valence_score * 100)) : '',
+      danceability_score: t.danceability_score != null ? String(Math.round(t.danceability_score * 100)) : '',
+      lyrics:             t.lyrics ?? '',
     });
     setModal(true);
+  };
+
+  // ── AI 자동 분석 ──
+  const handleAnalyze = async () => {
+    setAnalyzing(true);
+    try {
+      const res = await fetch('/api/analyze-track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: form.title, mood_tags: form.mood_tags, lyrics: form.lyrics }),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      if (data.energy_score       != null) setF('energy_score',       String(Math.round(data.energy_score)));
+      if (data.valence_score      != null) setF('valence_score',      String(Math.round(data.valence_score)));
+      if (data.danceability_score != null) setF('danceability_score', String(Math.round(data.danceability_score)));
+      if (data.energy_level)  setF('energy_level', data.energy_level);
+      if (data.time_tags?.length) setF('time_tags', data.time_tags);
+    } catch (e: any) {
+      alert(`AI 분석 실패: ${e.message}`);
+    } finally {
+      setAnalyzing(false);
+    }
   };
 
   // ── 저장 ──
@@ -421,7 +555,12 @@ export default function TracksPage() {
         duration_sec:    form.duration_sec ? Number(form.duration_sec) : 0,
         cover_emoji:     form.cover_emoji,
         is_active:       form.is_active,
-        reference_url:   form.reference_url.trim() || null,
+        reference_url:      form.reference_url.trim() || null,
+        suno_url:           form.suno_url.trim() || null,
+        energy_score:       form.energy_score !== '' ? Number(form.energy_score) / 100 : null,
+        valence_score:      form.valence_score !== '' ? Number(form.valence_score) / 100 : null,
+        danceability_score: form.danceability_score !== '' ? Number(form.danceability_score) / 100 : null,
+        lyrics:             form.lyrics.trim() || null,
       };
 
       if (editId) {
@@ -433,6 +572,7 @@ export default function TracksPage() {
       }
 
       await load();
+      testAudioRef.current?.pause(); testAudioRef.current = null; setTestPlaying(false);
       setModal(false);
     } catch (e: any) {
       alert(`저장 실패: ${e.message}`);
@@ -473,7 +613,7 @@ export default function TracksPage() {
     if (player.track?.id === track.id) {
       player.togglePlay();
     } else {
-      player.play(playable, filtered.map(t => ({
+      player.play(playable, displayList.map(t => ({
         id: t.id, title: t.title, artist: t.artist,
         audio_url: t.audio_url, cover_image_url: t.cover_image_url,
         cover_emoji: t.cover_emoji, duration_sec: t.duration_sec, mood: t.mood,
@@ -542,7 +682,7 @@ export default function TracksPage() {
         {/* 정렬 */}
         <div className="flex gap-1 ml-auto">
           <ArrowDownUp size={13} className="text-gray-600 self-center" />
-          {([['latest','최신순'],['plays','재생순'],['likes','좋아요순'],['playlists','플리순']] as const).map(([v,label]) => (
+          {([['latest','최신순'],['plays','재생순'],['likes','좋아요순'],['playlists','플리순'],['manual','수동']] as const).map(([v,label]) => (
             <button key={v} onClick={() => setSortOrder(v)}
               className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition ${
                 sortOrder === v ? 'bg-[#FF6F0F] text-white' : 'bg-white/5 text-gray-400 hover:text-white'
@@ -568,28 +708,56 @@ export default function TracksPage() {
           </div>
         ) : (
           <div className="p-4 space-y-4">
-            {/* 오늘 등록 섹션 */}
-            {sortOrder === 'latest' && todayTracks.length > 0 && (
+            {/* 수동 정렬 그리드 */}
+            {sortOrder === 'manual' ? (
               <>
                 <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-bold text-[#FF6F0F] uppercase tracking-wide">오늘 등록 · {todayTracks.length}개</span>
-                  <div className="flex-1 h-px bg-[#FF6F0F]/20" />
+                  <GripVertical size={12} className="text-gray-600" />
+                  <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">드래그로 순서 변경 · {manualSorted.length}개</span>
+                  <div className="flex-1 h-px bg-white/5" />
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-                  {todayTracks.map(track => renderCard(track))}
+                  {manualSorted.map(track => (
+                    <div
+                      key={track.id}
+                      draggable
+                      onDragStart={() => handleTrackDragStart(track.id)}
+                      onDragOver={e => handleTrackDragOver(e, track.id)}
+                      onDrop={() => handleTrackDrop(track.id)}
+                      onDragEnd={() => setDragOverTrack(null)}
+                      className={`rounded-xl transition-all ${dragOverTrack === track.id ? 'ring-1 ring-[#FF6F0F]/50 scale-[1.02]' : ''}`}
+                    >
+                      {renderCard(track)}
+                    </div>
+                  ))}
                 </div>
-                {olderTracks.length > 0 && (
-                  <div className="flex items-center gap-2 pt-2">
-                    <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">이전 트랙 · {olderTracks.length}개</span>
-                    <div className="flex-1 h-px bg-white/5" />
-                  </div>
+              </>
+            ) : (
+              <>
+                {/* 오늘 등록 섹션 */}
+                {sortOrder === 'latest' && todayTracks.length > 0 && (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] font-bold text-[#FF6F0F] uppercase tracking-wide">오늘 등록 · {todayTracks.length}개</span>
+                      <div className="flex-1 h-px bg-[#FF6F0F]/20" />
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                      {todayTracks.map(track => renderCard(track))}
+                    </div>
+                    {olderTracks.length > 0 && (
+                      <div className="flex items-center gap-2 pt-2">
+                        <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">이전 트랙 · {olderTracks.length}개</span>
+                        <div className="flex-1 h-px bg-white/5" />
+                      </div>
+                    )}
+                  </>
                 )}
+                {/* 이전 트랙 or 전체(비최신순) */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                  {(sortOrder === 'latest' ? olderTracks : sorted).map(track => renderCard(track))}
+                </div>
               </>
             )}
-            {/* 이전 트랙 or 전체(비최신순) */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-              {(sortOrder === 'latest' ? olderTracks : sorted).map(track => renderCard(track))}
-            </div>
           </div>
         )}
       </div>
@@ -603,7 +771,7 @@ export default function TracksPage() {
               <h2 className="text-base font-bold text-white">
                 {editId ? '✏️ 트랙 수정' : '➕ 새 트랙 등록'}
               </h2>
-              <button onClick={() => setModal(false)} className="text-gray-500 hover:text-white transition">
+              <button onClick={() => { testAudioRef.current?.pause(); testAudioRef.current = null; setTestPlaying(false); setModal(false); }} className="text-gray-500 hover:text-white transition">
                 <X size={18} />
               </button>
             </div>
@@ -696,6 +864,16 @@ export default function TracksPage() {
                         </a>
                       )}
                     </div>
+                    {/* Suno 원본 링크 */}
+                    {form.suno_url && (
+                      <div className="mt-1 flex items-center gap-2">
+                        <span className="text-[10px] text-gray-600 font-mono truncate flex-1">{form.suno_url}</span>
+                        <a href={form.suno_url} target="_blank" rel="noopener noreferrer"
+                          className="text-[10px] text-purple-400 hover:underline whitespace-nowrap shrink-0">
+                          🎵 Suno
+                        </a>
+                      </div>
+                    )}
                   </div>
                   <div>
                     <label className="text-xs text-gray-500 font-semibold block mb-1.5">아티스트 *</label>
@@ -730,7 +908,7 @@ export default function TracksPage() {
               <div>
                 <label className="text-xs text-gray-500 font-semibold block mb-2">🎵 오디오 파일 *</label>
 
-                {/* 업로드 버튼 + URL 입력 */}
+                {/* 업로드 버튼 */}
                 <div className="flex gap-2 items-stretch">
                   <input ref={audioInputRef} type="file" accept=".mp3,.wav,.aac,.ogg,audio/*" className="hidden"
                     onChange={e => { const f = e.target.files?.[0]; if (f) { e.target.value = ''; uploadAudio(f); } }} />
@@ -743,13 +921,9 @@ export default function TracksPage() {
                     }`}>
                     {audioUploading
                       ? <><div className="w-4 h-4 border-2 border-[#FF6F0F]/30 border-t-[#FF6F0F] rounded-full animate-spin" /> 업로드 중...</>
-                      : <><Upload size={14} /> MP3 업로드</>
+                      : <><Upload size={14} /> MP3 재업로드</>
                     }
                   </button>
-
-                  <input value={form.audio_url} onChange={e => setF('audio_url', e.target.value)}
-                    placeholder="또는 URL 직접 입력 (https://...)"
-                    className="flex-1 bg-[#1F2937] text-white text-xs rounded-xl px-3 py-2.5 border border-white/10 outline-none placeholder-gray-600 font-mono" />
                 </div>
 
                 {/* 업로드 완료 / URL 표시 */}
@@ -762,12 +936,24 @@ export default function TracksPage() {
                       {audioFileName ? `✅ ${audioFileName}` : form.audio_url}
                     </a>
                     <button onClick={() => {
-                      // no audioRef
-                      const a = new Audio(form.audio_url);
-                      a.play().catch(() => alert('재생 실패 — URL을 확인해주세요'));
+                      if (testPlaying) {
+                        testAudioRef.current?.pause();
+                        testAudioRef.current = null;
+                        setTestPlaying(false);
+                      } else {
+                        const a = new Audio(form.audio_url);
+                        testAudioRef.current = a;
+                        a.play().catch(() => alert('재생 실패 — URL을 확인해주세요'));
+                        setTestPlaying(true);
+                        a.onended = () => { testAudioRef.current = null; setTestPlaying(false); };
+                      }
                     }}
-                      className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-white px-2 py-1 bg-white/5 rounded-lg transition whitespace-nowrap shrink-0">
-                      <Play size={9} /> 테스트
+                      className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg transition whitespace-nowrap shrink-0 ${
+                        testPlaying
+                          ? 'text-[#FF6F0F] bg-[#FF6F0F]/10 hover:bg-[#FF6F0F]/20'
+                          : 'text-gray-400 hover:text-white bg-white/5'
+                      }`}>
+                      {testPlaying ? <><Pause size={9} /> 테스트 정지</> : <><Play size={9} /> 테스트 재생</>}
                     </button>
                     <button onClick={() => { setF('audio_url', ''); setAudioFileName(''); }}
                       className="text-gray-600 hover:text-red-400 transition shrink-0">
@@ -863,6 +1049,38 @@ export default function TracksPage() {
                 </div>
               </div>
 
+              {/* ── Suno 프롬프트 자동 생성 ── */}
+              {form.mood_tags.length > 0 && (() => {
+                const tags = form.mood_tags.slice(0, 12);
+                const prompt = form.bpm ? `${tags.join(', ')}, ${form.bpm} BPM` : tags.join(', ');
+                return (
+                  <div className="bg-[#818CF8]/5 border border-[#818CF8]/20 rounded-xl p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-semibold text-[#818CF8]">🎼 Suno 프롬프트</span>
+                      <span className="text-[10px] text-gray-600">{tags.length}개 태그{form.bpm ? ` · ${form.bpm} BPM` : ''}</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <p className="flex-1 text-[11px] text-gray-300 font-mono leading-relaxed break-all">{prompt}</p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(prompt).then(() => {
+                            setCopied(true);
+                            setTimeout(() => setCopied(false), 2000);
+                          });
+                        }}
+                        className={`shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold transition ${
+                          copied
+                            ? 'bg-green-500/20 border border-green-500/40 text-green-400'
+                            : 'bg-[#818CF8]/15 border border-[#818CF8]/30 text-[#818CF8] hover:bg-[#818CF8]/25'
+                        }`}>
+                        {copied ? <><ClipboardCheck size={11} /> 복사됨</> : <><Copy size={11} /> 복사</>}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* ── 시간대 태그 ── */}
               <div>
                 <label className="text-xs text-gray-500 font-semibold block mb-2">⏰ 시간대 태그</label>
@@ -871,6 +1089,71 @@ export default function TracksPage() {
                     <Chip key={t} label={TIME_KO[t]} active={form.time_tags.includes(t)} onClick={() => toggleArr('time_tags', t)} />
                   ))}
                 </div>
+              </div>
+
+              {/* ── Mood Vector 슬라이더 ── */}
+              <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3 space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-[11px] font-semibold text-gray-500">🎚 Mood Vector <span className="font-normal text-gray-600">(0 ~ 100)</span></p>
+                  <button onClick={handleAnalyze} disabled={analyzing || !form.mood_tags.length}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-semibold transition ${
+                      analyzing
+                        ? 'bg-purple-500/10 text-purple-400/60 cursor-not-allowed'
+                        : form.mood_tags.length
+                          ? 'bg-purple-500/15 border border-purple-500/30 text-purple-400 hover:bg-purple-500/25'
+                          : 'bg-white/5 text-gray-600 cursor-not-allowed'
+                    }`}>
+                    {analyzing
+                      ? <><div className="w-3 h-3 border border-purple-400/30 border-t-purple-400 rounded-full animate-spin" /> 분석 중...</>
+                      : '✨ AI 자동 분석'
+                    }
+                  </button>
+                </div>
+                {([
+                  { key: 'energy_score',       label: '⚡ 에너지',  color: '#F87171' },
+                  { key: 'valence_score',      label: '☀️ 밝음',    color: '#FBBF24' },
+                  { key: 'danceability_score', label: '💃 댄서블',  color: '#818CF8' },
+                ] as const).map(({ key, label, color }) => {
+                  const val = form[key] === '' ? 0 : Number(form[key]);
+                  return (
+                    <div key={key} className="flex items-center gap-3">
+                      <span className="text-[11px] text-gray-500 w-16 shrink-0">{label}</span>
+                      <input
+                        type="range" min={0} max={100} value={form[key] === '' ? 50 : Number(form[key])}
+                        onChange={e => setF(key as any, e.target.value)}
+                        className="flex-1 cursor-pointer"
+                        style={{ accentColor: color }}
+                      />
+                      <div className="w-8 text-right">
+                        <span className="text-[11px] font-mono" style={{ color: form[key] !== '' ? color : '#4B5563' }}>
+                          {form[key] !== '' ? form[key] : '—'}
+                        </span>
+                      </div>
+                      {form[key] !== '' && (
+                        <button onClick={() => setF(key as any, '')} className="text-gray-700 hover:text-gray-400 transition shrink-0">
+                          <X size={10} />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* ── 가사 ── */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs text-gray-500 font-semibold">📝 가사</label>
+                  {form.lyrics && (
+                    <span className="text-[10px] text-gray-600">{form.lyrics.length}자</span>
+                  )}
+                </div>
+                <textarea
+                  value={form.lyrics}
+                  onChange={e => setF('lyrics', e.target.value)}
+                  placeholder={"[Verse 1]\n가사를 입력하세요...\n\n[Chorus]\n..."}
+                  rows={6}
+                  className="w-full bg-[#1F2937] text-white text-xs rounded-xl px-3 py-2.5 border border-white/10 outline-none placeholder-gray-600 resize-y font-mono leading-relaxed"
+                />
               </div>
 
               {/* ── 에너지 + 카테고리 + 활성화 ── */}
@@ -918,7 +1201,7 @@ export default function TracksPage() {
 
             {/* 모달 푸터 */}
             <div className="flex gap-3 px-6 py-4 border-t border-white/5 shrink-0">
-              <button onClick={() => setModal(false)}
+              <button onClick={() => { testAudioRef.current?.pause(); testAudioRef.current = null; setTestPlaying(false); setModal(false); }}
                 className="flex-1 py-2.5 bg-white/5 border border-white/10 text-gray-400 text-sm font-semibold rounded-xl hover:text-white transition">
                 취소
               </button>
@@ -994,18 +1277,18 @@ export default function TracksPage() {
                   <div className="p-2.5 flex flex-col gap-1 flex-1">
                     <p className="text-white text-xs font-semibold truncate leading-tight">{track.title}</p>
                     <p className="text-gray-500 text-[10px] truncate">{track.artist}</p>
-                    {track.mood && (
-                      <p className="text-[#FF6F0F] text-[10px] font-semibold truncate">{track.mood}</p>
-                    )}
-
                     {/* 태그 */}
                     {(track.mood_tags ?? []).length > 0 && (
                       <div className="flex flex-wrap gap-0.5 mt-0.5">
-                        {(track.mood_tags ?? []).slice(0, 3).map(t => (
-                          <span key={t} className="text-[9px] px-1 py-0.5 bg-white/5 border border-white/10 text-gray-500 rounded leading-none">{t}</span>
+                        {(track.mood_tags ?? []).slice(0, 3).map((t, i) => (
+                          <span key={t} className={`text-[9px] px-1.5 py-0.5 rounded leading-none ${
+                            i === 0
+                              ? 'bg-[#FF6F0F]/15 border border-[#FF6F0F]/40 text-[#FF6F0F] font-semibold'
+                              : 'bg-white/5 border border-white/10 text-gray-500'
+                          }`}>{t}</span>
                         ))}
                         {(track.mood_tags ?? []).length > 3 && (
-                          <span className="text-[9px] px-1 py-0.5 bg-[#FF6F0F]/10 text-[#FF6F0F] rounded leading-none">
+                          <span className="text-[9px] px-1 py-0.5 bg-white/5 text-gray-600 rounded leading-none">
                             +{(track.mood_tags ?? []).length - 3}
                           </span>
                         )}
@@ -1017,7 +1300,35 @@ export default function TracksPage() {
                       <span className="flex items-center gap-0.5"><Headphones size={9} />{(track.play_count ?? 0).toLocaleString()}</span>
                       <span className="flex items-center gap-0.5"><Heart size={9} />{(track.like_count ?? 0).toLocaleString()}</span>
                       <span className="flex items-center gap-0.5"><ListMusicIcon size={9} />{plCount}</span>
+                      {track.suno_url && (
+                        <a href={track.suno_url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
+                          className="p-0.5 rounded text-purple-400/60 hover:text-purple-400 transition-colors">
+                          <Link size={9} />
+                        </a>
+                      )}
+                      {track.lyrics && (
+                        <span className={`${track.suno_url ? '' : 'ml-auto'} text-[9px] px-1.5 py-0.5 rounded bg-indigo-500/15 text-indigo-400 border border-indigo-500/20`}>가사</span>
+                      )}
                     </div>
+
+                    {/* Mood Vector 바 */}
+                    {(track.energy_score != null || track.valence_score != null || track.danceability_score != null) && (
+                      <div className="space-y-1 mt-1">
+                        {[
+                          { val: track.energy_score,       color: '#F87171', label: '⚡' },
+                          { val: track.valence_score,      color: '#FBBF24', label: '☀️' },
+                          { val: track.danceability_score, color: '#818CF8', label: '💃' },
+                        ].map(({ val, color, label }) => val != null ? (
+                          <div key={label} className="flex items-center gap-1">
+                            <span className="text-[8px] w-3 shrink-0">{label}</span>
+                            <div className="flex-1 h-1 bg-white/5 rounded-full overflow-hidden">
+                              <div className="h-full rounded-full" style={{ width: `${Math.round(val * 100)}%`, backgroundColor: color, opacity: 0.8 }} />
+                            </div>
+                            <span className="text-[8px] font-mono text-gray-600 w-4 text-right">{Math.round(val * 100)}</span>
+                          </div>
+                        ) : null)}
+                      </div>
+                    )}
 
                     {/* 액션 바 */}
                     <div className="flex items-center justify-between mt-auto pt-1.5 border-t border-white/5">
