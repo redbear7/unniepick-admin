@@ -260,24 +260,24 @@ export default function ShortsPage() {
   const maxStart = selected ? Math.max(0, selected.duration_sec - 30) : 0;
 
   return (
-    <div className="flex flex-col gap-6 p-6 min-h-full bg-[#0f1117]">
+    <div className="flex flex-col h-full overflow-hidden bg-[#0f1117]">
       {/* ── 헤더 ── */}
-      <div className="flex items-center gap-3">
+      <div className="px-6 py-4 border-b border-white/5 flex items-center gap-3 shrink-0">
         <div className="w-9 h-9 rounded-xl bg-[#FF6F0F]/15 flex items-center justify-center">
           <Film size={18} className="text-[#FF6F0F]" />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-primary">쇼츠 영상 생성</h1>
+          <h1 className="text-lg font-bold text-primary">쇼츠 영상 생성</h1>
           <p className="text-xs text-muted mt-0.5">
             음악 트랙에서 클라이맥스 구간을 추출해 9:16 쇼츠 영상(30초)을 생성합니다.
           </p>
         </div>
       </div>
 
-      <div className="flex gap-6 flex-col xl:flex-row">
+      <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* ── 왼쪽: 트랙 선택 패널 ── */}
-        <div className="xl:w-[420px] shrink-0 flex flex-col gap-4">
-          <div className="bg-card border border-border-main rounded-xl p-4 flex flex-col gap-3">
+        <div className="w-[360px] shrink-0 border-r border-white/5 overflow-y-auto p-4 flex flex-col gap-3">
+          <div className="flex flex-col gap-3">
             <p className="text-sm font-semibold text-primary">트랙 선택</p>
 
             {/* 검색 */}
@@ -380,7 +380,7 @@ export default function ShortsPage() {
         </div>
 
         {/* ── 오른쪽: 편집 & 생성 패널 ── */}
-        <div className="flex-1 flex flex-col gap-4">
+        <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-4">
           {!selected ? (
             <div className="bg-card border border-border-main rounded-xl flex flex-col items-center justify-center py-24 gap-4">
               <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center">
