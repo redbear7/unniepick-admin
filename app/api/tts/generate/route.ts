@@ -60,15 +60,8 @@ export async function POST(req: NextRequest) {
     const { data: urlData } = supabase.storage.from('announcements').getPublicUrl(filename);
     const audio_url = urlData.publicUrl;
 
-    // ── DB 저장 ────────────────────────────────────────────────────
-    const { data: annData, error: dbErr } = await supabase
-      .from('store_announcements')
-      .insert({ store_id: store_id || null, text: text.trim(), audio_url, voice_type, play_mode, repeat_count, duck_volume, is_active: true })
-      .select()
-      .single();
-    if (dbErr) console.error('[tts/generate] DB 저장 실패:', dbErr.message);
-
-    return NextResponse.json({ audio_url, announcement: dbErr ? null : annData, db_error: dbErr?.message ?? null }, { headers: CORS });
+    // 히스토리는 클라이언트 localStorage에서 관리 (DB 저장 없음)
+    return NextResponse.json({ audio_url }, { headers: CORS });
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 500, headers: CORS });
   }
