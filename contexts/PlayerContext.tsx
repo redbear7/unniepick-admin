@@ -42,7 +42,7 @@ interface PlayerCtx {
   toggleShuffle:      () => void;
   toggleRepeat:       () => void;
   close:              () => void;
-  playAnnouncement:   (url: string, opts: { duck_volume?: number; play_mode?: 'immediate' | 'between_tracks' }) => void;
+  playAnnouncement:   (url: string, opts: { duck_volume?: number; play_mode?: 'immediate' | 'between_tracks'; ann_volume?: number }) => void;
 }
 
 const Ctx = createContext<PlayerCtx | null>(null);
@@ -58,6 +58,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const audioRef         = useRef<HTMLAudioElement | null>(null);
   const annAudioRef      = useRef<HTMLAudioElement | null>(null);
   const pendingAnnRef    = useRef<{ url: string; duck_volume: number } | null>(null); // 곡간 삽입 대기
+  const origVolRef       = useRef<number | null>(null); // 안내방송 전 원본 트랙 볼륨
 
   const [track,               setTrack]              = useState<PlayableTrack | null>(null);
   const [queue,               setQueue]              = useState<PlayableTrack[]>([]);
@@ -96,10 +97,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     const audio = new Audio(t.audio_url);
     audio.volume = volume;
     bindAudio(audio);
-    audio.onended = () => {
-      setIsPlaying(false);
-      // ended 후 next 처리는 아래 useEffect에서
-    };
     audioRef.current = audio;
     setTrack(t);
     setLastTrack(t);
@@ -231,9 +228,10 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     });
 
   // ── 안내방송 실행 ─────────────────────────────────────────────
-  const playAnnouncement = useCallback((url: string, opts: { duck_volume?: number; play_mode?: 'immediate' | 'between_tracks' }) => {
+  const playAnnouncement = useCallback((url: string, opts: { duck_volume?: number; play_mode?: 'immediate' | 'between_tracks'; ann_volume?: number }) => {
     const duckVol   = (opts.duck_volume ?? 20) / 100;
     const play_mode = opts.play_mode ?? 'immediate';
+    const annVol    = Math.min(1, volume * (opts.ann_volume ?? 100) / 100);
 
     if (play_mode === 'between_tracks') {
       pendingAnnRef.current = { url, duck_volume: duckVol };
@@ -242,26 +240,35 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
     // 즉시 방송: 페이드 아웃 → 안내 → 페이드 인
     const trackAudio = audioRef.current;
-    const origVol    = trackAudio ? trackAudio.volume : volume;
+
+    // 이미 안내방송 중이면 origVol 보존, 아니면 현재 트랙 볼륨을 기록
+    if (origVolRef.current === null) {
+      origVolRef.current = trackAudio ? trackAudio.volume : volume;
+    }
+    const origVol = origVolRef.current;
+
+    // 이전 안내방송 즉시 중단
     annAudioRef.current?.pause();
 
     const ann = new Audio(url);
+    ann.volume = annVol;
     annAudioRef.current = ann;
     setAnnouncementPlaying(true);
 
     (async () => {
       try {
-        if (trackAudio) await fadeVolume(trackAudio, origVol, duckVol, 800);
+        if (trackAudio) await fadeVolume(trackAudio, trackAudio.volume, duckVol, 800);
         await new Promise<void>(resolve => {
           ann.onended = () => resolve();
           ann.onerror = () => resolve();
           ann.play().catch(() => resolve());
         });
         const target = audioRef.current ?? trackAudio;
-        if (target) await fadeVolume(target, duckVol, origVol, 800);
+        if (target) await fadeVolume(target, target.volume, origVol, 800);
       } finally {
         const target = audioRef.current ?? trackAudio;
-        if (target && target.volume < origVol) target.volume = origVol;
+        if (target) target.volume = origVol;
+        origVolRef.current = null;
         annAudioRef.current = null;
         setAnnouncementPlaying(false);
       }
