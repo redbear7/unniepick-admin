@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
 import {
   LayoutDashboard, Store, FileText, Music, Ticket,
-  Users, LogOut, ChevronRight, ScrollText, MapPin, PlaySquare, Zap, Map, ListMusic, Tag, Building2, Megaphone,
+  Users, LogOut, ChevronRight, ScrollText, MapPin, PlaySquare, Zap, Map, ListMusic, Tag, Building2, Megaphone, Film,
 } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 
@@ -33,6 +33,7 @@ const NAV_GROUPS = [
       { href: '/dashboard/playlists',     icon: Music,      label: '플레이리스트' },
       { href: '/dashboard/references',    icon: PlaySquare, label: '레퍼런스 음악' },
       { href: '/dashboard/announcements', icon: Megaphone,  label: 'AI음성안내' },
+      { href: '/dashboard/shorts',        icon: Film,       label: '쇼츠 생성' },
       { href: '/dashboard/tags',          icon: Tag,        label: '태그관리' },
     ],
   },
@@ -67,7 +68,7 @@ export default function Sidebar() {
   return (
     <aside className="w-56 shrink-0 bg-sidebar border-r border-border-main flex flex-col h-full overflow-y-auto">
       {/* 로고 */}
-      <div className="flex items-center gap-3 px-5 py-5 border-b border-border-main">
+      <Link href="/dashboard" className="flex items-center gap-3 px-5 py-5 border-b border-border-main hover:bg-card transition">
         <div className="w-8 h-8 rounded-lg bg-[#FF6F0F] flex items-center justify-center text-base shrink-0">🍖</div>
         <div className="flex-1 min-w-0">
           <p className="text-[10px] text-muted leading-none">언니픽</p>
@@ -75,7 +76,7 @@ export default function Sidebar() {
           <p className="text-[10px] text-muted mt-1">v0.1.1</p>
         </div>
         <ThemeToggle />
-      </div>
+      </Link>
 
       {/* 네비게이션 */}
       <nav className="flex-1 px-3 py-4 space-y-5">

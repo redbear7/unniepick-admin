@@ -1,0 +1,147 @@
+/**
+ * POST /api/shorts/render
+ *
+ * Remotion 서버사이드 렌더링 파이프라인.
+ * - 렌더링은 CPU 집약적 작업으로 수분 소요 가능 (maxDuration: 300s)
+ * - 완료된 MP4를 Supabase Storage(music-tracks/shorts/)에 업로드 후 공개 URL 반환
+ *
+ * NOTE: Vercel Serverless 환경에서는 제한이 있으므로 로컬/자체 서버 환경 권장
+ */
+import { NextRequest, NextResponse } from 'next/server';
+import path from 'path';
+import os from 'os';
+import fs from 'fs';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+
+const CORS = { 'Access-Control-Allow-Origin': '*' };
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: CORS });
+}
+
+function createSupabaseServer() {
+  const cookieStore = cookies();
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return (cookieStore as unknown as { getAll(): { name: string; value: string }[] }).getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              (cookieStore as unknown as { set(name: string, value: string, options: unknown): void }).set(
+                name,
+                value,
+                options,
+              );
+            });
+          } catch {
+            // Server Component 환경에서는 set 불가 — 무시
+          }
+        },
+      },
+    },
+  );
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const {
+      track_id,
+      audio_url,
+      cover_url,
+      title,
+      artist,
+      cover_emoji,
+      start_sec,
+      mood_tags,
+    } = await req.json();
+
+    if (!track_id || !audio_url || !title || !artist) {
+      return NextResponse.json(
+        { error: 'track_id, audio_url, title, artist are required' },
+        { status: 400, headers: CORS },
+      );
+    }
+
+    // Remotion 패키지는 동적 임포트 (번들 크기 및 엣지 런타임 호환)
+    const { bundle } = await import('@remotion/bundler');
+    const { renderMedia, selectComposition } = await import('@remotion/renderer');
+
+    const inputProps = {
+      audioUrl: audio_url,
+      coverUrl: cover_url ?? null,
+      title,
+      artist,
+      coverEmoji: cover_emoji ?? '🎵',
+      startTimeSec: typeof start_sec === 'number' ? start_sec : 0,
+      moodTags: Array.isArray(mood_tags) ? mood_tags : [],
+    };
+
+    // 1. Remotion 번들링
+    const bundled = await bundle({
+      entryPoint: path.join(process.cwd(), 'remotion', 'index.ts'),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      webpackOverride: (config: any) => config,
+    });
+
+    // 2. 컴포지션 선택
+    const composition = await selectComposition({
+      serveUrl: bundled,
+      id: 'ShortsVideo',
+      inputProps,
+    });
+
+    // 3. 임시 출력 파일 경로
+    const tmpDir = os.tmpdir();
+    const outputPath = path.join(tmpDir, `shorts_${track_id}_${Date.now()}.mp4`);
+
+    // 4. 렌더링 (CPU 집약적 — 수십 초 소요)
+    await renderMedia({
+      composition,
+      serveUrl: bundled,
+      codec: 'h264',
+      outputLocation: outputPath,
+      inputProps,
+    });
+
+    // 5. Supabase Storage 업로드
+    const supabase = createSupabaseServer();
+    const fileBuffer = fs.readFileSync(outputPath);
+    const filename = `shorts/${track_id}_${Date.now()}.mp4`;
+
+    const { error: uploadErr } = await supabase.storage
+      .from('music-tracks')
+      .upload(filename, fileBuffer, { contentType: 'video/mp4', upsert: true });
+
+    if (uploadErr) {
+      throw new Error(`업로드 실패: ${uploadErr.message}`);
+    }
+
+    const { data: urlData } = supabase.storage
+      .from('music-tracks')
+      .getPublicUrl(filename);
+
+    // 6. 임시 파일 정리
+    try {
+      fs.unlinkSync(outputPath);
+    } catch {
+      // 정리 실패는 무시
+    }
+
+    return NextResponse.json({ video_url: urlData.publicUrl }, { headers: CORS });
+  } catch (e) {
+    console.error('[shorts/render] error:', e);
+    return NextResponse.json(
+      { error: (e as Error).message },
+      { status: 500, headers: CORS },
+    );
+  }
+}
+
+// Vercel: 최대 5분 타임아웃 (Pro 플랜 이상 필요)
+export const maxDuration = 300;
