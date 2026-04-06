@@ -37,8 +37,8 @@ function TagChip({ label, active, onClick }: { label: string; active: boolean; o
       onClick={onClick}
       className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
         active
-          ? 'bg-[#FF6F0F] text-white'
-          : 'bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:border-white/20'
+          ? 'bg-[#FF6F0F] text-primary'
+          : 'bg-fill-subtle border border-border-subtle text-tertiary hover:text-primary hover:border-border-main'
       }`}
     >
       {label}
@@ -214,12 +214,12 @@ export default function PlaylistsPage() {
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-white">플레이리스트 관리</h1>
-          <p className="text-sm text-gray-500 mt-1">전체 {playlists.length}개</p>
+          <h1 className="text-2xl font-bold text-primary">플레이리스트 관리</h1>
+          <p className="text-sm text-muted mt-1">전체 {playlists.length}개</p>
         </div>
         <button
           onClick={openCreate}
-          className="flex items-center gap-2 px-4 py-2.5 bg-[#FF6F0F] hover:bg-[#e05f00] text-white rounded-xl text-sm font-bold transition"
+          className="flex items-center gap-2 px-4 py-2.5 bg-[#FF6F0F] hover:bg-[#e05f00] text-primary rounded-xl text-sm font-bold transition"
         >
           <Plus size={15} /> 새 플레이리스트
         </button>
@@ -227,12 +227,12 @@ export default function PlaylistsPage() {
 
       {/* 검색 */}
       <div className="relative mb-5">
-        <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
+        <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
         <input
           value={query}
           onChange={e => setQuery(e.target.value)}
           placeholder="플레이리스트 검색"
-          className="w-full bg-[#1A1D23] border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#FF6F0F] transition"
+          className="w-full bg-card border border-border-subtle rounded-xl pl-9 pr-4 py-2.5 text-sm text-primary placeholder-gray-600 focus:outline-none focus:border-[#FF6F0F] transition"
         />
       </div>
 
@@ -240,20 +240,20 @@ export default function PlaylistsPage() {
       <div className="space-y-3">
         {loading ? (
           [...Array(4)].map((_, i) => (
-            <div key={i} className="bg-[#1A1D23] rounded-2xl p-5 animate-pulse h-24" />
+            <div key={i} className="bg-card rounded-2xl p-5 animate-pulse h-24" />
           ))
         ) : filteredPlaylists.length === 0 ? (
-          <div className="text-center py-16 text-gray-600">플레이리스트가 없어요</div>
+          <div className="text-center py-16 text-dim">플레이리스트가 없어요</div>
         ) : (
           filteredPlaylists.map(p => (
-            <div key={p.id} className="bg-[#1A1D23] border border-white/5 rounded-2xl p-5">
+            <div key={p.id} className="bg-card border border-border-main rounded-2xl p-5">
               <div className="flex items-start gap-4">
                 <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center shrink-0">
                   <Music size={18} className="text-indigo-400" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-bold text-white">{p.name}</p>
+                    <p className="font-bold text-primary">{p.name}</p>
                     {p.is_dynamic && (
                       <span className="text-[10px] font-bold px-2 py-0.5 bg-purple-500/20 text-purple-400 rounded-full">AI 다이나믹</span>
                     )}
@@ -263,10 +263,10 @@ export default function PlaylistsPage() {
                   </div>
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {[...p.mood_tags, ...p.time_tags, ...p.weather_tags].slice(0, 6).map(t => (
-                      <span key={t} className="text-[10px] px-2 py-0.5 bg-white/5 text-gray-400 rounded-full">{t}</span>
+                      <span key={t} className="text-[10px] px-2 py-0.5 bg-fill-subtle text-tertiary rounded-full">{t}</span>
                     ))}
                   </div>
-                  <p className="text-xs text-gray-600 mt-1.5">트랙 {p.track_count ?? 0}곡</p>
+                  <p className="text-xs text-dim mt-1.5">트랙 {p.track_count ?? 0}곡</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   {/* 트랙 편집 */}
@@ -280,7 +280,7 @@ export default function PlaylistsPage() {
                   {/* 편집 */}
                   <button
                     onClick={() => openEdit(p)}
-                    className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition"
+                    className="p-2 rounded-lg bg-fill-subtle hover:bg-fill-medium text-tertiary hover:text-primary transition"
                   >
                     <Pencil size={14} />
                   </button>
@@ -312,10 +312,10 @@ export default function PlaylistsPage() {
       {/* ── 편집/생성 모달 ── */}
       {modal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="bg-[#1A1D23] border border-white/10 rounded-2xl p-6 w-full max-w-lg my-8">
+          <div className="bg-card border border-border-subtle rounded-2xl p-6 w-full max-w-lg my-8">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-base font-bold text-white">{editId ? '플레이리스트 편집' : '새 플레이리스트'}</h3>
-              <button onClick={() => setModal(false)} className="p-1.5 rounded-lg hover:bg-white/10 text-gray-500 transition">
+              <h3 className="text-base font-bold text-primary">{editId ? '플레이리스트 편집' : '새 플레이리스트'}</h3>
+              <button onClick={() => setModal(false)} className="p-1.5 rounded-lg hover:bg-fill-medium text-muted transition">
                 <X size={16} />
               </button>
             </div>
@@ -323,28 +323,28 @@ export default function PlaylistsPage() {
             <div className="space-y-4">
               {/* 이름 */}
               <div>
-                <label className="text-xs font-semibold text-gray-400 block mb-1.5">플레이리스트 이름 *</label>
+                <label className="text-xs font-semibold text-tertiary block mb-1.5">플레이리스트 이름 *</label>
                 <input
                   value={form.name}
                   onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                   placeholder="예) 주말 오후 카페"
-                  className="w-full bg-[#0D0F14] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#FF6F0F] transition"
+                  className="w-full bg-surface border border-border-subtle rounded-xl px-4 py-2.5 text-sm text-primary placeholder-gray-600 focus:outline-none focus:border-[#FF6F0F] transition"
                 />
               </div>
 
               {/* 타입 */}
               <div>
-                <label className="text-xs font-semibold text-gray-400 block mb-2">타입</label>
+                <label className="text-xs font-semibold text-tertiary block mb-2">타입</label>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setForm(f => ({ ...f, is_curated: !f.is_curated }))}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${form.is_curated ? 'bg-blue-500 text-white' : 'bg-white/5 text-gray-400 hover:text-white border border-white/10'}`}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${form.is_curated ? 'bg-blue-500 text-primary' : 'bg-fill-subtle text-tertiary hover:text-primary border border-border-subtle'}`}
                   >
                     큐레이션
                   </button>
                   <button
                     onClick={() => setForm(f => ({ ...f, is_dynamic: !f.is_dynamic }))}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${form.is_dynamic ? 'bg-purple-500 text-white' : 'bg-white/5 text-gray-400 hover:text-white border border-white/10'}`}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${form.is_dynamic ? 'bg-purple-500 text-primary' : 'bg-fill-subtle text-tertiary hover:text-primary border border-border-subtle'}`}
                   >
                     AI 다이나믹
                   </button>
@@ -359,7 +359,7 @@ export default function PlaylistsPage() {
                 { label: '카테고리 태그', field: 'category_tags' as const, opts: CATEGORY_OPTIONS },
               ].map(({ label, field, opts }) => (
                 <div key={field}>
-                  <label className="text-xs font-semibold text-gray-400 block mb-2">{label}</label>
+                  <label className="text-xs font-semibold text-tertiary block mb-2">{label}</label>
                   <div className="flex flex-wrap gap-2">
                     {opts.map(opt => (
                       <TagChip
@@ -377,14 +377,14 @@ export default function PlaylistsPage() {
             <div className="flex gap-3 mt-6">
               <button
                 onClick={() => setModal(false)}
-                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-400 bg-white/5 hover:bg-white/10 transition"
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-tertiary bg-fill-subtle hover:bg-fill-medium transition"
               >
                 취소
               </button>
               <button
                 onClick={handleSave}
                 disabled={saving || !form.name.trim()}
-                className="flex-1 py-2.5 rounded-xl text-sm font-bold bg-[#FF6F0F] hover:bg-[#e05f00] text-white transition disabled:opacity-50"
+                className="flex-1 py-2.5 rounded-xl text-sm font-bold bg-[#FF6F0F] hover:bg-[#e05f00] text-primary transition disabled:opacity-50"
               >
                 {saving ? '저장 중...' : '저장'}
               </button>
@@ -396,21 +396,21 @@ export default function PlaylistsPage() {
       {/* ── 트랙 선택 모달 ── */}
       {trackModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#1A1D23] border border-white/10 rounded-2xl w-full max-w-lg flex flex-col max-h-[85vh]">
-            <div className="flex items-center justify-between p-5 border-b border-white/5">
-              <h3 className="text-base font-bold text-white">트랙 선택 ({selectedTracks.length}곡)</h3>
-              <button onClick={() => setTrackModal(false)} className="p-1.5 rounded-lg hover:bg-white/10 text-gray-500 transition">
+          <div className="bg-card border border-border-subtle rounded-2xl w-full max-w-lg flex flex-col max-h-[85vh]">
+            <div className="flex items-center justify-between p-5 border-b border-border-main">
+              <h3 className="text-base font-bold text-primary">트랙 선택 ({selectedTracks.length}곡)</h3>
+              <button onClick={() => setTrackModal(false)} className="p-1.5 rounded-lg hover:bg-fill-medium text-muted transition">
                 <X size={16} />
               </button>
             </div>
-            <div className="p-4 border-b border-white/5">
+            <div className="p-4 border-b border-border-main">
               <div className="relative">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
                 <input
                   value={trackQuery}
                   onChange={e => setTrackQuery(e.target.value)}
                   placeholder="곡명, 아티스트 검색"
-                  className="w-full bg-[#0D0F14] border border-white/10 rounded-xl pl-8 pr-4 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#FF6F0F] transition"
+                  className="w-full bg-surface border border-border-subtle rounded-xl pl-8 pr-4 py-2 text-sm text-primary placeholder-gray-600 focus:outline-none focus:border-[#FF6F0F] transition"
                 />
               </div>
             </div>
@@ -424,31 +424,31 @@ export default function PlaylistsPage() {
                       checked ? prev.filter(id => id !== track.id) : [...prev, track.id],
                     )}
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition ${
-                      checked ? 'bg-[#FF6F0F]/10' : 'hover:bg-white/5'
+                      checked ? 'bg-[#FF6F0F]/10' : 'hover:bg-fill-medium'
                     }`}
                   >
                     <div className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 ${
-                      checked ? 'bg-[#FF6F0F]' : 'bg-white/10 border border-white/20'
+                      checked ? 'bg-[#FF6F0F]' : 'bg-fill-medium border border-border-main'
                     }`}>
-                      {checked && <Check size={12} className="text-white" />}
+                      {checked && <Check size={12} className="text-primary" />}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-white truncate">{track.title}</p>
-                      <p className="text-xs text-gray-500 truncate">{track.artist}</p>
+                      <p className="text-sm font-semibold text-primary truncate">{track.title}</p>
+                      <p className="text-xs text-muted truncate">{track.artist}</p>
                     </div>
-                    {track.bpm && <span className="text-xs text-gray-600 shrink-0">{track.bpm} BPM</span>}
+                    {track.bpm && <span className="text-xs text-dim shrink-0">{track.bpm} BPM</span>}
                   </button>
                 );
               })}
               {filteredTracks.length === 0 && (
-                <div className="text-center py-8 text-gray-600 text-sm">트랙이 없어요</div>
+                <div className="text-center py-8 text-dim text-sm">트랙이 없어요</div>
               )}
             </div>
-            <div className="p-4 border-t border-white/5">
+            <div className="p-4 border-t border-border-main">
               <button
                 onClick={handleSaveTracks}
                 disabled={savingTracks}
-                className="w-full py-3 rounded-xl text-sm font-bold bg-[#FF6F0F] hover:bg-[#e05f00] text-white transition disabled:opacity-50"
+                className="w-full py-3 rounded-xl text-sm font-bold bg-[#FF6F0F] hover:bg-[#e05f00] text-primary transition disabled:opacity-50"
               >
                 {savingTracks ? '저장 중...' : `${selectedTracks.length}곡 저장`}
               </button>

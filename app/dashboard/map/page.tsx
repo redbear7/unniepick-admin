@@ -177,12 +177,12 @@ export default function MapPage() {
   return (
     <div className="flex flex-col h-screen overflow-hidden">
       {/* 상단 바 */}
-      <div className="flex items-center justify-between px-5 py-3 bg-[#111318] border-b border-white/5 shrink-0">
+      <div className="flex items-center justify-between px-5 py-3 bg-sidebar border-b border-border-main shrink-0">
         <div className="flex items-center gap-4">
-          <h1 className="text-sm font-bold text-white">매장 지도</h1>
+          <h1 className="text-sm font-bold text-primary">매장 지도</h1>
           {!loading && (
-            <div className="flex items-center gap-3 text-xs text-gray-500">
-              <span>전체 <b className="text-white">{total}</b></span>
+            <div className="flex items-center gap-3 text-xs text-muted">
+              <span>전체 <b className="text-primary">{total}</b></span>
               <span>운영중 <b className="text-[#22C55E]">{activeCount}</b></span>
               <span>쿠폰 보유 <b className="text-[#FF6F0F]">{couponCount}</b></span>
             </div>
@@ -190,7 +190,7 @@ export default function MapPage() {
         </div>
 
         {/* 필터 */}
-        <div className="flex bg-[#1A1D23] border border-white/10 rounded-xl p-1 gap-1">
+        <div className="flex bg-card border border-border-subtle rounded-xl p-1 gap-1">
           {([
             ['all',    '전체'],
             ['active', '운영중'],
@@ -200,7 +200,7 @@ export default function MapPage() {
               key={v}
               onClick={() => setFilter(v)}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                filter === v ? 'bg-[#FF6F0F] text-white' : 'text-gray-400 hover:text-white'
+                filter === v ? 'bg-[#FF6F0F] text-primary' : 'text-tertiary hover:text-primary'
               }`}
             >
               {label}
@@ -212,25 +212,25 @@ export default function MapPage() {
       {/* 지도 영역 */}
       <div className="flex-1 relative">
         {(loading || (!mapReady && !error)) && (
-          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-[#0D0F14] gap-3">
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-surface gap-3">
             <div className="w-10 h-10 border-2 border-[#FF6F0F]/30 border-t-[#FF6F0F] rounded-full animate-spin" />
-            <p className="text-sm text-gray-500">{loading ? '매장 데이터 로드 중...' : 'Google Maps 초기화 중...'}</p>
+            <p className="text-sm text-muted">{loading ? '매장 데이터 로드 중...' : 'Google Maps 초기화 중...'}</p>
           </div>
         )}
 
         {error && (
-          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-[#0D0F14] gap-3">
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-surface gap-3">
             <span className="text-3xl">⚠️</span>
             <p className="text-sm font-semibold text-red-400">지도 로드 실패</p>
-            <p className="text-xs text-gray-500 text-center max-w-xs">{error}</p>
+            <p className="text-xs text-muted text-center max-w-xs">{error}</p>
           </div>
         )}
 
         {!loading && stores.length === 0 && !error && (
-          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-[#0D0F14] gap-3">
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-surface gap-3">
             <span className="text-4xl">📍</span>
-            <p className="text-sm text-gray-400 font-semibold">위치 정보가 있는 매장이 없어요</p>
-            <p className="text-xs text-gray-600">매장 등록 시 위도/경도를 입력해주세요</p>
+            <p className="text-sm text-tertiary font-semibold">위치 정보가 있는 매장이 없어요</p>
+            <p className="text-xs text-dim">매장 등록 시 위도/경도를 입력해주세요</p>
           </div>
         )}
 

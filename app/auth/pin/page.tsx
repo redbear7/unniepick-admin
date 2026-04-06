@@ -64,25 +64,25 @@ export default function PinPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0D0F14] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-surface flex items-center justify-center p-4">
       <div className="w-full max-w-xs">
 
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[#FF6F0F] mb-4">
             <span className="text-2xl">🔐</span>
           </div>
-          <h1 className="text-xl font-bold text-white">2차 인증</h1>
-          <p className="text-sm text-gray-500 mt-1">4자리 비밀번호를 입력해주세요</p>
+          <h1 className="text-xl font-bold text-primary">2차 인증</h1>
+          <p className="text-sm text-muted mt-1">4자리 비밀번호를 입력해주세요</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-semibold text-gray-400">2차 비밀번호</label>
+              <label className="text-xs font-semibold text-tertiary">2차 비밀번호</label>
               <button
                 type="button"
                 onClick={() => setShowPin(v => !v)}
-                className="text-gray-600 hover:text-gray-400 transition"
+                className="text-dim hover:text-tertiary transition"
               >
                 {showPin ? <EyeOff size={13} /> : <Eye size={13} />}
               </button>
@@ -99,7 +99,7 @@ export default function PinPage() {
                   onChange={e => handlePinInput(idx, e.target.value)}
                   onKeyDown={e => handlePinKeyDown(idx, e)}
                   autoFocus={idx === 0}
-                  className="w-12 h-12 bg-[#1A1D23] border border-white/10 rounded-xl text-center text-xl font-bold text-white focus:outline-none focus:border-[#FF6F0F] transition caret-transparent"
+                  className="w-12 h-12 bg-card border border-border-subtle rounded-xl text-center text-xl font-bold text-primary focus:outline-none focus:border-[#FF6F0F] transition caret-transparent"
                 />
               ))}
             </div>
@@ -114,7 +114,7 @@ export default function PinPage() {
           <button
             type="submit"
             disabled={loading || pin.join('').length < 4}
-            className="w-full bg-[#FF6F0F] hover:bg-[#e05f00] disabled:opacity-40 text-white font-bold rounded-xl py-3 text-sm transition"
+            className="w-full bg-[#FF6F0F] hover:bg-[#e05f00] disabled:opacity-40 text-primary font-bold rounded-xl py-3 text-sm transition"
           >
             {loading ? '확인 중...' : '확인'}
           </button>

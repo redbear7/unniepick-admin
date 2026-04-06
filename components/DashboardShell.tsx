@@ -7,7 +7,7 @@ import BottomPlayer from '@/components/BottomPlayer';
 export default function DashboardShell({ children }: { children: React.ReactNode }) {
   return (
     <PlayerProvider>
-      <div className="flex flex-col h-screen bg-[#0D0F14] overflow-hidden">
+      <div className="flex flex-col h-screen bg-surface overflow-hidden">
         {/* 사이드바 + 메인 */}
         <div className="flex flex-1 min-h-0 overflow-hidden">
           <Sidebar />

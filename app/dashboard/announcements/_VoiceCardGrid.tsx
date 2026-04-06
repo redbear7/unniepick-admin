@@ -163,13 +163,13 @@ export default function VoiceCardGrid({ voice, defaultVoice, isSuperadmin, onSel
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <label className="text-xs text-gray-500 font-semibold">🔊 성우</label>
-        <span className="text-[10px] text-gray-600">Fish Audio · s2-pro · DB 저장 · 시샵 관리</span>
+        <label className="text-xs text-muted font-semibold">🔊 성우</label>
+        <span className="text-[10px] text-dim">Fish Audio · s2-pro · DB 저장 · 시샵 관리</span>
       </div>
 
       <div className="grid grid-cols-5 gap-1.5">
         {voicesLoading && (
-          <div className="col-span-5 flex items-center justify-center py-4 text-gray-600">
+          <div className="col-span-5 flex items-center justify-center py-4 text-dim">
             <Loader2 size={14} className="animate-spin mr-1" /><span className="text-[10px]">성우 로딩 중...</span>
           </div>
         )}
@@ -189,11 +189,11 @@ export default function VoiceCardGrid({ voice, defaultVoice, isSuperadmin, onSel
                   try { localStorage.setItem(DEFAULT_VOICE_KEY, next); } catch {}
                 }}
                 title={isDefault ? '디폴트 해제' : '디폴트로 설정'}
-                className={`absolute top-1 right-1 transition ${isDefault ? 'text-[#FF6F0F]' : 'text-gray-700 hover:text-gray-400'}`}>
+                className={`absolute top-1 right-1 transition ${isDefault ? 'text-[#FF6F0F]' : 'text-gray-700 hover:text-tertiary'}`}>
                 <Bookmark size={8} fill={isDefault ? '#FF6F0F' : 'none'} />
               </button>
               <button onClick={() => onSelectVoice(vt)}
-                className={`flex flex-col items-center gap-0.5 pt-2 pb-1 px-1 transition ${isSelected ? 'text-[#FF6F0F]' : 'text-gray-400 hover:text-white'}`}>
+                className={`flex flex-col items-center gap-0.5 pt-2 pb-1 px-1 transition ${isSelected ? 'text-[#FF6F0F]' : 'text-tertiary hover:text-primary'}`}>
                 <span className="text-base">{fv.emoji}</span>
                 <span className="text-[9px] text-center leading-tight font-semibold truncate w-full px-0.5">{fv.label || '(이름없음)'}</span>
               </button>
@@ -203,7 +203,7 @@ export default function VoiceCardGrid({ voice, defaultVoice, isSuperadmin, onSel
                   className={`flex-1 flex items-center justify-center py-1 rounded-lg text-[9px] font-semibold transition ${
                     playingVoice === vt ? 'bg-green-500/20 text-green-400'
                     : hasSample ? 'bg-teal-500/10 text-teal-400 hover:text-teal-300'
-                    : 'bg-white/5 text-gray-600 hover:text-gray-300'}`}>
+                    : 'bg-fill-subtle text-dim hover:text-secondary'}`}>
                   {samplingVoice === vt ? <Loader2 size={8} className="animate-spin" />
                     : playingVoice === vt ? <Pause size={8} />
                     : <Play size={8} />}
@@ -211,13 +211,13 @@ export default function VoiceCardGrid({ voice, defaultVoice, isSuperadmin, onSel
                 {isSuperadmin && (
                   <button onClick={() => isEditing ? (setEditingVoiceId(null), setPendingEdit(null)) : (setEditingVoiceId(fv.id), setPendingEdit({ ...fv }))}
                     className={`flex-1 flex items-center justify-center py-1 rounded-lg text-[9px] font-semibold transition ${
-                      isEditing ? 'bg-teal-500/20 text-teal-400' : 'bg-white/5 text-gray-600 hover:text-gray-300'}`}>
+                      isEditing ? 'bg-teal-500/20 text-teal-400' : 'bg-fill-subtle text-dim hover:text-secondary'}`}>
                     <Pencil size={8} />
                   </button>
                 )}
                 {isSuperadmin && (
                   <button onClick={() => handleDeleteVoiceApi(fv)}
-                    className="flex-1 flex items-center justify-center py-1 rounded-lg text-[9px] font-semibold bg-white/5 text-gray-600 hover:text-red-400 transition">
+                    className="flex-1 flex items-center justify-center py-1 rounded-lg text-[9px] font-semibold bg-fill-subtle text-dim hover:text-red-400 transition">
                     <X size={8} />
                   </button>
                 )}
@@ -241,23 +241,23 @@ export default function VoiceCardGrid({ voice, defaultVoice, isSuperadmin, onSel
           <div className="flex items-center justify-between mb-1">
             <span className="text-[10px] text-teal-400 font-semibold">성우 수정 · {pendingEdit.label || '(이름없음)'}</span>
             <button onClick={() => { setEditingVoiceId(null); setPendingEdit(null); }}
-              className="text-gray-500 hover:text-white transition"><X size={12} /></button>
+              className="text-muted hover:text-primary transition"><X size={12} /></button>
           </div>
           <div className="flex flex-wrap gap-1">
             {VOICE_EMOJIS.map(e => (
               <button key={e} onClick={() => setPendingEdit(p => p ? { ...p, emoji: e } : p)}
-                className={`text-sm rounded p-1 transition ${pendingEdit.emoji === e ? 'bg-teal-500/30 ring-1 ring-teal-400/50' : 'hover:bg-white/10'}`}>{e}</button>
+                className={`text-sm rounded p-1 transition ${pendingEdit.emoji === e ? 'bg-teal-500/30 ring-1 ring-teal-400/50' : 'hover:bg-fill-medium'}`}>{e}</button>
             ))}
           </div>
           <div className="flex gap-2">
             <input value={pendingEdit.label}
               onChange={e => setPendingEdit(p => p ? { ...p, label: e.target.value } : p)}
               placeholder="이름"
-              className="w-32 px-2 py-1.5 bg-black/30 border border-teal-500/30 rounded-lg text-xs text-white placeholder-gray-600 outline-none" />
+              className="w-32 px-2 py-1.5 bg-black/30 border border-teal-500/30 rounded-lg text-xs text-primary placeholder-gray-600 outline-none" />
             <input value={pendingEdit.refId}
               onChange={e => setPendingEdit(p => p ? { ...p, refId: e.target.value.trim() } : p)}
               placeholder="Fish Audio Reference ID"
-              className="flex-1 px-2 py-1.5 bg-black/30 border border-teal-500/30 rounded-lg text-xs text-white placeholder-gray-600 outline-none font-mono" />
+              className="flex-1 px-2 py-1.5 bg-black/30 border border-teal-500/30 rounded-lg text-xs text-primary placeholder-gray-600 outline-none font-mono" />
           </div>
           <div className="flex gap-2">
             <button onClick={handleUpdateVoiceApi} disabled={voiceSaving}
@@ -265,7 +265,7 @@ export default function VoiceCardGrid({ voice, defaultVoice, isSuperadmin, onSel
               {voiceSaving ? <Loader2 size={11} className="inline animate-spin mr-1" /> : <Check size={11} className="inline mr-1" />}저장
             </button>
             <button onClick={() => { setEditingVoiceId(null); setPendingEdit(null); }}
-              className="px-3 py-1.5 bg-white/5 text-gray-400 rounded-lg text-xs font-semibold hover:text-white transition">취소</button>
+              className="px-3 py-1.5 bg-fill-subtle text-tertiary rounded-lg text-xs font-semibold hover:text-primary transition">취소</button>
           </div>
         </div>
       )}
@@ -276,16 +276,16 @@ export default function VoiceCardGrid({ voice, defaultVoice, isSuperadmin, onSel
           <div className="flex flex-wrap gap-1">
             {VOICE_EMOJIS.map(e => (
               <button key={e} onClick={() => setNewVoiceForm(f => ({ ...f, emoji: e }))}
-                className={`text-sm rounded p-1 transition ${newVoiceForm.emoji === e ? 'bg-teal-500/30' : 'hover:bg-white/10'}`}>{e}</button>
+                className={`text-sm rounded p-1 transition ${newVoiceForm.emoji === e ? 'bg-teal-500/30' : 'hover:bg-fill-medium'}`}>{e}</button>
             ))}
           </div>
           <div className="flex gap-2">
             <input value={newVoiceForm.label} onChange={e => setNewVoiceForm(f => ({ ...f, label: e.target.value }))}
               placeholder="이름 (예: 한국어 여성)"
-              className="w-32 px-2 py-1.5 bg-black/30 border border-teal-500/30 rounded-lg text-xs text-white placeholder-gray-600 outline-none" />
+              className="w-32 px-2 py-1.5 bg-black/30 border border-teal-500/30 rounded-lg text-xs text-primary placeholder-gray-600 outline-none" />
             <input value={newVoiceForm.refId} onChange={e => setNewVoiceForm(f => ({ ...f, refId: e.target.value.trim() }))}
               placeholder="Fish Audio Reference ID"
-              className="flex-1 px-2 py-1.5 bg-black/30 border border-teal-500/30 rounded-lg text-xs text-white placeholder-gray-600 outline-none font-mono" />
+              className="flex-1 px-2 py-1.5 bg-black/30 border border-teal-500/30 rounded-lg text-xs text-primary placeholder-gray-600 outline-none font-mono" />
           </div>
           <div className="flex gap-2">
             <button onClick={handleAddVoiceApi} disabled={voiceSaving}
@@ -293,7 +293,7 @@ export default function VoiceCardGrid({ voice, defaultVoice, isSuperadmin, onSel
               {voiceSaving ? <Loader2 size={11} className="inline animate-spin mr-1" /> : <Check size={11} className="inline mr-1" />}저장
             </button>
             <button onClick={() => setAddingVoice(false)}
-              className="px-3 py-1.5 bg-white/5 text-gray-400 rounded-lg text-xs font-semibold hover:text-white transition">취소</button>
+              className="px-3 py-1.5 bg-fill-subtle text-tertiary rounded-lg text-xs font-semibold hover:text-primary transition">취소</button>
           </div>
         </div>
       )}

@@ -1,26 +1,57 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg-surface: #f5f7fa;
+  --bg-sidebar: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f3f4f6;
+  --border-main: rgba(0, 0, 0, 0.08);
+  --text-primary: #111827;
+  --text-secondary: #374151;
+  --text-tertiary: #6b7280;
+  --text-muted: #9ca3af;
+  --text-dim: #d1d5db;
+  --fill-subtle: rgba(0, 0, 0, 0.04);
+  --fill-medium: rgba(0, 0, 0, 0.07);
+  --border-subtle: rgba(0, 0, 0, 0.1);
+}
+
+.dark {
+  --bg-surface: #0D0F14;
+  --bg-sidebar: #111318;
+  --bg-card: #1A1D23;
+  --bg-card-hover: #22252E;
+  --border-main: rgba(255, 255, 255, 0.05);
+  --text-primary: #ffffff;
+  --text-secondary: #d1d5db;
+  --text-tertiary: #9ca3af;
+  --text-muted: #6b7280;
+  --text-dim: #4b5563;
+  --fill-subtle: rgba(255, 255, 255, 0.05);
+  --fill-medium: rgba(255, 255, 255, 0.1);
+  --border-subtle: rgba(255, 255, 255, 0.1);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-surface: var(--bg-surface);
+  --color-sidebar: var(--bg-sidebar);
+  --color-card: var(--bg-card);
+  --color-card-hover: var(--bg-card-hover);
+  --color-border-main: var(--border-main);
+  --color-primary: var(--text-primary);
+  --color-secondary: var(--text-secondary);
+  --color-tertiary: var(--text-tertiary);
+  --color-muted: var(--text-muted);
+  --color-dim: var(--text-dim);
+  --color-fill-subtle: var(--fill-subtle);
+  --color-fill-medium: var(--fill-medium);
+  --color-border-subtle: var(--border-subtle);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--bg-surface);
+  color: var(--text-primary);
   font-family: Arial, Helvetica, sans-serif;
 }

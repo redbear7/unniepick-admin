@@ -28,21 +28,21 @@ interface MusicReference {
 const STATUS_MAP = {
   done:      { label: '완료',    cls: 'bg-green-500/15 text-green-400' },
   analyzing: { label: '분석 중', cls: 'bg-yellow-500/15 text-yellow-400' },
-  pending:   { label: '대기',    cls: 'bg-white/10 text-gray-400' },
+  pending:   { label: '대기',    cls: 'bg-fill-medium text-tertiary' },
   error:     { label: '오류',    cls: 'bg-red-500/15 text-red-400' },
 };
 
 function MoodBar({ label, value }: { label: string; value: number }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="text-[10px] text-gray-500 w-14 shrink-0">{label}</span>
-      <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
+      <span className="text-[10px] text-muted w-14 shrink-0">{label}</span>
+      <div className="flex-1 h-1.5 bg-fill-medium rounded-full overflow-hidden">
         <div
           className="h-full bg-[#FF6F0F] rounded-full transition-all"
           style={{ width: `${Math.round(value * 100)}%` }}
         />
       </div>
-      <span className="text-[10px] text-gray-500 w-7 text-right">{Math.round(value * 100)}</span>
+      <span className="text-[10px] text-muted w-7 text-right">{Math.round(value * 100)}</span>
     </div>
   );
 }
@@ -100,8 +100,8 @@ export default function ReferencesPage() {
   return (
     <div className="p-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-white">레퍼런스 음악</h1>
-        <p className="text-sm text-gray-500 mt-1">
+        <h1 className="text-2xl font-bold text-primary">레퍼런스 음악</h1>
+        <p className="text-sm text-muted mt-1">
           전체 {refs.length}개 · 분석 완료 {doneCount}개
           {errorCount > 0 && <span className="text-red-400 ml-2">· 오류 {errorCount}개</span>}
         </p>
@@ -109,12 +109,12 @@ export default function ReferencesPage() {
 
       {/* 검색 */}
       <div className="relative mb-5">
-        <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
+        <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
         <input
           value={query}
           onChange={e => setQuery(e.target.value)}
           placeholder="매장명, 곡 제목, 아티스트 검색"
-          className="w-full bg-[#1A1D23] border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#FF6F0F] transition"
+          className="w-full bg-card border border-border-subtle rounded-xl pl-9 pr-4 py-2.5 text-sm text-primary placeholder-gray-600 focus:outline-none focus:border-[#FF6F0F] transition"
         />
       </div>
 
@@ -122,10 +122,10 @@ export default function ReferencesPage() {
       <div className="space-y-3">
         {loading ? (
           [...Array(4)].map((_, i) => (
-            <div key={i} className="bg-[#1A1D23] rounded-2xl p-5 animate-pulse h-40" />
+            <div key={i} className="bg-card rounded-2xl p-5 animate-pulse h-40" />
           ))
         ) : filtered.length === 0 ? (
-          <div className="text-center py-16 text-gray-600">레퍼런스가 없어요</div>
+          <div className="text-center py-16 text-dim">레퍼런스가 없어요</div>
         ) : (
           filtered.map(ref => {
             const st    = STATUS_MAP[ref.status] ?? STATUS_MAP.pending;
@@ -134,7 +134,7 @@ export default function ReferencesPage() {
               : [];
 
             return (
-              <div key={ref.id} className="bg-[#1A1D23] border border-white/5 rounded-2xl p-5">
+              <div key={ref.id} className="bg-card border border-border-main rounded-2xl p-5">
                 <div className="flex gap-4">
                   {/* 썸네일 */}
                   {ref.youtube_thumb ? (
@@ -144,8 +144,8 @@ export default function ReferencesPage() {
                       className="w-20 h-14 object-cover rounded-xl shrink-0"
                     />
                   ) : (
-                    <div className="w-20 h-14 bg-white/5 rounded-xl flex items-center justify-center shrink-0">
-                      <Music2 size={20} className="text-gray-600" />
+                    <div className="w-20 h-14 bg-fill-subtle rounded-xl flex items-center justify-center shrink-0">
+                      <Music2 size={20} className="text-dim" />
                     </div>
                   )}
 
@@ -153,11 +153,11 @@ export default function ReferencesPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2 mb-1">
                       <div className="min-w-0">
-                        <p className="font-bold text-white text-sm truncate">
+                        <p className="font-bold text-primary text-sm truncate">
                           {ref.youtube_title ?? ref.youtube_url}
                         </p>
                         {ref.youtube_artist && (
-                          <p className="text-xs text-gray-500 truncate">{ref.youtube_artist}</p>
+                          <p className="text-xs text-muted truncate">{ref.youtube_artist}</p>
                         )}
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
@@ -168,13 +168,13 @@ export default function ReferencesPage() {
                           href={ref.youtube_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-gray-500 hover:text-[#FF6F0F] transition"
+                          className="text-muted hover:text-[#FF6F0F] transition"
                         >
                           <ExternalLink size={13} />
                         </a>
                         <button
                           onClick={() => handleDelete(ref.id)}
-                          className="text-gray-600 hover:text-red-400 transition"
+                          className="text-dim hover:text-red-400 transition"
                         >
                           <Trash2 size={13} />
                         </button>
@@ -195,7 +195,7 @@ export default function ReferencesPage() {
                           </span>
                         ))}
                         {ref.bpm_estimate && (
-                          <span className="px-2 py-0.5 bg-white/5 text-gray-400 rounded-full text-xs">
+                          <span className="px-2 py-0.5 bg-fill-subtle text-tertiary rounded-full text-xs">
                             ~{ref.bpm_estimate} BPM
                           </span>
                         )}
@@ -210,7 +210,7 @@ export default function ReferencesPage() {
 
                 {/* mood_vector 바 */}
                 {ref.mood_vector && (
-                  <div className="mt-4 pt-3 border-t border-white/5 space-y-1.5">
+                  <div className="mt-4 pt-3 border-t border-border-main space-y-1.5">
                     <MoodBar label="에너지"     value={ref.mood_vector.energy} />
                     <MoodBar label="밝음/어둠"  value={ref.mood_vector.valence} />
                     <MoodBar label="댄서블"     value={ref.mood_vector.danceability} />

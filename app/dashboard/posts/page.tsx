@@ -89,8 +89,8 @@ export default function PostsPage() {
   return (
     <div className="p-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-white">게시물 관리</h1>
-        <p className="text-sm text-gray-500 mt-1">사장님이 요청한 게시물 삭제를 승인하거나 반려해요</p>
+        <h1 className="text-2xl font-bold text-primary">게시물 관리</h1>
+        <p className="text-sm text-muted mt-1">사장님이 요청한 게시물 삭제를 승인하거나 반려해요</p>
       </div>
 
       {/* 탭 */}
@@ -105,8 +105,8 @@ export default function PostsPage() {
             onClick={() => setFilter(key)}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition ${
               filter === key
-                ? 'bg-[#1A1D23] border border-white/10 text-white'
-                : 'text-gray-500 hover:text-gray-300'
+                ? 'bg-card border border-border-subtle text-primary'
+                : 'text-muted hover:text-secondary'
             }`}
           >
             <span className={`w-2 h-2 rounded-full ${dot}`} />
@@ -120,45 +120,45 @@ export default function PostsPage() {
       <div className="space-y-3">
         {loading ? (
           [...Array(3)].map((_, i) => (
-            <div key={i} className="bg-[#1A1D23] rounded-2xl p-5 animate-pulse h-28" />
+            <div key={i} className="bg-card rounded-2xl p-5 animate-pulse h-28" />
           ))
         ) : filtered.length === 0 ? (
-          <div className="text-center py-16 text-gray-600">요청이 없어요</div>
+          <div className="text-center py-16 text-dim">요청이 없어요</div>
         ) : (
           filtered.map(req => (
-            <div key={req.id} className="bg-[#1A1D23] border border-white/5 rounded-2xl p-5">
+            <div key={req.id} className="bg-card border border-border-main rounded-2xl p-5">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   {/* 가게명 + 날짜 */}
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-sm font-bold text-white">{req.stores?.name ?? '알 수 없음'}</span>
+                    <span className="text-sm font-bold text-primary">{req.stores?.name ?? '알 수 없음'}</span>
                     {req.has_active_coupon && (
                       <span className="flex items-center gap-1 text-xs bg-yellow-500/15 text-yellow-400 px-2 py-0.5 rounded-full font-semibold">
                         <AlertTriangle size={10} /> 활성 쿠폰 있음
                       </span>
                     )}
-                    <span className="text-xs text-gray-600 ml-auto">
+                    <span className="text-xs text-dim ml-auto">
                       <Clock size={11} className="inline mr-1" />
                       {new Date(req.requested_at).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
 
                   {/* 게시물 내용 */}
-                  <div className="bg-white/[0.03] border border-white/5 rounded-xl p-3 mb-2">
-                    <p className="text-xs text-gray-500 mb-1">게시물 내용</p>
-                    <p className="text-sm text-gray-300 line-clamp-2">{req.store_posts?.content ?? '(삭제된 게시물)'}</p>
+                  <div className="bg-white/[0.03] border border-border-main rounded-xl p-3 mb-2">
+                    <p className="text-xs text-muted mb-1">게시물 내용</p>
+                    <p className="text-sm text-secondary line-clamp-2">{req.store_posts?.content ?? '(삭제된 게시물)'}</p>
                   </div>
 
                   {/* 삭제 사유 */}
-                  <p className="text-xs text-gray-400">
-                    <span className="text-gray-600">삭제 사유: </span>
+                  <p className="text-xs text-tertiary">
+                    <span className="text-dim">삭제 사유: </span>
                     {req.reason}
                   </p>
 
                   {/* 처리 메모 */}
                   {req.admin_note && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      <span className="text-gray-600">관리자 메모: </span>
+                    <p className="text-xs text-muted mt-1">
+                      <span className="text-dim">관리자 메모: </span>
                       {req.admin_note}
                     </p>
                   )}
@@ -200,11 +200,11 @@ export default function PostsPage() {
       {/* 메모 모달 */}
       {noteModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#1A1D23] border border-white/10 rounded-2xl p-6 w-full max-w-md">
-            <h3 className="text-base font-bold text-white mb-1">
+          <div className="bg-card border border-border-subtle rounded-2xl p-6 w-full max-w-md">
+            <h3 className="text-base font-bold text-primary mb-1">
               {noteModal.action === 'approved' ? '✅ 삭제 요청 승인' : '❌ 삭제 요청 반려'}
             </h3>
-            <p className="text-xs text-gray-500 mb-4">
+            <p className="text-xs text-muted mb-4">
               {noteModal.action === 'approved'
                 ? '승인하면 게시물이 즉시 삭제됩니다'
                 : '반려 사유를 사장님에게 전달해요'}
@@ -214,12 +214,12 @@ export default function PostsPage() {
               onChange={e => setNote(e.target.value)}
               placeholder="관리자 메모 (선택사항)"
               rows={3}
-              className="w-full bg-[#0D0F14] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#FF6F0F] transition resize-none mb-4"
+              className="w-full bg-surface border border-border-subtle rounded-xl px-4 py-3 text-sm text-primary placeholder-gray-600 focus:outline-none focus:border-[#FF6F0F] transition resize-none mb-4"
             />
             <div className="flex gap-3">
               <button
                 onClick={() => { setNoteModal(null); setNote(''); }}
-                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-400 bg-white/5 hover:bg-white/10 transition"
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-tertiary bg-fill-subtle hover:bg-fill-medium transition"
               >
                 취소
               </button>
@@ -228,8 +228,8 @@ export default function PostsPage() {
                 disabled={!!processing}
                 className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition disabled:opacity-50 ${
                   noteModal.action === 'approved'
-                    ? 'bg-green-500 hover:bg-green-600 text-white'
-                    : 'bg-red-500 hover:bg-red-600 text-white'
+                    ? 'bg-green-500 hover:bg-green-600 text-primary'
+                    : 'bg-red-500 hover:bg-red-600 text-primary'
                 }`}
               >
                 {processing ? '처리 중...' : noteModal.action === 'approved' ? '승인하기' : '반려하기'}

@@ -28,10 +28,10 @@ interface PropHistory {
 function MoodDot({ value, color }: { value: number; color: string }) {
   return (
     <div className="flex items-center gap-1.5">
-      <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
+      <div className="flex-1 h-1.5 bg-fill-medium rounded-full overflow-hidden">
         <div className="h-full rounded-full" style={{ width: `${Math.round(value * 100)}%`, backgroundColor: color }} />
       </div>
-      <span className="text-[10px] text-gray-500 w-6 text-right">{Math.round(value * 100)}</span>
+      <span className="text-[10px] text-muted w-6 text-right">{Math.round(value * 100)}</span>
     </div>
   );
 }
@@ -94,8 +94,8 @@ export default function PropagationPage() {
     <div className="p-8">
       <div className="mb-6 flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">학습 & 전파 엔진</h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <h1 className="text-2xl font-bold text-primary">학습 & 전파 엔진</h1>
+          <p className="text-sm text-muted mt-1">
             전체 {stats.length}개 매장 · 누적 좋아요 {totalLiked}곡 · 전파 이력 {totalPropagated}건
           </p>
         </div>
@@ -116,10 +116,10 @@ export default function PropagationPage() {
           { icon: '❤️', label: '총 좋아요 트랙',   value: `${totalLiked}곡`, color: '#22C55E' },
           { icon: '⚡', label: '전파 이력',         value: `${totalPropagated}건`, color: '#818CF8' },
         ].map(card => (
-          <div key={card.label} className="bg-[#1A1D23] border border-white/5 rounded-2xl p-5">
+          <div key={card.label} className="bg-card border border-border-main rounded-2xl p-5">
             <div className="text-2xl mb-2">{card.icon}</div>
             <div className="text-xl font-bold" style={{ color: card.color }}>{card.value}</div>
-            <div className="text-xs text-gray-500 mt-0.5">{card.label}</div>
+            <div className="text-xs text-muted mt-0.5">{card.label}</div>
           </div>
         ))}
       </div>
@@ -127,25 +127,25 @@ export default function PropagationPage() {
       <div className="grid grid-cols-2 gap-6">
         {/* 매장 프로필 목록 */}
         <div>
-          <h2 className="text-sm font-semibold text-gray-400 mb-3 flex items-center gap-2">
+          <h2 className="text-sm font-semibold text-tertiary mb-3 flex items-center gap-2">
             <TrendingUp size={14} /> 매장 음악 DNA 프로필
           </h2>
           <div className="space-y-3">
             {loading ? (
               [...Array(4)].map((_, i) => (
-                <div key={i} className="bg-[#1A1D23] rounded-2xl h-32 animate-pulse" />
+                <div key={i} className="bg-card rounded-2xl h-32 animate-pulse" />
               ))
             ) : stats.length === 0 ? (
-              <div className="text-center py-12 text-gray-600">
+              <div className="text-center py-12 text-dim">
                 아직 좋아요한 트랙이 없어요
               </div>
             ) : (
               stats.map(s => (
-                <div key={s.store_id} className="bg-[#1A1D23] border border-white/5 rounded-2xl p-4">
+                <div key={s.store_id} className="bg-card border border-border-main rounded-2xl p-4">
                   <div className="flex items-start justify-between mb-2">
                     <div>
-                      <p className="font-bold text-white text-sm">{s.store_name}</p>
-                      <p className="text-xs text-gray-500">
+                      <p className="font-bold text-primary text-sm">{s.store_name}</p>
+                      <p className="text-xs text-muted">
                         {s.store_category ?? '업종 미상'} · ❤️ {s.liked_count}곡
                       </p>
                     </div>
@@ -178,35 +178,35 @@ export default function PropagationPage() {
 
         {/* 전파 이력 */}
         <div>
-          <h2 className="text-sm font-semibold text-gray-400 mb-3 flex items-center gap-2">
+          <h2 className="text-sm font-semibold text-tertiary mb-3 flex items-center gap-2">
             <Zap size={14} /> 전파 이력
           </h2>
           <div className="space-y-2">
             {loading ? (
               [...Array(5)].map((_, i) => (
-                <div key={i} className="bg-[#1A1D23] rounded-xl h-16 animate-pulse" />
+                <div key={i} className="bg-card rounded-xl h-16 animate-pulse" />
               ))
             ) : history.length === 0 ? (
-              <div className="text-center py-12 text-gray-600">
+              <div className="text-center py-12 text-dim">
                 아직 전파 이력이 없어요
               </div>
             ) : (
               history.map(h => (
-                <div key={h.id} className="bg-[#1A1D23] border border-white/5 rounded-xl p-3">
+                <div key={h.id} className="bg-card border border-border-main rounded-xl p-3">
                   <div className="flex items-center gap-2 text-sm">
-                    <span className="font-semibold text-white truncate max-w-[120px]">
+                    <span className="font-semibold text-primary truncate max-w-[120px]">
                       {(h.from_store as any)?.name ?? '?'}
                     </span>
                     <span className="text-[#818CF8] shrink-0">→</span>
-                    <span className="font-semibold text-white truncate max-w-[120px]">
+                    <span className="font-semibold text-primary truncate max-w-[120px]">
                       {(h.to_store as any)?.name ?? '?'}
                     </span>
-                    <span className="ml-auto text-xs text-gray-500 shrink-0">
+                    <span className="ml-auto text-xs text-muted shrink-0">
                       유사도 {Math.round((h.similarity ?? 0) * 100)}%
                     </span>
                   </div>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs text-gray-600">
+                    <span className="text-xs text-dim">
                       트랙 {h.track_ids?.length ?? 0}개 ·{' '}
                       {new Date(h.propagated_at).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
                     </span>

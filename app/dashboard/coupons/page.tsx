@@ -96,20 +96,20 @@ export default function CouponsPage() {
     <div className="p-8">
       <div className="mb-6 flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">쿠폰 관리</h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <h1 className="text-2xl font-bold text-primary">쿠폰 관리</h1>
+          <p className="text-sm text-muted mt-1">
             전체 {coupons.length}개 · 활성 {activeCount}개 · 지도 표시 {mapCount}개
           </p>
         </div>
 
         {/* 뷰 전환 */}
-        <div className="flex bg-[#1A1D23] border border-white/10 rounded-xl p-1 gap-1">
+        <div className="flex bg-card border border-border-subtle rounded-xl p-1 gap-1">
           {([['list', <List size={14} />, '목록'], ['map', <Map size={14} />, '지도']] as const).map(([v, icon, label]) => (
             <button
               key={v}
               onClick={() => setView(v)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                view === v ? 'bg-[#FF6F0F] text-white' : 'text-gray-400 hover:text-white'
+                view === v ? 'bg-[#FF6F0F] text-primary' : 'text-tertiary hover:text-primary'
               }`}
             >
               {icon}{label}
@@ -121,12 +121,12 @@ export default function CouponsPage() {
       {/* 검색 + 필터 */}
       <div className="flex gap-3 mb-5">
         <div className="flex-1 relative">
-          <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
+          <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
           <input
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder="쿠폰명, 가게명 검색"
-            className="w-full bg-[#1A1D23] border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#FF6F0F] transition"
+            className="w-full bg-card border border-border-subtle rounded-xl pl-9 pr-4 py-2.5 text-sm text-primary placeholder-gray-600 focus:outline-none focus:border-[#FF6F0F] transition"
           />
         </div>
         {(['all', 'active', 'expired'] as const).map(f => (
@@ -134,7 +134,7 @@ export default function CouponsPage() {
             key={f}
             onClick={() => setFilter(f)}
             className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${
-              filter === f ? 'bg-[#FF6F0F] text-white' : 'bg-[#1A1D23] border border-white/10 text-gray-400 hover:text-white'
+              filter === f ? 'bg-[#FF6F0F] text-primary' : 'bg-card border border-border-subtle text-tertiary hover:text-primary'
             }`}
           >
             {f === 'all' ? '전체' : f === 'active' ? '활성' : '만료/비활성'}
@@ -145,12 +145,12 @@ export default function CouponsPage() {
       {/* ── 지도 뷰 ── */}
       {view === 'map' && (
         loading ? (
-          <div className="bg-[#1A1D23] rounded-2xl h-[600px] flex items-center justify-center">
-            <div className="text-gray-500 text-sm">지도 로딩 중...</div>
+          <div className="bg-card rounded-2xl h-[600px] flex items-center justify-center">
+            <div className="text-muted text-sm">지도 로딩 중...</div>
           </div>
         ) : (
           <>
-            <p className="text-xs text-gray-600 mb-3">
+            <p className="text-xs text-dim mb-3">
               🗺 매장 위치별 쿠폰 분포 · 마커 클릭 시 쿠폰 상세 · 여러 매장은 자동으로 묶음 표시
             </p>
             <CouponMap key={`${filter}-${query}`} coupons={mapItems} />
@@ -163,11 +163,11 @@ export default function CouponsPage() {
         loading ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
             {[...Array(10)].map((_, i) => (
-              <div key={i} className="rounded-xl bg-white/[0.03] border border-white/5 overflow-hidden animate-pulse">
-                <div className="h-28 bg-white/5" />
+              <div key={i} className="rounded-xl bg-white/[0.03] border border-border-main overflow-hidden animate-pulse">
+                <div className="h-28 bg-fill-subtle" />
                 <div className="p-3 space-y-2">
-                  <div className="h-3 bg-white/5 rounded w-3/4" />
-                  <div className="h-2 bg-white/5 rounded w-1/2" />
+                  <div className="h-3 bg-fill-subtle rounded w-3/4" />
+                  <div className="h-2 bg-fill-subtle rounded w-1/2" />
                 </div>
               </div>
             ))}
@@ -175,7 +175,7 @@ export default function CouponsPage() {
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-40 gap-2">
             <span className="text-3xl">🎟</span>
-            <p className="text-gray-500 text-sm">쿠폰이 없어요</p>
+            <p className="text-muted text-sm">쿠폰이 없어요</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
@@ -188,14 +188,14 @@ export default function CouponsPage() {
               return (
                 <div key={coupon.id}
                   className={`flex flex-col rounded-xl overflow-hidden border transition hover:bg-white/[0.06] ${
-                    statusOk ? 'bg-white/[0.03] border-white/5 hover:border-white/10' : 'bg-white/[0.02] border-white/5 opacity-60'
+                    statusOk ? 'bg-white/[0.03] border-border-main hover:border-border-subtle' : 'bg-white/[0.02] border-border-main opacity-60'
                   }`}>
 
                   {/* 할인율 배너 */}
                   <div className={`flex items-center justify-center py-6 relative ${
-                    statusOk ? 'bg-[#FF6F0F]/10' : 'bg-white/5'
+                    statusOk ? 'bg-[#FF6F0F]/10' : 'bg-fill-subtle'
                   }`}>
-                    <span className={`text-3xl font-black tracking-tight ${statusOk ? 'text-[#FF6F0F]' : 'text-gray-600'}`}>
+                    <span className={`text-3xl font-black tracking-tight ${statusOk ? 'text-[#FF6F0F]' : 'text-dim'}`}>
                       {discountLabel(coupon)}
                     </span>
                     {isExpired && (
@@ -205,34 +205,34 @@ export default function CouponsPage() {
 
                   {/* 정보 */}
                   <div className="p-2.5 flex flex-col gap-1.5 flex-1">
-                    <p className="text-white text-xs font-semibold truncate leading-tight">{coupon.title}</p>
-                    <p className="text-gray-500 text-[10px] truncate">
+                    <p className="text-primary text-xs font-semibold truncate leading-tight">{coupon.title}</p>
+                    <p className="text-muted text-[10px] truncate">
                       {coupon.stores?.name ?? '-'}
                       {coupon.stores?.latitude && <span className="ml-1 text-[#FF6F0F]/60">📍</span>}
                     </p>
 
                     {/* 사용률 바 */}
                     <div className="space-y-0.5">
-                      <div className="flex justify-between text-[9px] text-gray-600">
+                      <div className="flex justify-between text-[9px] text-dim">
                         <span>발급</span>
                         <span>{coupon.issued_count} / {coupon.total_quantity}</span>
                       </div>
-                      <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                      <div className="h-1 bg-fill-medium rounded-full overflow-hidden">
                         <div className={`h-full rounded-full transition-all ${usageRate >= 90 ? 'bg-red-400' : 'bg-[#FF6F0F]'}`}
                           style={{ width: `${usageRate}%` }} />
                       </div>
                     </div>
 
                     {/* 만료일 + 상태토글 */}
-                    <div className="flex items-center justify-between mt-auto pt-1.5 border-t border-white/5">
-                      <span className={`text-[9px] ${isExpired ? 'text-red-400' : 'text-gray-600'}`}>
+                    <div className="flex items-center justify-between mt-auto pt-1.5 border-t border-border-main">
+                      <span className={`text-[9px] ${isExpired ? 'text-red-400' : 'text-dim'}`}>
                         {new Date(coupon.expires_at).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', year: '2-digit' })}
                       </span>
                       <button
                         onClick={() => toggleActive(coupon)}
                         disabled={toggling === coupon.id}
                         className={`flex items-center gap-0.5 text-[10px] font-semibold transition disabled:opacity-50 ${
-                          statusOk ? 'text-green-400' : 'text-gray-600'
+                          statusOk ? 'text-green-400' : 'text-dim'
                         }`}>
                         {toggling === coupon.id
                           ? <div className="w-3 h-3 border border-gray-500 border-t-white rounded-full animate-spin" />

@@ -246,15 +246,15 @@ export default function StoresPage() {
       {/* Header */}
       <div className="mb-6 flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">가게 관리</h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <h1 className="text-2xl font-bold text-primary">가게 관리</h1>
+          <p className="text-sm text-muted mt-1">
             전체 {stores.length}개 가게 · 활성 {stores.filter(s => s.is_active).length}개
           </p>
         </div>
         {tab === 'stores' && (
           <button
             onClick={openNew}
-            className="flex items-center gap-2 px-4 py-2 bg-[#FF6F0F] hover:bg-[#e66000] text-white text-sm font-semibold rounded-xl transition"
+            className="flex items-center gap-2 px-4 py-2 bg-[#FF6F0F] hover:bg-[#e66000] text-primary text-sm font-semibold rounded-xl transition"
           >
             <Plus size={15} /> 가게 추가
           </button>
@@ -262,18 +262,18 @@ export default function StoresPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-6 bg-[#1A1D23] border border-white/5 p-1 rounded-xl w-fit">
+      <div className="flex gap-1 mb-6 bg-card border border-border-main p-1 rounded-xl w-fit">
         {([['requests', '신청 관리'], ['stores', '가게 목록']] as const).map(([key, label]) => (
           <button
             key={key}
             onClick={() => setTab(key)}
             className={`relative px-5 py-2 rounded-lg text-sm font-semibold transition ${
-              tab === key ? 'bg-[#FF6F0F] text-white' : 'text-gray-400 hover:text-white'
+              tab === key ? 'bg-[#FF6F0F] text-primary' : 'text-tertiary hover:text-primary'
             }`}
           >
             {label}
             {key === 'requests' && pendingCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] text-white flex items-center justify-center font-bold">
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] text-primary flex items-center justify-center font-bold">
                 {pendingCount}
               </span>
             )}
@@ -292,7 +292,7 @@ export default function StoresPage() {
                 key={s}
                 onClick={() => setReqFilter(s)}
                 className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${
-                  reqFilter === s ? 'bg-[#FF6F0F] text-white' : 'bg-[#1A1D23] border border-white/10 text-gray-400 hover:text-white'
+                  reqFilter === s ? 'bg-[#FF6F0F] text-primary' : 'bg-card border border-border-subtle text-tertiary hover:text-primary'
                 }`}
               >
                 {s === 'pending' ? `대기 (${requests.filter(r => r.status === 'pending').length})` : s === 'approved' ? '승인' : '거절'}
@@ -300,57 +300,57 @@ export default function StoresPage() {
             ))}
           </div>
 
-          <div className="bg-[#1A1D23] border border-white/5 rounded-2xl overflow-hidden">
+          <div className="bg-card border border-border-main rounded-2xl overflow-hidden">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-white/5">
-                  <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-500">신청자</th>
-                  <th className="text-left px-4 py-3.5 text-xs font-semibold text-gray-500">가게명</th>
-                  <th className="text-left px-4 py-3.5 text-xs font-semibold text-gray-500">카테고리</th>
-                  <th className="text-left px-4 py-3.5 text-xs font-semibold text-gray-500">연락처</th>
-                  <th className="text-left px-4 py-3.5 text-xs font-semibold text-gray-500">신청일</th>
-                  <th className="text-center px-4 py-3.5 text-xs font-semibold text-gray-500">처리</th>
+                <tr className="border-b border-border-main">
+                  <th className="text-left px-5 py-3.5 text-xs font-semibold text-muted">신청자</th>
+                  <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">가게명</th>
+                  <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">카테고리</th>
+                  <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">연락처</th>
+                  <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">신청일</th>
+                  <th className="text-center px-4 py-3.5 text-xs font-semibold text-muted">처리</th>
                 </tr>
               </thead>
               <tbody>
                 {loadingReqs ? (
                   [...Array(4)].map((_, i) => (
-                    <tr key={i} className="border-b border-white/5">
+                    <tr key={i} className="border-b border-border-main">
                       {[...Array(6)].map((_, j) => (
-                        <td key={j} className="px-5 py-4"><div className="h-4 bg-white/5 rounded animate-pulse" /></td>
+                        <td key={j} className="px-5 py-4"><div className="h-4 bg-fill-subtle rounded animate-pulse" /></td>
                       ))}
                     </tr>
                   ))
                 ) : filteredReqs.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="text-center py-12 text-gray-600">신청 내역이 없어요</td>
+                    <td colSpan={6} className="text-center py-12 text-dim">신청 내역이 없어요</td>
                   </tr>
                 ) : (
                   filteredReqs.map(req => (
-                    <tr key={req.id} className="border-b border-white/5 hover:bg-white/[0.02] transition">
+                    <tr key={req.id} className="border-b border-border-main hover:bg-white/[0.02] transition">
                       <td className="px-5 py-4">
-                        <p className="font-semibold text-white">{req.owner_name}</p>
-                        {req.owner_phone && <p className="text-xs text-gray-500 mt-0.5">{req.owner_phone}</p>}
+                        <p className="font-semibold text-primary">{req.owner_name}</p>
+                        {req.owner_phone && <p className="text-xs text-muted mt-0.5">{req.owner_phone}</p>}
                       </td>
                       <td className="px-4 py-4">
-                        <p className="text-white">{req.store_name}</p>
+                        <p className="text-primary">{req.store_name}</p>
                         {req.store_address && (
-                          <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+                          <p className="text-xs text-muted flex items-center gap-1 mt-0.5">
                             <MapPin size={10} /> {req.store_address}
                           </p>
                         )}
                       </td>
                       <td className="px-4 py-4">
-                        <span className="px-2.5 py-1 bg-white/5 rounded-lg text-xs text-gray-400">
+                        <span className="px-2.5 py-1 bg-fill-subtle rounded-lg text-xs text-tertiary">
                           {req.store_category ?? '미분류'}
                         </span>
                       </td>
                       <td className="px-4 py-4">
                         {req.store_phone
-                          ? <p className="text-gray-300 flex items-center gap-1.5"><Phone size={12} className="text-gray-500" />{req.store_phone}</p>
-                          : <span className="text-gray-600">-</span>}
+                          ? <p className="text-secondary flex items-center gap-1.5"><Phone size={12} className="text-muted" />{req.store_phone}</p>
+                          : <span className="text-dim">-</span>}
                       </td>
-                      <td className="px-4 py-4 text-gray-500 text-xs">
+                      <td className="px-4 py-4 text-muted text-xs">
                         {new Date(req.created_at).toLocaleDateString('ko-KR')}
                       </td>
                       <td className="px-4 py-4">
@@ -378,7 +378,7 @@ export default function StoresPage() {
                         ) : (
                           <div className="text-center">
                             <span className="text-red-400 text-xs font-semibold">거절됨</span>
-                            {req.reject_reason && <p className="text-xs text-gray-600 mt-0.5 max-w-[140px] truncate">{req.reject_reason}</p>}
+                            {req.reject_reason && <p className="text-xs text-dim mt-0.5 max-w-[140px] truncate">{req.reject_reason}</p>}
                           </div>
                         )}
                       </td>
@@ -398,12 +398,12 @@ export default function StoresPage() {
         <>
           <div className="flex gap-3 mb-5">
             <div className="flex-1 relative">
-              <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
+              <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
               <input
                 value={storeQ}
                 onChange={e => setStoreQ(e.target.value)}
                 placeholder="가게명, 주소 검색"
-                className="w-full bg-[#1A1D23] border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#FF6F0F] transition"
+                className="w-full bg-card border border-border-subtle rounded-xl pl-9 pr-4 py-2.5 text-sm text-primary placeholder-gray-600 focus:outline-none focus:border-[#FF6F0F] transition"
               />
             </div>
             {(['all', 'active', 'inactive'] as const).map(f => (
@@ -411,7 +411,7 @@ export default function StoresPage() {
                 key={f}
                 onClick={() => setStoreFilter(f)}
                 className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${
-                  storeFilter === f ? 'bg-[#FF6F0F] text-white' : 'bg-[#1A1D23] border border-white/10 text-gray-400 hover:text-white'
+                  storeFilter === f ? 'bg-[#FF6F0F] text-primary' : 'bg-card border border-border-subtle text-tertiary hover:text-primary'
                 }`}
               >
                 {f === 'all' ? '전체' : f === 'active' ? '활성' : '비활성'}
@@ -419,41 +419,41 @@ export default function StoresPage() {
             ))}
           </div>
 
-          <div className="bg-[#1A1D23] border border-white/5 rounded-2xl overflow-hidden">
+          <div className="bg-card border border-border-main rounded-2xl overflow-hidden">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-white/5">
-                  <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-500">가게명</th>
-                  <th className="text-left px-4 py-3.5 text-xs font-semibold text-gray-500">카테고리</th>
-                  <th className="text-left px-4 py-3.5 text-xs font-semibold text-gray-500">연락처</th>
-                  <th className="text-left px-4 py-3.5 text-xs font-semibold text-gray-500">등록일</th>
-                  <th className="text-center px-4 py-3.5 text-xs font-semibold text-gray-500">상태</th>
-                  <th className="text-center px-4 py-3.5 text-xs font-semibold text-gray-500">관리</th>
+                <tr className="border-b border-border-main">
+                  <th className="text-left px-5 py-3.5 text-xs font-semibold text-muted">가게명</th>
+                  <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">카테고리</th>
+                  <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">연락처</th>
+                  <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">등록일</th>
+                  <th className="text-center px-4 py-3.5 text-xs font-semibold text-muted">상태</th>
+                  <th className="text-center px-4 py-3.5 text-xs font-semibold text-muted">관리</th>
                 </tr>
               </thead>
               <tbody>
                 {loadingStores ? (
                   [...Array(5)].map((_, i) => (
-                    <tr key={i} className="border-b border-white/5">
+                    <tr key={i} className="border-b border-border-main">
                       {[...Array(6)].map((_, j) => (
-                        <td key={j} className="px-5 py-4"><div className="h-4 bg-white/5 rounded animate-pulse" /></td>
+                        <td key={j} className="px-5 py-4"><div className="h-4 bg-fill-subtle rounded animate-pulse" /></td>
                       ))}
                     </tr>
                   ))
                 ) : filteredStores.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="text-center py-12 text-gray-600">가게가 없어요</td>
+                    <td colSpan={6} className="text-center py-12 text-dim">가게가 없어요</td>
                   </tr>
                 ) : (
                   filteredStores.map(store => (
-                    <tr key={store.id} className="border-b border-white/5 hover:bg-white/[0.02] transition">
+                    <tr key={store.id} className="border-b border-border-main hover:bg-white/[0.02] transition">
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-lg bg-[#FF6F0F]/20 flex items-center justify-center text-sm shrink-0">🏪</div>
                           <div>
-                            <p className="font-semibold text-white">{store.name}</p>
+                            <p className="font-semibold text-primary">{store.name}</p>
                             {store.address && (
-                              <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+                              <p className="text-xs text-muted flex items-center gap-1 mt-0.5">
                                 <MapPin size={10} /> {store.address}
                               </p>
                             )}
@@ -461,16 +461,16 @@ export default function StoresPage() {
                         </div>
                       </td>
                       <td className="px-4 py-4">
-                        <span className="px-2.5 py-1 bg-white/5 rounded-lg text-xs text-gray-400">
+                        <span className="px-2.5 py-1 bg-fill-subtle rounded-lg text-xs text-tertiary">
                           {store.category ?? '미분류'}
                         </span>
                       </td>
                       <td className="px-4 py-4">
                         {store.phone
-                          ? <p className="text-gray-300 flex items-center gap-1.5"><Phone size={12} className="text-gray-500" />{store.phone}</p>
-                          : <span className="text-gray-600">-</span>}
+                          ? <p className="text-secondary flex items-center gap-1.5"><Phone size={12} className="text-muted" />{store.phone}</p>
+                          : <span className="text-dim">-</span>}
                       </td>
-                      <td className="px-4 py-4 text-gray-500 text-xs">
+                      <td className="px-4 py-4 text-muted text-xs">
                         {new Date(store.created_at).toLocaleDateString('ko-KR')}
                       </td>
                       <td className="px-4 py-4 text-center">
@@ -492,13 +492,13 @@ export default function StoresPage() {
                         <div className="flex items-center justify-center gap-2">
                           <button
                             onClick={() => openEdit(store)}
-                            className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-white/10 transition"
+                            className="p-1.5 rounded-lg text-muted hover:text-primary hover:bg-fill-medium transition"
                           >
                             <Pencil size={14} />
                           </button>
                           <button
                             onClick={() => setDeleteId(store.id)}
-                            className="p-1.5 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition"
+                            className="p-1.5 rounded-lg text-muted hover:text-red-400 hover:bg-red-500/10 transition"
                           >
                             <Trash2 size={14} />
                           </button>
@@ -518,12 +518,12 @@ export default function StoresPage() {
       {/* ============================================================ */}
       {editModal !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-md bg-[#1A1D23] border border-white/10 rounded-2xl p-6 shadow-2xl">
+          <div className="w-full max-w-md bg-card border border-border-subtle rounded-2xl p-6 shadow-2xl">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-base font-bold text-white">
+              <h2 className="text-base font-bold text-primary">
                 {editModal === 'new' ? '가게 추가' : '가게 수정'}
               </h2>
-              <button onClick={() => setEditModal(null)} className="text-gray-500 hover:text-white transition">
+              <button onClick={() => setEditModal(null)} className="text-muted hover:text-primary transition">
                 <X size={18} />
               </button>
             </div>
@@ -531,19 +531,19 @@ export default function StoresPage() {
             <div className="space-y-3">
               {/* 네이버 자동 입력 */}
               <div>
-                <label className="block text-xs text-gray-500 mb-1">네이버 업체 URL로 자동 입력</label>
+                <label className="block text-xs text-muted mb-1">네이버 업체 URL로 자동 입력</label>
                 <div className="flex gap-2">
                   <input
                     value={naverUrl}
                     onChange={e => { setNaverUrl(e.target.value); setAutoFillErr(''); }}
                     onKeyDown={e => e.key === 'Enter' && handleNaverAutoFill()}
                     placeholder="https://map.naver.com/v5/entry/place/..."
-                    className="flex-1 min-w-0 bg-[#111318] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#03C75A] transition"
+                    className="flex-1 min-w-0 bg-sidebar border border-border-subtle rounded-xl px-3 py-2.5 text-sm text-primary placeholder-gray-600 focus:outline-none focus:border-[#03C75A] transition"
                   />
                   <button
                     onClick={handleNaverAutoFill}
                     disabled={autoFilling || !naverUrl.trim()}
-                    className="shrink-0 px-4 py-2.5 bg-[#03C75A] hover:bg-[#02b050] disabled:opacity-50 text-white text-xs font-bold rounded-xl transition"
+                    className="shrink-0 px-4 py-2.5 bg-[#03C75A] hover:bg-[#02b050] disabled:opacity-50 text-primary text-xs font-bold rounded-xl transition"
                   >
                     {autoFilling ? '조회 중...' : '자동 입력'}
                   </button>
@@ -555,7 +555,7 @@ export default function StoresPage() {
                   </p>
                 )}
               </div>
-              <div className="border-t border-white/5" />
+              <div className="border-t border-border-main" />
 
               {([
                 ['name',     '가게명 *',  'text', '가게명을 입력하세요'],
@@ -564,23 +564,23 @@ export default function StoresPage() {
                 ['category', '카테고리',  'text', '예: 카페, 식당, 바'],
               ] as const).map(([key, label, type, placeholder]) => (
                 <div key={key}>
-                  <label className="block text-xs text-gray-500 mb-1">{label}</label>
+                  <label className="block text-xs text-muted mb-1">{label}</label>
                   <input
                     type={type}
                     value={(form[key] as string) ?? ''}
                     onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
                     placeholder={placeholder}
-                    className="w-full bg-[#111318] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#FF6F0F] transition"
+                    className="w-full bg-sidebar border border-border-subtle rounded-xl px-4 py-2.5 text-sm text-primary placeholder-gray-600 focus:outline-none focus:border-[#FF6F0F] transition"
                   />
                 </div>
               ))}
 
               <div className="flex items-center gap-3 pt-1">
-                <label className="text-xs text-gray-500">활성 상태</label>
+                <label className="text-xs text-muted">활성 상태</label>
                 <button
                   onClick={() => setForm(f => ({ ...f, is_active: !f.is_active }))}
                   className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                    form.is_active ? 'bg-emerald-500/15 text-emerald-400' : 'bg-white/5 text-gray-500'
+                    form.is_active ? 'bg-emerald-500/15 text-emerald-400' : 'bg-fill-subtle text-muted'
                   }`}
                 >
                   {form.is_active ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
@@ -592,14 +592,14 @@ export default function StoresPage() {
             <div className="flex gap-2 mt-6">
               <button
                 onClick={() => setEditModal(null)}
-                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-400 bg-white/5 hover:bg-white/10 transition"
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-tertiary bg-fill-subtle hover:bg-fill-medium transition"
               >
                 취소
               </button>
               <button
                 onClick={saveStore}
                 disabled={saving || !form.name.trim()}
-                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#FF6F0F] hover:bg-[#e66000] transition disabled:opacity-50"
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-primary bg-[#FF6F0F] hover:bg-[#e66000] transition disabled:opacity-50"
               >
                 {saving ? '저장 중...' : '저장'}
               </button>
@@ -613,19 +613,19 @@ export default function StoresPage() {
       {/* ============================================================ */}
       {deleteId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-sm bg-[#1A1D23] border border-white/10 rounded-2xl p-6 shadow-2xl">
-            <h2 className="text-base font-bold text-white mb-2">가게 삭제</h2>
-            <p className="text-sm text-gray-400 mb-6">삭제하면 복구할 수 없습니다. 정말 삭제하시겠어요?</p>
+          <div className="w-full max-w-sm bg-card border border-border-subtle rounded-2xl p-6 shadow-2xl">
+            <h2 className="text-base font-bold text-primary mb-2">가게 삭제</h2>
+            <p className="text-sm text-tertiary mb-6">삭제하면 복구할 수 없습니다. 정말 삭제하시겠어요?</p>
             <div className="flex gap-2">
               <button
                 onClick={() => setDeleteId(null)}
-                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-400 bg-white/5 hover:bg-white/10 transition"
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-tertiary bg-fill-subtle hover:bg-fill-medium transition"
               >
                 취소
               </button>
               <button
                 onClick={() => deleteStore(deleteId)}
-                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-500 hover:bg-red-600 transition"
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-primary bg-red-500 hover:bg-red-600 transition"
               >
                 삭제
               </button>
@@ -639,34 +639,34 @@ export default function StoresPage() {
       {/* ============================================================ */}
       {rejectModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-sm bg-[#1A1D23] border border-white/10 rounded-2xl p-6 shadow-2xl">
+          <div className="w-full max-w-sm bg-card border border-border-subtle rounded-2xl p-6 shadow-2xl">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-bold text-white">신청 거절</h2>
-              <button onClick={() => setRejectModal(null)} className="text-gray-500 hover:text-white transition">
+              <h2 className="text-base font-bold text-primary">신청 거절</h2>
+              <button onClick={() => setRejectModal(null)} className="text-muted hover:text-primary transition">
                 <X size={18} />
               </button>
             </div>
-            <p className="text-sm text-gray-400 mb-3">
-              <span className="text-white font-semibold">{rejectModal.store_name}</span> 신청을 거절합니다.
+            <p className="text-sm text-tertiary mb-3">
+              <span className="text-primary font-semibold">{rejectModal.store_name}</span> 신청을 거절합니다.
             </p>
             <textarea
               value={rejectReason}
               onChange={e => setRejectReason(e.target.value)}
               placeholder="거절 사유 (선택)"
               rows={3}
-              className="w-full bg-[#111318] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#FF6F0F] transition resize-none mb-4"
+              className="w-full bg-sidebar border border-border-subtle rounded-xl px-4 py-2.5 text-sm text-primary placeholder-gray-600 focus:outline-none focus:border-[#FF6F0F] transition resize-none mb-4"
             />
             <div className="flex gap-2">
               <button
                 onClick={() => setRejectModal(null)}
-                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-400 bg-white/5 hover:bg-white/10 transition"
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-tertiary bg-fill-subtle hover:bg-fill-medium transition"
               >
                 취소
               </button>
               <button
                 onClick={rejectRequest}
                 disabled={processing === rejectModal.id}
-                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-500 hover:bg-red-600 transition disabled:opacity-50"
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-primary bg-red-500 hover:bg-red-600 transition disabled:opacity-50"
               >
                 거절 확인
               </button>

@@ -104,8 +104,8 @@ export default function DashboardPage() {
     <div className="p-8">
       {/* 헤더 */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white">대시보드</h1>
-        <p className="text-sm text-gray-500 mt-1">
+        <h1 className="text-2xl font-bold text-primary">대시보드</h1>
+        <p className="text-sm text-muted mt-1">
           {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })}
         </p>
       </div>
@@ -113,19 +113,19 @@ export default function DashboardPage() {
       {loading ? (
         <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           {[...Array(5)].map((_, i) => (
-            <div key={i} className="bg-[#1A1D23] rounded-2xl p-5 animate-pulse h-28" />
+            <div key={i} className="bg-card rounded-2xl p-5 animate-pulse h-28" />
           ))}
         </div>
       ) : (
         <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           {CARDS.map(({ icon: Icon, label, value, sub, subColor, color, bg }) => (
-            <div key={label} className="bg-[#1A1D23] border border-white/5 rounded-2xl p-5">
+            <div key={label} className="bg-card border border-border-main rounded-2xl p-5">
               <div className={`inline-flex p-2 rounded-xl ${bg} mb-3`}>
                 <Icon size={18} className={color} />
               </div>
-              <p className="text-2xl font-bold text-white">{value.toLocaleString()}</p>
-              <p className="text-xs font-semibold text-gray-400 mt-0.5">{label}</p>
-              <p className={`text-xs mt-1.5 ${subColor || 'text-gray-600'}`}>{sub}</p>
+              <p className="text-2xl font-bold text-primary">{value.toLocaleString()}</p>
+              <p className="text-xs font-semibold text-tertiary mt-0.5">{label}</p>
+              <p className={`text-xs mt-1.5 ${subColor || 'text-dim'}`}>{sub}</p>
             </div>
           ))}
         </div>
@@ -137,7 +137,7 @@ export default function DashboardPage() {
           <AlertCircle size={18} className="text-red-400 shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-bold text-red-400">게시물 삭제 요청 {stats.pendingDelete}건 처리 필요</p>
-            <p className="text-xs text-gray-500 mt-0.5">
+            <p className="text-xs text-muted mt-0.5">
               게시물 관리 메뉴에서 승인 또는 반려해주세요
             </p>
           </div>
@@ -146,7 +146,7 @@ export default function DashboardPage() {
 
       {/* 빠른 링크 */}
       <div className="mt-8">
-        <h2 className="text-sm font-bold text-gray-400 mb-3">빠른 이동</h2>
+        <h2 className="text-sm font-bold text-tertiary mb-3">빠른 이동</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
             { href: '/dashboard/stores',    emoji: '🏪', label: '가게 승인 관리' },
@@ -157,10 +157,10 @@ export default function DashboardPage() {
             <a
               key={href}
               href={href}
-              className="flex items-center gap-3 bg-[#1A1D23] hover:bg-[#22252E] border border-white/5 rounded-xl px-4 py-3.5 transition group"
+              className="flex items-center gap-3 bg-card hover:bg-card-hover border border-border-main rounded-xl px-4 py-3.5 transition group"
             >
               <span className="text-xl">{emoji}</span>
-              <span className="text-sm font-semibold text-gray-300 group-hover:text-white transition">{label}</span>
+              <span className="text-sm font-semibold text-secondary group-hover:text-primary transition">{label}</span>
             </a>
           ))}
         </div>

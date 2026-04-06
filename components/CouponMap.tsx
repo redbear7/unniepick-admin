@@ -121,27 +121,27 @@ export default function CouponMap({ coupons }: Props) {
   }, [coupons]);
 
   if (status === 'empty') return (
-    <div className="flex flex-col items-center justify-center h-96 bg-[#1A1D23] rounded-2xl border border-white/5 gap-3">
+    <div className="flex flex-col items-center justify-center h-96 bg-card rounded-2xl border border-border-main gap-3">
       <span className="text-4xl">📍</span>
-      <p className="text-sm font-semibold text-gray-400">위치 정보가 있는 쿠폰이 없어요</p>
-      <p className="text-xs text-gray-600">전체 {coupons.length}개 중 위치 있는 쿠폰: {valid.length}개</p>
+      <p className="text-sm font-semibold text-tertiary">위치 정보가 있는 쿠폰이 없어요</p>
+      <p className="text-xs text-dim">전체 {coupons.length}개 중 위치 있는 쿠폰: {valid.length}개</p>
     </div>
   );
 
   if (status === 'error') return (
-    <div className="flex flex-col items-center justify-center h-96 bg-[#1A1D23] rounded-2xl border border-white/5 gap-3">
+    <div className="flex flex-col items-center justify-center h-96 bg-card rounded-2xl border border-border-main gap-3">
       <span className="text-3xl">⚠️</span>
       <p className="text-sm font-semibold text-red-400">지도 로드 실패</p>
-      <p className="text-xs text-gray-500 text-center max-w-xs">{errMsg}</p>
+      <p className="text-xs text-muted text-center max-w-xs">{errMsg}</p>
     </div>
   );
 
   return (
-    <div className="relative rounded-2xl overflow-hidden border border-white/5" style={{ height: 600 }}>
+    <div className="relative rounded-2xl overflow-hidden border border-border-main" style={{ height: 600 }}>
       {status === 'loading' && (
-        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-[#1A1D23] gap-3">
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-card gap-3">
           <div className="w-8 h-8 border-2 border-[#FF6F0F]/30 border-t-[#FF6F0F] rounded-full animate-spin" />
-          <p className="text-sm text-gray-500">지도 불러오는 중...</p>
+          <p className="text-sm text-muted">지도 불러오는 중...</p>
         </div>
       )}
       <div ref={containerRef} style={{ width: '100%', height: '100%' }} />

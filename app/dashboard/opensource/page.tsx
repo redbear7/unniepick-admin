@@ -108,20 +108,20 @@ export default function OpenSourcePage() {
   return (
     <div className="p-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-white">오픈소스 라이선스</h1>
-        <p className="text-sm text-gray-500 mt-1">
+        <h1 className="text-2xl font-bold text-primary">오픈소스 라이선스</h1>
+        <p className="text-sm text-muted mt-1">
           언니픽 서비스에 사용된 오픈소스 소프트웨어 목록이에요 · 총 {PACKAGES.length}개
         </p>
       </div>
 
       {/* 검색 */}
       <div className="relative mb-4">
-        <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
+        <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
         <input
           value={query}
           onChange={e => setQuery(e.target.value)}
           placeholder="패키지명, 설명 검색"
-          className="w-full bg-[#1A1D23] border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#FF6F0F] transition"
+          className="w-full bg-card border border-border-subtle rounded-xl pl-9 pr-4 py-2.5 text-sm text-primary placeholder-gray-600 focus:outline-none focus:border-[#FF6F0F] transition"
         />
       </div>
 
@@ -133,8 +133,8 @@ export default function OpenSourcePage() {
             onClick={() => setPlatform(p)}
             className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${
               platform === p
-                ? 'bg-[#FF6F0F] text-white'
-                : 'bg-[#1A1D23] border border-white/10 text-gray-400 hover:text-white'
+                ? 'bg-[#FF6F0F] text-primary'
+                : 'bg-card border border-border-subtle text-tertiary hover:text-primary'
             }`}
           >
             {p === 'all' ? '전체' : PLATFORM_LABEL[p]}
@@ -150,8 +150,8 @@ export default function OpenSourcePage() {
             onClick={() => setCategory(cat)}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
               category === cat
-                ? 'bg-white/15 text-white border border-white/20'
-                : 'bg-[#1A1D23] border border-white/5 text-gray-500 hover:text-gray-300'
+                ? 'bg-white/15 text-primary border border-border-main'
+                : 'bg-card border border-border-main text-muted hover:text-secondary'
             }`}
           >
             {cat}
@@ -160,15 +160,15 @@ export default function OpenSourcePage() {
       </div>
 
       {/* 테이블 */}
-      <div className="bg-[#1A1D23] border border-white/5 rounded-2xl overflow-hidden">
+      <div className="bg-card border border-border-main rounded-2xl overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-white/5">
-              <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-500">패키지</th>
-              <th className="text-left px-4 py-3.5 text-xs font-semibold text-gray-500">카테고리</th>
-              <th className="text-left px-4 py-3.5 text-xs font-semibold text-gray-500">버전 · 라이선스</th>
+            <tr className="border-b border-border-main">
+              <th className="text-left px-5 py-3.5 text-xs font-semibold text-muted">패키지</th>
+              <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">카테고리</th>
+              <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">버전 · 라이선스</th>
               <th
-                className="text-left px-4 py-3.5 text-xs font-semibold text-gray-500 cursor-pointer hover:text-white transition select-none"
+                className="text-left px-4 py-3.5 text-xs font-semibold text-muted cursor-pointer hover:text-primary transition select-none"
                 onClick={() => toggleSort('addedAt')}
               >
                 <span className="flex items-center gap-1">
@@ -177,7 +177,7 @@ export default function OpenSourcePage() {
                 </span>
               </th>
               <th
-                className="text-left px-4 py-3.5 text-xs font-semibold text-gray-500 cursor-pointer hover:text-white transition select-none"
+                className="text-left px-4 py-3.5 text-xs font-semibold text-muted cursor-pointer hover:text-primary transition select-none"
                 onClick={() => toggleSort('updatedAt')}
               >
                 <span className="flex items-center gap-1">
@@ -185,42 +185,42 @@ export default function OpenSourcePage() {
                   <ArrowUpDown size={11} className={sortKey === 'updatedAt' ? 'text-[#FF6F0F]' : ''} />
                 </span>
               </th>
-              <th className="text-center px-4 py-3.5 text-xs font-semibold text-gray-500">링크</th>
+              <th className="text-center px-4 py-3.5 text-xs font-semibold text-muted">링크</th>
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={6} className="text-center py-12 text-gray-600">검색 결과가 없어요</td>
+                <td colSpan={6} className="text-center py-12 text-dim">검색 결과가 없어요</td>
               </tr>
             ) : filtered.map(pkg => (
-              <tr key={`${pkg.platform}-${pkg.name}`} className="border-b border-white/5 hover:bg-white/[0.02] transition last:border-0">
+              <tr key={`${pkg.platform}-${pkg.name}`} className="border-b border-border-main hover:bg-white/[0.02] transition last:border-0">
                 <td className="px-5 py-3.5">
-                  <p className="font-semibold text-white">{pkg.name}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{pkg.desc}</p>
+                  <p className="font-semibold text-primary">{pkg.name}</p>
+                  <p className="text-xs text-muted mt-0.5">{pkg.desc}</p>
                 </td>
                 <td className="px-4 py-3.5">
                   <div className="flex flex-col gap-1">
-                    <span className="px-2 py-0.5 bg-white/5 rounded text-xs text-gray-400 w-fit">{pkg.category}</span>
-                    <span className="text-xs text-gray-600">{PLATFORM_LABEL[pkg.platform]}</span>
+                    <span className="px-2 py-0.5 bg-fill-subtle rounded text-xs text-tertiary w-fit">{pkg.category}</span>
+                    <span className="text-xs text-dim">{PLATFORM_LABEL[pkg.platform]}</span>
                   </div>
                 </td>
                 <td className="px-4 py-3.5">
                   <div className="flex flex-col gap-1">
-                    <span className="text-xs text-gray-400 font-mono">{pkg.version}</span>
-                    <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold w-fit ${LICENSE_COLOR[pkg.license] ?? 'bg-white/5 text-gray-400'}`}>
+                    <span className="text-xs text-tertiary font-mono">{pkg.version}</span>
+                    <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold w-fit ${LICENSE_COLOR[pkg.license] ?? 'bg-fill-subtle text-tertiary'}`}>
                       {pkg.license}
                     </span>
                   </div>
                 </td>
-                <td className="px-4 py-3.5 text-xs text-gray-500">{fmt(pkg.addedAt)}</td>
-                <td className="px-4 py-3.5 text-xs text-gray-500">{fmt(pkg.updatedAt)}</td>
+                <td className="px-4 py-3.5 text-xs text-muted">{fmt(pkg.addedAt)}</td>
+                <td className="px-4 py-3.5 text-xs text-muted">{fmt(pkg.updatedAt)}</td>
                 <td className="px-4 py-3.5 text-center">
                   <a
                     href={pkg.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-gray-500 hover:text-[#FF6F0F] transition"
+                    className="inline-flex items-center gap-1 text-muted hover:text-[#FF6F0F] transition"
                   >
                     <ExternalLink size={12} />
                   </a>
@@ -232,7 +232,7 @@ export default function OpenSourcePage() {
       </div>
 
       {/* 정렬 상태 표시 */}
-      <div className="mt-3 flex items-center gap-3 text-xs text-gray-600">
+      <div className="mt-3 flex items-center gap-3 text-xs text-dim">
         <span>{filtered.length}개 표시</span>
         <span>·</span>
         <span>
@@ -242,8 +242,8 @@ export default function OpenSourcePage() {
       </div>
 
       {/* 라이선스 안내 */}
-      <div className="mt-6 p-4 bg-white/[0.03] border border-white/5 rounded-2xl">
-        <p className="text-xs text-gray-600 leading-relaxed">
+      <div className="mt-6 p-4 bg-white/[0.03] border border-border-main rounded-2xl">
+        <p className="text-xs text-dim leading-relaxed">
           위 오픈소스 소프트웨어는 각각의 라이선스 조건에 따라 사용되며,
           MIT · Apache-2.0 · ISC · OFL-1.1 라이선스 원문은 각 저장소에서 확인할 수 있습니다.
         </p>

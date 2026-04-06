@@ -129,25 +129,25 @@ function AddTrackModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
-      <div className="bg-[#13161D] border border-white/10 rounded-2xl w-full max-w-xl flex flex-col max-h-[85vh]">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 shrink-0">
+      <div className="bg-[#13161D] border border-border-subtle rounded-2xl w-full max-w-xl flex flex-col max-h-[85vh]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border-main shrink-0">
           <div>
-            <h2 className="text-sm font-bold text-white flex items-center gap-2">
+            <h2 className="text-sm font-bold text-primary flex items-center gap-2">
               <Music size={14} className="text-[#FF6F0F]" /> 곡에 브랜드 연결
             </h2>
-            <p className="text-[11px] text-gray-500 mt-0.5">
+            <p className="text-[11px] text-muted mt-0.5">
               <span className="text-[#FF6F0F] font-mono">{handle}</span> 태그를 곡에 추가/제거 · ▷ 버튼으로 10초 미리듣기
             </p>
           </div>
-          <button onClick={onClose} className="text-gray-500 hover:text-white transition"><X size={18} /></button>
+          <button onClick={onClose} className="text-muted hover:text-primary transition"><X size={18} /></button>
         </div>
 
-        <div className="px-4 py-3 border-b border-white/5 shrink-0">
+        <div className="px-4 py-3 border-b border-border-main shrink-0">
           <div className="relative">
-            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
             <input value={q} onChange={e => setQ(e.target.value)}
               placeholder="곡 제목, 아티스트 검색..."
-              className="w-full pl-8 pr-3 py-2 bg-[#1A1D23] border border-white/10 rounded-xl text-xs text-white placeholder-gray-600 outline-none" />
+              className="w-full pl-8 pr-3 py-2 bg-card border border-border-subtle rounded-xl text-xs text-primary placeholder-gray-600 outline-none" />
           </div>
         </div>
 
@@ -161,13 +161,13 @@ function AddTrackModal({
                 {/* 미리듣기 버튼 */}
                 <button onClick={() => togglePreview(t)} disabled={!t.audio_url}
                   className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition disabled:opacity-30 ${
-                    isPreviewing ? 'bg-[#FF6F0F] text-white' : 'bg-white/10 text-gray-400 hover:bg-white/20 hover:text-white'
+                    isPreviewing ? 'bg-[#FF6F0F] text-primary' : 'bg-fill-medium text-tertiary hover:bg-white/20 hover:text-primary'
                   }`}>
                   {isPreviewing ? <Pause size={10} /> : <Play size={10} className="ml-0.5" />}
                 </button>
 
                 {/* 커버 */}
-                <div className="w-9 h-9 rounded-lg bg-white/5 flex items-center justify-center shrink-0 overflow-hidden">
+                <div className="w-9 h-9 rounded-lg bg-fill-subtle flex items-center justify-center shrink-0 overflow-hidden">
                   {t.cover_image_url
                     ? <img src={t.cover_image_url} alt="" className="w-full h-full object-cover" />
                     : <span className="text-base">{t.cover_emoji}</span>}
@@ -175,16 +175,16 @@ function AddTrackModal({
 
                 {/* 정보 */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-white truncate">{t.title}</p>
-                  <p className="text-[10px] text-gray-500 truncate">{t.artist}</p>
+                  <p className="text-xs font-semibold text-primary truncate">{t.title}</p>
+                  <p className="text-[10px] text-muted truncate">{t.artist}</p>
                   {/* 무드태그 */}
                   {visibleTags.length > 0 && (
                     <div className="flex flex-wrap gap-0.5 mt-0.5">
                       {visibleTags.map(tag => (
-                        <span key={tag} className="text-[8px] px-1 py-0.5 bg-white/5 border border-white/10 text-gray-500 rounded leading-none">{tag}</span>
+                        <span key={tag} className="text-[8px] px-1 py-0.5 bg-fill-subtle border border-border-subtle text-muted rounded leading-none">{tag}</span>
                       ))}
                       {(t.mood_tags ?? []).filter(tag => !tag.startsWith('@')).length > 4 && (
-                        <span className="text-[8px] px-1 py-0.5 bg-white/5 text-gray-600 rounded leading-none">
+                        <span className="text-[8px] px-1 py-0.5 bg-fill-subtle text-dim rounded leading-none">
                           +{(t.mood_tags ?? []).filter(tag => !tag.startsWith('@')).length - 4}
                         </span>
                       )}
@@ -213,9 +213,9 @@ function AddTrackModal({
           })}
         </div>
 
-        <div className="px-6 py-3 border-t border-white/5 shrink-0">
+        <div className="px-6 py-3 border-t border-border-main shrink-0">
           <button onClick={onClose}
-            className="w-full py-2 bg-white/5 border border-white/10 text-gray-400 text-xs font-semibold rounded-xl hover:text-white transition">
+            className="w-full py-2 bg-fill-subtle border border-border-subtle text-tertiary text-xs font-semibold rounded-xl hover:text-primary transition">
             닫기
           </button>
         </div>
@@ -256,41 +256,41 @@ function CreatePlaylistModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
-      <div className="bg-[#13161D] border border-white/10 rounded-2xl w-full max-w-sm">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
-          <h2 className="text-sm font-bold text-white flex items-center gap-2">
+      <div className="bg-[#13161D] border border-border-subtle rounded-2xl w-full max-w-sm">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border-main">
+          <h2 className="text-sm font-bold text-primary flex items-center gap-2">
             <ListPlus size={14} className="text-[#FF6F0F]" /> 플레이리스트 만들기
           </h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-white transition"><X size={18} /></button>
+          <button onClick={onClose} className="text-muted hover:text-primary transition"><X size={18} /></button>
         </div>
         <div className="px-6 py-5 space-y-4">
           <div>
-            <label className="text-xs text-gray-500 font-semibold block mb-1.5">플레이리스트 이름</label>
+            <label className="text-xs text-muted font-semibold block mb-1.5">플레이리스트 이름</label>
             <input value={name} onChange={e => setName(e.target.value)}
-              className="w-full bg-[#1F2937] text-white text-sm rounded-xl px-3 py-2.5 border border-white/10 outline-none" />
+              className="w-full bg-[#1F2937] text-primary text-sm rounded-xl px-3 py-2.5 border border-border-subtle outline-none" />
           </div>
-          <p className="text-xs text-gray-500">선택한 곡 <span className="text-white font-bold">{tracks.length}개</span>를 포함합니다</p>
+          <p className="text-xs text-muted">선택한 곡 <span className="text-primary font-bold">{tracks.length}개</span>를 포함합니다</p>
           <div className="max-h-40 overflow-auto space-y-1">
             {tracks.map(t => (
               <div key={t.id} className="flex items-center gap-2 py-1">
-                <div className="w-6 h-6 rounded flex items-center justify-center bg-white/5 shrink-0 overflow-hidden">
+                <div className="w-6 h-6 rounded flex items-center justify-center bg-fill-subtle shrink-0 overflow-hidden">
                   {t.cover_image_url
                     ? <img src={t.cover_image_url} alt="" className="w-full h-full object-cover" />
                     : <span className="text-xs">{t.cover_emoji}</span>}
                 </div>
-                <p className="text-xs text-gray-300 truncate flex-1">{t.title}</p>
-                <p className="text-[10px] text-gray-600 shrink-0">{t.artist}</p>
+                <p className="text-xs text-secondary truncate flex-1">{t.title}</p>
+                <p className="text-[10px] text-dim shrink-0">{t.artist}</p>
               </div>
             ))}
           </div>
         </div>
-        <div className="flex gap-3 px-6 py-4 border-t border-white/5">
+        <div className="flex gap-3 px-6 py-4 border-t border-border-main">
           <button onClick={onClose}
-            className="flex-1 py-2.5 bg-white/5 border border-white/10 text-gray-400 text-sm font-semibold rounded-xl hover:text-white transition">
+            className="flex-1 py-2.5 bg-fill-subtle border border-border-subtle text-tertiary text-sm font-semibold rounded-xl hover:text-primary transition">
             취소
           </button>
           <button onClick={handleCreate} disabled={saving}
-            className="flex-1 py-2.5 bg-[#FF6F0F] text-white text-sm font-bold rounded-xl hover:bg-[#FF6F0F]/90 disabled:opacity-50 transition flex items-center justify-center gap-2">
+            className="flex-1 py-2.5 bg-[#FF6F0F] text-primary text-sm font-bold rounded-xl hover:bg-[#FF6F0F]/90 disabled:opacity-50 transition flex items-center justify-center gap-2">
             {saving
               ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               : <><Check size={14} /> 만들기</>}
@@ -483,24 +483,24 @@ export default function BrandsPage() {
   return (
     <div className="flex h-full">
       {/* ── 왼쪽: 브랜드 목록 ── */}
-      <div className="w-72 shrink-0 border-r border-white/5 flex flex-col">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
+      <div className="w-72 shrink-0 border-r border-border-main flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border-main">
           <div>
-            <h1 className="text-base font-bold text-white flex items-center gap-2">
+            <h1 className="text-base font-bold text-primary flex items-center gap-2">
               <Building2 size={16} className="text-[#FF6F0F]" /> 브랜드관
             </h1>
-            <p className="text-[11px] text-gray-500 mt-0.5">@핸들로 곡 · 플레이리스트 연결</p>
+            <p className="text-[11px] text-muted mt-0.5">@핸들로 곡 · 플레이리스트 연결</p>
           </div>
           <button onClick={openCreate}
-            className="w-8 h-8 flex items-center justify-center bg-[#FF6F0F] text-white rounded-xl hover:bg-[#FF6F0F]/90 transition">
+            className="w-8 h-8 flex items-center justify-center bg-[#FF6F0F] text-primary rounded-xl hover:bg-[#FF6F0F]/90 transition">
             <Plus size={14} />
           </button>
         </div>
-        <div className="px-3 py-2.5 border-b border-white/5">
+        <div className="px-3 py-2.5 border-b border-border-main">
           <div className="relative">
-            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
             <input value={query} onChange={e => setQuery(e.target.value)} placeholder="브랜드, @핸들 검색..."
-              className="w-full pl-8 pr-3 py-2 bg-[#1A1D23] border border-white/10 rounded-xl text-xs text-white placeholder-gray-600 outline-none" />
+              className="w-full pl-8 pr-3 py-2 bg-card border border-border-subtle rounded-xl text-xs text-primary placeholder-gray-600 outline-none" />
           </div>
         </div>
         <div className="flex-1 overflow-auto py-2">
@@ -510,25 +510,25 @@ export default function BrandsPage() {
             return (
               <button key={b.id} onClick={() => setSelected(isSel ? null : b)}
                 className={`w-full flex items-center gap-3 px-4 py-3 text-left transition ${
-                  isSel ? 'bg-[#FF6F0F]/10 border-l-2 border-[#FF6F0F]' : 'hover:bg-white/5 border-l-2 border-transparent'
+                  isSel ? 'bg-[#FF6F0F]/10 border-l-2 border-[#FF6F0F]' : 'hover:bg-fill-medium border-l-2 border-transparent'
                 } ${!b.is_active ? 'opacity-50' : ''}`}>
                 <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
                   style={{ backgroundColor: b.color + '30', border: `2px solid ${b.color}50` }}>
                   <span className="text-base font-black" style={{ color: b.color }}>{b.name[0]}</span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-white truncate">{b.name}</p>
-                  <p className="text-[10px] font-mono text-gray-600 truncate">{b.handle ? `@${b.handle}` : '핸들 없음'}</p>
+                  <p className="text-sm font-semibold text-primary truncate">{b.name}</p>
+                  <p className="text-[10px] font-mono text-dim truncate">{b.handle ? `@${b.handle}` : '핸들 없음'}</p>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="text-xs font-bold text-gray-400">{linked}</p>
-                  <p className="text-[9px] text-gray-600">연결됨</p>
+                  <p className="text-xs font-bold text-tertiary">{linked}</p>
+                  <p className="text-[9px] text-dim">연결됨</p>
                 </div>
               </button>
             );
           })}
           {filteredBrands.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-32 gap-2 text-gray-600">
+            <div className="flex flex-col items-center justify-center h-32 gap-2 text-dim">
               <Building2 size={24} /><p className="text-xs">브랜드가 없어요</p>
             </div>
           )}
@@ -538,7 +538,7 @@ export default function BrandsPage() {
       {/* ── 오른쪽: 상세 ── */}
       <div className="flex-1 overflow-auto p-6">
         {!selected ? (
-          <div className="flex flex-col items-center justify-center h-full gap-3 text-gray-600">
+          <div className="flex flex-col items-center justify-center h-full gap-3 text-dim">
             <Building2 size={40} /><p className="text-sm">왼쪽에서 브랜드를 선택해주세요</p>
           </div>
         ) : (
@@ -551,15 +551,15 @@ export default function BrandsPage() {
                   {selected.name[0]}
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-white">{selected.name}</h2>
+                  <h2 className="text-xl font-bold text-primary">{selected.name}</h2>
                   {selected.handle ? (
                     <p className="text-sm font-mono font-bold mt-0.5 flex items-center gap-1" style={{ color: selected.color }}>
                       <AtSign size={13} />@{selected.handle}
                     </p>
                   ) : (
-                    <p className="text-xs text-gray-600 mt-0.5">@핸들 없음 — 수정에서 추가해주세요</p>
+                    <p className="text-xs text-dim mt-0.5">@핸들 없음 — 수정에서 추가해주세요</p>
                   )}
-                  <p className="text-xs text-gray-500 mt-0.5">{selected.description}</p>
+                  <p className="text-xs text-muted mt-0.5">{selected.description}</p>
                 </div>
               </div>
               <div className="flex gap-2">
@@ -570,7 +570,7 @@ export default function BrandsPage() {
                   </button>
                 )}
                 <button onClick={() => openEdit(selected)}
-                  className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold bg-white/5 border border-white/10 text-gray-400 rounded-xl hover:text-white transition">
+                  className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold bg-fill-subtle border border-border-subtle text-tertiary rounded-xl hover:text-primary transition">
                   <Pencil size={12} /> 수정
                 </button>
                 <button onClick={() => handleDelete(selected)}
@@ -583,7 +583,7 @@ export default function BrandsPage() {
             {/* 스타일 태그 */}
             {selected.tags.length > 0 && (
               <div className="mb-4">
-                <p className="text-xs font-semibold text-gray-500 mb-2 flex items-center gap-1.5"><Tag size={11} /> 스타일 태그</p>
+                <p className="text-xs font-semibold text-muted mb-2 flex items-center gap-1.5"><Tag size={11} /> 스타일 태그</p>
                 <div className="flex flex-wrap gap-1.5">
                   {selected.tags.map(tag => (
                     <span key={tag} className="px-2.5 py-1 rounded-full text-xs font-semibold border"
@@ -597,26 +597,26 @@ export default function BrandsPage() {
 
             {/* 트랙 섹션 헤더 */}
             <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-semibold text-gray-500 flex items-center gap-1.5">
+              <p className="text-xs font-semibold text-muted flex items-center gap-1.5">
                 <Link2 size={11} /> @{selected.handle || '핸들'} 연결 트랙 · {brandTracks.length}개
               </p>
               {brandTracks.length > 0 && (
                 <div className="flex items-center gap-2">
                   <button onClick={selTrackIds.size === brandTracks.length ? deselectAll : selectAll}
-                    className="flex items-center gap-1 text-[10px] text-gray-500 hover:text-white transition">
+                    className="flex items-center gap-1 text-[10px] text-muted hover:text-primary transition">
                     {selTrackIds.size === brandTracks.length
                       ? <><CheckSquare size={11} /> 전체 해제</>
                       : <><Square size={11} /> 전체 선택</>}
                   </button>
                   {selTrackIds.size > 0 && (
                     <button onClick={() => setPlaylistModal(true)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-semibold bg-[#FF6F0F] text-white rounded-lg hover:bg-[#FF6F0F]/90 transition">
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-semibold bg-[#FF6F0F] text-primary rounded-lg hover:bg-[#FF6F0F]/90 transition">
                       <ListPlus size={11} /> 플레이리스트 만들기 ({selTrackIds.size})
                     </button>
                   )}
                   <button
                     onClick={() => { if (brandTracks.length) player.play(toPlayable(brandTracks[0]), brandTracks.map(toPlayable)); }}
-                    className="flex items-center gap-1 text-[10px] text-gray-500 hover:text-[#FF6F0F] transition">
+                    className="flex items-center gap-1 text-[10px] text-muted hover:text-[#FF6F0F] transition">
                     <Play size={11} /> 전체 재생
                   </button>
                 </div>
@@ -625,13 +625,13 @@ export default function BrandsPage() {
 
             {/* 트랙 그리드 */}
             {!selected.handle ? (
-              <div className="flex flex-col items-center justify-center h-24 text-gray-600 gap-2">
+              <div className="flex flex-col items-center justify-center h-24 text-dim gap-2">
                 <AtSign size={24} /><p className="text-xs">@핸들을 먼저 설정해주세요</p>
               </div>
             ) : loading ? (
-              <div className="text-xs text-gray-600">로딩 중...</div>
+              <div className="text-xs text-dim">로딩 중...</div>
             ) : brandTracks.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-24 text-gray-600 gap-2">
+              <div className="flex flex-col items-center justify-center h-24 text-dim gap-2">
                 <Music size={24} /><p className="text-xs">연결된 트랙이 없어요</p>
                 <p className="text-[10px] text-gray-700">"곡 추가" 버튼으로 연결하세요</p>
               </div>
@@ -655,7 +655,7 @@ export default function BrandsPage() {
                     <div
                       className={`group relative flex flex-col rounded-xl overflow-hidden border transition ${
                         isSel ? 'bg-[#FF6F0F]/10 border-[#FF6F0F]/40'
-                              : 'bg-white/[0.03] border-white/5 hover:bg-white/[0.06] hover:border-white/10'
+                              : 'bg-white/[0.03] border-border-main hover:bg-white/[0.06] hover:border-border-subtle'
                       } ${!track.is_active ? 'opacity-50' : ''}`}>
 
                       {/* 체크박스 */}
@@ -664,16 +664,16 @@ export default function BrandsPage() {
                         style={{ opacity: isSel ? 1 : undefined }}>
                         {isSel
                           ? <CheckSquare size={14} className="text-[#FF6F0F] drop-shadow opacity-100" />
-                          : <Square      size={14} className="text-white/70 drop-shadow opacity-0 group-hover:opacity-100" />}
+                          : <Square      size={14} className="text-primary/70 drop-shadow opacity-0 group-hover:opacity-100" />}
                       </button>
 
                       {/* 커버 */}
-                      <div className="relative aspect-square bg-white/5">
+                      <div className="relative aspect-square bg-fill-subtle">
                         {track.cover_image_url
                           ? <img src={track.cover_image_url} alt={track.title} className="w-full h-full object-cover" />
                           : <div className="w-full h-full flex items-center justify-center text-4xl">{track.cover_emoji}</div>}
                         {dur && (
-                          <span className="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-black/60 text-white/90 leading-none">
+                          <span className="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-black/60 text-primary/90 leading-none">
                             {dur}
                           </span>
                         )}
@@ -686,14 +686,14 @@ export default function BrandsPage() {
                             isActive ? 'bg-[#FF6F0F] opacity-100' : 'bg-white opacity-0 group-hover:opacity-100'
                           }`}>
                             {isPlaying
-                              ? <Pause size={14} className={isActive ? 'text-white' : 'text-[#0D0F14]'} />
-                              : <Play  size={14} className={isActive ? 'text-white' : 'text-[#0D0F14] ml-0.5'} />}
+                              ? <Pause size={14} className={isActive ? 'text-primary' : 'text-[#0D0F14]'} />
+                              : <Play  size={14} className={isActive ? 'text-primary' : 'text-[#0D0F14] ml-0.5'} />}
                           </span>
                         </button>
                         {/* 연결 해제 */}
                         <button onClick={() => removeTrackFromBrand(track)} title="브랜드 연결 해제"
                           className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-red-500/80 transition">
-                          <Link2Off size={9} className="text-white" />
+                          <Link2Off size={9} className="text-primary" />
                         </button>
                       </div>
 
@@ -701,14 +701,14 @@ export default function BrandsPage() {
                       <div className="p-2">
                         <div className="flex items-center gap-1 mb-0.5">
                           <GripVertical size={10} className="text-gray-700 shrink-0 cursor-grab active:cursor-grabbing" />
-                          <p className="text-white text-xs font-semibold truncate">{track.title}</p>
+                          <p className="text-primary text-xs font-semibold truncate">{track.title}</p>
                         </div>
-                        <p className="text-gray-500 text-[10px] truncate">{track.artist}</p>
+                        <p className="text-muted text-[10px] truncate">{track.artist}</p>
                         {/* 무드태그 */}
                         {visibleTags.length > 0 && (
                           <div className="flex flex-wrap gap-0.5 mt-1">
                             {visibleTags.map(tag => (
-                              <span key={tag} className="text-[8px] px-1 py-0.5 bg-white/5 border border-white/10 text-gray-500 rounded leading-none">{tag}</span>
+                              <span key={tag} className="text-[8px] px-1 py-0.5 bg-fill-subtle border border-border-subtle text-muted rounded leading-none">{tag}</span>
                             ))}
                           </div>
                         )}
@@ -730,37 +730,37 @@ export default function BrandsPage() {
       {/* ── 브랜드 등록/편집 모달 ── */}
       {modal && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
-          <div className="bg-[#13161D] border border-white/10 rounded-2xl w-full max-w-lg flex flex-col max-h-[90vh]">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 shrink-0">
-              <h2 className="text-base font-bold text-white">{editId ? '✏️ 브랜드 수정' : '➕ 새 브랜드 등록'}</h2>
-              <button onClick={() => setModal(false)} className="text-gray-500 hover:text-white transition"><X size={18} /></button>
+          <div className="bg-[#13161D] border border-border-subtle rounded-2xl w-full max-w-lg flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border-main shrink-0">
+              <h2 className="text-base font-bold text-primary">{editId ? '✏️ 브랜드 수정' : '➕ 새 브랜드 등록'}</h2>
+              <button onClick={() => setModal(false)} className="text-muted hover:text-primary transition"><X size={18} /></button>
             </div>
             <div className="flex-1 overflow-auto px-6 py-5 space-y-4">
               <div>
-                <label className="text-xs text-gray-500 font-semibold block mb-1.5">브랜드명 *</label>
+                <label className="text-xs text-muted font-semibold block mb-1.5">브랜드명 *</label>
                 <input value={form.name} onChange={e => setF('name', e.target.value)} placeholder="해쉬커피"
-                  className="w-full bg-[#1F2937] text-white text-sm rounded-xl px-3 py-2.5 border border-white/10 outline-none placeholder-gray-600" />
+                  className="w-full bg-[#1F2937] text-primary text-sm rounded-xl px-3 py-2.5 border border-border-subtle outline-none placeholder-gray-600" />
               </div>
               <div>
-                <label className="text-xs text-gray-500 font-semibold block mb-1.5">
+                <label className="text-xs text-muted font-semibold block mb-1.5">
                   @핸들 <span className="text-gray-700 font-normal">— 곡 · 플레이리스트 연결에 사용</span>
                 </label>
-                <div className="flex items-center bg-[#1F2937] border border-white/10 rounded-xl overflow-hidden">
+                <div className="flex items-center bg-[#1F2937] border border-border-subtle rounded-xl overflow-hidden">
                   <span className="px-3 text-[#FF6F0F] font-mono font-bold text-sm select-none">@</span>
                   <input value={form.handle} onChange={e => setF('handle', normalizeHandle(e.target.value))} placeholder="hashcoffee"
-                    className="flex-1 bg-transparent text-white text-sm py-2.5 pr-3 outline-none placeholder-gray-600 font-mono" />
+                    className="flex-1 bg-transparent text-primary text-sm py-2.5 pr-3 outline-none placeholder-gray-600 font-mono" />
                 </div>
                 <p className="text-[10px] text-gray-700 mt-1">영문 소문자, 숫자, _ 만 사용 · 최대 30자</p>
               </div>
               <div>
-                <label className="text-xs text-gray-500 font-semibold block mb-1.5">설명</label>
+                <label className="text-xs text-muted font-semibold block mb-1.5">설명</label>
                 <input value={form.description} onChange={e => setF('description', e.target.value)} placeholder="스페셜티 커피 브랜드"
-                  className="w-full bg-[#1F2937] text-white text-sm rounded-xl px-3 py-2.5 border border-white/10 outline-none placeholder-gray-600" />
+                  className="w-full bg-[#1F2937] text-primary text-sm rounded-xl px-3 py-2.5 border border-border-subtle outline-none placeholder-gray-600" />
               </div>
               <div>
-                <label className="text-xs text-gray-500 font-semibold block mb-2">브랜드 컬러</label>
+                <label className="text-xs text-muted font-semibold block mb-2">브랜드 컬러</label>
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl border-2 border-white/20 shrink-0" style={{ backgroundColor: form.color }} />
+                  <div className="w-9 h-9 rounded-xl border-2 border-border-main shrink-0" style={{ backgroundColor: form.color }} />
                   <div className="flex flex-wrap gap-1.5">
                     {BRAND_COLORS.map(c => (
                       <button key={c} onClick={() => setF('color', c)}
@@ -771,12 +771,12 @@ export default function BrandsPage() {
                 </div>
               </div>
               <div>
-                <label className="text-xs text-gray-500 font-semibold block mb-2">스타일 태그</label>
+                <label className="text-xs text-muted font-semibold block mb-2">스타일 태그</label>
                 <div className="flex gap-2 mb-2">
                   <input value={tagInput} onChange={e => setTagInput(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addTag(); } }}
                     placeholder="태그 입력 후 엔터 (예: cozy, jazz)"
-                    className="flex-1 bg-[#1F2937] text-white text-sm rounded-xl px-3 py-2 border border-white/10 outline-none placeholder-gray-600" />
+                    className="flex-1 bg-[#1F2937] text-primary text-sm rounded-xl px-3 py-2 border border-border-subtle outline-none placeholder-gray-600" />
                   <button onClick={addTag}
                     className="px-3 py-2 bg-[#FF6F0F]/15 border border-[#FF6F0F]/40 text-[#FF6F0F] rounded-xl text-xs font-semibold hover:bg-[#FF6F0F]/25 transition">
                     추가
@@ -794,23 +794,23 @@ export default function BrandsPage() {
                 )}
               </div>
               <div>
-                <label className="text-xs text-gray-500 font-semibold block mb-2">상태</label>
+                <label className="text-xs text-muted font-semibold block mb-2">상태</label>
                 <button onClick={() => setF('is_active', !form.is_active)}
                   className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-semibold transition ${
-                    form.is_active ? 'bg-green-500/15 border-green-500/30 text-green-400' : 'bg-white/5 border-white/10 text-gray-500'
+                    form.is_active ? 'bg-green-500/15 border-green-500/30 text-green-400' : 'bg-fill-subtle border-border-subtle text-muted'
                   }`}>
                   {form.is_active ? <Check size={14} /> : <X size={14} />}
                   {form.is_active ? '활성화' : '비활성'}
                 </button>
               </div>
             </div>
-            <div className="flex gap-3 px-6 py-4 border-t border-white/5 shrink-0">
+            <div className="flex gap-3 px-6 py-4 border-t border-border-main shrink-0">
               <button onClick={() => setModal(false)}
-                className="flex-1 py-2.5 bg-white/5 border border-white/10 text-gray-400 text-sm font-semibold rounded-xl hover:text-white transition">
+                className="flex-1 py-2.5 bg-fill-subtle border border-border-subtle text-tertiary text-sm font-semibold rounded-xl hover:text-primary transition">
                 취소
               </button>
               <button onClick={handleSave} disabled={saving}
-                className="flex-1 py-2.5 bg-[#FF6F0F] text-white text-sm font-bold rounded-xl hover:bg-[#FF6F0F]/90 disabled:opacity-50 transition flex items-center justify-center gap-2">
+                className="flex-1 py-2.5 bg-[#FF6F0F] text-primary text-sm font-bold rounded-xl hover:bg-[#FF6F0F]/90 disabled:opacity-50 transition flex items-center justify-center gap-2">
                 <Check size={14} /> {editId ? '수정 완료' : '등록하기'}
               </button>
             </div>

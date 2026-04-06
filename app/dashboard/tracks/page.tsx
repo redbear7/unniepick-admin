@@ -104,7 +104,7 @@ function Chip({ label, active, onClick }: { label: string; active: boolean; onCl
       className={`px-3 py-1.5 rounded-full text-xs font-semibold transition ${
         active
           ? 'bg-[#FF6F0F]/20 border border-[#FF6F0F] text-[#FF6F0F]'
-          : 'bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:border-white/20'
+          : 'bg-fill-subtle border border-border-subtle text-tertiary hover:text-primary hover:border-border-main'
       }`}>
       {label}
     </button>
@@ -122,18 +122,18 @@ function LibChip({ label, active, isNew, onClick, onDelete }: {
         className={`pl-3 pr-6 py-1.5 rounded-full text-xs font-semibold transition ${
           active
             ? 'bg-[#FF6F0F]/20 border border-[#FF6F0F] text-[#FF6F0F]'
-            : 'bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:border-white/20'
+            : 'bg-fill-subtle border border-border-subtle text-tertiary hover:text-primary hover:border-border-main'
         }`}>
         {label}
         {isNew && (
-          <span className="ml-1.5 text-[8px] font-bold bg-green-500 text-white rounded px-1 py-0.5 align-middle">NEW</span>
+          <span className="ml-1.5 text-[8px] font-bold bg-green-500 text-primary rounded px-1 py-0.5 align-middle">NEW</span>
         )}
       </button>
       {/* X 버튼: 호버 시 표시 */}
       <button
         onClick={e => { e.stopPropagation(); onDelete(); }}
         title="라이브러리에서 삭제"
-        className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 flex items-center justify-center rounded-full text-gray-600 hover:text-red-400 hover:bg-red-400/10 opacity-0 group-hover/lc:opacity-100 transition">
+        className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 flex items-center justify-center rounded-full text-dim hover:text-red-400 hover:bg-red-400/10 opacity-0 group-hover/lc:opacity-100 transition">
         <X size={8} />
       </button>
     </div>
@@ -625,24 +625,24 @@ export default function TracksPage() {
   return (
     <div className="flex flex-col h-full">
       {/* 헤더 */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-border-main">
         <div>
-          <h1 className="text-lg font-bold text-white">🎵 트랙 관리</h1>
-          <p className="text-xs text-gray-500 mt-0.5">music_tracks 테이블 · 총 {tracks.length}개</p>
+          <h1 className="text-lg font-bold text-primary">🎵 트랙 관리</h1>
+          <p className="text-xs text-muted mt-0.5">music_tracks 테이블 · 총 {tracks.length}개</p>
         </div>
         <button onClick={openCreate}
-          className="flex items-center gap-2 px-4 py-2 bg-[#FF6F0F] text-white text-sm font-bold rounded-xl hover:bg-[#FF6F0F]/90 transition">
+          className="flex items-center gap-2 px-4 py-2 bg-[#FF6F0F] text-primary text-sm font-bold rounded-xl hover:bg-[#FF6F0F]/90 transition">
           <Plus size={15} /> 새 트랙 등록
         </button>
       </div>
 
       {/* 무드 태그 필터 */}
       {sortedTags.length > 0 && (
-        <div className="flex items-center gap-2 px-6 py-2.5 border-b border-white/5 overflow-x-auto scrollbar-none">
+        <div className="flex items-center gap-2 px-6 py-2.5 border-b border-border-main overflow-x-auto scrollbar-none">
           <button
             onClick={() => setTagFilter('')}
             className={`shrink-0 flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold transition ${
-              !tagFilter ? 'bg-[#FF6F0F] text-white' : 'bg-white/5 text-gray-400 hover:text-white'
+              !tagFilter ? 'bg-[#FF6F0F] text-primary' : 'bg-fill-subtle text-tertiary hover:text-primary'
             }`}>
             전체 <span className="opacity-60">{tracks.length}</span>
           </button>
@@ -651,8 +651,8 @@ export default function TracksPage() {
               onClick={() => setTagFilter(tagFilter === tag ? '' : tag)}
               className={`shrink-0 flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold transition whitespace-nowrap ${
                 tagFilter === tag
-                  ? 'bg-[#FF6F0F] text-white'
-                  : 'bg-white/5 text-gray-400 hover:text-white'
+                  ? 'bg-[#FF6F0F] text-primary'
+                  : 'bg-fill-subtle text-tertiary hover:text-primary'
               }`}>
               {tag}
               <span className={`text-[10px] ${tagFilter === tag ? 'opacity-70' : 'opacity-50'}`}>{count}</span>
@@ -662,18 +662,18 @@ export default function TracksPage() {
       )}
 
       {/* 필터 바 */}
-      <div className="flex items-center gap-3 px-6 py-3 border-b border-white/5 flex-wrap">
+      <div className="flex items-center gap-3 px-6 py-3 border-b border-border-main flex-wrap">
         <div className="relative flex-1 max-w-xs">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
           <input value={query} onChange={e => setQuery(e.target.value)}
             placeholder="제목, 아티스트, 무드 검색..."
-            className="w-full pl-8 pr-3 py-2 bg-[#1A1D23] border border-white/10 rounded-xl text-sm text-white placeholder-gray-600 outline-none" />
+            className="w-full pl-8 pr-3 py-2 bg-card border border-border-subtle rounded-xl text-sm text-primary placeholder-gray-600 outline-none" />
         </div>
         <div className="flex gap-1">
           {['all', ...CATEGORY_OPTIONS.filter(c => c !== 'all')].map(c => (
             <button key={c} onClick={() => setCatFilter(c)}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                catFilter === c ? 'bg-[#FF6F0F] text-white' : 'text-gray-400 hover:text-white bg-white/5'
+                catFilter === c ? 'bg-[#FF6F0F] text-primary' : 'text-tertiary hover:text-primary bg-fill-subtle'
               }`}>
               {CATEGORY_KO[c] ?? c}
             </button>
@@ -681,17 +681,17 @@ export default function TracksPage() {
         </div>
         {/* 정렬 */}
         <div className="flex gap-1 ml-auto">
-          <ArrowDownUp size={13} className="text-gray-600 self-center" />
+          <ArrowDownUp size={13} className="text-dim self-center" />
           {([['latest','최신순'],['plays','재생순'],['likes','좋아요순'],['playlists','플리순'],['manual','수동']] as const).map(([v,label]) => (
             <button key={v} onClick={() => setSortOrder(v)}
               className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition ${
-                sortOrder === v ? 'bg-[#FF6F0F] text-white' : 'bg-white/5 text-gray-400 hover:text-white'
+                sortOrder === v ? 'bg-[#FF6F0F] text-primary' : 'bg-fill-subtle text-tertiary hover:text-primary'
               }`}>
               {label}
             </button>
           ))}
         </div>
-        <span className="text-xs text-gray-600">{sorted.length}개</span>
+        <span className="text-xs text-dim">{sorted.length}개</span>
       </div>
 
       {/* 트랙 목록 */}
@@ -699,12 +699,12 @@ export default function TracksPage() {
         {loading ? (
           <div className="flex items-center justify-center h-40 gap-3">
             <div className="w-6 h-6 border-2 border-[#FF6F0F]/30 border-t-[#FF6F0F] rounded-full animate-spin" />
-            <span className="text-gray-500 text-sm">불러오는 중...</span>
+            <span className="text-muted text-sm">불러오는 중...</span>
           </div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-40 gap-2">
             <span className="text-3xl">🎵</span>
-            <p className="text-gray-500 text-sm">트랙이 없어요</p>
+            <p className="text-muted text-sm">트랙이 없어요</p>
           </div>
         ) : (
           <div className="p-4 space-y-4">
@@ -712,9 +712,9 @@ export default function TracksPage() {
             {sortOrder === 'manual' ? (
               <>
                 <div className="flex items-center gap-2">
-                  <GripVertical size={12} className="text-gray-600" />
-                  <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">드래그로 순서 변경 · {manualSorted.length}개</span>
-                  <div className="flex-1 h-px bg-white/5" />
+                  <GripVertical size={12} className="text-dim" />
+                  <span className="text-[11px] font-bold text-muted uppercase tracking-wide">드래그로 순서 변경 · {manualSorted.length}개</span>
+                  <div className="flex-1 h-px bg-fill-subtle" />
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
                   {manualSorted.map(track => (
@@ -746,8 +746,8 @@ export default function TracksPage() {
                     </div>
                     {olderTracks.length > 0 && (
                       <div className="flex items-center gap-2 pt-2">
-                        <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">이전 트랙 · {olderTracks.length}개</span>
-                        <div className="flex-1 h-px bg-white/5" />
+                        <span className="text-[11px] font-bold text-muted uppercase tracking-wide">이전 트랙 · {olderTracks.length}개</span>
+                        <div className="flex-1 h-px bg-fill-subtle" />
                       </div>
                     )}
                   </>
@@ -764,14 +764,14 @@ export default function TracksPage() {
       {/* ── 등록/편집 모달 ── */}
       {modal && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
-          <div className="bg-[#13161D] border border-white/10 rounded-2xl w-full max-w-2xl max-h-[92vh] flex flex-col">
+          <div className="bg-[#13161D] border border-border-subtle rounded-2xl w-full max-w-2xl max-h-[92vh] flex flex-col">
 
             {/* 모달 헤더 */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 shrink-0">
-              <h2 className="text-base font-bold text-white">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border-main shrink-0">
+              <h2 className="text-base font-bold text-primary">
                 {editId ? '✏️ 트랙 수정' : '➕ 새 트랙 등록'}
               </h2>
-              <button onClick={() => { testAudioRef.current?.pause(); testAudioRef.current = null; setTestPlaying(false); setModal(false); }} className="text-gray-500 hover:text-white transition">
+              <button onClick={() => { testAudioRef.current?.pause(); testAudioRef.current = null; setTestPlaying(false); setModal(false); }} className="text-muted hover:text-primary transition">
                 <X size={18} />
               </button>
             </div>
@@ -784,18 +784,18 @@ export default function TracksPage() {
 
                 {/* 커버 이미지 업로드 */}
                 <div className="shrink-0 space-y-2">
-                  <label className="text-xs text-gray-500 font-semibold block">커버 이미지</label>
+                  <label className="text-xs text-muted font-semibold block">커버 이미지</label>
 
                   {/* 1:1 미리보기 */}
                   <div
                     onClick={() => imageInputRef.current?.click()}
-                    className="relative w-28 h-28 rounded-xl overflow-hidden bg-[#1F2937] border-2 border-dashed border-white/20 flex items-center justify-center cursor-pointer hover:border-[#FF6F0F]/50 transition group">
+                    className="relative w-28 h-28 rounded-xl overflow-hidden bg-[#1F2937] border-2 border-dashed border-border-main flex items-center justify-center cursor-pointer hover:border-[#FF6F0F]/50 transition group">
                     {form.cover_image_url ? (
                       <img src={form.cover_image_url} alt="cover" className="w-full h-full object-cover" />
                     ) : (
                       <div className="flex flex-col items-center gap-1.5">
                         <span className="text-3xl">{form.cover_emoji}</span>
-                        <span className="text-[10px] text-gray-600 group-hover:text-gray-400 transition">클릭하여 업로드</span>
+                        <span className="text-[10px] text-dim group-hover:text-tertiary transition">클릭하여 업로드</span>
                       </div>
                     )}
                     {imageUploading && (
@@ -804,7 +804,7 @@ export default function TracksPage() {
                       </div>
                     )}
                     {/* 1:1 배지 */}
-                    <div className="absolute top-1.5 right-1.5 bg-black/60 text-[9px] text-gray-400 px-1.5 py-0.5 rounded-md font-mono">1:1</div>
+                    <div className="absolute top-1.5 right-1.5 bg-black/60 text-[9px] text-tertiary px-1.5 py-0.5 rounded-md font-mono">1:1</div>
                   </div>
 
                   {/* 숨겨진 파일 입력 */}
@@ -813,7 +813,7 @@ export default function TracksPage() {
 
                   <div className="flex gap-1">
                     <button onClick={() => imageInputRef.current?.click()} disabled={imageUploading}
-                      className="flex-1 flex items-center justify-center gap-1 py-1.5 text-[10px] font-semibold bg-white/5 border border-white/10 text-gray-400 rounded-lg hover:text-white hover:border-white/20 transition disabled:opacity-40">
+                      className="flex-1 flex items-center justify-center gap-1 py-1.5 text-[10px] font-semibold bg-fill-subtle border border-border-subtle text-tertiary rounded-lg hover:text-primary hover:border-border-main transition disabled:opacity-40">
                       <ImagePlus size={10} /> 사진 선택
                     </button>
                     {form.cover_image_url && (
@@ -827,12 +827,12 @@ export default function TracksPage() {
                   {/* 이모지 (이미지 없을 때 대체) */}
                   {!form.cover_image_url && (
                     <div>
-                      <p className="text-[10px] text-gray-600 mb-1">이모지 (이미지 없을 때)</p>
+                      <p className="text-[10px] text-dim mb-1">이모지 (이미지 없을 때)</p>
                       <div className="flex flex-wrap gap-1 w-28">
                         {EMOJI_OPTIONS.map(e => (
                           <button key={e} onClick={() => setF('cover_emoji', e)}
                             className={`w-6 h-6 rounded-md text-sm flex items-center justify-center transition ${
-                              form.cover_emoji === e ? 'bg-[#FF6F0F]/20 border border-[#FF6F0F]' : 'bg-white/5 border border-white/10 hover:border-white/20'
+                              form.cover_emoji === e ? 'bg-[#FF6F0F]/20 border border-[#FF6F0F]' : 'bg-fill-subtle border border-border-subtle hover:border-border-main'
                             }`}>
                             {e}
                           </button>
@@ -845,17 +845,17 @@ export default function TracksPage() {
                 {/* 제목/아티스트/무드/BPM/길이 */}
                 <div className="flex-1 space-y-3">
                   <div>
-                    <label className="text-xs text-gray-500 font-semibold block mb-1.5">제목 *</label>
+                    <label className="text-xs text-muted font-semibold block mb-1.5">제목 *</label>
                     <input value={form.title} onChange={e => handleTitleChange(e.target.value)}
                       placeholder="Morning Breeze  (또는 [@handle] Morning Breeze 형식으로 입력 시 레퍼런스 자동 분리)"
-                      className="w-full bg-[#1F2937] text-white text-sm rounded-xl px-3 py-2.5 border border-white/10 outline-none placeholder-gray-600" />
+                      className="w-full bg-[#1F2937] text-primary text-sm rounded-xl px-3 py-2.5 border border-border-subtle outline-none placeholder-gray-600" />
                     {/* 레퍼런스 URL — [핸들] 패턴에서 자동 추출 또는 직접 입력 */}
                     <div className="mt-1.5 flex items-center gap-2">
                       <input
                         value={form.reference_url}
                         onChange={e => setF('reference_url', e.target.value)}
                         placeholder="https://www.youtube.com/@handle/"
-                        className="flex-1 bg-[#1F2937] text-[11px] text-gray-400 rounded-lg px-3 py-1.5 border border-white/10 outline-none placeholder-gray-600 font-mono"
+                        className="flex-1 bg-[#1F2937] text-[11px] text-tertiary rounded-lg px-3 py-1.5 border border-border-subtle outline-none placeholder-gray-600 font-mono"
                       />
                       {form.reference_url && (
                         <a href={form.reference_url} target="_blank" rel="noopener noreferrer"
@@ -867,7 +867,7 @@ export default function TracksPage() {
                     {/* Suno 원본 링크 */}
                     {form.suno_url && (
                       <div className="mt-1 flex items-center gap-2">
-                        <span className="text-[10px] text-gray-600 font-mono truncate flex-1">{form.suno_url}</span>
+                        <span className="text-[10px] text-dim font-mono truncate flex-1">{form.suno_url}</span>
                         <a href={form.suno_url} target="_blank" rel="noopener noreferrer"
                           className="text-[10px] text-purple-400 hover:underline whitespace-nowrap shrink-0">
                           🎵 Suno
@@ -876,29 +876,29 @@ export default function TracksPage() {
                     )}
                   </div>
                   <div>
-                    <label className="text-xs text-gray-500 font-semibold block mb-1.5">아티스트 *</label>
+                    <label className="text-xs text-muted font-semibold block mb-1.5">아티스트 *</label>
                     <input value={form.artist} onChange={e => setF('artist', e.target.value)}
                       placeholder="Unknown Artist"
-                      className="w-full bg-[#1F2937] text-white text-sm rounded-xl px-3 py-2.5 border border-white/10 outline-none placeholder-gray-600" />
+                      className="w-full bg-[#1F2937] text-primary text-sm rounded-xl px-3 py-2.5 border border-border-subtle outline-none placeholder-gray-600" />
                   </div>
                   <div>
-                    <label className="text-xs text-gray-500 font-semibold block mb-1.5">메인 무드 *</label>
+                    <label className="text-xs text-muted font-semibold block mb-1.5">메인 무드 *</label>
                     <input value={form.mood} onChange={e => setF('mood', e.target.value)}
                       placeholder="chill"
-                      className="w-full bg-[#1F2937] text-white text-sm rounded-xl px-3 py-2.5 border border-white/10 outline-none placeholder-gray-600" />
+                      className="w-full bg-[#1F2937] text-primary text-sm rounded-xl px-3 py-2.5 border border-border-subtle outline-none placeholder-gray-600" />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="text-xs text-gray-500 font-semibold block mb-1.5">BPM</label>
+                      <label className="text-xs text-muted font-semibold block mb-1.5">BPM</label>
                       <input value={form.bpm} onChange={e => setF('bpm', e.target.value.replace(/[^0-9]/g, ''))}
                         placeholder="120" maxLength={3}
-                        className="w-full bg-[#1F2937] text-white text-sm rounded-xl px-3 py-2.5 border border-white/10 outline-none placeholder-gray-600" />
+                        className="w-full bg-[#1F2937] text-primary text-sm rounded-xl px-3 py-2.5 border border-border-subtle outline-none placeholder-gray-600" />
                     </div>
                     <div>
-                      <label className="text-xs text-gray-500 font-semibold block mb-1.5">길이(초)</label>
+                      <label className="text-xs text-muted font-semibold block mb-1.5">길이(초)</label>
                       <input value={form.duration_sec} onChange={e => setF('duration_sec', e.target.value.replace(/[^0-9]/g, ''))}
                         placeholder="180"
-                        className="w-full bg-[#1F2937] text-white text-sm rounded-xl px-3 py-2.5 border border-white/10 outline-none placeholder-gray-600" />
+                        className="w-full bg-[#1F2937] text-primary text-sm rounded-xl px-3 py-2.5 border border-border-subtle outline-none placeholder-gray-600" />
                     </div>
                   </div>
                 </div>
@@ -906,7 +906,7 @@ export default function TracksPage() {
 
               {/* ── MP3 업로드 ── */}
               <div>
-                <label className="text-xs text-gray-500 font-semibold block mb-2">🎵 오디오 파일 *</label>
+                <label className="text-xs text-muted font-semibold block mb-2">🎵 오디오 파일 *</label>
 
                 {/* 업로드 버튼 */}
                 <div className="flex gap-2 items-stretch">
@@ -928,7 +928,7 @@ export default function TracksPage() {
 
                 {/* 업로드 완료 / URL 표시 */}
                 {form.audio_url && (
-                  <div className="mt-2 flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2">
+                  <div className="mt-2 flex items-center gap-2 bg-fill-subtle border border-border-subtle rounded-xl px-3 py-2">
                     <Link size={12} className="text-[#FF6F0F] shrink-0" />
                     <a href={form.audio_url} target="_blank" rel="noopener noreferrer"
                       className="flex-1 text-[11px] text-[#FF6F0F]/80 hover:text-[#FF6F0F] font-mono truncate hover:underline"
@@ -951,12 +951,12 @@ export default function TracksPage() {
                       className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg transition whitespace-nowrap shrink-0 ${
                         testPlaying
                           ? 'text-[#FF6F0F] bg-[#FF6F0F]/10 hover:bg-[#FF6F0F]/20'
-                          : 'text-gray-400 hover:text-white bg-white/5'
+                          : 'text-tertiary hover:text-primary bg-fill-subtle'
                       }`}>
                       {testPlaying ? <><Pause size={9} /> 테스트 정지</> : <><Play size={9} /> 테스트 재생</>}
                     </button>
                     <button onClick={() => { setF('audio_url', ''); setAudioFileName(''); }}
-                      className="text-gray-600 hover:text-red-400 transition shrink-0">
+                      className="text-dim hover:text-red-400 transition shrink-0">
                       <X size={12} />
                     </button>
                   </div>
@@ -965,7 +965,7 @@ export default function TracksPage() {
 
               {/* ── 무드 태그 ── */}
               <div>
-                <label className="text-xs text-gray-500 font-semibold block mb-2">🏷 무드 태그</label>
+                <label className="text-xs text-muted font-semibold block mb-2">🏷 무드 태그</label>
                 <div className="flex flex-wrap gap-2">
                   {MOOD_OPTIONS.map(t => (
                     <Chip key={t} label={t} active={form.mood_tags.includes(t)} onClick={() => toggleArr('mood_tags', t)} />
@@ -973,11 +973,11 @@ export default function TracksPage() {
                 </div>
 
                 {/* Suno 스타일 태그 라이브러리 (접기/펼치기) */}
-                <div className="mt-2 pt-2 border-t border-white/5">
+                <div className="mt-2 pt-2 border-t border-border-main">
                   <button
                     type="button"
                     onClick={() => setSunoTagsOpen(o => !o)}
-                    className="flex items-center gap-1.5 text-[11px] text-gray-500 hover:text-gray-300 transition mb-2">
+                    className="flex items-center gap-1.5 text-[11px] text-muted hover:text-secondary transition mb-2">
                     <span>{sunoTagsOpen ? '▾' : '▸'}</span>
                     <span>🎵 Suno 스타일 태그 라이브러리</span>
                     {/* 선택 개수 */}
@@ -1001,12 +1001,12 @@ export default function TracksPage() {
                   </button>
 
                   {sunoTagsOpen && (
-                    <div className="space-y-3 bg-white/[0.02] rounded-xl p-3 border border-white/5">
+                    <div className="space-y-3 bg-white/[0.02] rounded-xl p-3 border border-border-main">
 
                       {/* 신규 커스텀 태그 섹션 */}
                       {customLibTags.length > 0 && (
                         <div>
-                          <p className="text-[11px] font-semibold text-gray-400 mb-2">📥 임포트·신규 태그</p>
+                          <p className="text-[11px] font-semibold text-tertiary mb-2">📥 임포트·신규 태그</p>
                           <div className="flex flex-wrap gap-1.5">
                             {customLibTags.map(({ tag, addedAt }) => (
                               <LibChip key={tag} label={tag}
@@ -1022,14 +1022,14 @@ export default function TracksPage() {
                       {/* 내장 Suno 스타일 태그 */}
                       {Object.entries(SUNO_STYLE_TAGS).map(([section, cats]) => (
                         <div key={section}>
-                          <p className="text-[11px] font-semibold text-gray-400 mb-2">{section}</p>
+                          <p className="text-[11px] font-semibold text-tertiary mb-2">{section}</p>
                           <div className="space-y-2">
                             {Object.entries(cats).map(([catName, tags]) => {
                               const visible = (tags as string[]).filter(t => !hiddenTags.has(t));
                               if (!visible.length) return null;
                               return (
                                 <div key={catName} className="flex flex-wrap items-start gap-1.5">
-                                  <span className="text-[10px] text-gray-600 w-16 shrink-0 pt-1">{catName}</span>
+                                  <span className="text-[10px] text-dim w-16 shrink-0 pt-1">{catName}</span>
                                   <div className="flex flex-wrap gap-1.5 flex-1">
                                     {visible.map((t: string) => (
                                       <LibChip key={t} label={t}
@@ -1057,10 +1057,10 @@ export default function TracksPage() {
                   <div className="bg-[#818CF8]/5 border border-[#818CF8]/20 rounded-xl p-3 space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-[11px] font-semibold text-[#818CF8]">🎼 Suno 프롬프트</span>
-                      <span className="text-[10px] text-gray-600">{tags.length}개 태그{form.bpm ? ` · ${form.bpm} BPM` : ''}</span>
+                      <span className="text-[10px] text-dim">{tags.length}개 태그{form.bpm ? ` · ${form.bpm} BPM` : ''}</span>
                     </div>
                     <div className="flex items-start gap-2">
-                      <p className="flex-1 text-[11px] text-gray-300 font-mono leading-relaxed break-all">{prompt}</p>
+                      <p className="flex-1 text-[11px] text-secondary font-mono leading-relaxed break-all">{prompt}</p>
                       <button
                         type="button"
                         onClick={() => {
@@ -1083,7 +1083,7 @@ export default function TracksPage() {
 
               {/* ── 시간대 태그 ── */}
               <div>
-                <label className="text-xs text-gray-500 font-semibold block mb-2">⏰ 시간대 태그</label>
+                <label className="text-xs text-muted font-semibold block mb-2">⏰ 시간대 태그</label>
                 <div className="flex flex-wrap gap-2">
                   {TIME_OPTIONS.map(t => (
                     <Chip key={t} label={TIME_KO[t]} active={form.time_tags.includes(t)} onClick={() => toggleArr('time_tags', t)} />
@@ -1092,16 +1092,16 @@ export default function TracksPage() {
               </div>
 
               {/* ── Mood Vector 슬라이더 ── */}
-              <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3 space-y-3">
+              <div className="bg-white/[0.02] border border-border-main rounded-xl p-3 space-y-3">
                 <div className="flex items-center justify-between">
-                  <p className="text-[11px] font-semibold text-gray-500">🎚 Mood Vector <span className="font-normal text-gray-600">(0 ~ 100)</span></p>
+                  <p className="text-[11px] font-semibold text-muted">🎚 Mood Vector <span className="font-normal text-dim">(0 ~ 100)</span></p>
                   <button onClick={handleAnalyze} disabled={analyzing || !form.mood_tags.length}
                     className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-semibold transition ${
                       analyzing
                         ? 'bg-purple-500/10 text-purple-400/60 cursor-not-allowed'
                         : form.mood_tags.length
                           ? 'bg-purple-500/15 border border-purple-500/30 text-purple-400 hover:bg-purple-500/25'
-                          : 'bg-white/5 text-gray-600 cursor-not-allowed'
+                          : 'bg-fill-subtle text-dim cursor-not-allowed'
                     }`}>
                     {analyzing
                       ? <><div className="w-3 h-3 border border-purple-400/30 border-t-purple-400 rounded-full animate-spin" /> 분석 중...</>
@@ -1117,7 +1117,7 @@ export default function TracksPage() {
                   const val = form[key] === '' ? 0 : Number(form[key]);
                   return (
                     <div key={key} className="flex items-center gap-3">
-                      <span className="text-[11px] text-gray-500 w-16 shrink-0">{label}</span>
+                      <span className="text-[11px] text-muted w-16 shrink-0">{label}</span>
                       <input
                         type="range" min={0} max={100} value={form[key] === '' ? 50 : Number(form[key])}
                         onChange={e => setF(key as any, e.target.value)}
@@ -1130,7 +1130,7 @@ export default function TracksPage() {
                         </span>
                       </div>
                       {form[key] !== '' && (
-                        <button onClick={() => setF(key as any, '')} className="text-gray-700 hover:text-gray-400 transition shrink-0">
+                        <button onClick={() => setF(key as any, '')} className="text-gray-700 hover:text-tertiary transition shrink-0">
                           <X size={10} />
                         </button>
                       )}
@@ -1142,9 +1142,9 @@ export default function TracksPage() {
               {/* ── 가사 ── */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs text-gray-500 font-semibold">📝 가사</label>
+                  <label className="text-xs text-muted font-semibold">📝 가사</label>
                   {form.lyrics && (
-                    <span className="text-[10px] text-gray-600">{form.lyrics.length}자</span>
+                    <span className="text-[10px] text-dim">{form.lyrics.length}자</span>
                   )}
                 </div>
                 <textarea
@@ -1152,14 +1152,14 @@ export default function TracksPage() {
                   onChange={e => setF('lyrics', e.target.value)}
                   placeholder={"[Verse 1]\n가사를 입력하세요...\n\n[Chorus]\n..."}
                   rows={6}
-                  className="w-full bg-[#1F2937] text-white text-xs rounded-xl px-3 py-2.5 border border-white/10 outline-none placeholder-gray-600 resize-y font-mono leading-relaxed"
+                  className="w-full bg-[#1F2937] text-primary text-xs rounded-xl px-3 py-2.5 border border-border-subtle outline-none placeholder-gray-600 resize-y font-mono leading-relaxed"
                 />
               </div>
 
               {/* ── 에너지 + 카테고리 + 활성화 ── */}
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <label className="text-xs text-gray-500 font-semibold block mb-2">⚡ 에너지</label>
+                  <label className="text-xs text-muted font-semibold block mb-2">⚡ 에너지</label>
                   <div className="flex gap-2">
                     {ENERGY_OPTIONS.map(e => (
                       <button key={e} onClick={() => setF('energy_level', form.energy_level === e ? '' : e)}
@@ -1168,7 +1168,7 @@ export default function TracksPage() {
                             ? e === 'high'   ? 'bg-red-500/20 border border-red-500 text-red-400'
                             : e === 'medium' ? 'bg-yellow-500/20 border border-yellow-500 text-yellow-400'
                             :                  'bg-green-500/20 border border-green-500 text-green-400'
-                            : 'bg-white/5 border border-white/10 text-gray-400'
+                            : 'bg-fill-subtle border border-border-subtle text-tertiary'
                         }`}>
                         {ENERGY_KO[e]}
                       </button>
@@ -1176,21 +1176,21 @@ export default function TracksPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 font-semibold block mb-2">📁 카테고리</label>
+                  <label className="text-xs text-muted font-semibold block mb-2">📁 카테고리</label>
                   <select value={form.store_category} onChange={e => setF('store_category', e.target.value)}
-                    className="w-full bg-[#1F2937] text-white text-sm rounded-xl px-3 py-2.5 border border-white/10 outline-none">
+                    className="w-full bg-[#1F2937] text-primary text-sm rounded-xl px-3 py-2.5 border border-border-subtle outline-none">
                     {CATEGORY_OPTIONS.map(c => (
                       <option key={c} value={c}>{CATEGORY_KO[c]}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 font-semibold block mb-2">상태</label>
+                  <label className="text-xs text-muted font-semibold block mb-2">상태</label>
                   <button onClick={() => setF('is_active', !form.is_active)}
                     className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-semibold transition w-full justify-center ${
                       form.is_active
                         ? 'bg-green-500/15 border-green-500/30 text-green-400'
-                        : 'bg-white/5 border-white/10 text-gray-500'
+                        : 'bg-fill-subtle border-border-subtle text-muted'
                     }`}>
                     {form.is_active ? <Check size={14} /> : <X size={14} />}
                     {form.is_active ? '활성화' : '비활성'}
@@ -1200,13 +1200,13 @@ export default function TracksPage() {
             </div>
 
             {/* 모달 푸터 */}
-            <div className="flex gap-3 px-6 py-4 border-t border-white/5 shrink-0">
+            <div className="flex gap-3 px-6 py-4 border-t border-border-main shrink-0">
               <button onClick={() => { testAudioRef.current?.pause(); testAudioRef.current = null; setTestPlaying(false); setModal(false); }}
-                className="flex-1 py-2.5 bg-white/5 border border-white/10 text-gray-400 text-sm font-semibold rounded-xl hover:text-white transition">
+                className="flex-1 py-2.5 bg-fill-subtle border border-border-subtle text-tertiary text-sm font-semibold rounded-xl hover:text-primary transition">
                 취소
               </button>
               <button onClick={handleSave} disabled={saving || audioUploading || imageUploading}
-                className="flex-1 py-2.5 bg-[#FF6F0F] text-white text-sm font-bold rounded-xl hover:bg-[#FF6F0F]/90 disabled:opacity-50 transition flex items-center justify-center gap-2">
+                className="flex-1 py-2.5 bg-[#FF6F0F] text-primary text-sm font-bold rounded-xl hover:bg-[#FF6F0F]/90 disabled:opacity-50 transition flex items-center justify-center gap-2">
                 {saving
                   ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> 저장 중...</>
                   : <><Check size={14} /> {editId ? '수정 완료' : '등록하기'}</>
@@ -1230,11 +1230,11 @@ export default function TracksPage() {
     return (
       <div key={track.id}
         className={`group relative flex flex-col rounded-xl overflow-hidden bg-white/[0.03] border transition hover:bg-white/[0.06] ${
-          !track.is_active ? 'opacity-50' : 'border-white/5 hover:border-white/10'
+          !track.is_active ? 'opacity-50' : 'border-border-main hover:border-border-subtle'
         }`}>
 
                   {/* 커버 */}
-                  <div className="relative aspect-square bg-white/5">
+                  <div className="relative aspect-square bg-fill-subtle">
                     {track.cover_image_url ? (
                       <img src={track.cover_image_url} alt={track.title}
                         className="w-full h-full object-cover" />
@@ -1246,7 +1246,7 @@ export default function TracksPage() {
 
                     {/* 런타임 오버레이 */}
                     {dur && (
-                      <span className="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-black/60 text-white/90 leading-none">
+                      <span className="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-black/60 text-primary/90 leading-none">
                         {dur}
                       </span>
                     )}
@@ -1266,8 +1266,8 @@ export default function TracksPage() {
                           : 'bg-white opacity-0 group-hover:opacity-100'
                       }`}>
                         {isPlaying
-                          ? <Pause size={14} className={isActive ? 'text-white' : 'text-[#0D0F14]'} />
-                          : <Play  size={14} className={isActive ? 'text-white' : 'text-[#0D0F14] ml-0.5'} />
+                          ? <Pause size={14} className={isActive ? 'text-primary' : 'text-[#0D0F14]'} />
+                          : <Play  size={14} className={isActive ? 'text-primary' : 'text-[#0D0F14] ml-0.5'} />
                         }
                       </span>
                     </button>
@@ -1275,8 +1275,8 @@ export default function TracksPage() {
 
                   {/* 트랙 정보 */}
                   <div className="p-2.5 flex flex-col gap-1 flex-1">
-                    <p className="text-white text-xs font-semibold truncate leading-tight">{track.title}</p>
-                    <p className="text-gray-500 text-[10px] truncate">{track.artist}</p>
+                    <p className="text-primary text-xs font-semibold truncate leading-tight">{track.title}</p>
+                    <p className="text-muted text-[10px] truncate">{track.artist}</p>
                     {/* 태그 */}
                     {(track.mood_tags ?? []).length > 0 && (
                       <div className="flex flex-wrap gap-0.5 mt-0.5">
@@ -1284,11 +1284,11 @@ export default function TracksPage() {
                           <span key={t} className={`text-[9px] px-1.5 py-0.5 rounded leading-none ${
                             i === 0
                               ? 'bg-[#FF6F0F]/15 border border-[#FF6F0F]/40 text-[#FF6F0F] font-semibold'
-                              : 'bg-white/5 border border-white/10 text-gray-500'
+                              : 'bg-fill-subtle border border-border-subtle text-muted'
                           }`}>{t}</span>
                         ))}
                         {(track.mood_tags ?? []).length > 3 && (
-                          <span className="text-[9px] px-1 py-0.5 bg-white/5 text-gray-600 rounded leading-none">
+                          <span className="text-[9px] px-1 py-0.5 bg-fill-subtle text-dim rounded leading-none">
                             +{(track.mood_tags ?? []).length - 3}
                           </span>
                         )}
@@ -1296,7 +1296,7 @@ export default function TracksPage() {
                     )}
 
                     {/* 통계 뱃지 */}
-                    <div className="flex items-center gap-2 text-[10px] text-gray-600 mt-0.5">
+                    <div className="flex items-center gap-2 text-[10px] text-dim mt-0.5">
                       <span className="flex items-center gap-0.5"><Headphones size={9} />{(track.play_count ?? 0).toLocaleString()}</span>
                       <span className="flex items-center gap-0.5"><Heart size={9} />{(track.like_count ?? 0).toLocaleString()}</span>
                       <span className="flex items-center gap-0.5"><ListMusicIcon size={9} />{plCount}</span>
@@ -1321,29 +1321,29 @@ export default function TracksPage() {
                         ].map(({ val, color, label }) => val != null ? (
                           <div key={label} className="flex items-center gap-1">
                             <span className="text-[8px] w-3 shrink-0">{label}</span>
-                            <div className="flex-1 h-1 bg-white/5 rounded-full overflow-hidden">
+                            <div className="flex-1 h-1 bg-fill-subtle rounded-full overflow-hidden">
                               <div className="h-full rounded-full" style={{ width: `${Math.round(val * 100)}%`, backgroundColor: color, opacity: 0.8 }} />
                             </div>
-                            <span className="text-[8px] font-mono text-gray-600 w-4 text-right">{Math.round(val * 100)}</span>
+                            <span className="text-[8px] font-mono text-dim w-4 text-right">{Math.round(val * 100)}</span>
                           </div>
                         ) : null)}
                       </div>
                     )}
 
                     {/* 액션 바 */}
-                    <div className="flex items-center justify-between mt-auto pt-1.5 border-t border-white/5">
+                    <div className="flex items-center justify-between mt-auto pt-1.5 border-t border-border-main">
                       <button onClick={() => handleToggle(track)} disabled={toggling === track.id}
                         className="flex items-center gap-1 text-[10px] font-semibold transition">
                         {toggling === track.id
                           ? <div className="w-3 h-3 border border-gray-500 border-t-white rounded-full animate-spin" />
                           : track.is_active
                             ? <><ToggleRight size={14} className="text-green-400" /><span className="text-green-400">활성</span></>
-                            : <><ToggleLeft  size={14} className="text-gray-600"  /><span className="text-gray-600">비활성</span></>
+                            : <><ToggleLeft  size={14} className="text-dim"  /><span className="text-dim">비활성</span></>
                         }
                       </button>
                       <div className="flex gap-1">
                         <button onClick={() => openEdit(track)}
-                          className="w-6 h-6 flex items-center justify-center rounded bg-white/5 text-gray-500 hover:text-white transition">
+                          className="w-6 h-6 flex items-center justify-center rounded bg-fill-subtle text-muted hover:text-primary transition">
                           <Pencil size={11} />
                         </button>
                         <button onClick={() => handleDelete(track)} disabled={deleting === track.id}

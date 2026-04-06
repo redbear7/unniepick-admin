@@ -88,8 +88,8 @@ export default function ContextsPage() {
   return (
     <div className="p-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-white">매장 컨텍스트</h1>
-        <p className="text-sm text-gray-500 mt-1">
+        <h1 className="text-2xl font-bold text-primary">매장 컨텍스트</h1>
+        <p className="text-sm text-muted mt-1">
           전체 {contexts.length}개 · 인테리어 분석 완료 {analyzedCount}개
         </p>
       </div>
@@ -99,7 +99,7 @@ export default function ContextsPage() {
         {Object.entries(districtCounts).map(([type, count]) => (
           <div
             key={type}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold ${DISTRICT_COLOR[type] ?? 'bg-white/5 text-gray-400'}`}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold ${DISTRICT_COLOR[type] ?? 'bg-fill-subtle text-tertiary'}`}
           >
             <Building2 size={11} />
             {type} {count}
@@ -109,12 +109,12 @@ export default function ContextsPage() {
 
       {/* 검색 */}
       <div className="relative mb-5">
-        <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
+        <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
         <input
           value={query}
           onChange={e => setQuery(e.target.value)}
           placeholder="매장명, 지역 검색"
-          className="w-full bg-[#1A1D23] border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#FF6F0F] transition"
+          className="w-full bg-card border border-border-subtle rounded-xl pl-9 pr-4 py-2.5 text-sm text-primary placeholder-gray-600 focus:outline-none focus:border-[#FF6F0F] transition"
         />
       </div>
 
@@ -122,24 +122,24 @@ export default function ContextsPage() {
       <div className="space-y-3">
         {loading ? (
           [...Array(4)].map((_, i) => (
-            <div key={i} className="bg-[#1A1D23] rounded-2xl p-5 animate-pulse h-36" />
+            <div key={i} className="bg-card rounded-2xl p-5 animate-pulse h-36" />
           ))
         ) : filtered.length === 0 ? (
-          <div className="text-center py-16 text-gray-600">수집된 컨텍스트가 없어요</div>
+          <div className="text-center py-16 text-dim">수집된 컨텍스트가 없어요</div>
         ) : (
           filtered.map(ctx => {
             const weather = ctx.weather_zone ? WEATHER_LABEL[ctx.weather_zone] : null;
-            const districtColor = DISTRICT_COLOR[ctx.district_type ?? ''] ?? 'bg-white/5 text-gray-400';
+            const districtColor = DISTRICT_COLOR[ctx.district_type ?? ''] ?? 'bg-fill-subtle text-tertiary';
 
             return (
-              <div key={ctx.id} className="bg-[#1A1D23] border border-white/5 rounded-2xl p-5">
+              <div key={ctx.id} className="bg-card border border-border-main rounded-2xl p-5">
                 {/* 헤더 */}
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div>
-                    <p className="font-bold text-white text-sm">{ctx.stores?.name ?? '알 수 없음'}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">{ctx.stores?.category ?? ''}</p>
+                    <p className="font-bold text-primary text-sm">{ctx.stores?.name ?? '알 수 없음'}</p>
+                    <p className="text-xs text-muted mt-0.5">{ctx.stores?.category ?? ''}</p>
                   </div>
-                  <div className="flex items-center gap-1.5 text-xs text-gray-600 shrink-0">
+                  <div className="flex items-center gap-1.5 text-xs text-dim shrink-0">
                     <RefreshCw size={10} />
                     {new Date(ctx.updated_at).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                   </div>
@@ -167,7 +167,7 @@ export default function ContextsPage() {
 
                 {/* 지역 */}
                 {ctx.district_detail && (
-                  <p className="text-xs text-gray-500 flex items-center gap-1 mb-3">
+                  <p className="text-xs text-muted flex items-center gap-1 mb-3">
                     <MapPin size={10} /> {ctx.district_detail}
                   </p>
                 )}
@@ -175,7 +175,7 @@ export default function ContextsPage() {
                 {/* 메뉴 태그 */}
                 {ctx.menu_tags && ctx.menu_tags.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mb-2">
-                    <span className="text-xs text-gray-600 self-center">메뉴:</span>
+                    <span className="text-xs text-dim self-center">메뉴:</span>
                     {ctx.menu_tags.map(tag => (
                       <span key={tag} className="px-2 py-0.5 bg-[#FF6F0F]/10 text-[#FF6F0F] rounded-full text-xs font-medium">
                         {tag}
@@ -187,7 +187,7 @@ export default function ContextsPage() {
                 {/* 인테리어 태그 */}
                 {ctx.interior_tags && ctx.interior_tags.length > 0 && (
                   <div className="flex flex-wrap gap-1.5">
-                    <span className="text-xs text-gray-600 self-center">인테리어:</span>
+                    <span className="text-xs text-dim self-center">인테리어:</span>
                     {ctx.interior_tags.map(tag => (
                       <span key={tag} className="px-2 py-0.5 bg-purple-500/10 text-purple-400 rounded-full text-xs font-medium">
                         {tag}
@@ -198,9 +198,9 @@ export default function ContextsPage() {
 
                 {/* 주변 POI */}
                 {ctx.nearby_counts && (
-                  <div className="mt-3 pt-3 border-t border-white/5 flex gap-4 text-xs text-gray-500">
+                  <div className="mt-3 pt-3 border-t border-border-main flex gap-4 text-xs text-muted">
                     {Object.entries(ctx.nearby_counts).map(([key, val]) => (
-                      <span key={key}>{key} <strong className="text-gray-300">{val}</strong></span>
+                      <span key={key}>{key} <strong className="text-secondary">{val}</strong></span>
                     ))}
                   </div>
                 )}

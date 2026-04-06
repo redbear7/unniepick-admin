@@ -182,7 +182,12 @@ export default function AnnouncementsPage() {
         audioUrl = data.audio_url;
         setCachedAudio(fullText, voice, speed, audioUrl);
       }
-      const blobUrl = await fetchBlobUrl(audioUrl, sessionCacheKey(fullText, voice, speed));
+      let blobUrl: string;
+      try {
+        blobUrl = await fetchBlobUrl(audioUrl, sessionCacheKey(fullText, voice, speed));
+      } catch {
+        blobUrl = audioUrl;
+      }
       if (player.track) {
         player.playAnnouncement(blobUrl, { duck_volume: duckVolume, play_mode: 'immediate', ann_volume: annVolume });
       } else {
@@ -205,7 +210,9 @@ export default function AnnouncementsPage() {
     const fullText = `${greetingPfx()}${callTemplate.replaceAll('{num}', numToKorean(n))}`;
     const cachedUrl = getCachedAudio(fullText, voice, speed);
     if (!cachedUrl) { handleCallNum(n); return; }
-    const playUrl = await fetchBlobUrl(cachedUrl, sessionCacheKey(fullText, voice, speed));
+    let playUrl: string;
+    try { playUrl = await fetchBlobUrl(cachedUrl, sessionCacheKey(fullText, voice, speed)); }
+    catch { playUrl = cachedUrl; }
     playAudio(playUrl, `call_${n}`, player.volume * annVolume / 100, callRepeat);
     setLastCalledNum(n);
     const callAnn = makeAnnouncement(fullText, cachedUrl, 'call');
@@ -222,8 +229,10 @@ export default function AnnouncementsPage() {
     try {
       let audioUrl: string;
       const cached = getCachedAudio(fullText, voice, speed);
-      if (cached) { audioUrl = cached; }
-      else {
+      if (cached) {
+        audioUrl = cached;
+        setCacheHit(true);
+      } else {
         const res = await fetch('/api/tts/generate', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ text: fullText, voice_type: voice, speed, store_id: null, play_mode: playMode, repeat_count: repeat, duck_volume: duckVolume }),
@@ -234,7 +243,14 @@ export default function AnnouncementsPage() {
         setCachedAudio(fullText, voice, speed, audioUrl);
         setCacheHit(true);
       }
-      const playUrl = await fetchBlobUrl(audioUrl, sessionCacheKey(fullText, voice, speed));
+      const sKey = sessionCacheKey(fullText, voice, speed);
+      let playUrl: string;
+      try {
+        playUrl = await fetchBlobUrl(audioUrl, sKey);
+      } catch {
+        // fetchBlobUrl 실패 시 원본 URL로 직접 재생
+        playUrl = audioUrl;
+      }
       const newAnn = makeAnnouncement(fullText, audioUrl, 'template');
       pushHistoryToLS(newAnn);
       setAnnouncements(prev => [newAnn, ...prev]);
@@ -333,29 +349,29 @@ export default function AnnouncementsPage() {
   // ─── Render ───────────────────────────────────────────────────
   return (
     <>
-    <div className="min-h-screen bg-[#0D0F14] text-white flex flex-col">
+    <div className="min-h-screen bg-surface text-primary flex flex-col">
       {/* 헤더 */}
-      <div className="px-6 py-5 border-b border-white/5 flex items-center justify-between">
+      <div className="px-6 py-5 border-b border-border-main flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Megaphone size={20} className="text-[#FF6F0F]" />
           <div>
             <h1 className="text-lg font-bold">AI 음성안내</h1>
-            <p className="text-xs text-gray-500">매장 안내방송 생성 및 관리</p>
+            <p className="text-xs text-muted">매장 안내방송 생성 및 관리</p>
           </div>
         </div>
         <div className="relative">
           <select value={selectedStore} onChange={e => setSelectedStore(e.target.value)}
-            className="appearance-none bg-[#1A1D23] border border-white/10 text-sm text-white rounded-xl px-4 py-2 pr-8 outline-none cursor-pointer">
+            className="appearance-none bg-card border border-border-subtle text-sm text-primary rounded-xl px-4 py-2 pr-8 outline-none cursor-pointer">
             <option value="">전체 가게</option>
             {stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
-          <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+          <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
         </div>
       </div>
 
       <div className="flex flex-1 gap-0 overflow-hidden">
         {/* ── 생성 패널 ── */}
-        <div className="w-[380px] shrink-0 border-r border-white/5 p-5 overflow-y-auto space-y-5">
+        <div className="w-[380px] shrink-0 border-r border-border-main p-5 overflow-y-auto space-y-5">
 
           {/* 성우 카드 */}
           <VoiceCardGrid
@@ -372,14 +388,14 @@ export default function AnnouncementsPage() {
             <div className="flex items-center">
               <button onClick={() => setCallOpen(v => !v)}
                 className="flex-1 flex items-center justify-between px-4 py-3 hover:bg-white/[0.03] transition">
-                <span className="text-xs font-bold text-white flex items-center gap-2">
+                <span className="text-xs font-bold text-primary flex items-center gap-2">
                   <Radio size={13} className="text-[#FF6F0F]" /> 고객 호출
                 </span>
-                <ChevronDown size={13} className={`text-gray-500 transition-transform ${callOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown size={13} className={`text-muted transition-transform ${callOpen ? 'rotate-180' : ''}`} />
               </button>
               <button onClick={() => { setCallFullscreen(true); setFsStartDraft(callStartNum); }}
                 title="크게보기"
-                className="px-3 py-3 text-gray-500 hover:text-white transition border-l border-white/5">
+                className="px-3 py-3 text-muted hover:text-primary transition border-l border-border-main">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
                   <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
@@ -388,21 +404,21 @@ export default function AnnouncementsPage() {
             </div>
 
             {callOpen && (
-              <div className="px-4 pb-4 space-y-3 border-t border-white/5">
+              <div className="px-4 pb-4 space-y-3 border-t border-border-main">
                 <div className="pt-3 space-y-1">
-                  <label className="text-[10px] text-gray-500 font-semibold">호출 문구 ({'{num}'}은 번호로 대체)</label>
+                  <label className="text-[10px] text-muted font-semibold">호출 문구 ({'{num}'}은 번호로 대체)</label>
                   <input value={callTemplate}
                     onChange={e => { setCallTemplate(e.target.value); try { localStorage.setItem(CALL_TEMPLATE_KEY, e.target.value); } catch {} }}
-                    className="w-full px-3 py-2 bg-white/[0.03] border border-white/10 rounded-xl text-sm text-white placeholder-gray-600 outline-none focus:border-[#FF6F0F]/40" />
-                  <p className="text-[10px] text-gray-600">
-                    미리보기: <span className="text-gray-400">"{greetingPfx() + callTemplate.replaceAll('{num}', '101')}"</span>
+                    className="w-full px-3 py-2 bg-white/[0.03] border border-border-subtle rounded-xl text-sm text-primary placeholder-gray-600 outline-none focus:border-[#FF6F0F]/40" />
+                  <p className="text-[10px] text-dim">
+                    미리보기: <span className="text-tertiary">"{greetingPfx() + callTemplate.replaceAll('{num}', '101')}"</span>
                   </p>
                   <div className="flex items-center gap-2 pt-0.5">
-                    <span className="text-[10px] text-gray-500 font-semibold">반복</span>
+                    <span className="text-[10px] text-muted font-semibold">반복</span>
                     {[1, 2].map(n => (
                       <button key={n} onClick={() => setCallRepeat(n)}
                         className={`px-3 py-1 rounded-lg text-[11px] font-bold transition ${
-                          callRepeat === n ? 'bg-[#FF6F0F] text-white' : 'bg-white/[0.04] text-gray-400 hover:bg-white/[0.08]'
+                          callRepeat === n ? 'bg-[#FF6F0F] text-primary' : 'bg-white/[0.04] text-tertiary hover:bg-white/[0.08]'
                         }`}>{n}회</button>
                     ))}
                   </div>
@@ -410,15 +426,15 @@ export default function AnnouncementsPage() {
 
                 {/* 즉시 호출 */}
                 <div className="space-y-1">
-                  <label className="text-[10px] text-gray-500 font-semibold">⚡ 즉시 호출 (번호 입력 후 Enter)</label>
+                  <label className="text-[10px] text-muted font-semibold">⚡ 즉시 호출 (번호 입력 후 Enter)</label>
                   <div className="flex gap-2">
                     <input ref={directCallRef} type="number" value={directCallNum}
                       onChange={e => setDirectCallNum(e.target.value)}
                       onKeyDown={e => { if (e.key === 'Enter') handleDirectCall(); }}
                       placeholder="번호 입력"
-                      className="flex-1 px-3 py-2 bg-white/[0.03] border border-white/10 rounded-xl text-sm text-white placeholder-gray-600 outline-none focus:border-[#FF6F0F]/40 [appearance:textfield]" />
+                      className="flex-1 px-3 py-2 bg-white/[0.03] border border-border-subtle rounded-xl text-sm text-primary placeholder-gray-600 outline-none focus:border-[#FF6F0F]/40 [appearance:textfield]" />
                     <button onClick={handleDirectCall} disabled={callingNum !== null || !directCallNum}
-                      className="px-4 py-2 bg-[#FF6F0F] text-white text-sm font-bold rounded-xl disabled:opacity-40 transition hover:bg-[#FF6F0F]/90">
+                      className="px-4 py-2 bg-[#FF6F0F] text-primary text-sm font-bold rounded-xl disabled:opacity-40 transition hover:bg-[#FF6F0F]/90">
                       {callingNum !== null ? <Loader2 size={14} className="animate-spin" /> : '호출'}
                     </button>
                   </div>
@@ -427,11 +443,11 @@ export default function AnnouncementsPage() {
                 {/* 번호 그리드 */}
                 <div className="space-y-1.5">
                   <div className="flex items-center gap-2">
-                    <label className="text-[10px] text-gray-500 font-semibold">시작 번호</label>
+                    <label className="text-[10px] text-muted font-semibold">시작 번호</label>
                     <input type="number" value={callStartNum} onChange={e => setCallStartNum(e.target.value)}
                       placeholder="예) 100"
-                      className="w-24 px-2 py-1 bg-white/[0.03] border border-white/10 rounded-lg text-xs text-white placeholder-gray-600 outline-none focus:border-[#FF6F0F]/40 [appearance:textfield]" />
-                    {callStartNum && <span className="text-[10px] text-gray-600">{callStartNum} ~ {Number(callStartNum) + CALL_CARD_COUNT - 1}</span>}
+                      className="w-24 px-2 py-1 bg-white/[0.03] border border-border-subtle rounded-lg text-xs text-primary placeholder-gray-600 outline-none focus:border-[#FF6F0F]/40 [appearance:textfield]" />
+                    {callStartNum && <span className="text-[10px] text-dim">{callStartNum} ~ {Number(callStartNum) + CALL_CARD_COUNT - 1}</span>}
                   </div>
                   <CallNumberGrid
                     callStartNum={callStartNum} callingNum={callingNum} lastCalledNum={lastCalledNum}
@@ -439,7 +455,7 @@ export default function AnnouncementsPage() {
                     isCached={n => !!getCachedAudio(`${greetingPfx()}${callTemplate.replaceAll('{num}', String(n))}`, voice, speed)}
                   />
                   {!callStartNum && (
-                    <p className="text-[10px] text-gray-600 text-center py-3">시작 번호를 입력하면 번호 카드가 나타납니다</p>
+                    <p className="text-[10px] text-dim text-center py-3">시작 번호를 입력하면 번호 카드가 나타납니다</p>
                   )}
                 </div>
               </div>
@@ -449,7 +465,7 @@ export default function AnnouncementsPage() {
           {/* 템플릿 */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-xs text-gray-500 font-semibold flex items-center gap-1.5">
+              <label className="text-xs text-muted font-semibold flex items-center gap-1.5">
                 <BookMarked size={11} /> 템플릿
               </label>
               <button onClick={() => openTplModal(null)}
@@ -465,17 +481,17 @@ export default function AnnouncementsPage() {
                   <div key={key} className="relative group">
                     <button onClick={() => handleSelectTemplate(tpl, key)}
                       className={`flex flex-col items-center gap-0.5 px-2.5 py-2 rounded-xl border transition min-w-[56px] ${
-                        isActive ? 'bg-[#FF6F0F]/15 border-[#FF6F0F]/50' : 'bg-white/[0.03] border-white/10 hover:border-white/20'
+                        isActive ? 'bg-[#FF6F0F]/15 border-[#FF6F0F]/50' : 'bg-white/[0.03] border-border-subtle hover:border-border-main'
                       }`}>
                       <span className="text-xl leading-none">{tpl.emoji}</span>
-                      <span className={`text-[9px] font-bold mt-0.5 text-center leading-tight ${isActive ? 'text-[#FF6F0F]' : 'text-gray-400'}`}>
+                      <span className={`text-[9px] font-bold mt-0.5 text-center leading-tight ${isActive ? 'text-[#FF6F0F]' : 'text-tertiary'}`}>
                         {tpl.label}
                       </span>
                       {tpl.sched_time !== '' && <span className="text-[8px]">⏰</span>}
                     </button>
                     <button onClick={e => { e.stopPropagation(); openTplModal(tpl); }}
-                      className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#1A1D23] border border-white/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
-                      <Pencil size={7} className="text-gray-400" />
+                      className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-card border border-border-main flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                      <Pencil size={7} className="text-tertiary" />
                     </button>
                   </div>
                 );
@@ -484,10 +500,10 @@ export default function AnnouncementsPage() {
             {selectedTplId !== null && (
               <div className="flex items-center gap-2">
                 <button onClick={handleSaveToTemplate}
-                  className="flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:border-white/20 transition">
+                  className="flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-lg bg-fill-subtle border border-border-subtle text-tertiary hover:text-primary hover:border-border-main transition">
                   <BookMarked size={9} /> 📌 현재 설정을 템플릿에 저장
                 </button>
-                <button onClick={() => setSelectedTplId(null)} className="text-[10px] text-gray-600 hover:text-gray-400">
+                <button onClick={() => setSelectedTplId(null)} className="text-[10px] text-dim hover:text-tertiary">
                   <X size={10} />
                 </button>
               </div>
@@ -497,41 +513,41 @@ export default function AnnouncementsPage() {
           {/* 인사말 */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <label className="text-xs text-gray-500 font-semibold">👋 인사말</label>
+              <label className="text-xs text-muted font-semibold">👋 인사말</label>
               <button onClick={() => setGreetingOn(v => !v)}
                 className={`text-[10px] font-semibold px-2 py-0.5 rounded-full transition ${
-                  greetingOn ? 'bg-[#FF6F0F]/20 text-[#FF6F0F]' : 'bg-white/5 text-gray-500'
+                  greetingOn ? 'bg-[#FF6F0F]/20 text-[#FF6F0F]' : 'bg-fill-subtle text-muted'
                 }`}>{greetingOn ? 'ON' : 'OFF'}</button>
             </div>
             <input value={greeting}
               onChange={e => { setGreeting(e.target.value); try { localStorage.setItem(GREETING_KEY, e.target.value); } catch {} }}
               placeholder="예) 안녕하세요, 고객 여러분."
-              className={`w-full px-3 py-2 border rounded-xl text-sm text-white placeholder-gray-600 outline-none transition ${
-                greetingOn ? 'bg-[#FF6F0F]/5 border-[#FF6F0F]/20 focus:border-[#FF6F0F]/40' : 'bg-white/[0.02] border-white/5 opacity-40'
+              className={`w-full px-3 py-2 border rounded-xl text-sm text-primary placeholder-gray-600 outline-none transition ${
+                greetingOn ? 'bg-[#FF6F0F]/5 border-[#FF6F0F]/20 focus:border-[#FF6F0F]/40' : 'bg-white/[0.02] border-border-main opacity-40'
               }`} disabled={!greetingOn} />
             {greetingOn && greeting.trim() && (
-              <p className="text-[10px] text-gray-600 px-1">미리보기: <span className="text-gray-400">"{greeting.trim()} (안내 문구...)"</span></p>
+              <p className="text-[10px] text-dim px-1">미리보기: <span className="text-tertiary">"{greeting.trim()} (안내 문구...)"</span></p>
             )}
           </div>
 
           {/* 안내 문구 */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <label className="text-xs text-gray-500 font-semibold">🎙 안내 문구 *</label>
+              <label className="text-xs text-muted font-semibold">🎙 안내 문구 *</label>
               <div className="flex items-center gap-2">
                 {cacheHit && <span className="flex items-center gap-1 text-[10px] text-green-400"><DatabaseZap size={9} /> 캐시</span>}
-                <span className={`text-[10px] ${text.length > 180 ? 'text-red-400' : 'text-gray-600'}`}>{text.length}/200</span>
+                <span className={`text-[10px] ${text.length > 180 ? 'text-red-400' : 'text-dim'}`}>{text.length}/200</span>
               </div>
             </div>
             <textarea value={text}
               onChange={e => { const v = e.target.value.slice(0, 200); setText(v); checkCache(v, voice, speed); }}
               rows={3} placeholder="안내 문구를 입력하세요"
-              className="w-full bg-[#1A1D23] border border-white/10 text-sm text-white rounded-xl px-3 py-2.5 outline-none placeholder-gray-600 resize-none" />
+              className="w-full bg-card border border-border-subtle text-sm text-primary rounded-xl px-3 py-2.5 outline-none placeholder-gray-600 resize-none" />
           </div>
 
           {/* 생성 버튼 */}
           <button onClick={handleGenerate} disabled={generating || !text.trim()}
-            className="w-full flex items-center justify-center gap-2 py-3 bg-[#FF6F0F] text-white text-sm font-bold rounded-xl hover:bg-[#FF6F0F]/90 disabled:opacity-50 disabled:cursor-not-allowed transition">
+            className="w-full flex items-center justify-center gap-2 py-3 bg-[#FF6F0F] text-primary text-sm font-bold rounded-xl hover:bg-[#FF6F0F]/90 disabled:opacity-50 disabled:cursor-not-allowed transition">
             {generating
               ? <><Loader2 size={16} className="animate-spin" /> {cacheHit ? '재사용 중...' : '생성 중...'}</>
               : cacheHit
@@ -539,18 +555,18 @@ export default function AnnouncementsPage() {
                 : <><Volume2 size={16} /> 템플릿음성생성</>
             }
           </button>
-          <p className="text-[10px] text-gray-600 text-center">
+          <p className="text-[10px] text-dim text-center">
             {cacheHit ? '동일 문구·목소리 → 캐시 재사용 (API 미호출)' : 'Fish Audio TTS · 생성 후 즉시 미리듣기'}
           </p>
 
           {/* 속도 */}
           <div className="space-y-2">
-            <label className="text-xs text-gray-500 font-semibold">⚡ 속도</label>
+            <label className="text-xs text-muted font-semibold">⚡ 속도</label>
             <div className="flex gap-1.5">
               {SPEED_OPTIONS.map(s => (
                 <button key={s} onClick={() => { setSpeed(s); checkCache(text, voice, s); }}
                   className={`flex-1 py-1.5 rounded-lg text-xs font-semibold border transition ${
-                    speed === s ? 'bg-[#FF6F0F]/15 border-[#FF6F0F]/50 text-[#FF6F0F]' : 'bg-white/[0.03] border-white/10 text-gray-400 hover:border-white/20'
+                    speed === s ? 'bg-[#FF6F0F]/15 border-[#FF6F0F]/50 text-[#FF6F0F]' : 'bg-white/[0.03] border-border-subtle text-tertiary hover:border-border-main'
                   }`}>{s}x</button>
               ))}
             </div>
@@ -559,23 +575,23 @@ export default function AnnouncementsPage() {
           {/* 재생 모드 + 반복 */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <label className="text-xs text-gray-500 font-semibold">📡 방송 방식</label>
+              <label className="text-xs text-muted font-semibold">📡 방송 방식</label>
               <div className="space-y-1">
                 {PLAY_MODES.map(m => (
                   <button key={m.value} onClick={() => setPlayMode(m.value as any)}
                     className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
-                      playMode === m.value ? 'bg-[#FF6F0F]/15 border-[#FF6F0F]/50 text-[#FF6F0F]' : 'bg-white/[0.03] border-white/10 text-gray-400 hover:border-white/20'
+                      playMode === m.value ? 'bg-[#FF6F0F]/15 border-[#FF6F0F]/50 text-[#FF6F0F]' : 'bg-white/[0.03] border-border-subtle text-tertiary hover:border-border-main'
                     }`}>{m.label}</button>
                 ))}
               </div>
             </div>
             <div className="space-y-2">
-              <label className="text-xs text-gray-500 font-semibold">🔁 반복</label>
+              <label className="text-xs text-muted font-semibold">🔁 반복</label>
               <div className="space-y-1">
                 {[1, 2, 3].map(n => (
                   <button key={n} onClick={() => setRepeat(n)}
                     className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
-                      repeat === n ? 'bg-[#FF6F0F]/15 border-[#FF6F0F]/50 text-[#FF6F0F]' : 'bg-white/[0.03] border-white/10 text-gray-400 hover:border-white/20'
+                      repeat === n ? 'bg-[#FF6F0F]/15 border-[#FF6F0F]/50 text-[#FF6F0F]' : 'bg-white/[0.03] border-border-subtle text-tertiary hover:border-border-main'
                     }`}>{n}회</button>
                 ))}
               </div>
@@ -583,36 +599,36 @@ export default function AnnouncementsPage() {
           </div>
 
           {/* 안내방송 볼륨 */}
-          <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3 space-y-2">
+          <div className="bg-white/[0.02] border border-border-main rounded-xl p-3 space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-xs text-gray-500 font-semibold">📢 안내방송 볼륨</label>
+              <label className="text-xs text-muted font-semibold">📢 안내방송 볼륨</label>
               <span className={`text-xs font-bold ${annVolume > 100 ? 'text-yellow-400' : 'text-[#FF6F0F]'}`}>{annVolume}%</span>
             </div>
             <input type="range" min={50} max={200} step={5}
               value={annVolume} onChange={e => { setAnnVolume(Number(e.target.value)); checkCache(text, voice, speed); }}
               className="w-full h-1.5 rounded-full cursor-pointer" style={{ accentColor: annVolume > 100 ? '#facc15' : '#FF6F0F' }} />
-            <div className="flex justify-between text-[9px] text-gray-600">
-              <span>50%</span><span className="text-gray-500">100% = 음악 볼륨</span><span>200%</span>
+            <div className="flex justify-between text-[9px] text-dim">
+              <span>50%</span><span className="text-muted">100% = 음악 볼륨</span><span>200%</span>
             </div>
             {annVolume > 100 && <p className="text-[10px] text-yellow-500/80">⚡ 부스트 모드 · audio.volume 최대 적용 (1.0 클램프)</p>}
           </div>
 
           {/* 덕킹 */}
           {playMode === 'immediate' && (
-            <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3 space-y-2">
+            <div className="bg-white/[0.02] border border-border-main rounded-xl p-3 space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-xs text-gray-500 font-semibold">🔉 안내방송 중 트랙 볼륨</label>
+                <label className="text-xs text-muted font-semibold">🔉 안내방송 중 트랙 볼륨</label>
                 <span className="text-xs font-bold text-[#FF6F0F]">{duckVolume}%</span>
               </div>
               <input type="range" min={0} max={80} step={5}
                 value={duckVolume} onChange={e => setDuckVolume(Number(e.target.value))}
                 className="w-full h-1.5 rounded-full cursor-pointer" style={{ accentColor: '#FF6F0F' }} />
-              <p className="text-[10px] text-gray-600">안내방송 시작 시 트랙을 {duckVolume}%로 페이드 아웃 → 방송 종료 후 원래 볼륨으로 페이드 인</p>
+              <p className="text-[10px] text-dim">안내방송 시작 시 트랙을 {duckVolume}%로 페이드 아웃 → 방송 종료 후 원래 볼륨으로 페이드 인</p>
             </div>
           )}
           {playMode === 'between_tracks' && (
-            <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3">
-              <p className="text-[10px] text-gray-600">현재 곡이 완전히 끝난 후 안내방송 → 다음 곡 자동 재생</p>
+            <div className="bg-white/[0.02] border border-border-main rounded-xl p-3">
+              <p className="text-[10px] text-dim">현재 곡이 완전히 끝난 후 안내방송 → 다음 곡 자동 재생</p>
             </div>
           )}
         </div>
@@ -637,9 +653,9 @@ export default function AnnouncementsPage() {
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/8">
           <div className="flex items-center gap-3">
             <Radio size={18} className="text-[#FF6F0F]" />
-            <span className="text-base font-bold text-white">고객 호출</span>
+            <span className="text-base font-bold text-primary">고객 호출</span>
             {lastCalledNum && callingNum === null && (
-              <span className="text-sm text-gray-400">마지막 호출: <span className="text-white font-bold">{lastCalledNum}번</span></span>
+              <span className="text-sm text-tertiary">마지막 호출: <span className="text-primary font-bold">{lastCalledNum}번</span></span>
             )}
             {callingNum !== null && (
               <span className="flex items-center gap-2 text-[#FF6F0F] font-bold text-sm">
@@ -653,11 +669,11 @@ export default function AnnouncementsPage() {
                 onChange={e => setDirectCallNum(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') handleDirectCall(); }}
                 placeholder="직접 입력"
-                className="w-28 px-3 py-2 bg-white/[0.05] border border-white/15 rounded-xl text-sm text-white placeholder-gray-600 outline-none focus:border-[#FF6F0F]/50 [appearance:textfield]" />
+                className="w-28 px-3 py-2 bg-white/[0.05] border border-white/15 rounded-xl text-sm text-primary placeholder-gray-600 outline-none focus:border-[#FF6F0F]/50 [appearance:textfield]" />
               <button onClick={handleDirectCall} disabled={callingNum !== null || !directCallNum}
-                className="px-4 py-2 bg-[#FF6F0F] text-white text-sm font-bold rounded-xl disabled:opacity-40 transition hover:bg-[#FF6F0F]/90">호출</button>
+                className="px-4 py-2 bg-[#FF6F0F] text-primary text-sm font-bold rounded-xl disabled:opacity-40 transition hover:bg-[#FF6F0F]/90">호출</button>
             </div>
-            <button onClick={() => setCallFullscreen(false)} className="p-2 text-gray-400 hover:text-white transition rounded-xl hover:bg-white/10">
+            <button onClick={() => setCallFullscreen(false)} className="p-2 text-tertiary hover:text-primary transition rounded-xl hover:bg-fill-medium">
               <X size={20} />
             </button>
           </div>
@@ -671,7 +687,7 @@ export default function AnnouncementsPage() {
               isCached={n => !!getCachedAudio(`${greetingPfx()}${callTemplate.replaceAll('{num}', String(n))}`, voice, speed)}
             />
           ) : (
-            <div className="flex flex-col items-center justify-center h-full gap-4 text-gray-600">
+            <div className="flex flex-col items-center justify-center h-full gap-4 text-dim">
               <Radio size={48} className="opacity-20" />
               <p className="text-lg">시작 번호를 설정하세요</p>
               <input type="number" value={fsStartDraft}
@@ -679,32 +695,32 @@ export default function AnnouncementsPage() {
                 onKeyDown={e => { if (e.key === 'Enter' && fsStartDraft && !isNaN(Number(fsStartDraft))) setCallStartNum(fsStartDraft); }}
                 onBlur={() => { if (fsStartDraft && !isNaN(Number(fsStartDraft))) setCallStartNum(fsStartDraft); }}
                 placeholder="시작 번호 입력 (예: 100)"
-                className="w-56 px-4 py-3 bg-white/[0.05] border border-white/15 rounded-2xl text-base text-white text-center placeholder-gray-600 outline-none focus:border-[#FF6F0F]/50 [appearance:textfield]" />
+                className="w-56 px-4 py-3 bg-white/[0.05] border border-white/15 rounded-2xl text-base text-primary text-center placeholder-gray-600 outline-none focus:border-[#FF6F0F]/50 [appearance:textfield]" />
             </div>
           )}
         </div>
 
         <div className="px-6 py-3 border-t border-white/8 flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-2">
-            <span className="text-[11px] text-gray-500 shrink-0">시작</span>
+            <span className="text-[11px] text-muted shrink-0">시작</span>
             <input type="number" value={callStartNum}
               onChange={e => { setCallStartNum(e.target.value); setFsStartDraft(e.target.value); }}
               placeholder="번호"
-              className="w-20 px-2 py-1 bg-white/[0.05] border border-white/10 rounded-lg text-xs text-white placeholder-gray-600 outline-none focus:border-[#FF6F0F]/50 [appearance:textfield]" />
+              className="w-20 px-2 py-1 bg-white/[0.05] border border-border-subtle rounded-lg text-xs text-primary placeholder-gray-600 outline-none focus:border-[#FF6F0F]/50 [appearance:textfield]" />
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[11px] text-gray-500 shrink-0">반복</span>
+            <span className="text-[11px] text-muted shrink-0">반복</span>
             {[1, 2].map(n => (
               <button key={n} onClick={() => setCallRepeat(n)}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition ${callRepeat === n ? 'bg-[#FF6F0F] text-white' : 'bg-white/[0.05] text-gray-400 hover:bg-white/10'}`}>{n}회</button>
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition ${callRepeat === n ? 'bg-[#FF6F0F] text-primary' : 'bg-white/[0.05] text-tertiary hover:bg-fill-medium'}`}>{n}회</button>
             ))}
           </div>
           <div className="flex items-center gap-2 flex-1 min-w-0">
-            <span className="text-[11px] text-gray-500 shrink-0">문구</span>
+            <span className="text-[11px] text-muted shrink-0">문구</span>
             <input value={callTemplate}
               onChange={e => { setCallTemplate(e.target.value); try { localStorage.setItem(CALL_TEMPLATE_KEY, e.target.value); } catch {} }}
               placeholder="{num}번 고객님..."
-              className="flex-1 min-w-0 px-2 py-1 bg-white/[0.05] border border-white/10 rounded-lg text-xs text-white placeholder-gray-600 outline-none focus:border-[#FF6F0F]/50" />
+              className="flex-1 min-w-0 px-2 py-1 bg-white/[0.05] border border-border-subtle rounded-lg text-xs text-primary placeholder-gray-600 outline-none focus:border-[#FF6F0F]/50" />
           </div>
         </div>
       </div>
