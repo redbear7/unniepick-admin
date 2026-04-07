@@ -47,17 +47,26 @@ export async function POST(req: NextRequest) {
     const phoneNum = `01000000${String(idx + 1).padStart(4, '0')}`;
 
     try {
-      // 1. users 테이블에 owner 회원 upsert (phone 기준)
-      const { data: user, error: uErr } = await supabase
+      // 1. users 테이블 — 같은 phone이 이미 있으면 재사용, 없으면 insert
+      let userId: string;
+      const { data: existing } = await supabase
         .from('users')
-        .upsert(
-          { name: ownerName, phone: phoneNum, role: 'owner' },
-          { onConflict: 'phone', ignoreDuplicates: false }
-        )
         .select('id')
-        .single();
+        .eq('phone', phoneNum)
+        .maybeSingle();
 
-      if (uErr || !user) throw new Error('회원 생성 실패: ' + uErr?.message);
+      if (existing) {
+        userId = existing.id;
+      } else {
+        const { data: inserted, error: iErr } = await supabase
+          .from('users')
+          .insert({ name: ownerName, phone: phoneNum, role: 'owner' })
+          .select('id')
+          .single();
+        if (iErr || !inserted) throw new Error('회원 생성 실패: ' + iErr?.message);
+        userId = inserted.id;
+      }
+      const user = { id: userId };
 
       // 2. stores.owner_id 연결
       await supabase
