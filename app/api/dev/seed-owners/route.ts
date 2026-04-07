@@ -37,17 +37,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: '매장 조회 실패: ' + storeErr?.message }, { status: 500 });
   }
 
+  // 전역 PIN 카운터 — 기존 owner_pins 최대 idx 기준으로 시작
+  const { count } = await supabase
+    .from('owner_pins')
+    .select('id', { count: 'exact', head: true });
+  let pinCounter = count ?? 0;
+
   const results: Array<{ store: string; owner_name: string; phone: string; pin: string; status: string }> = [];
 
-  for (let idx = 0; idx < stores.length; idx++) {
-    const store = stores[idx];
-    const pin = String(idx).padStart(6, '0');
+  for (const store of stores) {
+    const pin = String(pinCounter).padStart(6, '0');
     const ownerName = `${store.name} 사장님`;
-    // 테스트용 번호: 010-0000-0000 ~ 010-0000-0099 (11자리)
-    const phoneNum = `010${String(idx).padStart(8, '0')}`;
+    const phoneNum = `010${String(pinCounter).padStart(8, '0')}`;
 
     try {
-      // 1. users 테이블 — 같은 phone이 이미 있으면 재사용, 없으면 insert
+      // 1. 같은 phone이 이미 있으면 재사용 + role 갱신, 없으면 insert
       let userId: string;
       const { data: existing } = await supabase
         .from('users')
@@ -56,6 +60,8 @@ export async function POST(req: NextRequest) {
         .maybeSingle();
 
       if (existing) {
+        // role을 owner로 갱신 (다른 role이었을 경우 대비)
+        await supabase.from('users').update({ role: 'owner', name: ownerName }).eq('id', existing.id);
         userId = existing.id;
       } else {
         const dummyEmail = `owner_${phoneNum}@test.unnipick.dev`;
@@ -67,29 +73,21 @@ export async function POST(req: NextRequest) {
         if (iErr || !inserted) throw new Error('회원 생성 실패: ' + iErr?.message);
         userId = inserted.id;
       }
-      const user = { id: userId };
 
       // 2. stores.owner_id 연결
-      await supabase
-        .from('stores')
-        .update({ owner_id: user.id })
-        .eq('id', store.id);
+      await supabase.from('stores').update({ owner_id: userId }).eq('id', store.id);
 
       // 3. owner_pins upsert
-      await supabase
+      const { error: pinErr } = await supabase
         .from('owner_pins')
         .upsert(
-          {
-            user_id:          user.id,
-            pin_hash:         hashPin(pin),
-            pin_changes:      0,
-            pin_change_month: '',
-            is_active:        true,
-          },
+          { user_id: userId, pin_hash: hashPin(pin), pin_changes: 0, pin_change_month: '', is_active: true },
           { onConflict: 'user_id' }
         );
+      if (pinErr) throw new Error('PIN 생성 실패: ' + pinErr.message);
 
       results.push({ store: store.name, owner_name: ownerName, phone: phoneNum, pin, status: 'ok' });
+      pinCounter++;
     } catch (e) {
       results.push({ store: store.name, owner_name: ownerName, phone: phoneNum, pin, status: (e as Error).message });
     }

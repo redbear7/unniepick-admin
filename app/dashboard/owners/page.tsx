@@ -110,7 +110,7 @@ export default function OwnersPage() {
       .eq('role', 'owner')
       .order('created_at', { ascending: false });
 
-    if (!users) { setLoading(false); return; }
+    if (!users || users.length === 0) { setOwners([]); setLoading(false); return; }
 
     // owner_pins 조회
     const ids = users.map(u => u.id);
@@ -161,7 +161,7 @@ export default function OwnersPage() {
       const data = await res.json();
       setSeedResults(data.results ?? []);
       setSelectedStores(new Set());
-      load();
+      await load();
     } catch (e) {
       alert((e as Error).message);
     } finally {
