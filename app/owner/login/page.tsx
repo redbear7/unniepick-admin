@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, Delete } from 'lucide-react';
 
@@ -50,6 +50,21 @@ export default function OwnerLoginPage() {
   };
 
   const deletePin = () => setPin(p => p.slice(0, -1));
+
+  // ── 키보드 입력 ──
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (step !== 'pin' || loading) return;
+    if (/^\d$/.test(e.key)) {
+      appendPin(e.key);
+    } else if (e.key === 'Backspace') {
+      deletePin();
+    }
+  }, [step, loading, pin]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
 
   const verifyPin = async (p: string) => {
     setLoading(true);
