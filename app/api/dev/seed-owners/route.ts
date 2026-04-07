@@ -39,11 +39,12 @@ export async function POST(req: NextRequest) {
 
   const results: Array<{ store: string; owner_name: string; phone: string; pin: string; status: string }> = [];
 
-  for (const store of stores) {
+  for (let idx = 0; idx < stores.length; idx++) {
+    const store = stores[idx];
     const pin = '123456';
     const ownerName = `${store.name} 사장님`;
-    // 테스트용 고정 번호 (매장 ID 앞 8자리 기반, 입력 검증 우회)
-    const phoneNum = `010${store.id.replace(/-/g, '').slice(0, 8)}`;
+    // 테스트용 번호: 010-0000-0001 ~ 0099
+    const phoneNum = `01000000${String(idx + 1).padStart(4, '0')}`;
 
     try {
       // 1. users 테이블에 owner 회원 upsert (phone 기준)
