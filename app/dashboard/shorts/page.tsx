@@ -21,7 +21,6 @@ import {
   Share2,
   Copy,
   Check,
-  Instagram,
 } from 'lucide-react';
 
 // ─── 타입 ──────────────────────────────────────────────────────
@@ -45,14 +44,6 @@ function fmtSec(sec: number): string {
   const s = Math.floor(sec % 60);
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
-
-const ENERGY_KO: Record<string, string> = { low: '낮음', medium: '보통', high: '높음' };
-
-const ENERGY_COLOR: Record<string, string> = {
-  low: 'bg-blue-500/20 text-blue-400',
-  medium: 'bg-yellow-500/20 text-yellow-400',
-  high: 'bg-red-500/20 text-red-400',
-};
 
 // ─── 쇼츠 히스토리 (로컬 저장) ──────────────────────────────────
 interface ShortsHistoryItem {
@@ -181,6 +172,10 @@ export default function ShortsPage() {
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzed, setAnalyzed] = useState(false);
 
+  // 쇼츠 제목 / 강조 문구
+  const [shortsTitle, setShortsTitle] = useState('');
+  const [shortsTagline, setShortsTagline] = useState('');
+
   // 렌더링
   const [rendering, setRendering] = useState(false);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
@@ -290,6 +285,8 @@ export default function ShortsPage() {
           cover_emoji: selected.cover_emoji,
           start_sec: startSec,
           mood_tags: selected.mood_tags ?? [],
+          shorts_title: shortsTitle.trim(),
+          shorts_tagline: shortsTagline.trim(),
         }),
       });
       const json = await res.json();
@@ -542,6 +539,34 @@ export default function ShortsPage() {
                 </p>
               </div>
 
+              {/* ── 쇼츠 제목 / 강조 문구 ── */}
+              <div className="bg-card border border-border-main rounded-xl p-5 flex flex-col gap-3">
+                <p className="text-sm font-semibold text-primary">영상 텍스트</p>
+                <div className="space-y-2">
+                  <div>
+                    <label className="text-xs text-muted mb-1 block">쇼츠 제목 (상단 큰 텍스트)</label>
+                    <input
+                      type="text"
+                      placeholder="예: 가을 감성 플레이리스트"
+                      value={shortsTitle}
+                      onChange={(e) => setShortsTitle(e.target.value)}
+                      className="w-full bg-[#0f1117] border border-border-main rounded-lg px-3 py-2 text-sm text-primary placeholder:text-muted focus:outline-none focus:border-[#FF6F0F]/50"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted mb-1 block">강조 문구 (서브 텍스트)</label>
+                    <input
+                      type="text"
+                      placeholder="예: 언니픽이 큐레이션한 매장 BGM"
+                      value={shortsTagline}
+                      onChange={(e) => setShortsTagline(e.target.value)}
+                      className="w-full bg-[#0f1117] border border-border-main rounded-lg px-3 py-2 text-sm text-primary placeholder:text-muted focus:outline-none focus:border-[#FF6F0F]/50"
+                    />
+                  </div>
+                  <p className="text-[10px] text-muted">비워두면 해당 텍스트는 영상에 표시되지 않습니다.</p>
+                </div>
+              </div>
+
               {/* ── 쇼츠 미리보기 (정적 썸네일) ── */}
               <div className="bg-card border border-border-main rounded-xl p-5 flex flex-col gap-3">
                 <p className="text-sm font-semibold text-primary">쇼츠 구성 미리보기</p>
@@ -549,58 +574,55 @@ export default function ShortsPage() {
                   {/* 9:16 썸네일 */}
                   <div
                     className="relative shrink-0 rounded-xl overflow-hidden"
-                    style={{ width: 120, height: 213, background: '#000' }}
+                    style={{ width: 120, height: 213, background: '#111' }}
                   >
-                    {selected.cover_image_url && (
+                    {/* 커버 풀스크린 */}
+                    {selected.cover_image_url ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={selected.cover_image_url}
                         alt=""
-                        className="absolute inset-0 w-full h-full object-cover opacity-30 blur-sm scale-110"
+                        className="absolute inset-0 w-full h-full object-cover"
                       />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center text-4xl bg-[#1a1a2e]">
+                        {selected.cover_emoji}
+                      </div>
                     )}
+                    {/* 그라디언트 오버레이 */}
                     <div
                       className="absolute inset-0"
                       style={{
                         background:
-                          'linear-gradient(180deg, rgba(0,0,0,0.6) 0%, transparent 30%, transparent 60%, rgba(0,0,0,0.8) 100%)',
+                          'linear-gradient(180deg, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.05) 45%, rgba(0,0,0,0.75) 100%)',
                       }}
                     />
-                    {/* 앨범아트 */}
-                    <div className="absolute inset-0 flex items-center justify-center" style={{ marginTop: -20 }}>
-                      <div
-                        className="rounded-lg overflow-hidden shadow-xl"
-                        style={{ width: 80, height: 80 }}
-                      >
-                        {selected.cover_image_url ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={selected.cover_image_url}
-                            alt=""
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-[#FF6F0F] flex items-center justify-center text-2xl">
-                            {selected.cover_emoji}
-                          </div>
-                        )}
-                      </div>
+                    {/* 상단: 쇼츠 제목 */}
+                    <div className="absolute top-3 left-2 right-2">
+                      {shortsTitle && (
+                        <p className="text-white text-[8px] font-black leading-tight line-clamp-2">
+                          {shortsTitle}
+                        </p>
+                      )}
+                      {shortsTagline && (
+                        <p className="text-[#FF9F4F] text-[6px] font-bold mt-0.5 truncate">
+                          {shortsTagline}
+                        </p>
+                      )}
                     </div>
-                    {/* 타이틀 */}
-                    <div className="absolute bottom-6 left-2 right-2">
-                      <p className="text-white text-[9px] font-bold leading-tight truncate">
-                        {selected.title}
+                    {/* 하단: 노래 제목 (작게) */}
+                    <div className="absolute bottom-5 left-2 right-2">
+                      <p className="text-white text-[7px] font-semibold leading-tight truncate">
+                        🎵 {selected.title}
                       </p>
-                      <p className="text-white/60 text-[8px] truncate">{selected.artist}</p>
+                      <p className="text-white/60 text-[6px] truncate mt-0.5">{selected.artist}</p>
                     </div>
                     {/* 브랜드 */}
-                    <div className="absolute top-2 right-2 bg-[#FF6F0F]/90 rounded text-white text-[7px] font-bold px-1 py-0.5">
+                    <div className="absolute top-2 right-1.5 bg-[#FF6F0F]/90 rounded text-white text-[6px] font-bold px-1 py-0.5">
                       언니픽
                     </div>
                     {/* 진행바 */}
-                    <div
-                      className="absolute bottom-2 left-2 right-2 h-0.5 bg-white/10 rounded"
-                    >
+                    <div className="absolute bottom-2 left-2 right-2 h-0.5 bg-white/10 rounded">
                       <div className="h-full w-1/3 bg-[#FF6F0F] rounded" />
                     </div>
                   </div>

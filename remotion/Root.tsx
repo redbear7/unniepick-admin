@@ -24,6 +24,8 @@ export const RemotionRoot: React.FC = () => {
           coverEmoji: '🎵',
           startTimeSec: 0,
           moodTags: [],
+          shortsTitle: '',
+          shortsTagline: '',
         }}
       />
       <Composition

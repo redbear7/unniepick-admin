@@ -37,6 +37,8 @@ export async function POST(req: NextRequest) {
       cover_emoji,
       start_sec,
       mood_tags,
+      shorts_title,
+      shorts_tagline,
     } = await req.json();
 
     if (!track_id || !audio_url || !title || !artist) {
@@ -58,6 +60,8 @@ export async function POST(req: NextRequest) {
       coverEmoji: cover_emoji ?? '🎵',
       startTimeSec: typeof start_sec === 'number' ? start_sec : 0,
       moodTags: Array.isArray(mood_tags) ? mood_tags : [],
+      shortsTitle: shorts_title ?? '',
+      shortsTagline: shorts_tagline ?? '',
     };
 
     // 1. Remotion 번들링
