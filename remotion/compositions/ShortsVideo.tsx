@@ -13,6 +13,12 @@ interface CouponData {
   discount_value: number;
 }
 
+interface ElementPositions {
+  headerTop?: number;  // % from top (0–90), default 8
+  infoTop?: number;    // % from top (0–90), default 72
+  couponTop?: number;  // % from top (0–90), default 62
+}
+
 interface ShortsVideoProps {
   audioUrl: string;
   coverUrl: string | null;
@@ -25,7 +31,8 @@ interface ShortsVideoProps {
   shortsTagline?: string;
   coupon?: CouponData | null;
   announcementUrl?: string;
-  announcementDurationSec?: number; // 안내방송 길이 → 덕킹 구간 계산
+  announcementDurationSec?: number;
+  elementPositions?: ElementPositions;
 }
 
 export const ShortsVideo: React.FC<ShortsVideoProps> = ({
@@ -41,6 +48,7 @@ export const ShortsVideo: React.FC<ShortsVideoProps> = ({
   coupon,
   announcementUrl,
   announcementDurationSec = 0,
+  elementPositions,
 }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
@@ -97,6 +105,12 @@ export const ShortsVideo: React.FC<ShortsVideoProps> = ({
     return Math.abs(Math.sin(frame / 10 + phase)) * 50 + 16;
   });
 
+  // ── 요소 위치 (% → px, 영상 높이 1280px) ──
+  const VH = 1280;
+  const headerTopPx = ((elementPositions?.headerTop ?? 8) / 100) * VH;
+  const infoTopPx    = ((elementPositions?.infoTop    ?? 72) / 100) * VH;
+  const couponTopPx  = ((elementPositions?.couponTop  ?? 62) / 100) * VH;
+
   // 쿠폰 할인 텍스트
   const discountLabel = coupon
     ? coupon.discount_type === 'percent'
@@ -143,56 +157,54 @@ export const ShortsVideo: React.FC<ShortsVideoProps> = ({
 
       {/* ── 상단: 쇼츠 제목 + 강조 문구 ── */}
       {(shortsTitle || shortsTagline) && (
-        <AbsoluteFill
+        <div
           style={{
-            alignItems: 'flex-start',
-            justifyContent: 'flex-start',
-            padding: '100px 52px 0',
+            position: 'absolute',
+            top: headerTopPx,
+            left: 52,
+            right: 52,
             opacity: topOpacity,
             transform: `translateY(${topY}px)`,
           }}
         >
-          <div>
-            {shortsTitle && (
-              <div
-                style={{
-                  color: '#fff',
-                  fontSize: 68,
-                  fontWeight: 900,
-                  lineHeight: 1.15,
-                  textShadow: '0 3px 24px rgba(0,0,0,0.9)',
-                  letterSpacing: -1,
-                  maxWidth: 600,
-                }}
-              >
-                {shortsTitle}
-              </div>
-            )}
-            {shortsTagline && (
-              <div
-                style={{
-                  color: '#FF9F4F',
-                  fontSize: 30,
-                  fontWeight: 700,
-                  marginTop: 14,
-                  textShadow: '0 2px 12px rgba(0,0,0,0.8)',
-                  maxWidth: 560,
-                }}
-              >
-                {shortsTagline}
-              </div>
-            )}
-          </div>
-        </AbsoluteFill>
+          {shortsTitle && (
+            <div
+              style={{
+                color: '#fff',
+                fontSize: 68,
+                fontWeight: 900,
+                lineHeight: 1.15,
+                textShadow: '0 3px 24px rgba(0,0,0,0.9)',
+                letterSpacing: -1,
+              }}
+            >
+              {shortsTitle}
+            </div>
+          )}
+          {shortsTagline && (
+            <div
+              style={{
+                color: '#FF9F4F',
+                fontSize: 30,
+                fontWeight: 700,
+                marginTop: 14,
+                textShadow: '0 2px 12px rgba(0,0,0,0.8)',
+              }}
+            >
+              {shortsTagline}
+            </div>
+          )}
+        </div>
       )}
 
-      {/* ── 쿠폰 카드 (하단 오버레이) ── */}
+      {/* ── 쿠폰 카드 ── */}
       {coupon && (
-        <AbsoluteFill
+        <div
           style={{
-            alignItems: 'flex-end',
-            justifyContent: 'center',
-            padding: '0 40px 220px',
+            position: 'absolute',
+            top: couponTopPx,
+            left: 40,
+            right: 40,
             opacity: couponOpacity,
             transform: `translateY(${couponY}px) scale(${couponScale})`,
           }}
@@ -248,15 +260,16 @@ export const ShortsVideo: React.FC<ShortsVideoProps> = ({
               앱에서 받기
             </div>
           </div>
-        </AbsoluteFill>
+        </div>
       )}
 
       {/* ── 하단: 노래 제목(작게) + 아티스트 + 파형 + 태그 ── */}
-      <AbsoluteFill
+      <div
         style={{
-          alignItems: 'flex-start',
-          justifyContent: 'flex-end',
-          padding: coupon ? '0 52px 420px' : '0 52px 130px',
+          position: 'absolute',
+          top: infoTopPx,
+          left: 52,
+          right: 52,
           opacity: bottomOpacity,
           transform: `translateY(${bottomY}px)`,
         }}
@@ -325,7 +338,7 @@ export const ShortsVideo: React.FC<ShortsVideoProps> = ({
             </div>
           )}
         </div>
-      </AbsoluteFill>
+      </div>
 
       {/* 진행 바 */}
       <AbsoluteFill

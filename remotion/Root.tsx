@@ -29,6 +29,7 @@ export const RemotionRoot: React.FC = () => {
           coupon: null,
           announcementUrl: '',
           announcementDurationSec: 0,
+          elementPositions: { headerTop: 8, infoTop: 72, couponTop: 62 },
         }}
       />
       <Composition

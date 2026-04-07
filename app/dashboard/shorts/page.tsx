@@ -209,6 +209,11 @@ export default function ShortsPage() {
   const [shortsTitle, setShortsTitle] = useState('');
   const [shortsTagline, setShortsTagline] = useState('');
 
+  // 요소 위치 (% from top)
+  const [headerTop, setHeaderTop] = useState(8);
+  const [infoTop, setInfoTop] = useState(72);
+  const [couponTop, setCouponTop] = useState(62);
+
   // 렌더링
   const [rendering, setRendering] = useState(false);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
@@ -402,6 +407,7 @@ export default function ShortsPage() {
             : null,
           announcement_url: selectedAnn?.audio_url ?? '',
           announcement_duration_sec: annDuration,
+          element_positions: { headerTop, infoTop, couponTop },
         }),
       });
       const json = await res.json();
@@ -865,8 +871,8 @@ export default function ShortsPage() {
                           'linear-gradient(180deg, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.05) 45%, rgba(0,0,0,0.75) 100%)',
                       }}
                     />
-                    {/* 상단: 쇼츠 제목 */}
-                    <div className="absolute top-3 left-2 right-2">
+                    {/* 상단: 쇼츠 제목 (위치 반영) */}
+                    <div className="absolute left-2 right-2" style={{ top: `${headerTop}%` }}>
                       {shortsTitle && (
                         <p className="text-white text-[8px] font-black leading-tight line-clamp-2">
                           {shortsTitle}
@@ -878,8 +884,24 @@ export default function ShortsPage() {
                         </p>
                       )}
                     </div>
-                    {/* 하단: 노래 제목 (작게) */}
-                    <div className="absolute bottom-5 left-2 right-2">
+                    {/* 쿠폰 (위치 반영) */}
+                    {selectedCoupon && (
+                      <div className="absolute left-2 right-2" style={{ top: `${couponTop}%` }}>
+                        <div className="bg-[#FF6F0F]/90 rounded-md px-2 py-1 flex items-center gap-1.5">
+                          <span className="text-[10px]">🎟</span>
+                          <div className="min-w-0">
+                            <p className="text-white text-[6px] font-semibold truncate">{selectedCoupon.title}</p>
+                            <p className="text-white text-[7px] font-black">
+                              {selectedCoupon.discount_type === 'percent'
+                                ? `${selectedCoupon.discount_value}% 할인`
+                                : `${selectedCoupon.discount_value.toLocaleString()}원 할인`}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {/* 곡 정보 (위치 반영) */}
+                    <div className="absolute left-2 right-2" style={{ top: `${infoTop}%` }}>
                       <p className="text-white text-[7px] font-semibold leading-tight truncate">
                         🎵 {selected.title}
                       </p>
@@ -925,6 +947,45 @@ export default function ShortsPage() {
                     </div>
                   </div>
                 </div>
+              </div>
+
+              {/* ── 요소 위치 조정 ── */}
+              <div className="bg-card border border-border-main rounded-xl p-5 flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-primary">요소 위치 조정</p>
+                  <button
+                    onClick={() => { setHeaderTop(8); setInfoTop(72); setCouponTop(62); }}
+                    className="text-xs text-dim hover:text-muted transition flex items-center gap-1"
+                  >
+                    <RotateCcw size={11} /> 초기화
+                  </button>
+                </div>
+                {[
+                  { label: '제목 / 강조 문구', value: headerTop, set: setHeaderTop, show: !!(shortsTitle || shortsTagline) },
+                  { label: '곡 정보 (제목·아티스트)', value: infoTop, set: setInfoTop, show: true },
+                  { label: '쿠폰 카드', value: couponTop, set: setCouponTop, show: !!selectedCoupon },
+                ].map(({ label, value, set, show }) => (
+                  <div key={label} className={show ? '' : 'opacity-30 pointer-events-none'}>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-xs text-muted">{label}</label>
+                      <span className="text-xs font-semibold text-primary tabular-nums">{value}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={0}
+                      max={90}
+                      step={1}
+                      value={value}
+                      onChange={e => set(Number(e.target.value))}
+                      className="w-full accent-[#FF6F0F]"
+                    />
+                    <div className="flex justify-between text-[10px] text-dim mt-0.5">
+                      <span>상단</span>
+                      <span>하단</span>
+                    </div>
+                  </div>
+                ))}
+                <p className="text-[10px] text-dim">미리보기 썸네일에 즉시 반영됩니다.</p>
               </div>
 
               {/* ── 생성 버튼 & 결과 ── */}

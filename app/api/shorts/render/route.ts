@@ -42,6 +42,7 @@ export async function POST(req: NextRequest) {
       coupon,
       announcement_url,
       announcement_duration_sec,
+      element_positions,
     } = await req.json();
 
     if (!track_id || !audio_url || !title || !artist) {
@@ -68,6 +69,7 @@ export async function POST(req: NextRequest) {
       coupon: coupon ?? null,
       announcementUrl: announcement_url ?? '',
       announcementDurationSec: typeof announcement_duration_sec === 'number' ? announcement_duration_sec : 0,
+      elementPositions: element_positions ?? { headerTop: 8, infoTop: 72, couponTop: 62 },
     };
 
     // 1. Remotion 번들링
