@@ -36,11 +36,14 @@ export const RemotionRoot: React.FC = () => {
         defaultProps={{
           audioUrl: '',
           storeName: '업체명',
-          storeAddress: '서울시 강남구',
-          storePhone: '02-1234-5678',
-          storeCategory: '카테고리',
-          storeImageUrl: '',
-          template: 'modern',
+          cards: [
+            { title: '업체 소개', content: '프리미엄 서비스를 경험하세요' },
+            { title: '위치 안내', content: '서울시 강남구' },
+            { title: '연락처', content: '02-1234-5678' },
+            { title: '주요 메뉴', content: '대표 상품 1\n대표 상품 2\n대표 상품 3' },
+            { title: '지금 방문', content: '지금 바로 문의하세요!' },
+          ],
+          template: 'modern' as const,
         }}
       />
     </>

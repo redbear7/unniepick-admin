@@ -354,10 +354,17 @@ export default function CardNewsPage() {
 
                   {card.status === 'done' && card.video_url && (
                     <div className="mt-3 flex gap-2">
-                      <button className="flex-1 py-1.5 text-[10px] font-semibold bg-fill-subtle border border-border-subtle text-tertiary rounded hover:border-border-main transition flex items-center justify-center gap-1">
+                      <button
+                        onClick={() => window.open(card.video_url, '_blank')}
+                        className="flex-1 py-1.5 text-[10px] font-semibold bg-fill-subtle border border-border-subtle text-tertiary rounded hover:border-border-main transition flex items-center justify-center gap-1">
                         <Eye size={10} /> 미리보기
                       </button>
-                      <button className="flex-1 py-1.5 text-[10px] font-semibold bg-fill-subtle border border-border-subtle text-tertiary rounded hover:border-border-main transition flex items-center justify-center gap-1">
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(card.video_url!);
+                          alert('링크가 복사되었습니다.');
+                        }}
+                        className="flex-1 py-1.5 text-[10px] font-semibold bg-fill-subtle border border-border-subtle text-tertiary rounded hover:border-border-main transition flex items-center justify-center gap-1">
                         <Copy size={10} /> 링크복사
                       </button>
                     </div>
