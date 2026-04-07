@@ -2,9 +2,11 @@ import {
   AbsoluteFill,
   Audio,
   Img,
+  OffthreadVideo,
   interpolate,
   useCurrentFrame,
   useVideoConfig,
+  Loop,
 } from 'remotion';
 
 interface CouponData {
@@ -24,6 +26,8 @@ export type WaveformStyle = 'bar' | 'mirror' | 'wave' | 'circle' | 'dots';
 interface ShortsVideoProps {
   audioUrl: string;
   coverUrl: string | null;
+  bgVideoUrl?: string | null;      // 배경 동영상 URL (있으면 이미지 대신 사용)
+  bgVideoDurationSec?: number;     // 동영상 길이 (루프 계산용)
   title: string;
   artist: string;
   coverEmoji: string;
@@ -35,7 +39,7 @@ interface ShortsVideoProps {
   announcementUrl?: string;
   announcementDurationSec?: number;
   elementPositions?: ElementPositions;
-  audioFadeInSec?: number;   // 0 = 즉시, default 1.5
+  audioFadeInSec?: number;
   waveformStyle?: WaveformStyle;
 }
 
@@ -144,6 +148,8 @@ function Waveform({ style, frame }: { style: WaveformStyle; frame: number }) {
 export const ShortsVideo: React.FC<ShortsVideoProps> = ({
   audioUrl,
   coverUrl,
+  bgVideoUrl,
+  bgVideoDurationSec,
   title,
   artist,
   coverEmoji,
@@ -219,7 +225,16 @@ export const ShortsVideo: React.FC<ShortsVideoProps> = ({
 
       {/* 배경 */}
       <AbsoluteFill>
-        {coverUrl ? (
+        {bgVideoUrl ? (
+          // 배경 동영상: 음원 길이(30초/900프레임)만큼 루프
+          <Loop durationInFrames={bgVideoDurationSec ? Math.max(1, Math.round(bgVideoDurationSec * fps)) : durationInFrames}>
+            <OffthreadVideo
+              src={bgVideoUrl}
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              muted
+            />
+          </Loop>
+        ) : coverUrl ? (
           <Img src={coverUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         ) : (
           <div style={{ width: '100%', height: '100%', background: 'linear-gradient(180deg, #1a1a2e 0%, #0f0f1a 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 200 }}>

@@ -205,6 +205,12 @@ export default function ShortsPage() {
   const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(null);
   const [uploadingCover, setUploadingCover] = useState(false);
 
+  // 배경 동영상
+  const [bgVideoFile, setBgVideoFile] = useState<File | null>(null);
+  const [bgVideoPreviewUrl, setBgVideoPreviewUrl] = useState<string | null>(null);
+  const [bgVideoDurationSec, setBgVideoDurationSec] = useState(0);
+  const [uploadingBgVideo, setUploadingBgVideo] = useState(false);
+
   // 쇼츠 제목 / 강조 문구
   const [shortsTitle, setShortsTitle] = useState('');
   const [shortsTagline, setShortsTagline] = useState('');
@@ -328,6 +334,28 @@ export default function ShortsPage() {
     setCoverPreviewUrl(null);
   };
 
+  // ── 배경 동영상 변경 ──
+  const handleBgVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setBgVideoFile(file);
+    const url = URL.createObjectURL(file);
+    setBgVideoPreviewUrl(url);
+    // 동영상 길이 측정
+    const vid = document.createElement('video');
+    vid.preload = 'metadata';
+    vid.src = url;
+    vid.onloadedmetadata = () => setBgVideoDurationSec(vid.duration || 0);
+    e.target.value = '';
+  };
+
+  const handleBgVideoReset = () => {
+    if (bgVideoPreviewUrl) URL.revokeObjectURL(bgVideoPreviewUrl);
+    setBgVideoFile(null);
+    setBgVideoPreviewUrl(null);
+    setBgVideoDurationSec(0);
+  };
+
   // ── 안내방송 선택 (오디오 길이 측정) ──
   const handleSelectAnn = (ann: AnnItem | null) => {
     if (!ann) {
@@ -392,13 +420,28 @@ export default function ShortsPage() {
         finalCoverUrl = urlData.publicUrl;
       }
 
+      // 배경 동영상 업로드
+      let finalBgVideoUrl: string | null = null;
+      if (bgVideoFile) {
+        setUploadingBgVideo(true);
+        const ext = bgVideoFile.name.split('.').pop() || 'mp4';
+        const filename = `bgvideo/shorts_${selected.id}_${Date.now()}.${ext}`;
+        const { error: vidErr } = await sb.storage
+          .from('music-tracks')
+          .upload(filename, bgVideoFile, { upsert: true, contentType: bgVideoFile.type });
+        setUploadingBgVideo(false);
+        if (vidErr) throw new Error(`배경 동영상 업로드 실패: ${vidErr.message}`);
+        const { data: vidUrlData } = sb.storage.from('music-tracks').getPublicUrl(filename);
+        finalBgVideoUrl = vidUrlData.publicUrl;
+      }
+
       const res = await fetch('/api/shorts/render', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           track_id: selected.id,
           audio_url: selected.audio_url,
-          cover_url: finalCoverUrl,
+          cover_url: finalBgVideoUrl ? null : finalCoverUrl,
           title: selected.title,
           artist: selected.artist,
           cover_emoji: selected.cover_emoji,
@@ -414,6 +457,8 @@ export default function ShortsPage() {
           element_positions: { headerTop, infoTop, couponTop },
           audio_fade_in_sec: audioFadeInSec,
           waveform_style: waveformStyle,
+          bg_video_url: finalBgVideoUrl,
+          bg_video_duration_sec: bgVideoDurationSec,
         }),
       });
       const json = await res.json();
@@ -656,6 +701,53 @@ export default function ShortsPage() {
                     </div>
                   </div>
                 </div>
+              </div>
+
+              {/* ── 배경 동영상 ── */}
+              <div className="bg-card border border-border-main rounded-xl p-5 flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-primary">배경 동영상</p>
+                    <p className="text-xs text-muted mt-0.5">업로드 시 커버 이미지 대신 사용. 음원 길이만큼 반복 재생.</p>
+                  </div>
+                  {bgVideoPreviewUrl && (
+                    <button onClick={handleBgVideoReset} className="text-xs text-dim hover:text-red-400 transition flex items-center gap-1">
+                      <RotateCcw size={11} /> 제거
+                    </button>
+                  )}
+                </div>
+
+                {bgVideoPreviewUrl ? (
+                  <div className="relative rounded-xl overflow-hidden bg-black" style={{ aspectRatio: '9/16', maxWidth: 100 }}>
+                    {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+                    <video
+                      src={bgVideoPreviewUrl}
+                      className="w-full h-full object-cover"
+                      muted loop autoPlay playsInline
+                    />
+                    {uploadingBgVideo && (
+                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                        <Loader2 size={16} className="animate-spin text-white" />
+                      </div>
+                    )}
+                    <div className="absolute bottom-1 left-1 right-1 text-center">
+                      <span className="text-[8px] text-white/80 bg-black/50 rounded px-1">
+                        {bgVideoDurationSec > 0 ? `${bgVideoDurationSec.toFixed(1)}초` : '측정중...'}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <label className="cursor-pointer flex flex-col items-center justify-center gap-2 border-2 border-dashed border-border-main rounded-xl py-6 hover:border-[#FF6F0F]/50 hover:bg-[#FF6F0F]/5 transition">
+                    <Film size={20} className="text-muted" />
+                    <span className="text-xs text-muted">동영상 파일 선택 (MP4, MOV)</span>
+                    <input
+                      type="file"
+                      accept="video/*"
+                      className="hidden"
+                      onChange={handleBgVideoChange}
+                    />
+                  </label>
+                )}
               </div>
 
               {/* ── 클라이맥스 구간 설정 ── */}

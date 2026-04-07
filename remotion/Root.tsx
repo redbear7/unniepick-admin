@@ -19,6 +19,8 @@ export const RemotionRoot: React.FC = () => {
         defaultProps={{
           audioUrl: '',
           coverUrl: null,
+          bgVideoUrl: null,
+          bgVideoDurationSec: 0,
           title: '트랙 제목',
           artist: '아티스트',
           coverEmoji: '🎵',
