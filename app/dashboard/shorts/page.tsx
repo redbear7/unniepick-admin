@@ -218,7 +218,19 @@ export default function ShortsPage() {
   // 히스토리
   const [history, setHistory] = useState<ShortsHistoryItem[]>([]);
   const [playingHistory, setPlayingHistory] = useState<ShortsHistoryItem | null>(null);
+  const wasPlayingRef = useRef(false);
   useEffect(() => { setHistory(loadShortsHistory()); }, []);
+
+  const openHistoryPlayer = (h: ShortsHistoryItem) => {
+    wasPlayingRef.current = player.isPlaying;
+    if (player.isPlaying) player.pause();
+    setPlayingHistory(h);
+  };
+
+  const closeHistoryPlayer = () => {
+    setPlayingHistory(null);
+    if (wasPlayingRef.current) player.resume();
+  };
 
   // 페이지네이션
   const [page, setPage] = useState(0);
@@ -1068,7 +1080,7 @@ export default function ShortsPage() {
                   <div key={h.id} className="shrink-0 w-36 bg-fill-subtle border border-border-subtle rounded-xl overflow-hidden group">
                     <div
                       className="relative aspect-[9/16] cursor-pointer"
-                      onClick={() => setPlayingHistory(h)}
+                      onClick={() => openHistoryPlayer(h)}
                     >
                       <video
                         src={h.videoUrl}
@@ -1109,7 +1121,7 @@ export default function ShortsPage() {
       {playingHistory && (
         <div
           className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
-          onClick={() => setPlayingHistory(null)}
+          onClick={() => closeHistoryPlayer()}
         >
           <div
             className="relative flex flex-col items-center gap-3 max-h-full"
@@ -1117,7 +1129,7 @@ export default function ShortsPage() {
           >
             {/* 닫기 */}
             <button
-              onClick={() => setPlayingHistory(null)}
+              onClick={() => closeHistoryPlayer()}
               className="absolute -top-10 right-0 text-white/60 hover:text-white transition text-sm font-semibold flex items-center gap-1"
             >
               ✕ 닫기
