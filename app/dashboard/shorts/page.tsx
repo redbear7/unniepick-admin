@@ -218,6 +218,7 @@ export default function ShortsPage() {
   // 오디오 페이드인 / 파형 스타일
   const [audioFadeInSec, setAudioFadeInSec] = useState(1.5);
   const [waveformStyle, setWaveformStyle] = useState<'bar' | 'mirror' | 'wave' | 'circle' | 'dots'>('bar');
+  const [durationSec, setDurationSec] = useState(15);
 
   // 요소 위치 (% from top)
   const [headerTop, setHeaderTop] = useState(8);
@@ -457,6 +458,7 @@ export default function ShortsPage() {
           element_positions: { headerTop, infoTop, couponTop },
           audio_fade_in_sec: audioFadeInSec,
           waveform_style: waveformStyle,
+          duration_sec: durationSec,
           bg_video_url: finalBgVideoUrl,
           bg_video_duration_sec: bgVideoDurationSec,
         }),
@@ -866,6 +868,27 @@ export default function ShortsPage() {
                   </div>
                 </div>
 
+                {/* 영상 길이 */}
+                <div>
+                  <p className="text-xs text-muted mb-2">영상 길이</p>
+                  <div className="grid grid-cols-5 gap-1.5">
+                    {[10, 15, 20, 25, 30].map(sec => (
+                      <button
+                        key={sec}
+                        onClick={() => setDurationSec(sec)}
+                        className={`py-2 rounded-lg border-2 text-xs font-bold transition ${
+                          durationSec === sec
+                            ? 'bg-[#FF6F0F]/15 border-[#FF6F0F] text-primary'
+                            : 'bg-fill-subtle border-border-subtle text-muted hover:border-border-main'
+                        }`}
+                      >
+                        {sec}초
+                        {sec === 15 && <span className="block text-[8px] opacity-60">기본</span>}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 {/* 파형 스타일 */}
                 <div>
                   <p className="text-xs text-muted mb-2">파형 디자인</p>
@@ -1080,7 +1103,7 @@ export default function ShortsPage() {
                     </div>
                     <div className="flex justify-between">
                       <span>영상 길이</span>
-                      <span className="text-primary font-medium">30초 (900 프레임)</span>
+                      <span className="text-primary font-medium">{durationSec}초 ({durationSec * 30} 프레임)</span>
                     </div>
                     <div className="flex justify-between">
                       <span>코덱</span>
@@ -1174,7 +1197,7 @@ export default function ShortsPage() {
                     <div>
                       <p className="text-sm text-[#FF9F4F] font-medium">렌더링 진행 중</p>
                       <p className="text-xs text-muted mt-0.5">
-                        Remotion이 900 프레임을 렌더링하고 있습니다. 창을 닫지 마세요.
+                        Remotion이 {durationSec * 30} 프레임을 렌더링하고 있습니다. 창을 닫지 마세요.
                       </p>
                     </div>
                   </div>

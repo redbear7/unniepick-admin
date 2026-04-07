@@ -81,6 +81,10 @@ export async function POST(req: NextRequest) {
       bgVideoDurationSec: typeof bg_video_duration_sec === 'number' ? bg_video_duration_sec : 0,
     };
 
+    const VALID_DURATIONS = [10, 15, 20, 25, 30];
+    const durationSec = VALID_DURATIONS.includes(duration_sec) ? duration_sec : 15;
+    const durationInFrames = durationSec * 30; // 30fps
+
     // 1. Remotion 번들링
     const bundled = await bundle({
       entryPoint: path.join(process.cwd(), 'remotion', 'index.ts'),
@@ -93,7 +97,10 @@ export async function POST(req: NextRequest) {
       serveUrl: bundled,
       id: 'ShortsVideo',
       inputProps,
+      timeoutInMilliseconds: 30000,
     });
+    // 선택한 영상 길이로 덮어쓰기
+    composition.durationInFrames = durationInFrames;
 
     // 3. 임시 출력 파일 경로
     const tmpDir = os.tmpdir();
