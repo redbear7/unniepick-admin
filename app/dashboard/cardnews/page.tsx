@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Plus, Trash2, Copy, Eye, AlertCircle, Sparkles, Loader } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Plus, Copy, Eye, AlertCircle, Sparkles, Loader } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 
 const sb = createClient(
@@ -143,7 +143,7 @@ export default function CardNewsPage() {
     }
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     loadCardNewsList();
     const interval = setInterval(loadCardNewsList, 3000);
     return () => clearInterval(interval);

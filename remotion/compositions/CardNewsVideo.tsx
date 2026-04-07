@@ -1,131 +1,73 @@
 import React from 'react';
-import { AbsoluteFill, Audio, interpolate, Easing, useCurrentFrame, useVideoConfig } from 'remotion';
+import { AbsoluteFill, Html5Audio, interpolate, Easing, useCurrentFrame } from 'remotion';
 
 export interface CardNewsVideoProps {
-  audioUrl: string;
+  audioUrl?: string;
   storeName: string;
-  storeAddress: string;
-  storePhone: string;
-  storeCategory: string;
-  storeImageUrl: string;
+  cards: Array<{ title: string; content: string }>;
   template: 'modern' | 'bright' | 'minimal';
 }
 
-const CARD_DURATION = 120; // 4 seconds at 30fps
-const CARDS_COUNT = 5;
-const TOTAL_FRAMES = CARD_DURATION * CARDS_COUNT;
+export const CARD_DURATION = 120; // 4s @ 30fps
 
-// Template colors
-const TEMPLATES = {
+const THEMES = {
   modern: {
     bg: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
     text: '#ffffff',
     accent: '#FF6F0F',
-    card2Bg: 'linear-gradient(135deg, #00a8ff 0%, #0084d4 100%)',
-    card3Bg: 'linear-gradient(135deg, #ff006e 0%, #d90066 100%)',
+    sub: 'rgba(255,255,255,0.65)',
   },
   bright: {
     bg: 'linear-gradient(135deg, #fff5e6 0%, #ffe0b2 100%)',
     text: '#1a1a1a',
     accent: '#FF6F0F',
-    card2Bg: 'linear-gradient(135deg, #FFB347 0%, #FF8C00 100%)',
-    card3Bg: 'linear-gradient(135deg, #FF69B4 0%, #FF1493 100%)',
+    sub: 'rgba(26,26,26,0.65)',
   },
   minimal: {
     bg: '#ffffff',
-    text: '#000000',
+    text: '#111111',
     accent: '#FF6F0F',
-    card2Bg: '#f5f5f5',
-    card3Bg: '#eeeeee',
+    sub: 'rgba(0,0,0,0.55)',
   },
 };
 
-function FadeInText({ text, startFrame, duration = 20 }: { text: string; startFrame: number; duration?: number }) {
+function CardSlide({
+  card,
+  idx,
+  total,
+  template,
+  storeName,
+}: {
+  card: { title: string; content: string };
+  idx: number;
+  total: number;
+  template: 'modern' | 'bright' | 'minimal';
+  storeName: string;
+}) {
   const frame = useCurrentFrame();
-  const opacity = interpolate(frame, [startFrame, startFrame + duration], [0, 1], {
+  const colors = THEMES[template];
+  const startFrame = CARD_DURATION * idx;
+  const endFrame = startFrame + CARD_DURATION;
+
+  if (frame < startFrame || frame >= endFrame) return null;
+
+  const local = frame - startFrame;
+
+  const opacity = interpolate(local, [0, 18], [0, 1], {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
   });
-
-  return (
-    <div style={{ opacity }}>
-      {text}
-    </div>
-  );
-}
-
-function Card1Intro({ template }: { template: 'modern' | 'bright' | 'minimal' }) {
-  const frame = useCurrentFrame();
-  const colors = TEMPLATES[template];
-  const startFrame = 0;
-
-  // Fade in entire card
-  const cardOpacity = interpolate(frame, [startFrame, startFrame + 20], [0, 1], {
+  const titleY = interpolate(local, [0, 22], [28, 0], {
+    easing: Easing.out(Easing.cubic),
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
   });
-
-  // Blur/scale animation on background
-  const scale = interpolate(frame, [startFrame, CARD_DURATION], [1.1, 1], {
-    easing: Easing.inOut(Easing.ease),
+  const contentOpacity = interpolate(local, [12, 32], [0, 1], {
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
   });
-
-  return (
-    <AbsoluteFill
-      style={{
-        background: 'rgba(0, 0, 0, 0.5)',
-        opacity: frame >= startFrame && frame < startFrame + CARD_DURATION ? cardOpacity : 0,
-      }}>
-      {/* Background image with zoom */}
-      <img
-        src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='720' height='1280'%3E%3Crect fill='%23333' width='720' height='1280'/%3E%3C/svg%3E"
-        style={{
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          filter: 'blur(8px) brightness(0.5)',
-          transform: `scale(${scale})`,
-        }}
-      />
-
-      {/* Content */}
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '60px 40px',
-          textAlign: 'center',
-        }}>
-        <FadeInText
-          text={`${frame < startFrame + CARD_DURATION ? '🎬' : ''}`}
-          startFrame={startFrame}
-          duration={15}
-        />
-        <div
-          style={{
-            fontSize: '48px',
-            fontWeight: 'bold',
-            color: colors.text,
-            marginTop: '20px',
-            opacity: cardOpacity,
-          }}>
-          업체 소개
-        </div>
-      </div>
-    </AbsoluteFill>
-  );
-}
-
-function Card2Location({ storeAddress, template }: { storeAddress: string; template: 'modern' | 'bright' | 'minimal' }) {
-  const frame = useCurrentFrame();
-  const colors = TEMPLATES[template];
-  const startFrame = CARD_DURATION;
-
-  const cardOpacity = interpolate(frame, [startFrame, startFrame + 20], [0, 1], {
+  const contentY = interpolate(local, [12, 32], [20, 0], {
+    easing: Easing.out(Easing.cubic),
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
   });
@@ -133,258 +75,131 @@ function Card2Location({ storeAddress, template }: { storeAddress: string; templ
   return (
     <AbsoluteFill
       style={{
-        background: colors.card2Bg,
-        opacity: frame >= startFrame && frame < startFrame + CARD_DURATION ? cardOpacity : 0,
-      }}>
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '60px 40px',
-          textAlign: 'center',
-        }}>
-        <div
-          style={{
-            fontSize: '60px',
-            marginBottom: '30px',
-            animation: 'pulse 2s infinite',
-          }}>
-          📍
-        </div>
-        <div
-          style={{
-            fontSize: '28px',
-            fontWeight: 'bold',
-            color: colors.text,
-            marginBottom: '15px',
-          }}>
-          위치
-        </div>
-        <div
-          style={{
-            fontSize: '20px',
-            color: colors.text,
-            opacity: 0.9,
-            lineHeight: '1.6',
-          }}>
-          {storeAddress}
-        </div>
-      </div>
-    </AbsoluteFill>
-  );
-}
-
-function Card3Contact({ storePhone, template }: { storePhone: string; template: 'modern' | 'bright' | 'minimal' }) {
-  const frame = useCurrentFrame();
-  const colors = TEMPLATES[template];
-  const startFrame = CARD_DURATION * 2;
-
-  const cardOpacity = interpolate(frame, [startFrame, startFrame + 20], [0, 1], {
-    extrapolateLeft: 'clamp',
-    extrapolateRight: 'clamp',
-  });
-
-  return (
-    <AbsoluteFill
-      style={{
-        background: colors.card3Bg,
-        opacity: frame >= startFrame && frame < startFrame + CARD_DURATION ? cardOpacity : 0,
-      }}>
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '60px 40px',
-          textAlign: 'center',
-        }}>
-        <div
-          style={{
-            fontSize: '60px',
-            marginBottom: '30px',
-          }}>
-          ☎️
-        </div>
-        <div
-          style={{
-            fontSize: '28px',
-            fontWeight: 'bold',
-            color: colors.text,
-            marginBottom: '15px',
-          }}>
-          연락처
-        </div>
-        <div
-          style={{
-            fontSize: '26px',
-            fontWeight: 'bold',
-            color: colors.text,
-            fontFamily: 'monospace',
-          }}>
-          {storePhone}
-        </div>
-      </div>
-    </AbsoluteFill>
-  );
-}
-
-function Card4Image({ storeImageUrl, template }: { storeImageUrl: string; template: 'modern' | 'bright' | 'minimal' }) {
-  const frame = useCurrentFrame();
-  const colors = TEMPLATES[template];
-  const startFrame = CARD_DURATION * 3;
-
-  const cardOpacity = interpolate(frame, [startFrame, startFrame + 20], [0, 1], {
-    extrapolateLeft: 'clamp',
-    extrapolateRight: 'clamp',
-  });
-
-  const scale = interpolate(frame, [startFrame + 20, startFrame + CARD_DURATION], [1, 1.05], {
-    easing: Easing.inOut(Easing.ease),
-  });
-
-  return (
-    <AbsoluteFill
-      style={{
-        opacity: frame >= startFrame && frame < startFrame + CARD_DURATION ? cardOpacity : 0,
-      }}>
-      <img
-        src={storeImageUrl}
-        style={{
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          transform: `scale(${scale})`,
-        }}
-      />
-      {/* Dark overlay */}
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          background: 'rgba(0, 0, 0, 0.2)',
-        }}
-      />
-    </AbsoluteFill>
-  );
-}
-
-function Card5CTA({ template }: { template: 'modern' | 'bright' | 'minimal' }) {
-  const frame = useCurrentFrame();
-  const colors = TEMPLATES[template];
-  const startFrame = CARD_DURATION * 4;
-
-  const cardOpacity = interpolate(frame, [startFrame, startFrame + 20], [0, 1], {
-    extrapolateLeft: 'clamp',
-    extrapolateRight: 'clamp',
-  });
-
-  const btnScale = interpolate(frame, [startFrame + 50, startFrame + 60], [1, 1.1], {
-    easing: Easing.inOut(Easing.ease),
-  });
-
-  return (
-    <AbsoluteFill
-      style={{
-        background: `linear-gradient(135deg, ${colors.accent} 0%, #ff8c3a 100%)`,
-        opacity: frame >= startFrame && frame < startFrame + CARD_DURATION ? cardOpacity : 0,
-      }}>
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '60px 40px',
-          textAlign: 'center',
-        }}>
-        <div
-          style={{
-            fontSize: '48px',
-            fontWeight: 'bold',
-            color: '#ffffff',
-            marginBottom: '40px',
-            lineHeight: '1.4',
-          }}>
-          지금 바로<br />문의하세요!
-        </div>
-        <div
-          style={{
-            padding: '15px 40px',
-            background: 'rgba(255, 255, 255, 0.3)',
-            borderRadius: '50px',
-            color: '#ffffff',
-            fontSize: '18px',
-            fontWeight: 'bold',
-            transform: `scale(${btnScale})`,
-            border: '2px solid #ffffff',
-          }}>
-          방문하기
-        </div>
-      </div>
-    </AbsoluteFill>
-  );
-}
-
-function Branding() {
-  const { durationInFrames } = useVideoConfig();
-  const frame = useCurrentFrame();
-
-  const opacity = interpolate(frame, [0, 20, durationInFrames - 30, durationInFrames], [0, 1, 1, 0], {
-    extrapolateLeft: 'clamp',
-    extrapolateRight: 'clamp',
-  });
-
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        bottom: '20px',
-        right: '20px',
-        background: '#FF6F0F',
-        color: '#ffffff',
-        padding: '8px 16px',
-        borderRadius: '20px',
-        fontSize: '12px',
-        fontWeight: 'bold',
+        background: colors.bg,
         opacity,
-      }}>
-      🎬 언니픽
-    </div>
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '80px 56px',
+        textAlign: 'center',
+      }}
+    >
+      {/* 카드 번호 */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 48,
+          left: 48,
+          fontSize: 13,
+          fontWeight: 700,
+          color: colors.accent,
+          background: `${colors.accent}22`,
+          padding: '5px 13px',
+          borderRadius: 20,
+          border: `1px solid ${colors.accent}44`,
+          letterSpacing: 1,
+        }}
+      >
+        {String(idx + 1).padStart(2, '0')} / {String(total).padStart(2, '0')}
+      </div>
+
+      {/* 업체명 */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 48,
+          right: 48,
+          fontSize: 12,
+          fontWeight: 600,
+          color: colors.sub,
+          maxWidth: 160,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {storeName}
+      </div>
+
+      {/* 제목 */}
+      <div
+        style={{
+          fontSize: 56,
+          fontWeight: 900,
+          color: colors.text,
+          lineHeight: 1.2,
+          marginBottom: 28,
+          transform: `translateY(${titleY}px)`,
+        }}
+      >
+        {card.title}
+      </div>
+
+      {/* 구분선 */}
+      <div
+        style={{
+          width: 56,
+          height: 4,
+          background: colors.accent,
+          borderRadius: 2,
+          marginBottom: 28,
+          opacity: contentOpacity,
+        }}
+      />
+
+      {/* 본문 */}
+      <div
+        style={{
+          fontSize: 26,
+          color: colors.sub,
+          lineHeight: 1.75,
+          whiteSpace: 'pre-wrap',
+          transform: `translateY(${contentY}px)`,
+          opacity: contentOpacity,
+        }}
+      >
+        {card.content}
+      </div>
+
+      {/* 브랜딩 */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 44,
+          background: colors.accent,
+          color: '#fff',
+          padding: '8px 22px',
+          borderRadius: 22,
+          fontSize: 13,
+          fontWeight: 700,
+        }}
+      >
+        🎬 언니픽
+      </div>
+    </AbsoluteFill>
   );
 }
 
 export const CardNewsVideo: React.FC<CardNewsVideoProps> = ({
   audioUrl,
   storeName,
-  storeAddress,
-  storePhone,
-  storeCategory,
-  storeImageUrl,
+  cards,
   template,
 }) => {
   return (
-    <AbsoluteFill style={{ background: '#000000' }}>
-      {/* Audio */}
-      {audioUrl && <Audio src={audioUrl} />}
-
-      {/* Cards */}
-      <Card1Intro template={template} />
-      <Card2Location storeAddress={storeAddress} template={template} />
-      <Card3Contact storePhone={storePhone} template={template} />
-      <Card4Image storeImageUrl={storeImageUrl} template={template} />
-      <Card5CTA template={template} />
-
-      {/* Branding */}
-      <Branding />
+    <AbsoluteFill style={{ background: '#000' }}>
+      {audioUrl && <Html5Audio src={audioUrl} />}
+      {cards.map((card, idx) => (
+        <CardSlide
+          key={idx}
+          card={card}
+          idx={idx}
+          total={cards.length}
+          template={template}
+          storeName={storeName}
+        />
+      ))}
     </AbsoluteFill>
   );
 };
