@@ -1,10 +1,23 @@
 'use client';
 
+import { useEffect } from 'react';
 import { PlayerProvider } from '@/contexts/PlayerContext';
 import Sidebar from '@/components/Sidebar';
 import BottomPlayer from '@/components/BottomPlayer';
 
+function useServiceWorker() {
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch((e) => {
+        console.warn('[SW] 등록 실패:', e.message);
+      });
+    }
+  }, []);
+}
+
 export default function DashboardShell({ children }: { children: React.ReactNode }) {
+  useServiceWorker();
+
   return (
     <PlayerProvider>
       <div className="flex flex-col h-screen bg-surface overflow-hidden">

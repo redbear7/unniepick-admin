@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase';
 import { Search, Plus, Pencil, Trash2, ToggleLeft, ToggleRight, X, Check, Play, Pause, Upload, ImagePlus, Link, Heart, ListMusic as ListMusicIcon, ArrowDownUp, Headphones, GripVertical, Copy, ClipboardCheck } from 'lucide-react';
 import { usePlayer } from '@/contexts/PlayerContext';
@@ -67,6 +67,112 @@ const ALL_SUNO_TAGS: string[] = Object.values(SUNO_STYLE_TAGS)
   .flatMap(cat => Object.values(cat).flat());
 
 const STORAGE_BUCKET = 'music-tracks'; // Supabase Storage 버킷명
+
+// ─── 무드 기반 카드 색상 맵 ──────────────────────────────────────
+const MOOD_COLORS: Record<string, [string, string]> = {
+  // [primary, secondary] — 그라디언트 양 끝 색상
+  'lo-fi':           ['#6366f1', '#8b5cf6'],
+  'jazz':            ['#d97706', '#b45309'],
+  'acoustic':        ['#78716c', '#a8a29e'],
+  'cozy':            ['#f59e0b', '#d97706'],
+  'chill':           ['#06b6d4', '#0891b2'],
+  'upbeat':          ['#f43f5e', '#e11d48'],
+  'bright':          ['#facc15', '#eab308'],
+  'pop':             ['#ec4899', '#db2777'],
+  'indie':           ['#8b5cf6', '#7c3aed'],
+  'ambient':         ['#164e63', '#155e75'],
+  'lounge':          ['#a16207', '#92400e'],
+  'r&b':             ['#7c3aed', '#6d28d9'],
+  'tropical':        ['#10b981', '#059669'],
+  'morning-coffee':  ['#92400e', '#78350f'],
+  'fresh':           ['#22d3ee', '#06b6d4'],
+  'warm':            ['#ea580c', '#c2410c'],
+  'night':           ['#1e1b4b', '#312e81'],
+  'energetic':       ['#ef4444', '#dc2626'],
+  'EDM':             ['#a855f7', '#9333ea'],
+  'k-pop':           ['#f472b6', '#ec4899'],
+  'study':           ['#475569', '#64748b'],
+  'latin':           ['#dc2626', '#b91c1c'],
+  'romantic':        ['#e11d48', '#be123c'],
+  'hard rock':       ['#57534e', '#44403c'],
+  'synth-pop':       ['#c084fc', '#a855f7'],
+  'classical':       ['#854d0e', '#713f12'],
+};
+const DEFAULT_MOOD_COLOR: [string, string] = ['#334155', '#475569'];
+
+function hexToRgb(hex: string): [number, number, number] {
+  const h = hex.replace('#', '');
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+}
+
+// ─── 가사 언어 감지 ──────────────────────────────────────────────
+const LANG_COLORS: Record<string, string> = {
+  '한국어': '#3b82f6', '영어': '#8b5cf6', '일본어': '#ec4899',
+  '중국어': '#ef4444', '스페인어': '#f59e0b', '이탈리아어': '#10b981',
+  '프랑스어': '#6366f1', '포르투갈어': '#14b8a6', '기타': '#6b7280',
+};
+const LANG_FLAGS: Record<string, string> = {
+  '한국어': '🇰🇷', '영어': '🇺🇸', '일본어': '🇯🇵',
+  '중국어': '🇨🇳', '스페인어': '🇪🇸', '이탈리아어': '🇮🇹',
+  '프랑스어': '🇫🇷', '포르투갈어': '🇧🇷', '기타': '🌐',
+};
+
+function detectLang(text?: string | null): string {
+  if (!text) return '';
+  // [Language: xxx] 태그 확인
+  const tag = text.match(/\[Language:\s*([^\]]+)\]/i);
+  if (tag) return tag[1].trim();
+  // 자동 감지
+  const ko = (text.match(/[\uAC00-\uD7A3]/g) || []).length;
+  const ja = (text.match(/[\u3040-\u30FF]/g) || []).length;
+  const zh = (text.match(/[\u4E00-\u9FFF]/g) || []).length;
+  const es = /\b(amor|coraz[oó]n|noche|baila|beso|cielo|luz|fuego)\b/i.test(text);
+  const it = /\b(amore|cuore|notte|vita|dolce|sole|bello)\b/i.test(text);
+  const fr = /\b(amour|nuit|coeur|belle|jour|rêve|ciel)\b/i.test(text);
+  const pt = /\b(amor|coração|noite|saudade|céu|sol)\b/i.test(text);
+  const en = (text.match(/[a-zA-Z]/g) || []).length;
+  const max = Math.max(ko, ja, zh, en);
+  if (max === 0) return '';
+  if (max === ko) return '한국어';
+  if (max === ja) return '일본어';
+  if (zh > en * 0.3) return '중국어';
+  if (es) return '스페인어';
+  if (it) return '이탈리아어';
+  if (fr) return '프랑스어';
+  if (pt) return '포르투갈어';
+  if (max === en) return '영어';
+  return '기타';
+}
+
+function getTrackLang(track: MusicTrack): string {
+  return detectLang(track.lyrics) || detectLang(track.title) || '';
+}
+
+function getMoodGradient(track: MusicTrack, isPlaying: boolean, bass = 0): string {
+  const genre = (track.mood_tags ?? [])[0] || '';
+  const [c1, c2] = MOOD_COLORS[genre] || DEFAULT_MOOD_COLOR;
+  const energy = (track.energy_score ?? 50) / 100;
+  const valence = (track.valence_score ?? 50) / 100;
+  const angle = Math.round(135 + valence * 90);
+  // 베이스에 반응: 재생 중일 때 bass 강도만큼 배경 밝아짐
+  const bassBoost = isPlaying ? bass * 0.3 : 0;
+  const a1 = (isPlaying ? 0.3 + energy * 0.2 : 0.1 + energy * 0.08) + bassBoost;
+  const a2 = a1 * 0.4;
+  const [r1, g1, b1] = hexToRgb(c1);
+  const [r2, g2, b2] = hexToRgb(c2);
+  return `linear-gradient(${angle}deg, rgba(${r1},${g1},${b1},${a1}), rgba(${r2},${g2},${b2},${a2}))`;
+}
+
+function getMoodGlow(track: MusicTrack, bass: number): string {
+  const genre = (track.mood_tags ?? [])[0] || '';
+  const [c1] = MOOD_COLORS[genre] || DEFAULT_MOOD_COLOR;
+  const [r, g, b] = hexToRgb(c1);
+  return `rgba(${r},${g},${b},${(bass * 0.5).toFixed(2)})`;
+}
+
+// Supabase Storage URL만 재생 허용 (외부 CDN URL은 만료됨)
+const isPlayable = (url?: string | null): boolean =>
+  !!url && url.includes('supabase.co/storage/');
 
 const EMPTY_FORM = {
   title:           '',
@@ -141,6 +247,37 @@ function LibChip({ label, active, isNew, onClick, onDelete }: {
 }
 
 // ─── 이미지를 1:1 정사각형으로 크롭 (canvas) ──────────────────
+// 원본 비율 유지하며 최대 너비로 리사이징 (DB 저장용)
+function resizeImageToMaxWidth(file: File, maxWidth = 800): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      let width = img.width;
+      let height = img.height;
+      // 너비가 maxWidth보다 크면 비율 유지하며 축소
+      if (width > maxWidth) {
+        height = Math.round((height * maxWidth) / width);
+        width = maxWidth;
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { reject(new Error('canvas context error')); return; }
+      ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, width, height);
+      URL.revokeObjectURL(objectUrl);
+      canvas.toBlob(blob => {
+        if (blob) resolve(blob);
+        else reject(new Error('blob 변환 실패'));
+      }, 'image/jpeg', 0.92);
+    };
+    img.onerror = reject;
+    img.src = objectUrl;
+  });
+}
+
+// 1:1 정사각형으로 크롭 (카드 썸네일용 - 필요시)
 function cropToSquare(file: File, targetSize = 400): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -178,13 +315,76 @@ export default function TracksPage() {
   const audioInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
+  // ── 현재 재생 트랙 캐시 상태 ──
+  const [cacheInfo, setCacheInfo] = useState<{ cached: boolean; key: string } | null>(null);
+  const [cacheStats, setCacheStats] = useState<{ count: number; sizeBytes: number } | null>(null);
+  const [showCachePanel, setShowCachePanel] = useState(false);
+
+  const openIDB = useCallback((): Promise<IDBDatabase> => {
+    return new Promise((res, rej) => {
+      const req = indexedDB.open('unniepick-audio-cache', 1);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains('tracks')) db.createObjectStore('tracks', { keyPath: 'url' });
+      };
+      req.onsuccess = () => res(req.result);
+      req.onerror = () => rej(req.error);
+    });
+  }, []);
+
+  const checkCache = useCallback(async (audioUrl: string) => {
+    try {
+      const db = await openIDB();
+      const tx = db.transaction('tracks', 'readonly');
+      const result = await new Promise<unknown>((res, rej) => { const r = tx.objectStore('tracks').get(audioUrl); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+      db.close();
+      setCacheInfo({ cached: !!result, key: audioUrl });
+    } catch { setCacheInfo(null); }
+  }, [openIDB]);
+
+  const loadCacheStats = useCallback(async () => {
+    try {
+      const db = await openIDB();
+      const tx = db.transaction('tracks', 'readonly');
+      const store = tx.objectStore('tracks');
+      const all: { url: string; encrypted: ArrayBuffer }[] = await new Promise((res, rej) => {
+        const r = store.getAll(); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+      });
+      db.close();
+      const sizeBytes = all.reduce((sum, e) => sum + (e.encrypted?.byteLength || 0), 0);
+      setCacheStats({ count: all.length, sizeBytes });
+    } catch { setCacheStats({ count: 0, sizeBytes: 0 }); }
+  }, [openIDB]);
+
+  const clearCache = useCallback(async () => {
+    try {
+      const db = await openIDB();
+      const tx = db.transaction('tracks', 'readwrite');
+      tx.objectStore('tracks').clear();
+      await new Promise<void>((res) => { tx.oncomplete = () => res(); });
+      db.close();
+      setCacheStats({ count: 0, sizeBytes: 0 });
+      setCacheInfo(prev => prev ? { ...prev, cached: false } : null);
+    } catch {}
+  }, [openIDB]);
+
+  useEffect(() => {
+    if (player.track?.audio_url) checkCache(player.track.audio_url);
+    else setCacheInfo(null);
+  }, [player.track?.audio_url, checkCache]);
+
+  useEffect(() => { if (showCachePanel) loadCacheStats(); }, [showCachePanel, loadCacheStats]);
+
   const [tracks,         setTracks]         = useState<MusicTrack[]>([]);
   const [loading,        setLoading]        = useState(true);
   const [query,          setQuery]          = useState('');
   const [catFilter,      setCatFilter]      = useState('all');
   const [tagFilter,      setTagFilter]      = useState('');
+  const [langFilter,     setLangFilter]     = useState('');
   const [toggling,       setToggling]       = useState<string | null>(null);
   const [deleting,       setDeleting]       = useState<string | null>(null);
+  const [coverUploadId,  setCoverUploadId]  = useState<string | null>(null);
+  const [previewUrl,     setPreviewUrl]     = useState<string | null>(null);
   const [playlistCounts, setPlaylistCounts] = useState<Record<string, number>>({});
   const [sortOrder,      setSortOrder]      = useState<'latest' | 'plays' | 'likes' | 'playlists' | 'manual'>('latest');
   const [manualOrder,    setManualOrder]    = useState<string[]>([]);
@@ -332,21 +532,21 @@ export default function TracksPage() {
     }));
   };
 
-  // ── 태그 집계 (mood_tags 배열 전체 — MOOD_OPTIONS 제한 없음) ──
-  const genreTagSet = new Set(tracks.map(t => (t.mood_tags ?? [])[0]).filter(Boolean));
+  // ── 태그 집계 (mood_tags[0] = 메인 장르만 필터 태그로 사용) ──
   const tagCounts = tracks.reduce<Record<string, number>>((acc, t) => {
-    (t.mood_tags || []).forEach(tag => {
-      if (tag) acc[tag] = (acc[tag] || 0) + 1;
-    });
+    const genre = (t.mood_tags ?? [])[0];
+    if (genre) acc[genre] = (acc[genre] || 0) + 1;
     return acc;
   }, {});
-  // 장르 태그(mood_tags[0]) 먼저 count 순, 나머지 태그 count 순
-  const sortedTags = Object.entries(tagCounts).sort((a, b) => {
-    const aGenre = genreTagSet.has(a[0]) ? 1 : 0;
-    const bGenre = genreTagSet.has(b[0]) ? 1 : 0;
-    if (bGenre !== aGenre) return bGenre - aGenre;
-    return b[1] - a[1];
-  });
+  const sortedTags = Object.entries(tagCounts).sort((a, b) => b[1] - a[1]);
+
+  // ── 언어 집계 ──
+  const langCounts = tracks.reduce<Record<string, number>>((acc, t) => {
+    const lang = getTrackLang(t);
+    if (lang) acc[lang] = (acc[lang] || 0) + 1;
+    return acc;
+  }, {});
+  const sortedLangs = Object.entries(langCounts).sort((a, b) => b[1] - a[1]);
 
   // ── 필터 + 정렬 ──
   const todayStr = new Date().toISOString().slice(0, 10);
@@ -355,8 +555,9 @@ export default function TracksPage() {
     const q = query.toLowerCase();
     const matchQ = !q || t.title.toLowerCase().includes(q) || t.artist.toLowerCase().includes(q) || t.mood.toLowerCase().includes(q);
     const matchC = catFilter === 'all' || t.store_category === catFilter || t.store_category === 'all';
-    const matchT = !tagFilter || (t.mood_tags || []).includes(tagFilter);
-    return matchQ && matchC && matchT;
+    const matchT = !tagFilter || (t.mood_tags ?? [])[0] === tagFilter;
+    const matchL = !langFilter || getTrackLang(t) === langFilter;
+    return matchQ && matchC && matchT && matchL;
   });
 
   const sorted = [...filtered].sort((a, b) => {
@@ -590,6 +791,41 @@ export default function TracksPage() {
   };
 
   // ── 삭제 ──
+  const handlePasteCover = async (track: MusicTrack) => {
+    setCoverUploadId(track.id);
+    try {
+      const items = await navigator.clipboard.read();
+      let blob: Blob | null = null;
+      for (const item of items) {
+        const imageType = item.types.find(t => t.startsWith('image/'));
+        if (imageType) {
+          blob = await item.getType(imageType);
+          break;
+        }
+      }
+      if (!blob) {
+        alert('클립보드에 이미지가 없습니다.');
+        setCoverUploadId(null);
+        return;
+      }
+
+      // 원본 비율 유지하며 최대 640px 너비로 리사이징 후 업로드
+      const resizedBlob = await resizeImageToMaxWidth(new File([blob], 'cover.jpg', { type: blob.type }), 640);
+      const path = `covers/${Date.now()}_cover.jpg`;
+      const { error } = await sb.storage.from(STORAGE_BUCKET).upload(path, resizedBlob, {
+        contentType: 'image/jpeg', upsert: true,
+      });
+      if (error) throw error;
+      const { data: { publicUrl } } = sb.storage.from(STORAGE_BUCKET).getPublicUrl(path);
+      await sb.from('music_tracks').update({ cover_image_url: publicUrl }).eq('id', track.id);
+      setTracks(prev => prev.map(tr => tr.id === track.id ? { ...tr, cover_image_url: publicUrl } : tr));
+    } catch (e: any) {
+      alert(`커버 변경 실패: ${e.message}`);
+    } finally {
+      setCoverUploadId(null);
+    }
+  };
+
   const handleDelete = async (t: MusicTrack) => {
     if (!confirm(`"${t.title}" 트랙을 삭제할까요?`)) return;
     setDeleting(t.id);
@@ -598,26 +834,21 @@ export default function TracksPage() {
     setDeleting(null);
   };
 
-  // ── 재생 (하단 플레이어로 연결) ──
+  // ── 재생 (하단 플레이어로 연결, Supabase Storage URL만 허용) ──
   const togglePlay = (track: MusicTrack) => {
-    const playable = {
-      id:              track.id,
-      title:           track.title,
-      artist:          track.artist,
-      audio_url:       track.audio_url,
-      cover_image_url: track.cover_image_url,
-      cover_emoji:     track.cover_emoji,
-      duration_sec:    track.duration_sec,
-      mood:            track.mood,
-    };
+    if (!isPlayable(track.audio_url)) return;
+    const toPlayable = (t: MusicTrack) => ({
+      id: t.id, title: t.title, artist: t.artist,
+      audio_url: t.audio_url, cover_image_url: t.cover_image_url,
+      cover_emoji: t.cover_emoji, duration_sec: t.duration_sec, mood: t.mood,
+      mood_tags: t.mood_tags, energy_score: t.energy_score,
+      valence_score: t.valence_score, danceability_score: t.danceability_score,
+    });
     if (player.track?.id === track.id) {
       player.togglePlay();
     } else {
-      player.play(playable, displayList.map(t => ({
-        id: t.id, title: t.title, artist: t.artist,
-        audio_url: t.audio_url, cover_image_url: t.cover_image_url,
-        cover_emoji: t.cover_emoji, duration_sec: t.duration_sec, mood: t.mood,
-      })));
+      const playableQueue = displayList.filter(t => isPlayable(t.audio_url)).map(toPlayable);
+      player.play(toPlayable(track), playableQueue);
     }
   };
 
@@ -628,13 +859,66 @@ export default function TracksPage() {
       <div className="flex items-center justify-between px-6 py-4 border-b border-border-main">
         <div>
           <h1 className="text-lg font-bold text-primary">🎵 트랙 관리</h1>
-          <p className="text-xs text-muted mt-0.5">music_tracks 테이블 · 총 {tracks.length}개</p>
+          <p className="text-xs text-muted mt-0.5">music_tracks 테이블 · 총 {tracks.length}개 · 서버파일 {tracks.filter(t => isPlayable(t.audio_url)).length}개</p>
         </div>
         <button onClick={openCreate}
           className="flex items-center gap-2 px-4 py-2 bg-[#FF6F0F] text-primary text-sm font-bold rounded-xl hover:bg-[#FF6F0F]/90 transition">
           <Plus size={15} /> 새 트랙 등록
         </button>
       </div>
+
+      {/* 커버 업로드 플로팅 배너 */}
+      {coverUploadId && (
+        <div className="fixed top-4 right-4 px-4 py-3 rounded-xl font-semibold text-sm flex items-center gap-2 transition z-50 bg-[#FF6F0F]/90 text-white">
+          <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          <span>📤 커버 업로드 중...</span>
+        </div>
+      )}
+
+      {/* 현재 재생 트랙 캐시 정보 */}
+      {player.track && cacheInfo && (
+        <div className="border-b border-border-main bg-surface/50">
+          <button
+            onClick={() => setShowCachePanel(p => !p)}
+            className="flex items-center gap-2 px-6 py-1.5 w-full hover:bg-fill-subtle/50 transition">
+            <span className={`shrink-0 w-2 h-2 rounded-full ${cacheInfo.cached ? 'bg-green-500' : 'bg-yellow-500'} animate-pulse`} />
+            <span className="text-[10px] text-muted truncate font-mono text-left flex-1">
+              {cacheInfo.cached ? '⚡ 암호화 캐시' : '🌐 스트리밍'}{' · '}
+              <span className="text-dim">IndexedDB › tracks › </span>
+              <span className="text-tertiary">{cacheInfo.key.replace(/^https?:\/\/[^/]+/, '')}</span>
+            </span>
+            <span className="text-[10px] text-dim shrink-0">{showCachePanel ? '▲' : '▼'}</span>
+          </button>
+
+          {showCachePanel && cacheStats && (
+            <div className="px-6 py-3 border-t border-border-subtle bg-card/50 flex items-center gap-4">
+              <div className="flex items-center gap-4 text-xs">
+                <span className="text-muted">
+                  🔐 암호화 캐시: <span className="text-primary font-semibold">{cacheStats.count}곡</span>
+                </span>
+                <span className="text-muted">
+                  💾 용량: <span className="text-primary font-semibold">
+                    {cacheStats.sizeBytes < 1024 * 1024
+                      ? `${Math.round(cacheStats.sizeBytes / 1024)} KB`
+                      : `${(cacheStats.sizeBytes / 1024 / 1024).toFixed(1)} MB`}
+                  </span>
+                </span>
+                <span className="text-dim">AES-256-GCM · extractable=false</span>
+              </div>
+              <div className="ml-auto flex gap-2">
+                <button onClick={loadCacheStats}
+                  className="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-fill-subtle text-tertiary hover:text-primary transition">
+                  새로고침
+                </button>
+                <button onClick={() => { if (confirm('암호화 캐시를 모두 삭제합니다.')) clearCache(); }}
+                  className="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-red-500/10 text-red-400 hover:bg-red-500/20 transition">
+                  캐시 초기화
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 무드 태그 필터 */}
       {sortedTags.length > 0 && (
@@ -661,6 +945,32 @@ export default function TracksPage() {
         </div>
       )}
 
+      {/* 언어 필터 */}
+      {sortedLangs.length > 0 && (
+        <div className="flex items-center gap-2 px-6 py-2 border-b border-border-main overflow-x-auto scrollbar-none">
+          <span className="text-[10px] text-dim shrink-0">🌐</span>
+          <button onClick={() => setLangFilter('')}
+            className={`shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold transition ${
+              !langFilter ? 'bg-[#8b5cf6] text-white' : 'bg-fill-subtle text-tertiary hover:text-primary'
+            }`}>
+            전체
+          </button>
+          {sortedLangs.map(([lang, count]) => (
+            <button key={lang}
+              onClick={() => setLangFilter(langFilter === lang ? '' : lang)}
+              className={`shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold transition whitespace-nowrap ${
+                langFilter === lang
+                  ? 'text-white'
+                  : 'bg-fill-subtle text-tertiary hover:text-primary'
+              }`}
+              style={langFilter === lang ? { backgroundColor: LANG_COLORS[lang] || '#6b7280' } : {}}>
+              {LANG_FLAGS[lang] || '🌐'} {lang}
+              <span className={`text-[10px] ${langFilter === lang ? 'opacity-70' : 'opacity-50'}`}>{count}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* 필터 바 */}
       <div className="flex items-center gap-3 px-6 py-3 border-b border-border-main flex-wrap">
         <div className="relative flex-1 max-w-xs">
@@ -668,16 +978,6 @@ export default function TracksPage() {
           <input value={query} onChange={e => setQuery(e.target.value)}
             placeholder="제목, 아티스트, 무드 검색..."
             className="w-full pl-8 pr-3 py-2 bg-card border border-border-subtle rounded-xl text-sm text-primary placeholder-gray-600 outline-none" />
-        </div>
-        <div className="flex gap-1">
-          {['all', ...CATEGORY_OPTIONS.filter(c => c !== 'all')].map(c => (
-            <button key={c} onClick={() => setCatFilter(c)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                catFilter === c ? 'bg-[#FF6F0F] text-primary' : 'text-tertiary hover:text-primary bg-fill-subtle'
-              }`}>
-              {CATEGORY_KO[c] ?? c}
-            </button>
-          ))}
         </div>
         {/* 정렬 */}
         <div className="flex gap-1 ml-auto">
@@ -692,6 +992,28 @@ export default function TracksPage() {
           ))}
         </div>
         <span className="text-xs text-dim">{sorted.length}개</span>
+
+        {/* 베이스 이펙트 조절 */}
+        {player.isPlaying && (
+          <div className="flex items-center gap-3 ml-1 pl-2 border-l border-border-subtle">
+            <div className="flex items-center gap-1" title="주파수 대역">
+              <span className="text-[10px] text-dim">🎚️</span>
+              {['SUB','BASS','MID','HIGH','AIR'].map((label, i) => (
+                <button key={i} onClick={() => player.setBassFreqBand(i)}
+                  className={`px-1.5 py-0.5 rounded text-[9px] font-bold transition ${
+                    player.bassFreqBand === i ? 'bg-[#FF6F0F] text-primary' : 'text-dim hover:text-tertiary'
+                  }`}>{label}</button>
+              ))}
+            </div>
+            <div className="flex items-center gap-1" title="펄스 속도">
+              <span className="text-[10px] text-dim">⚡</span>
+              <input type="range" min={0.3} max={3} step={0.1} value={player.bassSpeed}
+                onChange={e => player.setBassSpeed(Number(e.target.value))}
+                className="w-12 h-1 cursor-pointer" style={{ accentColor: '#FF6F0F' }} />
+              <span className="text-[9px] text-dim w-6">{player.bassSpeed.toFixed(1)}x</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 트랙 목록 */}
@@ -786,16 +1108,16 @@ export default function TracksPage() {
                 <div className="shrink-0 space-y-2">
                   <label className="text-xs text-muted font-semibold block">커버 이미지</label>
 
-                  {/* 1:1 미리보기 */}
+                  {/* 원본 비율 유지 미리보기 */}
                   <div
-                    onClick={() => imageInputRef.current?.click()}
-                    className="relative w-28 h-28 rounded-xl overflow-hidden bg-[#1F2937] border-2 border-dashed border-border-main flex items-center justify-center cursor-pointer hover:border-[#FF6F0F]/50 transition group">
+                    onClick={() => form.cover_image_url ? setPreviewUrl(form.cover_image_url) : imageInputRef.current?.click()}
+                    className="relative rounded-xl overflow-hidden bg-[#1F2937] border-2 border-dashed border-border-main flex items-center justify-center cursor-pointer hover:border-[#FF6F0F]/50 transition group w-28">
                     {form.cover_image_url ? (
-                      <img src={form.cover_image_url} alt="cover" className="w-full h-full object-cover" />
+                      <img src={form.cover_image_url} alt="cover" className="w-full h-auto object-contain" />
                     ) : (
-                      <div className="flex flex-col items-center gap-1.5">
+                      <div className="flex flex-col items-center gap-1.5 py-6">
                         <span className="text-3xl">{form.cover_emoji}</span>
-                        <span className="text-[10px] text-dim group-hover:text-tertiary transition">클릭하여 업로드</span>
+                        <span className="text-[10px] text-dim group-hover:text-tertiary transition">클릭</span>
                       </div>
                     )}
                     {imageUploading && (
@@ -803,8 +1125,12 @@ export default function TracksPage() {
                         <div className="w-6 h-6 border-2 border-[#FF6F0F]/30 border-t-[#FF6F0F] rounded-full animate-spin" />
                       </div>
                     )}
-                    {/* 1:1 배지 */}
-                    <div className="absolute top-1.5 right-1.5 bg-black/60 text-[9px] text-tertiary px-1.5 py-0.5 rounded-md font-mono">1:1</div>
+                    {/* 비율 배지 */}
+                    {form.cover_image_url && (
+                      <div className="absolute top-1.5 right-1.5 bg-black/60 text-[9px] text-tertiary px-1.5 py-0.5 rounded-md font-mono">
+                        원본
+                      </div>
+                    )}
                   </div>
 
                   {/* 숨겨진 파일 입력 */}
@@ -1156,25 +1482,8 @@ export default function TracksPage() {
                 />
               </div>
 
-              {/* ── 에너지 + 카테고리 + 활성화 ── */}
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="text-xs text-muted font-semibold block mb-2">⚡ 에너지</label>
-                  <div className="flex gap-2">
-                    {ENERGY_OPTIONS.map(e => (
-                      <button key={e} onClick={() => setF('energy_level', form.energy_level === e ? '' : e)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                          form.energy_level === e
-                            ? e === 'high'   ? 'bg-red-500/20 border border-red-500 text-red-400'
-                            : e === 'medium' ? 'bg-yellow-500/20 border border-yellow-500 text-yellow-400'
-                            :                  'bg-green-500/20 border border-green-500 text-green-400'
-                            : 'bg-fill-subtle border border-border-subtle text-tertiary'
-                        }`}>
-                        {ENERGY_KO[e]}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+              {/* ── 카테고리 + 활성화 ── */}
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs text-muted font-semibold block mb-2">📁 카테고리</label>
                   <select value={form.store_category} onChange={e => setF('store_category', e.target.value)}
@@ -1216,6 +1525,19 @@ export default function TracksPage() {
           </div>
         </div>
       )}
+
+      {/* 이미지 미리보기 오버레이 */}
+      {previewUrl && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4" onClick={() => setPreviewUrl(null)}>
+          <div className="relative max-w-4xl max-h-[90vh]" onClick={e => e.stopPropagation()}>
+            <img src={previewUrl} alt="preview" className="h-full max-w-full object-contain" />
+            <button onClick={() => setPreviewUrl(null)}
+              className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/70 text-white hover:bg-black/90 flex items-center justify-center transition">
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -1227,21 +1549,47 @@ export default function TracksPage() {
       ? `${Math.floor(track.duration_sec / 60)}:${String(track.duration_sec % 60).padStart(2, '0')}`
       : null;
     const plCount = playlistCounts[track.id] ?? 0;
+    const bass = isPlaying ? player.bassLevel : 0;
+    const moodBg = getMoodGradient(track, isPlaying, bass);
+    const genre = (track.mood_tags ?? [])[0] || '';
+    const [mc1] = MOOD_COLORS[genre] || DEFAULT_MOOD_COLOR;
+    const [r, g, b] = hexToRgb(mc1);
+    // 테두리: 베이스에 반응하는 글로우 + 색상 강도
+    const borderColor = isPlaying
+      ? `rgba(${r},${g},${b},${(0.4 + bass * 0.6).toFixed(2)})`
+      : '';
+    const borderGlow = isPlaying && bass > 0.2
+      ? `0 0 ${Math.round(bass * 16)}px rgba(${r},${g},${b},${(bass * 0.5).toFixed(2)}), inset 0 0 ${Math.round(bass * 8)}px rgba(${r},${g},${b},${(bass * 0.15).toFixed(2)})`
+      : 'none';
     return (
       <div key={track.id}
-        className={`group relative flex flex-col rounded-xl overflow-hidden bg-white/[0.03] border transition hover:bg-white/[0.06] ${
-          !track.is_active ? 'opacity-50' : 'border-border-main hover:border-border-subtle'
+        style={{
+          backgroundImage: moodBg,
+          borderColor: borderColor || undefined,
+          boxShadow: borderGlow,
+          borderWidth: isPlaying ? 2 : 1,
+          transition: 'border-color 80ms, box-shadow 80ms',
+        }}
+        className={`group relative flex flex-col rounded-xl overflow-hidden ${
+          isPlaying ? 'z-10' : ''
+        } ${
+          !track.is_active ? 'opacity-50 border border-border-main' : 'border border-border-main hover:border-border-subtle'
         }`}>
 
-                  {/* 커버 */}
-                  <div className="relative aspect-square bg-fill-subtle">
+                  {/* 커버 — AI 생성 시 9:16 이미지의 중앙 1:1 영역만 표시 */}
+                  <div className="relative aspect-square bg-fill-subtle overflow-hidden">
                     {track.cover_image_url ? (
                       <img src={track.cover_image_url} alt={track.title}
-                        className="w-full h-full object-cover" />
+                        className="w-full h-full object-cover object-center" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-4xl">
                         {track.cover_emoji}
                       </div>
+                    )}
+
+                    {/* AI 커버 생성 완료 점 */}
+                    {track.cover_image_url?.includes('ai_') && (
+                      <span className="absolute top-1.5 right-1.5 w-3 h-3 rounded-full bg-red-500 shadow-lg"></span>
                     )}
 
                     {/* 런타임 오버레이 */}
@@ -1254,7 +1602,7 @@ export default function TracksPage() {
                     {/* 재생 버튼 오버레이 */}
                     <button
                       onClick={() => togglePlay(track)}
-                      disabled={!track.audio_url}
+                      disabled={!isPlayable(track.audio_url)}
                       className={`absolute inset-0 flex items-center justify-center transition ${
                         isActive
                           ? 'bg-black/20'
@@ -1271,29 +1619,55 @@ export default function TracksPage() {
                         }
                       </span>
                     </button>
+
+                    {/* 커버 이미지 관리 버튼 */}
+                    <div className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition flex gap-1">
+                      <button
+                        onClick={e => { e.stopPropagation(); handlePasteCover(track); }}
+                        disabled={coverUploadId === track.id}
+                        className="px-2 py-1 rounded text-[9px] font-semibold bg-black/70 text-white hover:bg-blue-500/70 backdrop-blur-sm transition disabled:opacity-50 disabled:cursor-not-allowed">
+                        {coverUploadId === track.id ? '⏳' : 'PASTE'}
+                      </button>
+                    </div>
                   </div>
 
                   {/* 트랙 정보 */}
                   <div className="p-2.5 flex flex-col gap-1 flex-1">
+                    {track.audio_url && !isPlayable(track.audio_url) && (
+                      <p className="text-[9px] font-bold text-red-400 bg-red-500/10 rounded px-1.5 py-0.5 w-fit">외부 URL — 재업로드 필요</p>
+                    )}
+                    {!track.audio_url && (
+                      <p className="text-[9px] font-bold text-dim bg-fill-subtle rounded px-1.5 py-0.5 w-fit">오디오 없음</p>
+                    )}
                     <p className="text-primary text-xs font-semibold truncate leading-tight">{track.title}</p>
                     <p className="text-muted text-[10px] truncate">{track.artist}</p>
-                    {/* 태그 */}
-                    {(track.mood_tags ?? []).length > 0 && (
-                      <div className="flex flex-wrap gap-0.5 mt-0.5">
-                        {(track.mood_tags ?? []).slice(0, 3).map((t, i) => (
-                          <span key={t} className={`text-[9px] px-1.5 py-0.5 rounded leading-none ${
-                            i === 0
-                              ? 'bg-[#FF6F0F]/15 border border-[#FF6F0F]/40 text-[#FF6F0F] font-semibold'
-                              : 'bg-fill-subtle border border-border-subtle text-muted'
-                          }`}>{t}</span>
-                        ))}
-                        {(track.mood_tags ?? []).length > 3 && (
-                          <span className="text-[9px] px-1 py-0.5 bg-fill-subtle text-dim rounded leading-none">
-                            +{(track.mood_tags ?? []).length - 3}
-                          </span>
-                        )}
-                      </div>
-                    )}
+                    {/* 태그 + 언어 */}
+                    {(() => {
+                      const lang = getTrackLang(track);
+                      const tags = (track.mood_tags ?? []);
+                      return (
+                        <div className="flex flex-wrap gap-0.5 mt-0.5">
+                          {lang && (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded leading-none font-semibold border"
+                              style={{ backgroundColor: (LANG_COLORS[lang] || '#6b7280') + '20', borderColor: (LANG_COLORS[lang] || '#6b7280') + '40', color: LANG_COLORS[lang] || '#6b7280' }}>
+                              {LANG_FLAGS[lang] || '🌐'} {lang}
+                            </span>
+                          )}
+                          {tags.slice(0, 3).map((t, i) => (
+                            <span key={t} className={`text-[9px] px-1.5 py-0.5 rounded leading-none ${
+                              i === 0
+                                ? 'bg-[#FF6F0F]/15 border border-[#FF6F0F]/40 text-[#FF6F0F] font-semibold'
+                                : 'bg-fill-subtle border border-border-subtle text-muted'
+                            }`}>{t}</span>
+                          ))}
+                          {tags.length > 3 && (
+                            <span className="text-[9px] px-1 py-0.5 bg-fill-subtle text-dim rounded leading-none">
+                              +{tags.length - 3}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
 
                     {/* 통계 뱃지 */}
                     <div className="flex items-center gap-2 text-[10px] text-dim mt-0.5">

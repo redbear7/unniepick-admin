@@ -23,23 +23,42 @@ function getSupabase() {
 
 // 파일 다운로드 후 Supabase Storage 업로드
 async function uploadFromUrl(
-  supabase: ReturnType<typeof createClient>,
+  supabase: ReturnType<typeof getSupabase>,
   remoteUrl: string,
   storagePath: string,
   contentType: string,
-): Promise<string | null> {
+  authToken?: string | null,
+): Promise<{ url: string | null; error?: string }> {
   try {
-    const resp = await fetch(remoteUrl, { signal: AbortSignal.timeout(30000) });
-    if (!resp.ok) return null;
+    // 1차: 토큰 포함 시도
+    const headers: Record<string, string> = {};
+    if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+    let resp = await fetch(remoteUrl, { headers, signal: AbortSignal.timeout(30000) });
+
+    // 2차: 토큰 없이 재시도 (공개 CDN URL일 경우 토큰이 오히려 거부될 수 있음)
+    if (!resp.ok && authToken) {
+      resp = await fetch(remoteUrl, { signal: AbortSignal.timeout(30000) });
+    }
+
+    if (!resp.ok) {
+      return { url: null, error: `다운로드 실패 HTTP ${resp.status} — ${remoteUrl.substring(0, 80)}` };
+    }
+
     const buf = await resp.arrayBuffer();
+    if (buf.byteLength < 1000) {
+      return { url: null, error: `파일 크기 비정상 (${buf.byteLength}B) — 빈 파일 또는 만료된 URL` };
+    }
+
     const { error } = await supabase.storage
       .from('music-tracks')
       .upload(storagePath, buf, { contentType, upsert: true });
-    if (error) return null;
+    if (error) {
+      return { url: null, error: `Storage 업로드 실패: ${error.message}` };
+    }
     const { data } = supabase.storage.from('music-tracks').getPublicUrl(storagePath);
-    return data.publicUrl;
-  } catch {
-    return null;
+    return { url: data.publicUrl };
+  } catch (e) {
+    return { url: null, error: `네트워크 오류: ${(e as Error).message}` };
   }
 }
 
@@ -78,9 +97,17 @@ function parseTitle(rawTitle: string) {
   return { pureTitle: rawTitle.trim(), referenceUrl: null };
 }
 
-// 파일명 안전 처리 (Supabase 경로용)
-function safePath(title: string) {
-  return title.replace(/[^a-zA-Z0-9가-힣ㄱ-ㅎㅏ-ㅣ.\-_ ]/g, '_').trim().substring(0, 120);
+// 파일명 안전 처리 (Supabase Storage 경로용)
+// Supabase는 ASCII만 안전 — 비ASCII 문자는 제거하고 ID로 보장
+function safePath(title: string, id: string) {
+  const ascii = title
+    .replace(/[^a-zA-Z0-9.\-_ ]/g, '')
+    .replace(/\s+/g, '_')
+    .replace(/_+/g, '_')
+    .trim()
+    .substring(0, 80);
+  // ASCII 부분이 너무 짧으면 ID 사용
+  return ascii.length >= 3 ? `${ascii}_${id.slice(0, 8)}` : id;
 }
 
 export async function POST(req: NextRequest) {
@@ -99,10 +126,12 @@ export async function POST(req: NextRequest) {
     created_at:   string | null;
     suno_url:     string;
   }[];
+  let sunoToken: string | null = null;
 
   try {
     const body = await req.json();
     songs = body.songs || [];
+    sunoToken = body.token || null;
   } catch {
     return NextResponse.json({ error: '잘못된 요청 형식' }, { status: 400, headers: CORS });
   }
@@ -119,31 +148,34 @@ export async function POST(req: NextRequest) {
 
       // ── 제목에서 [핸들] 접두사 분리 ──────────────────────────────────
       const { pureTitle, referenceUrl } = parseTitle(song.title || '(제목 없음)');
-      const safeTitle = safePath(pureTitle) || `suno_${songId}`;
+      const safeTitle = safePath(pureTitle, songId);
 
       // ── 커버 이미지: Suno CDN → Supabase Storage ──────────────────────
       let coverUrl: string | null = null;
       if (song.image_url) {
-        const uploaded = await uploadFromUrl(
+        const coverResult = await uploadFromUrl(
           supabase,
           song.image_url,
           `covers/${safeTitle}.jpg`,
           'image/jpeg',
+          sunoToken,
         );
-        coverUrl = uploaded || song.image_url; // 업로드 실패 시 원본 URL 유지
+        coverUrl = coverResult.url; // 업로드 실패 시 null (만료되는 Suno URL 저장 방지)
       }
 
       // ── 오디오: Suno CDN → Supabase Storage (핸들 없는 순수 제목으로 저장) ──
-      let audioUrl: string | null = song.audio_url;
-      if (song.audio_url) {
-        const uploaded = await uploadFromUrl(
-          supabase,
-          song.audio_url,
-          `audio/${safeTitle}.mp3`,
-          'audio/mpeg',
-        );
-        audioUrl = uploaded || song.audio_url; // 업로드 실패 시 원본 URL 유지
+      const remoteAudioUrl = song.audio_url || `https://cdn1.suno.ai/${songId}.mp3`;
+      const audioResult = await uploadFromUrl(
+        supabase,
+        remoteAudioUrl,
+        `audio/${safeTitle}.mp3`,
+        'audio/mpeg',
+        sunoToken,
+      );
+      if (!audioResult.url) {
+        throw new Error(audioResult.error || '오디오 다운로드/업로드 실패');
       }
+      const audioUrl = audioResult.url;
 
       // ── 태그 파싱 (tags + prompt 합산, BPM 추출) ──────────────────────
       const { mood, mood_tags, bpm } = parseTags(song.tags || '', song.prompt || '');

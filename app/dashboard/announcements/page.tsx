@@ -13,7 +13,7 @@ import {
   GREETING_KEY, CALL_TEMPLATE_KEY,
   numToKorean, sessionAudioCache, sessionCacheKey, fetchBlobUrl,
   getCachedAudio, setCachedAudio,
-  loadHistoryFromLS, pushHistoryToLS, removeHistoryFromLS,
+  loadHistoryFromLS, pushHistoryToLS, removeHistoryFromLS, saveHistoryToLS,
   voiceLabel,
 } from './_shared';
 
@@ -64,6 +64,9 @@ export default function AnnouncementsPage() {
   const [selectedTplId, setSelectedTplId] = useState<string | null>(null);
   const [tplModal,      setTplModal]      = useState(false);
   const [tplEditTarget, setTplEditTarget] = useState<TtsTemplate | null>(null);
+
+  // 재생성
+  const [regeneratingId, setRegeneratingId] = useState<string | null>(null);
 
   // 상태
   const [generating,   setGenerating]   = useState(false);
@@ -297,6 +300,82 @@ export default function AnnouncementsPage() {
     if (!confirm('안내방송 히스토리를 모두 삭제할까요?')) return;
     try { localStorage.removeItem(HISTORY_LS_KEY); } catch {}
     setAnnouncements([]);
+  };
+
+  // ── 순서 변경 ──
+  const handleReorder = (reordered: Announcement[]) => {
+    setAnnouncements(reordered);
+    // 전체 히스토리에서 현재 필터 외 항목은 유지
+    if (selectedStore) {
+      const others = loadHistoryFromLS().filter(a => a.store_id !== selectedStore);
+      saveHistoryToLS([...reordered, ...others]);
+    } else {
+      saveHistoryToLS(reordered);
+    }
+  };
+
+  // ── 즐겨찾기(핀) 토글 ──
+  const handleTogglePin = (id: string) => {
+    setAnnouncements(prev => {
+      const updated = prev.map(a => a.id === id ? { ...a, pinned: !a.pinned } : a);
+      // 핀 항목 상단 정렬
+      const pinned = updated.filter(a => a.pinned);
+      const unpinned = updated.filter(a => !a.pinned);
+      const sorted = [...pinned, ...unpinned];
+      if (selectedStore) {
+        const others = loadHistoryFromLS().filter(a => a.store_id !== selectedStore);
+        saveHistoryToLS([...sorted, ...others]);
+      } else {
+        saveHistoryToLS(sorted);
+      }
+      return sorted;
+    });
+  };
+
+  // ── 문구 수정 + 재생성 ──
+  const handleRegenerate = async (ann: Announcement, newText: string) => {
+    setRegeneratingId(ann.id);
+    try {
+      const res = await fetch('/api/tts/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: newText,
+          voice_type: ann.voice_type,
+          speed,
+          store_id: ann.store_id || selectedStore || null,
+          play_mode: ann.play_mode,
+          repeat_count: ann.repeat_count,
+          duck_volume: (ann as any).duck_volume ?? duckVolume,
+        }),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+
+      // 히스토리 업데이트 (텍스트 + audio_url 교체)
+      setAnnouncements(prev => {
+        const updated = prev.map(a => a.id === ann.id ? { ...a, text: newText, audio_url: data.audio_url } : a);
+        if (selectedStore) {
+          const others = loadHistoryFromLS().filter(a => a.store_id !== selectedStore);
+          saveHistoryToLS([...updated.filter(a => a.store_id === selectedStore || !selectedStore), ...others]);
+        } else {
+          saveHistoryToLS(updated);
+        }
+        return updated;
+      });
+
+      // 즉시 재생
+      const updatedAnn = { ...ann, text: newText, audio_url: data.audio_url };
+      if (player.track) {
+        player.playAnnouncement(data.audio_url, { duck_volume: (ann as any).duck_volume ?? duckVolume, play_mode: ann.play_mode });
+      } else {
+        playAudio(data.audio_url, ann.id, player.volume);
+      }
+    } catch (e: any) {
+      alert(`재생성 실패: ${e.message}`);
+    } finally {
+      setRegeneratingId(null);
+    }
   };
 
   // ── 템플릿 ──
@@ -543,6 +622,30 @@ export default function AnnouncementsPage() {
               onChange={e => { const v = e.target.value.slice(0, 200); setText(v); checkCache(v, voice, speed); }}
               rows={3} placeholder="안내 문구를 입력하세요"
               className="w-full bg-card border border-border-subtle text-sm text-primary rounded-xl px-3 py-2.5 outline-none placeholder-gray-600 resize-none" />
+            {/* 운율 태그 힌트 */}
+            <div className="flex items-center gap-1 flex-wrap">
+              <span className="text-[9px] text-dim">운율 태그:</span>
+              {[
+                { tag: '[laughs]', label: '😄 웃음' },
+                { tag: '[sighs]', label: '😮‍💨 한숨' },
+                { tag: '[clears throat]', label: '🗣 헛기침' },
+                { tag: '[gasps]', label: '😲 놀람' },
+                { tag: '[pauses]', label: '⏸ 멈춤' },
+              ].map(({ tag, label }) => (
+                <button key={tag}
+                  onClick={() => {
+                    const el = document.querySelector('textarea') as HTMLTextAreaElement | null;
+                    if (!el) return;
+                    const start = el.selectionStart ?? text.length;
+                    const next = text.slice(0, start) + tag + text.slice(start);
+                    if (next.length <= 200) { setText(next); checkCache(next, voice, speed); }
+                  }}
+                  className="text-[9px] px-1.5 py-0.5 rounded bg-fill-subtle text-muted hover:text-[#FF6F0F] hover:bg-[#FF6F0F]/10 border border-border-subtle transition"
+                  title={`"${tag}" 삽입`}>
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* 생성 버튼 */}
@@ -558,19 +661,6 @@ export default function AnnouncementsPage() {
           <p className="text-[10px] text-dim text-center">
             {cacheHit ? '동일 문구·목소리 → 캐시 재사용 (API 미호출)' : 'Fish Audio TTS · 생성 후 즉시 미리듣기'}
           </p>
-
-          {/* 속도 */}
-          <div className="space-y-2">
-            <label className="text-xs text-muted font-semibold">⚡ 속도</label>
-            <div className="flex gap-1.5">
-              {SPEED_OPTIONS.map(s => (
-                <button key={s} onClick={() => { setSpeed(s); checkCache(text, voice, s); }}
-                  className={`flex-1 py-1.5 rounded-lg text-xs font-semibold border transition ${
-                    speed === s ? 'bg-[#FF6F0F]/15 border-[#FF6F0F]/50 text-[#FF6F0F]' : 'bg-white/[0.03] border-border-subtle text-tertiary hover:border-border-main'
-                  }`}>{s}x</button>
-              ))}
-            </div>
-          </div>
 
           {/* 재생 모드 + 반복 */}
           <div className="grid grid-cols-2 gap-3">
@@ -598,39 +688,9 @@ export default function AnnouncementsPage() {
             </div>
           </div>
 
-          {/* 안내방송 볼륨 */}
-          <div className="bg-white/[0.02] border border-border-main rounded-xl p-3 space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="text-xs text-muted font-semibold">📢 안내방송 볼륨</label>
-              <span className={`text-xs font-bold ${annVolume > 100 ? 'text-yellow-400' : 'text-[#FF6F0F]'}`}>{annVolume}%</span>
-            </div>
-            <input type="range" min={50} max={200} step={5}
-              value={annVolume} onChange={e => { setAnnVolume(Number(e.target.value)); checkCache(text, voice, speed); }}
-              className="w-full h-1.5 rounded-full cursor-pointer" style={{ accentColor: annVolume > 100 ? '#facc15' : '#FF6F0F' }} />
-            <div className="flex justify-between text-[9px] text-dim">
-              <span>50%</span><span className="text-muted">100% = 음악 볼륨</span><span>200%</span>
-            </div>
-            {annVolume > 100 && <p className="text-[10px] text-yellow-500/80">⚡ 부스트 모드 · audio.volume 최대 적용 (1.0 클램프)</p>}
-          </div>
+          {/* 안내방송 볼륨 — 하단 플레이어에서 제어 */}
 
-          {/* 덕킹 */}
-          {playMode === 'immediate' && (
-            <div className="bg-white/[0.02] border border-border-main rounded-xl p-3 space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-xs text-muted font-semibold">🔉 안내방송 중 트랙 볼륨</label>
-                <span className="text-xs font-bold text-[#FF6F0F]">{duckVolume}%</span>
-              </div>
-              <input type="range" min={0} max={80} step={5}
-                value={duckVolume} onChange={e => setDuckVolume(Number(e.target.value))}
-                className="w-full h-1.5 rounded-full cursor-pointer" style={{ accentColor: '#FF6F0F' }} />
-              <p className="text-[10px] text-dim">안내방송 시작 시 트랙을 {duckVolume}%로 페이드 아웃 → 방송 종료 후 원래 볼륨으로 페이드 인</p>
-            </div>
-          )}
-          {playMode === 'between_tracks' && (
-            <div className="bg-white/[0.02] border border-border-main rounded-xl p-3">
-              <p className="text-[10px] text-dim">현재 곡이 완전히 끝난 후 안내방송 → 다음 곡 자동 재생</p>
-            </div>
-          )}
+          {/* 덕킹 — UI 숨김, 기능 유지 (duckVolume 기본값 사용) */}
         </div>
 
         {/* ── 목록 패널 ── */}
@@ -643,6 +703,10 @@ export default function AnnouncementsPage() {
           onBroadcast={ann => { if (ann.audio_url) playWithVolume(ann.audio_url, ann.id, (ann as any).duck_volume ?? 20, ann.play_mode); }}
           onDelete={handleDelete}
           onClearAll={handleClearHistory}
+          onReorder={handleReorder}
+          onTogglePin={handleTogglePin}
+          onRegenerate={handleRegenerate}
+          regeneratingId={regeneratingId}
         />
       </div>
     </div>

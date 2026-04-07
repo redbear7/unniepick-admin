@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase';
+import { usePlayer } from '@/contexts/PlayerContext';
 import {
   Film,
   Search,
@@ -15,6 +16,12 @@ import {
   Music2,
   Sparkles,
   ExternalLink,
+  Trash2,
+  Clock,
+  Share2,
+  Copy,
+  Check,
+  Instagram,
 } from 'lucide-react';
 
 // ─── 타입 ──────────────────────────────────────────────────────
@@ -47,13 +54,44 @@ const ENERGY_COLOR: Record<string, string> = {
   high: 'bg-red-500/20 text-red-400',
 };
 
+// ─── 쇼츠 히스토리 (로컬 저장) ──────────────────────────────────
+interface ShortsHistoryItem {
+  id: string;
+  trackTitle: string;
+  artist: string;
+  coverUrl: string | null;
+  coverEmoji: string;
+  videoUrl: string;
+  startSec: number;
+  moodTags: string[];
+  createdAt: string;
+}
+
+const SHORTS_HISTORY_KEY = 'shorts_render_history';
+const SHORTS_HISTORY_MAX = 30;
+
+function loadShortsHistory(): ShortsHistoryItem[] {
+  try { return JSON.parse(localStorage.getItem(SHORTS_HISTORY_KEY) || '[]'); } catch { return []; }
+}
+function saveShortsHistory(list: ShortsHistoryItem[]) {
+  try { localStorage.setItem(SHORTS_HISTORY_KEY, JSON.stringify(list.slice(0, SHORTS_HISTORY_MAX))); } catch {}
+}
+function pushShortsHistory(item: ShortsHistoryItem) {
+  saveShortsHistory([item, ...loadShortsHistory()]);
+}
+function removeShortsHistory(id: string) {
+  saveShortsHistory(loadShortsHistory().filter(h => h.id !== id));
+}
+
 // ─── 플레이어 (간이 오디오 미리듣기) ────────────────────────────
 function MiniPlayer({
   audioUrl,
   startSec,
+  onPlayStart,
 }: {
   audioUrl: string;
   startSec: number;
+  onPlayStart?: () => void;
 }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState(false);
@@ -66,11 +104,12 @@ function MiniPlayer({
       el.pause();
       setPlaying(false);
     } else {
+      onPlayStart?.();
       el.currentTime = startSec;
       el.play().catch(() => {});
       setPlaying(true);
     }
-  }, [playing, startSec]);
+  }, [playing, startSec, onPlayStart]);
 
   useEffect(() => {
     const el = audioRef.current;
@@ -126,6 +165,7 @@ function MiniPlayer({
 // ─── 메인 페이지 ───────────────────────────────────────────────
 export default function ShortsPage() {
   const sb = createClient();
+  const player = usePlayer();
 
   // 트랙 목록
   const [tracks, setTracks] = useState<MusicTrack[]>([]);
@@ -145,6 +185,11 @@ export default function ShortsPage() {
   const [rendering, setRendering] = useState(false);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [renderError, setRenderError] = useState<string | null>(null);
+  const [captionCopied, setCaptionCopied] = useState(false);
+
+  // 히스토리
+  const [history, setHistory] = useState<ShortsHistoryItem[]>([]);
+  useEffect(() => { setHistory(loadShortsHistory()); }, []);
 
   // 페이지네이션
   const [page, setPage] = useState(0);
@@ -250,6 +295,20 @@ export default function ShortsPage() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? '렌더링 실패');
       setVideoUrl(json.video_url);
+      // 히스토리에 저장
+      const item: ShortsHistoryItem = {
+        id: `shorts_${Date.now()}`,
+        trackTitle: selected.title,
+        artist: selected.artist,
+        coverUrl: selected.cover_image_url,
+        coverEmoji: selected.cover_emoji,
+        videoUrl: json.video_url,
+        startSec,
+        moodTags: selected.mood_tags ?? [],
+        createdAt: new Date().toISOString(),
+      };
+      pushShortsHistory(item);
+      setHistory(loadShortsHistory());
     } catch (e) {
       setRenderError((e as Error).message);
     } finally {
@@ -337,15 +396,6 @@ export default function ShortsPage() {
                         {/* 메타 */}
                         <div className="text-right shrink-0 space-y-1">
                           <p className="text-xs text-muted">{fmtSec(track.duration_sec)}</p>
-                          {track.energy_level && (
-                            <span
-                              className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
-                                ENERGY_COLOR[track.energy_level] ?? 'bg-white/10 text-muted'
-                              }`}
-                            >
-                              {ENERGY_KO[track.energy_level]}
-                            </span>
-                          )}
                         </div>
                       </button>
                     );
@@ -484,7 +534,7 @@ export default function ShortsPage() {
 
                 {/* 미니 오디오 플레이어 */}
                 {selected.audio_url && (
-                  <MiniPlayer audioUrl={selected.audio_url} startSec={startSec} />
+                  <MiniPlayer audioUrl={selected.audio_url} startSec={startSec} onPlayStart={() => { if (player.isPlaying) player.pause(); }} />
                 )}
 
                 <p className="text-[10px] text-muted">
@@ -669,13 +719,115 @@ export default function ShortsPage() {
                         새 탭
                       </a>
                     </div>
+
+                    {/* 릴스 공유 */}
+                    <div className="space-y-2 mt-3 pt-3 border-t border-border-subtle">
+                      <p className="text-[10px] text-dim font-semibold">📱 인스타그램 릴스 공유</p>
+
+                      {/* 캡션 복사 */}
+                      <button
+                        onClick={() => {
+                          const genre = (selected.mood_tags ?? [])[0]?.replace(/[^a-zA-Z0-9가-힣]/g, '');
+                          const tags = [
+                            genre ? `#${genre}` : '',
+                            '#매장BGM',
+                            '#카페음악',
+                            '#언니픽',
+                          ].filter(Boolean).slice(0, 4).join(' ');
+                          const caption = `🎵 ${selected.title}\n\n${tags}`;
+                          navigator.clipboard.writeText(caption);
+                          setCaptionCopied(true);
+                          setTimeout(() => setCaptionCopied(false), 2000);
+                        }}
+                        className={`w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition border ${
+                          captionCopied
+                            ? 'bg-green-500/15 border-green-500/30 text-green-400'
+                            : 'bg-white/5 border-border-main text-muted hover:text-primary hover:bg-white/10'
+                        }`}>
+                        {captionCopied ? <><Check size={12} /> 캡션 복사됨!</> : <><Copy size={12} /> 릴스 캡션 복사</>}
+                      </button>
+
+                      {/* 모바일 공유 (Web Share API) */}
+                      {'share' in navigator && (
+                        <button
+                          onClick={async () => {
+                            try {
+                              const res = await fetch(videoUrl);
+                              const blob = await res.blob();
+                              const file = new File([blob], `${selected.title}_shorts.mp4`, { type: 'video/mp4' });
+                              await navigator.share({ title: selected.title, files: [file] });
+                            } catch {}
+                          }}
+                          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 text-purple-300 hover:from-purple-500/30 hover:to-pink-500/30 transition">
+                          <Share2 size={12} /> 모바일 공유 (인스타/틱톡)
+                        </button>
+                      )}
+
+                      <p className="text-[8px] text-dim text-center">다운로드 → 인스타그램 앱 → 릴스 → 영상 선택 → 캡션 붙여넣기</p>
+                    </div>
                   </div>
                 )}
               </div>
             </>
           )}
         </div>
+
       </div>
+
+      {/* ── 히스토리 (flex 레이아웃 바깥) ── */}
+      {history.length > 0 && (
+        <div className="px-6 py-4 border-t border-white/5 overflow-y-auto shrink-0" style={{ maxHeight: 360 }}>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-bold text-tertiary flex items-center gap-2">
+              <Clock size={14} /> 생성 히스토리
+              <span className="text-dim font-normal">· {history.length}건 · 로컬 저장</span>
+            </h2>
+            <button
+              onClick={() => { if (confirm('쇼츠 히스토리를 모두 삭제할까요?')) { saveShortsHistory([]); setHistory([]); } }}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold text-dim hover:text-red-400 hover:bg-red-500/10 transition">
+              <Trash2 size={11} /> 전체 삭제
+            </button>
+          </div>
+          <div className="flex gap-3 overflow-x-auto scrollbar-none pb-2">
+            {history.map(h => (
+              <div key={h.id} className="shrink-0 w-36 bg-card border border-border-main rounded-xl overflow-hidden group">
+                <div className="relative aspect-[9/16] bg-fill-subtle">
+                  <video
+                    src={h.videoUrl}
+                    className="w-full h-full object-cover"
+                    muted playsInline
+                    onMouseEnter={e => (e.target as HTMLVideoElement).play().catch(() => {})}
+                    onMouseLeave={e => { const v = e.target as HTMLVideoElement; v.pause(); v.currentTime = 0; }}
+                  />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+                    <a href={h.videoUrl} download
+                      className="w-7 h-7 rounded-full bg-white/90 flex items-center justify-center hover:bg-white transition">
+                      <Download size={12} className="text-black" />
+                    </a>
+                    <a href={h.videoUrl} target="_blank" rel="noopener noreferrer"
+                      className="w-7 h-7 rounded-full bg-white/90 flex items-center justify-center hover:bg-white transition">
+                      <ExternalLink size={12} className="text-black" />
+                    </a>
+                  </div>
+                </div>
+                <div className="p-2">
+                  <p className="text-[10px] text-primary font-semibold truncate">{h.trackTitle}</p>
+                  <div className="flex items-center justify-between mt-1">
+                    <span className="text-[8px] text-dim">
+                      {new Date(h.createdAt).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
+                    </span>
+                    <button
+                      onClick={() => { removeShortsHistory(h.id); setHistory(loadShortsHistory()); }}
+                      className="text-dim hover:text-red-400 transition p-0.5">
+                      <Trash2 size={9} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

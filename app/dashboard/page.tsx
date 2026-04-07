@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase';
-import { Store, Users, Ticket, FileText, AlertCircle, Music } from 'lucide-react';
+import { Store, Users, Ticket, FileText, AlertCircle, Music, CloudRain, Sun, Thermometer } from 'lucide-react';
 
 interface Stats {
   stores:        number;
@@ -15,9 +15,16 @@ interface Stats {
   playlists:     number;
 }
 
+interface WeatherData {
+  current: { temp: number; feelsLike: number; humidity: number; windSpeed: number; label: string; emoji: string; category: string };
+  daily: { date: string; dayOfWeek: string; tempMax: number; tempMin: number; precipProb: number; precipSum: number; label: string; emoji: string; category: string }[];
+  moodRecommendation: { moods: string[]; message: string };
+}
+
 export default function DashboardPage() {
   const [stats,   setStats]   = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [weather, setWeather] = useState<WeatherData | null>(null);
 
   useEffect(() => {
     const sb = createClient();
@@ -69,6 +76,14 @@ export default function DashboardPage() {
       .subscribe();
 
     return () => { sb.removeChannel(channel); };
+  }, []);
+
+  // 날씨 로드
+  useEffect(() => {
+    fetch('/api/weather')
+      .then(r => r.json())
+      .then(d => { if (!d.error) setWeather(d); })
+      .catch(() => {});
   }, []);
 
   const CARDS = stats ? [
@@ -140,6 +155,59 @@ export default function DashboardPage() {
             <p className="text-xs text-muted mt-0.5">
               게시물 관리 메뉴에서 승인 또는 반려해주세요
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* 날씨 + BGM 추천 */}
+      {weather && (
+        <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* 현재 날씨 */}
+          <div className="bg-card border border-border-main rounded-2xl p-5">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-xs font-bold text-tertiary">현재 날씨</h3>
+              <span className="text-[10px] text-dim">{new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })} 기준</span>
+            </div>
+            <div className="flex items-center gap-4">
+              <span className="text-5xl">{weather.current.emoji}</span>
+              <div>
+                <p className="text-3xl font-bold text-primary">{Math.round(weather.current.temp)}°</p>
+                <p className="text-xs text-muted">{weather.current.label} · 체감 {Math.round(weather.current.feelsLike)}°</p>
+                <p className="text-[10px] text-dim mt-0.5">💧 {weather.current.humidity}% · 💨 {Math.round(weather.current.windSpeed)}km/h</p>
+              </div>
+            </div>
+          </div>
+
+          {/* 주간 예보 */}
+          <div className="bg-card border border-border-main rounded-2xl p-5">
+            <h3 className="text-xs font-bold text-tertiary mb-3">7일 예보</h3>
+            <div className="flex gap-1">
+              {weather.daily.map((d, i) => (
+                <div key={d.date} className={`flex-1 text-center rounded-lg py-2 transition ${i === 0 ? 'bg-[#FF6F0F]/10' : ''}`}>
+                  <p className={`text-[10px] font-semibold ${i === 0 ? 'text-[#FF6F0F]' : 'text-muted'}`}>{i === 0 ? '오늘' : d.dayOfWeek}</p>
+                  <p className="text-lg my-0.5">{d.emoji}</p>
+                  <p className="text-[10px] text-primary font-bold">{Math.round(d.tempMax)}°</p>
+                  <p className="text-[10px] text-dim">{Math.round(d.tempMin)}°</p>
+                  {d.precipProb > 30 && (
+                    <p className="text-[8px] text-blue-400 font-semibold mt-0.5">💧{d.precipProb}%</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* BGM 추천 */}
+          <div className="bg-card border border-border-main rounded-2xl p-5">
+            <h3 className="text-xs font-bold text-tertiary mb-3">🎵 날씨 맞춤 BGM</h3>
+            <p className="text-xs text-muted leading-relaxed mb-3">{weather.moodRecommendation.message}</p>
+            <div className="flex flex-wrap gap-1.5">
+              {weather.moodRecommendation.moods.map(m => (
+                <span key={m} className="text-[10px] px-2.5 py-1 rounded-full bg-[#FF6F0F]/15 text-[#FF6F0F] border border-[#FF6F0F]/30 font-semibold">{m}</span>
+              ))}
+            </div>
+            <a href="/dashboard/tracks" className="mt-3 flex items-center gap-1 text-[10px] text-[#FF6F0F] hover:underline">
+              <Music size={10} /> 트랙 관리에서 해당 무드 필터링 →
+            </a>
           </div>
         </div>
       )}

@@ -12,6 +12,7 @@ export interface Announcement {
   is_active:    boolean;
   created_at:   string;
   ann_type?:    'call' | 'template';
+  pinned?:      boolean;
 }
 
 export interface TtsTemplate {
@@ -156,6 +157,10 @@ export function removeHistoryFromLS(id: string) {
   try {
     localStorage.setItem(HISTORY_LS_KEY, JSON.stringify(loadHistoryFromLS().filter(a => a.id !== id)));
   } catch {}
+}
+
+export function saveHistoryToLS(list: Announcement[]) {
+  try { localStorage.setItem(HISTORY_LS_KEY, JSON.stringify(list.slice(0, 100))); } catch {}
 }
 
 export function voiceLabel(fishVoices: FishVoice[], vt: string): string {

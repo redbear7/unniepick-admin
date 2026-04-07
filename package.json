@@ -3,12 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --turbopack",
+    "dev:webpack": "next dev --no-turbopack",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {
+    "@fal-ai/client": "^1.9.5",
+    "@orrery/core": "^0.4.2",
     "@remotion/bundler": "^4.0.445",
     "@remotion/player": "^4.0.445",
     "@remotion/renderer": "^4.0.445",
@@ -19,7 +22,8 @@
     "next-themes": "^0.4.6",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "remotion": "^4.0.445"
+    "remotion": "^4.0.445",
+    "ssaju": "^0.1.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

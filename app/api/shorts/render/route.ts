@@ -11,8 +11,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import path from 'path';
 import os from 'os';
 import fs from 'fs';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { createClient } from '@supabase/supabase-js';
 
 const CORS = { 'Access-Control-Allow-Origin': '*' };
 
@@ -21,31 +20,10 @@ export async function OPTIONS() {
 }
 
 function createSupabaseServer() {
-  const cookieStore = cookies();
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return (cookieStore as unknown as { getAll(): { name: string; value: string }[] }).getAll();
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) => {
-              (cookieStore as unknown as { set(name: string, value: string, options: unknown): void }).set(
-                name,
-                value,
-                options,
-              );
-            });
-          } catch {
-            // Server Component 환경에서는 set 불가 — 무시
-          }
-        },
-      },
-    },
-  );
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+    || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  return createClient(url, key);
 }
 
 export async function POST(req: NextRequest) {
