@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
 import {
   LayoutDashboard, Store, FileText, Music, Ticket,
-  Users, LogOut, ChevronRight, ScrollText, MapPin, PlaySquare, Zap, Map, ListMusic, Tag, Building2, Megaphone, Film, Video,
+  Users, LogOut, ChevronRight, ScrollText, MapPin, PlaySquare, Zap, Map, ListMusic, Tag, Building2, Megaphone, Film, Video, KeyRound,
 } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 
@@ -42,6 +42,7 @@ const NAV_GROUPS = [
     label: '고객 & 마케팅',
     items: [
       { href: '/dashboard/users',   icon: Users,    label: '회원 관리' },
+      { href: '/dashboard/owners',  icon: KeyRound, label: '사장님 PIN 관리' },
       { href: '/dashboard/posts',   icon: FileText, label: '게시물 관리' },
       { href: '/dashboard/coupons', icon: Ticket,   label: '쿠폰 관리' },
     ],
