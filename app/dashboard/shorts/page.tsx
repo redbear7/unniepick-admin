@@ -209,6 +209,10 @@ export default function ShortsPage() {
   const [shortsTitle, setShortsTitle] = useState('');
   const [shortsTagline, setShortsTagline] = useState('');
 
+  // 오디오 페이드인 / 파형 스타일
+  const [audioFadeInSec, setAudioFadeInSec] = useState(1.5);
+  const [waveformStyle, setWaveformStyle] = useState<'bar' | 'mirror' | 'wave' | 'circle' | 'dots'>('bar');
+
   // 요소 위치 (% from top)
   const [headerTop, setHeaderTop] = useState(8);
   const [infoTop, setInfoTop] = useState(72);
@@ -408,6 +412,8 @@ export default function ShortsPage() {
           announcement_url: selectedAnn?.audio_url ?? '',
           announcement_duration_sec: annDuration,
           element_positions: { headerTop, infoTop, couponTop },
+          audio_fade_in_sec: audioFadeInSec,
+          waveform_style: waveformStyle,
         }),
       });
       const json = await res.json();
@@ -740,6 +746,59 @@ export default function ShortsPage() {
                     />
                   </div>
                   <p className="text-[10px] text-muted">비워두면 해당 텍스트는 영상에 표시되지 않습니다.</p>
+                </div>
+              </div>
+
+              {/* ── 음원 설정 ── */}
+              <div className="bg-card border border-border-main rounded-xl p-5 flex flex-col gap-4">
+                <p className="text-sm font-semibold text-primary">음원 설정</p>
+
+                {/* 페이드인 */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs text-muted">도입부 페이드인</label>
+                    <span className="text-xs font-semibold text-primary tabular-nums">{audioFadeInSec.toFixed(1)}초</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={5}
+                    step={0.1}
+                    value={audioFadeInSec}
+                    onChange={e => setAudioFadeInSec(Number(e.target.value))}
+                    className="w-full accent-[#FF6F0F]"
+                  />
+                  <div className="flex justify-between text-[10px] text-dim mt-0.5">
+                    <span>즉시</span>
+                    <span>5초</span>
+                  </div>
+                </div>
+
+                {/* 파형 스타일 */}
+                <div>
+                  <p className="text-xs text-muted mb-2">파형 디자인</p>
+                  <div className="grid grid-cols-5 gap-1.5">
+                    {([
+                      { id: 'bar',    label: 'Bar',    icon: '▐▌▐▌▐' },
+                      { id: 'mirror', label: 'Mirror', icon: '≡≡≡' },
+                      { id: 'wave',   label: 'Wave',   icon: '〜〜〜' },
+                      { id: 'circle', label: 'Circle', icon: '◉' },
+                      { id: 'dots',   label: 'Dots',   icon: '···' },
+                    ] as const).map(({ id, label, icon }) => (
+                      <button
+                        key={id}
+                        onClick={() => setWaveformStyle(id)}
+                        className={`flex flex-col items-center gap-1 py-2 px-1 rounded-lg border-2 transition text-center ${
+                          waveformStyle === id
+                            ? 'bg-[#FF6F0F]/15 border-[#FF6F0F] text-primary'
+                            : 'bg-fill-subtle border-border-subtle text-muted hover:border-border-main'
+                        }`}
+                      >
+                        <span className="text-sm leading-none">{icon}</span>
+                        <span className="text-[9px] font-semibold">{label}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 

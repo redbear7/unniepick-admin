@@ -30,6 +30,8 @@ export const RemotionRoot: React.FC = () => {
           announcementUrl: '',
           announcementDurationSec: 0,
           elementPositions: { headerTop: 8, infoTop: 72, couponTop: 62 },
+          audioFadeInSec: 1.5,
+          waveformStyle: 'bar',
         }}
       />
       <Composition

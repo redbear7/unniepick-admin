@@ -43,6 +43,8 @@ export async function POST(req: NextRequest) {
       announcement_url,
       announcement_duration_sec,
       element_positions,
+      audio_fade_in_sec,
+      waveform_style,
     } = await req.json();
 
     if (!track_id || !audio_url || !title || !artist) {
@@ -70,6 +72,8 @@ export async function POST(req: NextRequest) {
       announcementUrl: announcement_url ?? '',
       announcementDurationSec: typeof announcement_duration_sec === 'number' ? announcement_duration_sec : 0,
       elementPositions: element_positions ?? { headerTop: 8, infoTop: 72, couponTop: 62 },
+      audioFadeInSec: typeof audio_fade_in_sec === 'number' ? audio_fade_in_sec : 1.5,
+      waveformStyle: waveform_style ?? 'bar',
     };
 
     // 1. Remotion 번들링
