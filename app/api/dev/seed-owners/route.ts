@@ -43,8 +43,8 @@ export async function POST(req: NextRequest) {
     const store = stores[idx];
     const pin = String(idx).padStart(6, '0');
     const ownerName = `${store.name} 사장님`;
-    // 테스트용 번호: 010-0000-0001 ~ 0099
-    const phoneNum = `01000000${String(idx + 1).padStart(4, '0')}`;
+    // 테스트용 번호: 010-0000-0000 ~ 010-0000-0099 (11자리)
+    const phoneNum = `010${String(idx).padStart(8, '0')}`;
 
     try {
       // 1. users 테이블 — 같은 phone이 이미 있으면 재사용, 없으면 insert
