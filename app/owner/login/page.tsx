@@ -31,7 +31,7 @@ export default function OwnerLoginPage() {
   const handlePhoneSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const cleaned = phone.replace(/\D/g, '');
-    if (cleaned.length < 10) { setError('올바른 전화번호를 입력해주세요.'); return; }
+    if (cleaned.length < 4) { setError('전화번호를 입력해주세요.'); return; }
     setError('');
     setPhone(cleaned);
     setStep('pin');

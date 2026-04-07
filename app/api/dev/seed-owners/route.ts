@@ -40,9 +40,9 @@ export async function POST(req: NextRequest) {
   const results: Array<{ store: string; owner_name: string; phone: string; pin: string; status: string }> = [];
 
   for (const store of stores) {
-    const pin = String(Math.floor(100000 + Math.random() * 900000));
+    const pin = '123456';
     const ownerName = `${store.name} 사장님`;
-    // 010-XXXX-XXXX 형태의 테스트 번호 (매장 ID 앞 8자리 기반)
+    // 테스트용 고정 번호 (매장 ID 앞 8자리 기반, 입력 검증 우회)
     const phoneNum = `010${store.id.replace(/-/g, '').slice(0, 8)}`;
 
     try {
