@@ -64,20 +64,32 @@ export const ShortsVideo: React.FC<ShortsVideoProps> = ({
   const bottomOpacity = interpolate(frame, [10, 30], [0, 1], { extrapolateRight: 'clamp' });
   const bottomY = interpolate(frame, [10, 30], [24, 0], { extrapolateRight: 'clamp' });
 
-  // ── 쿠폰 카드 등장 (안내방송 끝 + 15프레임 후) ──
+  // ── 쿠폰 카드 루프 애니메이션 (안내방송 끝 + 15프레임 후 시작) ──
+  // 주기: 120프레임(4초) — 슬라이드인 20f → 노출 80f → 슬라이드아웃 20f → 반복
   const couponStart = duckEnd + 15;
-  const couponOpacity = coupon
-    ? interpolate(frame, [couponStart, couponStart + 20], [0, 1], {
+  const COUPON_CYCLE = 120; // 4초
+  const loopFrame = coupon && frame >= couponStart
+    ? (frame - couponStart) % COUPON_CYCLE
+    : 0;
+  const couponOpacity = coupon && frame >= couponStart
+    ? interpolate(loopFrame, [0, 20, 100, 120], [0, 1, 1, 0], {
         extrapolateLeft: 'clamp',
         extrapolateRight: 'clamp',
       })
     : 0;
-  const couponY = coupon
-    ? interpolate(frame, [couponStart, couponStart + 20], [30, 0], {
+  const couponY = coupon && frame >= couponStart
+    ? interpolate(loopFrame, [0, 20, 100, 120], [40, 0, 0, 40], {
         extrapolateLeft: 'clamp',
         extrapolateRight: 'clamp',
       })
     : 0;
+  // 노출 구간 중간에 살짝 튀는 강조 스케일
+  const couponScale = coupon && frame >= couponStart
+    ? interpolate(loopFrame, [18, 24, 30], [0.95, 1.04, 1.0], {
+        extrapolateLeft: 'clamp',
+        extrapolateRight: 'clamp',
+      })
+    : 1;
 
   // ── 파형 바 ──
   const bars = Array.from({ length: 20 }, (_, i) => {
@@ -182,7 +194,7 @@ export const ShortsVideo: React.FC<ShortsVideoProps> = ({
             justifyContent: 'center',
             padding: '0 40px 220px',
             opacity: couponOpacity,
-            transform: `translateY(${couponY}px)`,
+            transform: `translateY(${couponY}px) scale(${couponScale})`,
           }}
         >
           <div
