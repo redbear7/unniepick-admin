@@ -888,64 +888,64 @@ export default function ShortsPage() {
               </div>
             </>
           )}
+
+          {/* ── 히스토리 (오른쪽 패널 하단) ── */}
+          {history.length > 0 && (
+            <div className="bg-card border border-border-main rounded-xl p-4 flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-bold text-tertiary flex items-center gap-2">
+                  <Clock size={14} /> 생성 히스토리
+                  <span className="text-dim font-normal">· {history.length}건 · 로컬 저장</span>
+                </h2>
+                <button
+                  onClick={() => { if (confirm('쇼츠 히스토리를 모두 삭제할까요?')) { saveShortsHistory([]); setHistory([]); } }}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold text-dim hover:text-red-400 hover:bg-red-500/10 transition">
+                  <Trash2 size={11} /> 전체 삭제
+                </button>
+              </div>
+              <div className="flex gap-3 overflow-x-auto scrollbar-none pb-1">
+                {history.map(h => (
+                  <div key={h.id} className="shrink-0 w-36 bg-fill-subtle border border-border-subtle rounded-xl overflow-hidden group">
+                    <div className="relative aspect-[9/16]">
+                      <video
+                        src={h.videoUrl}
+                        className="w-full h-full object-cover"
+                        muted playsInline
+                        onMouseEnter={e => (e.target as HTMLVideoElement).play().catch(() => {})}
+                        onMouseLeave={e => { const v = e.target as HTMLVideoElement; v.pause(); v.currentTime = 0; }}
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+                        <a href={h.videoUrl} download
+                          className="w-7 h-7 rounded-full bg-white/90 flex items-center justify-center hover:bg-white transition">
+                          <Download size={12} className="text-black" />
+                        </a>
+                        <a href={h.videoUrl} target="_blank" rel="noopener noreferrer"
+                          className="w-7 h-7 rounded-full bg-white/90 flex items-center justify-center hover:bg-white transition">
+                          <ExternalLink size={12} className="text-black" />
+                        </a>
+                      </div>
+                    </div>
+                    <div className="p-2">
+                      <p className="text-[10px] text-primary font-semibold truncate">{h.trackTitle}</p>
+                      <div className="flex items-center justify-between mt-1">
+                        <span className="text-[8px] text-dim">
+                          {new Date(h.createdAt).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
+                        </span>
+                        <button
+                          onClick={() => { removeShortsHistory(h.id); setHistory(loadShortsHistory()); }}
+                          className="text-dim hover:text-red-400 transition p-0.5">
+                          <Trash2 size={9} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
       </div>
-
-      {/* ── 히스토리 (flex 레이아웃 바깥) ── */}
-      {history.length > 0 && (
-        <div className="px-6 py-4 border-t border-white/5 overflow-y-auto shrink-0" style={{ maxHeight: 360 }}>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-bold text-tertiary flex items-center gap-2">
-              <Clock size={14} /> 생성 히스토리
-              <span className="text-dim font-normal">· {history.length}건 · 로컬 저장</span>
-            </h2>
-            <button
-              onClick={() => { if (confirm('쇼츠 히스토리를 모두 삭제할까요?')) { saveShortsHistory([]); setHistory([]); } }}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold text-dim hover:text-red-400 hover:bg-red-500/10 transition">
-              <Trash2 size={11} /> 전체 삭제
-            </button>
-          </div>
-          <div className="flex gap-3 overflow-x-auto scrollbar-none pb-2">
-            {history.map(h => (
-              <div key={h.id} className="shrink-0 w-36 bg-card border border-border-main rounded-xl overflow-hidden group">
-                <div className="relative aspect-[9/16] bg-fill-subtle">
-                  <video
-                    src={h.videoUrl}
-                    className="w-full h-full object-cover"
-                    muted playsInline
-                    onMouseEnter={e => (e.target as HTMLVideoElement).play().catch(() => {})}
-                    onMouseLeave={e => { const v = e.target as HTMLVideoElement; v.pause(); v.currentTime = 0; }}
-                  />
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
-                    <a href={h.videoUrl} download
-                      className="w-7 h-7 rounded-full bg-white/90 flex items-center justify-center hover:bg-white transition">
-                      <Download size={12} className="text-black" />
-                    </a>
-                    <a href={h.videoUrl} target="_blank" rel="noopener noreferrer"
-                      className="w-7 h-7 rounded-full bg-white/90 flex items-center justify-center hover:bg-white transition">
-                      <ExternalLink size={12} className="text-black" />
-                    </a>
-                  </div>
-                </div>
-                <div className="p-2">
-                  <p className="text-[10px] text-primary font-semibold truncate">{h.trackTitle}</p>
-                  <div className="flex items-center justify-between mt-1">
-                    <span className="text-[8px] text-dim">
-                      {new Date(h.createdAt).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
-                    </span>
-                    <button
-                      onClick={() => { removeShortsHistory(h.id); setHistory(loadShortsHistory()); }}
-                      className="text-dim hover:text-red-400 transition p-0.5">
-                      <Trash2 size={9} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
