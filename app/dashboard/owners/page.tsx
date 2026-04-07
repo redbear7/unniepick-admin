@@ -23,7 +23,24 @@ import { createClient } from '@/lib/supabase';
 import {
   KeyRound, UserCheck, UserX, RefreshCw, Plus,
   Search, Shield, Loader2, Eye, EyeOff, Copy, Check,
+  FlaskConical, Store, ChevronDown, ChevronUp,
 } from 'lucide-react';
+
+interface StoreRow {
+  id:       string;
+  name:     string;
+  category: string | null;
+  phone:    string | null;
+  owner_id: string | null;
+}
+
+interface SeedResult {
+  store: string;
+  owner_name: string;
+  phone: string;
+  pin: string;
+  status: string;
+}
 
 interface OwnerUser {
   id:         string;
@@ -67,6 +84,14 @@ export default function OwnersPage() {
   const [loading, setLoading]   = useState(true);
   const [query, setQuery]       = useState('');
 
+  // 더미 생성
+  const [showSeed, setShowSeed]       = useState(false);
+  const [stores, setStores]           = useState<StoreRow[]>([]);
+  const [loadingStores, setLoadingStores] = useState(false);
+  const [selectedStores, setSelectedStores] = useState<Set<string>>(new Set());
+  const [seeding, setSeeding]         = useState(false);
+  const [seedResults, setSeedResults] = useState<SeedResult[]>([]);
+
   // PIN 부여/재설정 모달
   const [modal, setModal]         = useState<'assign' | 'reset' | null>(null);
   const [targetUser, setTarget]   = useState<OwnerUser | null>(null);
@@ -104,6 +129,45 @@ export default function OwnersPage() {
   };
 
   useEffect(() => { load(); }, []);
+
+  const loadStores = async () => {
+    setLoadingStores(true);
+    const { data } = await sb
+      .from('stores')
+      .select('id, name, category, phone, owner_id')
+      .order('name');
+    setStores((data ?? []) as StoreRow[]);
+    setLoadingStores(false);
+  };
+
+  const toggleStore = (id: string) => {
+    setSelectedStores(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const handleSeed = async () => {
+    if (selectedStores.size === 0) return;
+    setSeeding(true);
+    setSeedResults([]);
+    try {
+      const res = await fetch('/api/dev/seed-owners', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ store_ids: Array.from(selectedStores) }),
+      });
+      const data = await res.json();
+      setSeedResults(data.results ?? []);
+      setSelectedStores(new Set());
+      load();
+    } catch (e) {
+      alert((e as Error).message);
+    } finally {
+      setSeeding(false);
+    }
+  };
 
   const filtered = owners.filter(o =>
     !query || o.name.includes(query) || (o.phone ?? '').includes(query)
@@ -185,6 +249,108 @@ export default function OwnersPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
+
+        {/* ── 더미 사장님 생성 (테스트용) ── */}
+        <div className="bg-yellow-500/8 border border-yellow-500/25 rounded-xl overflow-hidden">
+          <button
+            onClick={() => {
+              setShowSeed(v => !v);
+              if (!showSeed && stores.length === 0) loadStores();
+              setSeedResults([]);
+            }}
+            className="w-full flex items-center justify-between px-4 py-3 hover:bg-yellow-500/10 transition"
+          >
+            <div className="flex items-center gap-2 text-yellow-400">
+              <FlaskConical size={15} />
+              <span className="text-sm font-semibold">테스트용 더미 사장님 생성</span>
+              <span className="text-[10px] bg-yellow-500/20 px-1.5 py-0.5 rounded font-mono">DEV</span>
+            </div>
+            {showSeed ? <ChevronUp size={14} className="text-yellow-400/60" /> : <ChevronDown size={14} className="text-yellow-400/60" />}
+          </button>
+
+          {showSeed && (
+            <div className="px-4 pb-4 space-y-3 border-t border-yellow-500/20">
+              <p className="text-xs text-yellow-400/70 pt-3">
+                샘플 매장을 선택하면 더미 owner 회원 + PIN이 자동 생성됩니다.
+              </p>
+
+              {loadingStores ? (
+                <div className="flex justify-center py-4">
+                  <Loader2 size={18} className="animate-spin text-yellow-400/60" />
+                </div>
+              ) : (
+                <>
+                  <div className="max-h-52 overflow-y-auto space-y-1.5 pr-1">
+                    {stores.map(store => {
+                      const isSelected = selectedStores.has(store.id);
+                      const hasOwner   = !!store.owner_id;
+                      return (
+                        <button
+                          key={store.id}
+                          onClick={() => !hasOwner && toggleStore(store.id)}
+                          disabled={hasOwner}
+                          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg border text-left transition ${
+                            hasOwner
+                              ? 'border-white/5 bg-white/3 opacity-40 cursor-not-allowed'
+                              : isSelected
+                                ? 'border-yellow-500/50 bg-yellow-500/15'
+                                : 'border-white/8 bg-white/3 hover:border-yellow-500/30 hover:bg-yellow-500/8'
+                          }`}
+                        >
+                          <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 ${isSelected ? 'bg-yellow-500 border-yellow-500' : 'border-white/30'}`}>
+                            {isSelected && <Check size={10} className="text-black" />}
+                          </div>
+                          <Store size={13} className="text-white/40 shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium text-white/80 truncate">{store.name}</p>
+                            <p className="text-[10px] text-white/35">{store.category ?? '카테고리 없음'}</p>
+                          </div>
+                          {hasOwner && <span className="text-[10px] text-white/30 shrink-0">이미 연결됨</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleSeed}
+                      disabled={seeding || selectedStores.size === 0}
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg bg-yellow-500/20 border border-yellow-500/40 text-yellow-400 text-xs font-bold hover:bg-yellow-500/30 transition disabled:opacity-40"
+                    >
+                      {seeding ? <Loader2 size={13} className="animate-spin" /> : <FlaskConical size={13} />}
+                      {selectedStores.size > 0 ? `${selectedStores.size}개 더미 생성` : '매장 선택 후 생성'}
+                    </button>
+                    {selectedStores.size > 0 && (
+                      <button onClick={() => setSelectedStores(new Set())} className="text-xs text-white/30 hover:text-white/60 transition">
+                        전체 해제
+                      </button>
+                    )}
+                  </div>
+
+                  {/* 생성 결과 */}
+                  {seedResults.length > 0 && (
+                    <div className="space-y-1.5 pt-1 border-t border-yellow-500/20">
+                      <p className="text-xs font-semibold text-yellow-400/70">생성 결과</p>
+                      {seedResults.map((r, i) => (
+                        <div key={i} className={`px-3 py-2 rounded-lg text-xs ${r.status === 'ok' ? 'bg-green-500/10 border border-green-500/20' : 'bg-red-500/10 border border-red-500/20'}`}>
+                          {r.status === 'ok' ? (
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-white/70 truncate">{r.store} → <span className="text-white">{r.owner_name}</span></span>
+                              <span className="font-mono text-green-400 shrink-0">📞 {r.phone} · PIN: <strong>{r.pin}</strong></span>
+                            </div>
+                          ) : (
+                            <span className="text-red-400">{r.store}: {r.status}</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* 검색 */}
         <div className="relative max-w-xs">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />

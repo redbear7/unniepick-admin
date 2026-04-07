@@ -1,12 +1,12 @@
 /**
  * POST /api/owner/change-pin
- * 월 2회 PIN 변경 허용. 매월 1일 카운트 초기화.
+ * TODO: 테스트 기간 중 무제한. 운영 전 MAX_CHANGES_PER_MONTH = 2 로 복구 필요.
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 
-const MAX_CHANGES_PER_MONTH = 2;
+const MAX_CHANGES_PER_MONTH = Infinity; // TODO: 운영 전 2로 변경
 
 function hashPin(pin: string) {
   return crypto.createHash('sha256').update(`unnipick:${pin}`).digest('hex');
