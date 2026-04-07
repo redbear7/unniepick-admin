@@ -21,6 +21,8 @@ import {
   Share2,
   Copy,
   Check,
+  ImageIcon,
+  RotateCcw,
 } from 'lucide-react';
 
 // ─── 타입 ──────────────────────────────────────────────────────
@@ -172,6 +174,11 @@ export default function ShortsPage() {
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzed, setAnalyzed] = useState(false);
 
+  // 커버 이미지 (기본: 트랙 커버, 변경 가능)
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(null);
+  const [uploadingCover, setUploadingCover] = useState(false);
+
   // 쇼츠 제목 / 강조 문구
   const [shortsTitle, setShortsTitle] = useState('');
   const [shortsTagline, setShortsTagline] = useState('');
@@ -240,6 +247,25 @@ export default function ShortsPage() {
     setAnalyzed(false);
     setVideoUrl(null);
     setRenderError(null);
+    setCoverFile(null);
+    setCoverPreviewUrl(null);
+  };
+
+  // ── 커버 이미지 변경 ──
+  const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCoverFile(file);
+    const url = URL.createObjectURL(file);
+    setCoverPreviewUrl(url);
+    // input 초기화 (같은 파일 재선택 허용)
+    e.target.value = '';
+  };
+
+  const handleCoverReset = () => {
+    if (coverPreviewUrl) URL.revokeObjectURL(coverPreviewUrl);
+    setCoverFile(null);
+    setCoverPreviewUrl(null);
   };
 
   // ── 클라이맥스 자동 감지 ──
@@ -273,13 +299,28 @@ export default function ShortsPage() {
     setVideoUrl(null);
     setRenderError(null);
     try {
+      // 커버 이미지 변경됐으면 Storage에 업로드 후 공개 URL 사용
+      let finalCoverUrl = selected.cover_image_url;
+      if (coverFile) {
+        setUploadingCover(true);
+        const ext = coverFile.name.split('.').pop() || 'jpg';
+        const filename = `covers/shorts_${selected.id}_${Date.now()}.${ext}`;
+        const { error: upErr } = await sb.storage
+          .from('music-tracks')
+          .upload(filename, coverFile, { upsert: true });
+        setUploadingCover(false);
+        if (upErr) throw new Error(`커버 업로드 실패: ${upErr.message}`);
+        const { data: urlData } = sb.storage.from('music-tracks').getPublicUrl(filename);
+        finalCoverUrl = urlData.publicUrl;
+      }
+
       const res = await fetch('/api/shorts/render', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           track_id: selected.id,
           audio_url: selected.audio_url,
-          cover_url: selected.cover_image_url,
+          cover_url: finalCoverUrl,
           title: selected.title,
           artist: selected.artist,
           cover_emoji: selected.cover_emoji,
@@ -476,6 +517,61 @@ export default function ShortsPage() {
                 </div>
               </div>
 
+              {/* ── 커버 이미지 ── */}
+              <div className="bg-card border border-border-main rounded-xl p-5 flex flex-col gap-3">
+                <p className="text-sm font-semibold text-primary">커버 이미지</p>
+                <div className="flex items-center gap-4">
+                  {/* 미리보기 */}
+                  <div className="relative w-20 h-20 rounded-xl overflow-hidden shrink-0 bg-white/5 flex items-center justify-center">
+                    {(coverPreviewUrl || selected.cover_image_url) ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={coverPreviewUrl ?? selected.cover_image_url!}
+                        alt=""
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-3xl">{selected.cover_emoji || '🎵'}</span>
+                    )}
+                    {uploadingCover && (
+                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                        <Loader2 size={16} className="animate-spin text-white" />
+                      </div>
+                    )}
+                    {coverPreviewUrl && (
+                      <div className="absolute top-1 right-1 w-3 h-3 rounded-full bg-[#FF6F0F]" />
+                    )}
+                  </div>
+
+                  <div className="flex-1 space-y-2">
+                    <p className="text-xs text-muted">
+                      기본값은 트랙 커버입니다. 9:16 비율 이미지를 권장합니다.
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <label className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-border-main text-xs text-muted hover:text-primary hover:bg-white/10 transition">
+                        <ImageIcon size={12} />
+                        이미지 변경
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleCoverChange}
+                        />
+                      </label>
+                      {coverPreviewUrl && (
+                        <button
+                          onClick={handleCoverReset}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-border-main text-xs text-muted hover:text-red-400 hover:border-red-500/30 transition"
+                        >
+                          <RotateCcw size={12} />
+                          원본 복원
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* ── 클라이맥스 구간 설정 ── */}
               <div className="bg-card border border-border-main rounded-xl p-5 flex flex-col gap-4">
                 <div className="flex items-center justify-between">
@@ -577,10 +673,10 @@ export default function ShortsPage() {
                     style={{ width: 120, height: 213, background: '#111' }}
                   >
                     {/* 커버 풀스크린 */}
-                    {selected.cover_image_url ? (
+                    {(coverPreviewUrl || selected.cover_image_url) ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={selected.cover_image_url}
+                        src={coverPreviewUrl ?? selected.cover_image_url!}
                         alt=""
                         className="absolute inset-0 w-full h-full object-cover"
                       />
