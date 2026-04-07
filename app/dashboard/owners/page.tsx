@@ -91,6 +91,7 @@ export default function OwnersPage() {
   const [selectedStores, setSelectedStores] = useState<Set<string>>(new Set());
   const [seeding, setSeeding]         = useState(false);
   const [seedResults, setSeedResults] = useState<SeedResult[]>([]);
+  const [resetting, setResetting]     = useState(false);
 
   // PIN 부여/재설정 모달
   const [modal, setModal]         = useState<'assign' | 'reset' | null>(null);
@@ -146,6 +147,23 @@ export default function OwnersPage() {
       next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
+  };
+
+  const handleReset = async () => {
+    if (!confirm('더미 사장님 데이터를 모두 삭제하고 매장 연결을 해제합니다. 계속할까요?')) return;
+    setResetting(true);
+    setSeedResults([]);
+    try {
+      const res = await fetch('/api/dev/reset-owners', { method: 'POST' });
+      const data = await res.json();
+      alert(`초기화 완료: ${data.deleted}명 삭제`);
+      await load();
+      await loadStores();
+    } catch (e) {
+      alert((e as Error).message);
+    } finally {
+      setResetting(false);
+    }
   };
 
   const handleSeed = async () => {
@@ -265,7 +283,17 @@ export default function OwnersPage() {
               <span className="text-sm font-semibold">테스트용 더미 사장님 생성</span>
               <span className="text-[10px] bg-yellow-500/20 px-1.5 py-0.5 rounded font-mono">DEV</span>
             </div>
-            {showSeed ? <ChevronUp size={14} className="text-yellow-400/60" /> : <ChevronDown size={14} className="text-yellow-400/60" />}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={e => { e.stopPropagation(); handleReset(); }}
+                disabled={resetting}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500/15 border border-red-500/30 text-red-400 text-[11px] font-semibold hover:bg-red-500/25 transition disabled:opacity-40"
+              >
+                {resetting ? <Loader2 size={11} className="animate-spin" /> : <RefreshCw size={11} />}
+                초기화
+              </button>
+              {showSeed ? <ChevronUp size={14} className="text-yellow-400/60" /> : <ChevronDown size={14} className="text-yellow-400/60" />}
+            </div>
           </button>
 
           {showSeed && (
