@@ -9,12 +9,15 @@ const SESSION_HOURS = 8;
 export default function OwnerLoginPage() {
   const router = useRouter();
 
-  const [step, setStep]       = useState<'phone' | 'pin'>('phone');
-  const [phone, setPhone]     = useState('');
-  const [pin, setPin]         = useState('');
-  const [error, setError]     = useState('');
+  const [step, setStep]   = useState<'phone' | 'pin'>('phone');
+  const [mid, setMid]     = useState('');  // 중간 4자리
+  const [last, setLast]   = useState(''); // 끝 4자리
+  const [pin, setPin]     = useState('');
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const phoneRef = useRef<HTMLInputElement>(null);
+
+  const midRef  = useRef<HTMLInputElement>(null);
+  const lastRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     try {
@@ -24,16 +27,16 @@ export default function OwnerLoginPage() {
         if (s.exp > Date.now()) { router.replace('/owner/dashboard'); return; }
       }
     } catch {}
-    phoneRef.current?.focus();
+    midRef.current?.focus();
   }, [router]);
+
+  const fullPhone = `010${mid}${last}`;
 
   // ── 전화번호 확인 ──
   const handlePhoneSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const cleaned = phone.replace(/\D/g, '');
-    if (cleaned.length < 4) { setError('전화번호를 입력해주세요.'); return; }
+    if (mid.length + last.length < 4) { setError('전화번호를 입력해주세요.'); return; }
     setError('');
-    setPhone(cleaned);
     setStep('pin');
   };
 
@@ -55,7 +58,7 @@ export default function OwnerLoginPage() {
       const res = await fetch('/api/owner/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, pin: p }),
+        body: JSON.stringify({ phone: fullPhone, pin: p }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
@@ -79,6 +82,8 @@ export default function OwnerLoginPage() {
 
   const PAD = ['1','2','3','4','5','6','7','8','9','','0','⌫'];
 
+  const displayPhone = `010-${mid || '____'}-${last || '____'}`;
+
   return (
     <div className="flex-1 flex items-center justify-center p-6">
       <div className="w-full max-w-sm">
@@ -93,20 +98,55 @@ export default function OwnerLoginPage() {
         {step === 'phone' ? (
           <form onSubmit={handlePhoneSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs text-white/50 mb-1.5">앱 가입 전화번호</label>
-              <input
-                ref={phoneRef}
-                type="tel"
-                value={phone}
-                onChange={e => { setPhone(e.target.value); setError(''); }}
-                placeholder="010-0000-0000"
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-base placeholder:text-white/25 focus:outline-none focus:border-[#FF6F0F]/60"
-              />
+              <label className="block text-xs text-white/50 mb-2">앱 가입 전화번호</label>
+              <div className="flex items-center gap-2">
+                {/* 010 고정 */}
+                <div className="w-16 h-12 rounded-xl bg-white/8 border border-white/10 flex items-center justify-center text-white font-bold text-base select-none shrink-0">
+                  010
+                </div>
+                <span className="text-white/30 text-lg">-</span>
+                {/* 중간 4자리 */}
+                <input
+                  ref={midRef}
+                  type="tel"
+                  inputMode="numeric"
+                  maxLength={4}
+                  value={mid}
+                  onChange={e => {
+                    const v = e.target.value.replace(/\D/g, '').slice(0, 4);
+                    setMid(v);
+                    setError('');
+                    if (v.length === 4) lastRef.current?.focus();
+                  }}
+                  placeholder="0000"
+                  className="flex-1 h-12 bg-white/5 border border-white/10 rounded-xl px-3 text-white text-base text-center tracking-widest placeholder:text-white/25 focus:outline-none focus:border-[#FF6F0F]/60"
+                />
+                <span className="text-white/30 text-lg">-</span>
+                {/* 끝 4자리 */}
+                <input
+                  ref={lastRef}
+                  type="tel"
+                  inputMode="numeric"
+                  maxLength={4}
+                  value={last}
+                  onChange={e => {
+                    const v = e.target.value.replace(/\D/g, '').slice(0, 4);
+                    setLast(v);
+                    setError('');
+                  }}
+                  onKeyDown={e => {
+                    if (e.key === 'Backspace' && last === '') midRef.current?.focus();
+                  }}
+                  placeholder="0000"
+                  className="flex-1 h-12 bg-white/5 border border-white/10 rounded-xl px-3 text-white text-base text-center tracking-widest placeholder:text-white/25 focus:outline-none focus:border-[#FF6F0F]/60"
+                />
+              </div>
             </div>
             {error && <p className="text-sm text-red-400">{error}</p>}
             <button
               type="submit"
-              className="w-full py-3 rounded-xl bg-[#FF6F0F] text-white font-bold text-base hover:bg-[#e86200] transition"
+              disabled={mid.length + last.length < 4}
+              className="w-full py-3 rounded-xl bg-[#FF6F0F] text-white font-bold text-base hover:bg-[#e86200] transition disabled:opacity-40"
             >
               다음
             </button>
@@ -115,7 +155,12 @@ export default function OwnerLoginPage() {
           <div className="space-y-6">
             <div className="text-center">
               <p className="text-xs text-white/50 mb-1">
-                <button onClick={() => { setStep('phone'); setPin(''); setError(''); }} className="underline hover:text-white/80 transition">{phone}</button>
+                <button
+                  onClick={() => { setStep('phone'); setPin(''); setError(''); }}
+                  className="underline hover:text-white/80 transition"
+                >
+                  {displayPhone}
+                </button>
               </p>
               <p className="text-sm text-white/70">6자리 PIN을 입력해주세요</p>
             </div>
@@ -136,9 +181,7 @@ export default function OwnerLoginPage() {
               ))}
             </div>
 
-            {error && (
-              <p className="text-sm text-red-400 text-center">{error}</p>
-            )}
+            {error && <p className="text-sm text-red-400 text-center">{error}</p>}
 
             {/* 숫자 패드 */}
             {loading ? (
