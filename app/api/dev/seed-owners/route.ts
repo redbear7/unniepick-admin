@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
 
   for (let idx = 0; idx < stores.length; idx++) {
     const store = stores[idx];
-    const pin = '123456';
+    const pin = String(idx).padStart(6, '0');
     const ownerName = `${store.name} 사장님`;
     // 테스트용 번호: 010-0000-0001 ~ 0099
     const phoneNum = `01000000${String(idx + 1).padStart(4, '0')}`;

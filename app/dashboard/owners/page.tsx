@@ -271,7 +271,7 @@ export default function OwnersPage() {
           {showSeed && (
             <div className="px-4 pb-4 space-y-3 border-t border-yellow-500/20">
               <p className="text-xs text-yellow-400/70 pt-3">
-                샘플 매장을 선택하면 더미 owner 회원이 생성됩니다. PIN 고정: <strong className="text-yellow-300 font-mono">123456</strong>
+                샘플 매장을 선택하면 더미 owner 회원이 생성됩니다. PIN: <strong className="text-yellow-300 font-mono">000000</strong>, <strong className="text-yellow-300 font-mono">000001</strong> … 순서 배정
               </p>
 
               {loadingStores ? (
@@ -336,7 +336,7 @@ export default function OwnersPage() {
                           {r.status === 'ok' ? (
                             <div className="flex items-center justify-between gap-2">
                               <span className="text-white/70 truncate">{r.store} → <span className="text-white">{r.owner_name}</span></span>
-                              <span className="font-mono text-green-400 shrink-0">📞 {r.phone} · PIN: <strong>123456</strong></span>
+                              <span className="font-mono text-green-400 shrink-0">📞 {r.phone} · PIN: <strong>{r.pin}</strong></span>
                             </div>
                           ) : (
                             <span className="text-red-400">{r.store}: {r.status}</span>
