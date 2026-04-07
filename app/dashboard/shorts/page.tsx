@@ -26,6 +26,23 @@ import {
 } from 'lucide-react';
 
 // ─── 타입 ──────────────────────────────────────────────────────
+interface Coupon {
+  id: string;
+  title: string;
+  discount_type: string;
+  discount_value: number;
+  is_active: boolean;
+  expires_at: string | null;
+}
+
+interface AnnItem {
+  id: string;
+  text: string;
+  audio_url: string;
+  voice_type: string;
+  created_at: string;
+}
+
 interface MusicTrack {
   id: string;
   title: string;
@@ -174,6 +191,15 @@ export default function ShortsPage() {
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzed, setAnalyzed] = useState(false);
 
+  // 쿠폰
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
+
+  // 안내방송
+  const [announcements, setAnnouncements] = useState<AnnItem[]>([]);
+  const [selectedAnn, setSelectedAnn] = useState<AnnItem | null>(null);
+  const [annDuration, setAnnDuration] = useState(0);
+
   // 커버 이미지 (기본: 트랙 커버, 변경 가능)
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(null);
@@ -199,9 +225,21 @@ export default function ShortsPage() {
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const pageTracks = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
-  // ── 트랙 로드 ──
+  // ── 초기 데이터 로드 ──
   useEffect(() => {
     loadTracks();
+    // 활성 쿠폰 로드
+    sb.from('coupons')
+      .select('id, title, discount_type, discount_value, is_active, expires_at')
+      .eq('is_active', true)
+      .then(({ data }) => setCoupons((data as Coupon[]) ?? []));
+    // audio_url이 있는 안내방송 로드
+    sb.from('announcements')
+      .select('id, text, audio_url, voice_type, created_at')
+      .not('audio_url', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(30)
+      .then(({ data }) => setAnnouncements((data as AnnItem[]) ?? []));
   }, []);
 
   const loadTracks = async () => {
@@ -268,6 +306,24 @@ export default function ShortsPage() {
     setCoverPreviewUrl(null);
   };
 
+  // ── 안내방송 선택 (오디오 길이 측정) ──
+  const handleSelectAnn = (ann: AnnItem | null) => {
+    if (!ann) {
+      setSelectedAnn(null);
+      setAnnDuration(0);
+      return;
+    }
+    setSelectedAnn(ann);
+    // HTMLAudioElement로 실제 길이 측정
+    const audio = new window.Audio(ann.audio_url);
+    audio.addEventListener('loadedmetadata', () => {
+      setAnnDuration(audio.duration || 0);
+    });
+    audio.addEventListener('error', () => {
+      setAnnDuration(0);
+    });
+  };
+
   // ── 클라이맥스 자동 감지 ──
   const handleAnalyze = async () => {
     if (!selected) return;
@@ -328,6 +384,11 @@ export default function ShortsPage() {
           mood_tags: selected.mood_tags ?? [],
           shorts_title: shortsTitle.trim(),
           shorts_tagline: shortsTagline.trim(),
+          coupon: selectedCoupon
+            ? { title: selectedCoupon.title, discount_type: selectedCoupon.discount_type, discount_value: selectedCoupon.discount_value }
+            : null,
+          announcement_url: selectedAnn?.audio_url ?? '',
+          announcement_duration_sec: annDuration,
         }),
       });
       const json = await res.json();
@@ -662,6 +723,104 @@ export default function ShortsPage() {
                   <p className="text-[10px] text-muted">비워두면 해당 텍스트는 영상에 표시되지 않습니다.</p>
                 </div>
               </div>
+
+              {/* ── 쿠폰 첨부 ── */}
+              {coupons.length > 0 && (
+                <div className="bg-card border border-border-main rounded-xl p-5 flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold text-primary">쿠폰 첨부</p>
+                    {selectedCoupon && (
+                      <button
+                        onClick={() => setSelectedCoupon(null)}
+                        className="text-xs text-dim hover:text-muted transition"
+                      >
+                        선택 해제
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-muted -mt-1">영상 하단에 쿠폰 카드가 표시됩니다.</p>
+                  <div className="flex flex-col gap-1.5">
+                    {coupons.map(c => {
+                      const isSelected = selectedCoupon?.id === c.id;
+                      const label = c.discount_type === 'percent'
+                        ? `${c.discount_value}% 할인`
+                        : `${c.discount_value.toLocaleString()}원 할인`;
+                      return (
+                        <button
+                          key={c.id}
+                          onClick={() => setSelectedCoupon(isSelected ? null : c)}
+                          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition border ${
+                            isSelected
+                              ? 'bg-[#FF6F0F]/15 border-[#FF6F0F]/40'
+                              : 'bg-fill-subtle border-border-subtle hover:border-border-main'
+                          }`}
+                        >
+                          <span className="text-lg shrink-0">🎟</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-semibold text-primary truncate">{c.title}</p>
+                            <p className="text-[10px] text-[#FF9F4F]">{label}</p>
+                          </div>
+                          {isSelected && (
+                            <div className="w-4 h-4 rounded-full bg-[#FF6F0F] flex items-center justify-center shrink-0">
+                              <Check size={9} className="text-white" />
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* ── 도입부 안내방송 ── */}
+              {announcements.length > 0 && (
+                <div className="bg-card border border-border-main rounded-xl p-5 flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold text-primary">도입부 안내방송</p>
+                    {selectedAnn && (
+                      <button
+                        onClick={() => handleSelectAnn(null)}
+                        className="text-xs text-dim hover:text-muted transition"
+                      >
+                        선택 해제
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-muted -mt-1">
+                    선택한 안내방송이 영상 도입부에 재생되고, 음원은 자동으로 덕킹됩니다.
+                  </p>
+                  <div className="flex flex-col gap-1.5 max-h-48 overflow-y-auto">
+                    {announcements.map(ann => {
+                      const isSelected = selectedAnn?.id === ann.id;
+                      return (
+                        <button
+                          key={ann.id}
+                          onClick={() => handleSelectAnn(isSelected ? null : ann)}
+                          className={`flex items-start gap-3 px-3 py-2.5 rounded-lg text-left transition border ${
+                            isSelected
+                              ? 'bg-[#FF6F0F]/15 border-[#FF6F0F]/40'
+                              : 'bg-fill-subtle border-border-subtle hover:border-border-main'
+                          }`}
+                        >
+                          <span className="text-base shrink-0 mt-0.5">🔊</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-primary line-clamp-2 leading-snug">{ann.text}</p>
+                            <p className="text-[10px] text-muted mt-0.5">
+                              {ann.voice_type || 'AI 음성'} · {new Date(ann.created_at).toLocaleDateString('ko-KR')}
+                              {isSelected && annDuration > 0 && ` · ${annDuration.toFixed(1)}초`}
+                            </p>
+                          </div>
+                          {isSelected && (
+                            <div className="w-4 h-4 rounded-full bg-[#FF6F0F] flex items-center justify-center shrink-0 mt-0.5">
+                              <Check size={9} className="text-white" />
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* ── 쇼츠 미리보기 (정적 썸네일) ── */}
               <div className="bg-card border border-border-main rounded-xl p-5 flex flex-col gap-3">

@@ -39,6 +39,9 @@ export async function POST(req: NextRequest) {
       mood_tags,
       shorts_title,
       shorts_tagline,
+      coupon,
+      announcement_url,
+      announcement_duration_sec,
     } = await req.json();
 
     if (!track_id || !audio_url || !title || !artist) {
@@ -62,6 +65,9 @@ export async function POST(req: NextRequest) {
       moodTags: Array.isArray(mood_tags) ? mood_tags : [],
       shortsTitle: shorts_title ?? '',
       shortsTagline: shorts_tagline ?? '',
+      coupon: coupon ?? null,
+      announcementUrl: announcement_url ?? '',
+      announcementDurationSec: typeof announcement_duration_sec === 'number' ? announcement_duration_sec : 0,
     };
 
     // 1. Remotion 번들링

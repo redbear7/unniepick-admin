@@ -26,6 +26,9 @@ export const RemotionRoot: React.FC = () => {
           moodTags: [],
           shortsTitle: '',
           shortsTagline: '',
+          coupon: null,
+          announcementUrl: '',
+          announcementDurationSec: 0,
         }}
       />
       <Composition
