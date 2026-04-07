@@ -58,9 +58,10 @@ export async function POST(req: NextRequest) {
       if (existing) {
         userId = existing.id;
       } else {
+        const dummyEmail = `owner_${phoneNum}@test.unnipick.dev`;
         const { data: inserted, error: iErr } = await supabase
           .from('users')
-          .insert({ name: ownerName, phone: phoneNum, role: 'owner' })
+          .insert({ name: ownerName, phone: phoneNum, role: 'owner', email: dummyEmail })
           .select('id')
           .single();
         if (iErr || !inserted) throw new Error('회원 생성 실패: ' + iErr?.message);
