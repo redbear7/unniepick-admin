@@ -47,6 +47,7 @@ export async function POST(req: NextRequest) {
       waveform_style,
       bg_video_url,
       bg_video_duration_sec,
+      duration_sec,
     } = await req.json();
 
     if (!track_id || !audio_url || !title || !artist) {
