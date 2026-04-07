@@ -217,6 +217,7 @@ export default function ShortsPage() {
 
   // 히스토리
   const [history, setHistory] = useState<ShortsHistoryItem[]>([]);
+  const [playingHistory, setPlayingHistory] = useState<ShortsHistoryItem | null>(null);
   useEffect(() => { setHistory(loadShortsHistory()); }, []);
 
   // 페이지네이션
@@ -1065,7 +1066,10 @@ export default function ShortsPage() {
               <div className="flex gap-3 overflow-x-auto scrollbar-none pb-1">
                 {history.map(h => (
                   <div key={h.id} className="shrink-0 w-36 bg-fill-subtle border border-border-subtle rounded-xl overflow-hidden group">
-                    <div className="relative aspect-[9/16]">
+                    <div
+                      className="relative aspect-[9/16] cursor-pointer"
+                      onClick={() => setPlayingHistory(h)}
+                    >
                       <video
                         src={h.videoUrl}
                         className="w-full h-full object-cover"
@@ -1073,15 +1077,10 @@ export default function ShortsPage() {
                         onMouseEnter={e => (e.target as HTMLVideoElement).play().catch(() => {})}
                         onMouseLeave={e => { const v = e.target as HTMLVideoElement; v.pause(); v.currentTime = 0; }}
                       />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
-                        <a href={h.videoUrl} download
-                          className="w-7 h-7 rounded-full bg-white/90 flex items-center justify-center hover:bg-white transition">
-                          <Download size={12} className="text-black" />
-                        </a>
-                        <a href={h.videoUrl} target="_blank" rel="noopener noreferrer"
-                          className="w-7 h-7 rounded-full bg-white/90 flex items-center justify-center hover:bg-white transition">
-                          <ExternalLink size={12} className="text-black" />
-                        </a>
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition flex items-center justify-center opacity-0 group-hover:opacity-100">
+                        <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center">
+                          <Play size={16} className="text-black ml-0.5" />
+                        </div>
                       </div>
                     </div>
                     <div className="p-2">
@@ -1105,6 +1104,56 @@ export default function ShortsPage() {
         </div>
 
       </div>
+
+      {/* ── 히스토리 영상 플레이 모달 ── */}
+      {playingHistory && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setPlayingHistory(null)}
+        >
+          <div
+            className="relative flex flex-col items-center gap-3 max-h-full"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* 닫기 */}
+            <button
+              onClick={() => setPlayingHistory(null)}
+              className="absolute -top-10 right-0 text-white/60 hover:text-white transition text-sm font-semibold flex items-center gap-1"
+            >
+              ✕ 닫기
+            </button>
+
+            {/* 영상 */}
+            <video
+              key={playingHistory.id}
+              src={playingHistory.videoUrl}
+              controls
+              autoPlay
+              className="rounded-2xl shadow-2xl"
+              style={{ maxHeight: 'calc(100vh - 120px)', aspectRatio: '9/16', width: 'auto' }}
+            />
+
+            {/* 하단 액션 */}
+            <div className="flex gap-2">
+              <a
+                href={playingHistory.videoUrl}
+                download={`shorts_${playingHistory.trackTitle}.mp4`}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#FF6F0F] text-white text-xs font-bold hover:bg-[#e86200] transition"
+              >
+                <Download size={13} /> 다운로드
+              </a>
+              <a
+                href={playingHistory.videoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white/10 text-white text-xs font-bold hover:bg-white/20 transition border border-white/20"
+              >
+                <ExternalLink size={13} /> 새 탭
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
