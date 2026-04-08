@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
 // POST /api/notices
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { author_name, author_emoji, content, image_url, notice_type, is_pinned } = body;
+  const { author_name, author_emoji, title, content, image_url, notice_type, is_pinned } = body;
 
   if (!content?.trim()) {
     return NextResponse.json({ error: 'content is required' }, { status: 400 });
@@ -41,6 +41,7 @@ export async function POST(req: NextRequest) {
     .insert({
       author_name: author_name ?? '관리자',
       author_emoji: author_emoji ?? '🍖',
+      title: title?.trim() ?? '',
       content: content.trim(),
       image_url: image_url ?? null,
       notice_type: notice_type ?? 'general',

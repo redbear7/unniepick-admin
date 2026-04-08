@@ -10,6 +10,7 @@ interface Notice {
   id: string;
   author_name: string;
   author_emoji: string;
+  title: string;
   content: string;
   image_url: string | null;
   notice_type: 'general' | 'important' | 'event';
@@ -50,6 +51,7 @@ export default function NoticesPage() {
   const [editingId, setEditingId]   = useState<string | null>(null);
 
   // 폼
+  const [title,       setTitle]       = useState('');
   const [content,     setContent]     = useState('');
   const [imageUrl,    setImageUrl]    = useState('');
   const [noticeType,  setNoticeType]  = useState<Notice['notice_type']>('general');
@@ -76,12 +78,13 @@ export default function NoticesPage() {
   }, [content]);
 
   const resetForm = () => {
-    setContent(''); setImageUrl(''); setNoticeType('general');
+    setTitle(''); setContent(''); setImageUrl(''); setNoticeType('general');
     setIsPinned(false); setAuthorName('관리자'); setAuthorEmoji('🍖');
     setEditingId(null);
   };
 
   const startEdit = (n: Notice) => {
+    setTitle(n.title ?? '');
     setContent(n.content);
     setImageUrl(n.image_url ?? '');
     setNoticeType(n.notice_type);
@@ -97,6 +100,7 @@ export default function NoticesPage() {
     setSubmitting(true);
     const body = {
       author_name: authorName, author_emoji: authorEmoji,
+      title: title.trim(),
       content, image_url: imageUrl || null,
       notice_type: noticeType, is_pinned: isPinned,
     };
@@ -179,6 +183,17 @@ export default function NoticesPage() {
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* 제목 */}
+            <div className="px-4 pt-3 pb-2 border-b border-border-main/50">
+              <input
+                type="text"
+                value={title}
+                onChange={e => setTitle(e.target.value)}
+                placeholder="제목을 입력하세요"
+                className="w-full bg-transparent text-base font-bold text-primary placeholder:text-dim outline-none leading-snug"
+              />
             </div>
 
             {/* 본문 */}
@@ -294,8 +309,9 @@ export default function NoticesPage() {
                         {n.author_emoji}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap mb-1">
-                          <span className="text-sm font-bold text-primary">{n.author_name}</span>
+                        {/* 작성자 행 */}
+                        <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                          <span className="text-xs font-semibold text-muted">{n.author_name}</span>
                           <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${bg} ${color}`}>
                             <Icon size={9} />{label}
                           </span>
@@ -304,7 +320,12 @@ export default function NoticesPage() {
                           )}
                           <span className="text-[10px] text-dim ml-auto">{timeAgo(n.created_at)}</span>
                         </div>
-                        <p className="text-sm text-primary leading-relaxed whitespace-pre-wrap">{n.content}</p>
+                        {/* 제목 */}
+                        {n.title && (
+                          <p className="text-base font-bold text-primary leading-snug mb-1">{n.title}</p>
+                        )}
+                        {/* 본문 */}
+                        <p className="text-sm text-secondary leading-relaxed whitespace-pre-wrap">{n.content}</p>
                       </div>
                     </div>
 

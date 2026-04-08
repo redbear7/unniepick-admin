@@ -7,6 +7,7 @@ interface Notice {
   id: string;
   author_name: string;
   author_emoji: string;
+  title: string;
   content: string;
   image_url: string | null;
   notice_type: 'general' | 'important' | 'event';
@@ -119,7 +120,7 @@ export default function OwnerNoticesPage() {
                       <div className="flex-1 min-w-0">
                         {/* 이름 + 뱃지 + NEW + 시간 */}
                         <div className="flex items-center gap-2 flex-wrap mb-1.5">
-                          <span className="text-sm font-bold text-primary">{n.author_name}</span>
+                          <span className="text-xs font-semibold text-muted">{n.author_name}</span>
                           <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${bg} ${color}`}>
                             <Icon size={9} />
                             {label}
@@ -132,8 +133,13 @@ export default function OwnerNoticesPage() {
                           <span className="text-[10px] text-dim ml-auto whitespace-nowrap">{timeAgo(n.created_at)}</span>
                         </div>
 
-                        {/* 텍스트 */}
-                        <p className="text-sm text-primary leading-relaxed whitespace-pre-wrap mb-2">{n.content}</p>
+                        {/* 제목 */}
+                        {n.title && (
+                          <p className="text-base font-bold text-primary leading-snug mb-1.5">{n.title}</p>
+                        )}
+
+                        {/* 본문 */}
+                        <p className="text-sm text-secondary leading-relaxed whitespace-pre-wrap mb-2">{n.content}</p>
 
                         {/* 이미지 */}
                         {n.image_url && (
