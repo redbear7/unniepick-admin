@@ -1759,7 +1759,7 @@ export default function ShortsPage() {
         </div>
 
         {/* ── 4단: 미리보기 패널 ── */}
-        <div className="w-[300px] shrink-0 overflow-y-auto p-4 flex flex-col gap-4">
+        <div className="min-w-[200px] w-[22vw] max-w-[420px] shrink overflow-y-auto p-4 flex flex-col gap-4">
           {selected ? (
             <>
               {/* 제목 + 크게 보기 버튼 */}
