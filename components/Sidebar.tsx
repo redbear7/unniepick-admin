@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
 import {
   LayoutDashboard, Store, FileText, Music, Ticket,
-  Users, LogOut, ChevronRight, ScrollText, MapPin, PlaySquare, Zap, Map, ListMusic, Tag, Building2, Megaphone, Film, Video, KeyRound,
+  Users, LogOut, ChevronRight, ScrollText, MapPin, PlaySquare, Zap, Map, ListMusic, Tag, Building2, Megaphone, Film, Video, KeyRound, UtensilsCrossed,
 } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 
@@ -21,9 +21,10 @@ const NAV_GROUPS = [
   {
     label: '매장 관리',
     items: [
-      { href: '/dashboard/stores',    icon: Store,     label: '가게 관리' },
-      { href: '/dashboard/contexts',  icon: MapPin,    label: '매장 컨텍스트' },
-      { href: '/dashboard/brands',    icon: Building2, label: '브랜드관' },
+      { href: '/dashboard/stores',    icon: Store,            label: '가게 관리' },
+      { href: '/dashboard/menus',     icon: UtensilsCrossed,  label: '메뉴 관리' },
+      { href: '/dashboard/contexts',  icon: MapPin,           label: '매장 컨텍스트' },
+      { href: '/dashboard/brands',    icon: Building2,        label: '브랜드관' },
     ],
   },
   {
