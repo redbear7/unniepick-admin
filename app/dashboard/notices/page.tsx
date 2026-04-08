@@ -186,7 +186,7 @@ export default function NoticesPage() {
             </div>
 
             {/* 제목 */}
-            <div className="px-4 pt-3 pb-2 border-b border-border-main/50">
+            <div className="px-4 pt-3 pb-2">
               <input
                 type="text"
                 value={title}
@@ -195,6 +195,8 @@ export default function NoticesPage() {
                 className="w-full bg-transparent text-base font-bold text-primary placeholder:text-dim outline-none leading-snug"
               />
             </div>
+            {/* 제목/본문 구분선 */}
+            <div className="mx-4 h-px bg-border-main" />
 
             {/* 본문 */}
             <div className="px-4 pt-3 pb-1">
