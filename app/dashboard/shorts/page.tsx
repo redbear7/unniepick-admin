@@ -1296,51 +1296,6 @@ export default function ShortsPage() {
         <div className="flex-1 border-r border-white/5 overflow-y-auto p-4 flex flex-col gap-4">
           {selected && (
             <>
-              {/* ── 클라이맥스 구간 설정 ── */}
-              <div className="bg-card border border-border-main rounded-xl p-5 flex flex-col gap-4">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-semibold text-primary">클라이맥스 구간 설정</p>
-                  <button
-                    onClick={handleAnalyze}
-                    disabled={analyzing}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#FF6F0F]/15 text-[#FF6F0F] text-xs font-semibold hover:bg-[#FF6F0F]/25 transition disabled:opacity-50"
-                  >
-                    {analyzing ? (
-                      <Loader2 size={12} className="animate-spin" />
-                    ) : (
-                      <Zap size={12} />
-                    )}
-                    자동 감지
-                  </button>
-                </div>
-                <p className="text-[9px] text-[#FF6F0F]/40 font-mono text-right -mt-1">에너지 분석 알고리즘</p>
-
-                {analyzed && (
-                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-500/10 border border-green-500/20">
-                    <Sparkles size={13} className="text-green-400" />
-                    <p className="text-xs text-green-400">
-                      클라이맥스 구간이 감지되었습니다: {fmtSec(startSec)} 시작
-                    </p>
-                  </div>
-                )}
-
-                {/* 웨이브폼 에디터 */}
-                {selected.audio_url && (
-                  <WaveformEditor
-                    audioUrl={selected.audio_url}
-                    durationSec={selected.duration_sec}
-                    startSec={startSec}
-                    windowSec={durationSec}
-                    onStartChange={(s) => { setStartSec(s); setAnalyzed(false); }}
-                    onPlayStart={() => { if (player.isPlaying) player.pause(); }}
-                  />
-                )}
-
-                <p className="text-[10px] text-muted">
-                  * 웨이브폼을 클릭하거나 드래그해서 구간을 이동하세요.
-                </p>
-              </div>
-
               {/* ── 음원 설정 ── */}
               <div className="bg-card border border-border-main rounded-xl p-5 flex flex-col gap-4">
                 <p className="text-sm font-semibold text-primary">음원 설정</p>
@@ -1413,6 +1368,51 @@ export default function ShortsPage() {
                     ))}
                   </div>
                 </div>
+              </div>
+
+              {/* ── 클라이맥스 구간 설정 ── */}
+              <div className="bg-card border border-border-main rounded-xl p-5 flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-primary">클라이맥스 구간 설정</p>
+                  <button
+                    onClick={handleAnalyze}
+                    disabled={analyzing}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#FF6F0F]/15 text-[#FF6F0F] text-xs font-semibold hover:bg-[#FF6F0F]/25 transition disabled:opacity-50"
+                  >
+                    {analyzing ? (
+                      <Loader2 size={12} className="animate-spin" />
+                    ) : (
+                      <Zap size={12} />
+                    )}
+                    자동 감지
+                  </button>
+                </div>
+                <p className="text-[9px] text-[#FF6F0F]/40 font-mono text-right -mt-1">에너지 분석 알고리즘</p>
+
+                {analyzed && (
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-500/10 border border-green-500/20">
+                    <Sparkles size={13} className="text-green-400" />
+                    <p className="text-xs text-green-400">
+                      클라이맥스 구간이 감지되었습니다: {fmtSec(startSec)} 시작
+                    </p>
+                  </div>
+                )}
+
+                {/* 웨이브폼 에디터 */}
+                {selected.audio_url && (
+                  <WaveformEditor
+                    audioUrl={selected.audio_url}
+                    durationSec={selected.duration_sec}
+                    startSec={startSec}
+                    windowSec={durationSec}
+                    onStartChange={(s) => { setStartSec(s); setAnalyzed(false); }}
+                    onPlayStart={() => { if (player.isPlaying) player.pause(); }}
+                  />
+                )}
+
+                <p className="text-[10px] text-muted">
+                  * 웨이브폼을 클릭하거나 드래그해서 구간을 이동하세요.
+                </p>
               </div>
 
               {/* ── 쿠폰 첨부 ── */}
