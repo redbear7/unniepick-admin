@@ -55,8 +55,8 @@ interface PlayerCtx {
   toggleRepeat:       () => void;
   close:              () => void;
   playAnnouncement:   (url: string, opts: { duck_volume?: number; play_mode?: 'immediate' | 'between_tracks'; ann_volume?: number }) => void;
-  crossfadeSec:       2 | 3 | 4;
-  setCrossfadeSec:    (v: 2 | 3 | 4) => void;
+  crossfadeSec:       3 | 4 | 5;
+  setCrossfadeSec:    (v: 3 | 4 | 5) => void;
 }
 
 const Ctx = createContext<PlayerCtx | null>(null);
@@ -96,8 +96,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [bassFreqBand, setBassFreqBand] = useState(0); // 0~4
   const bassSpeedRef = useRef(1.0);
   const bassFreqRef  = useRef(0);
-  const [crossfadeSec, setCrossfadeSec] = useState<2 | 3 | 4>(3);
-  const crossfadeSecRef = useRef<number>(3);
+  const [crossfadeSec, setCrossfadeSec] = useState<3 | 4 | 5>(4);
+  const crossfadeSecRef = useRef<number>(4);
 
   // crossfadeSecRef sync
   useEffect(() => { crossfadeSecRef.current = crossfadeSec; }, [crossfadeSec]);

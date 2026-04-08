@@ -229,7 +229,7 @@ export default function BottomPlayer() {
 
         {/* 디졸브 시간 */}
         <div className="flex items-center gap-0.5" title="연속 재생 디졸브 시간">
-          {([2, 3, 4] as const).map(s => (
+          {([3, 4, 5] as const).map(s => (
             <button
               key={s}
               onClick={() => setCrossfadeSec(s)}
