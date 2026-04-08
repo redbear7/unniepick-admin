@@ -11,13 +11,14 @@ function sb() {
 // PATCH /api/notices/[id]
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const { id } = await params;
   const body = await req.json();
   const { data, error } = await sb()
     .from('notices')
     .update(body)
-    .eq('id', params.id)
+    .eq('id', id)
     .select()
     .single();
 
@@ -28,12 +29,13 @@ export async function PATCH(
 // DELETE /api/notices/[id]
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const { id } = await params;
   const { error } = await sb()
     .from('notices')
     .delete()
-    .eq('id', params.id);
+    .eq('id', id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return new NextResponse(null, { status: 204 });
