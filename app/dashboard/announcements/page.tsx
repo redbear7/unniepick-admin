@@ -146,6 +146,14 @@ export default function AnnouncementsPage() {
     return () => { audioRef.current?.pause(); audioRef.current = null; };
   }, []);
 
+  // BottomPlayer 안내방송 볼륨 슬라이더 → 로컬 재생 오디오에 실시간 반영
+  // (player.track 없을 때 local audioRef로 재생되는 히스토리 오디오 대상)
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = Math.min(1, player.annVolume);
+    }
+  }, [player.annVolume]);
+
   const playAudio = (url: string, id: string, vol = 1, times = 1) => {
     if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
     if (playingId === id && times === 1) { setPlayingId(null); return; }
@@ -194,7 +202,7 @@ export default function AnnouncementsPage() {
       if (player.track) {
         player.playAnnouncement(blobUrl, { duck_volume: duckVolume, play_mode: 'immediate', ann_volume: annVolume });
       } else {
-        playAudio(blobUrl, `call_${num}`, player.volume * annVolume / 100, callRepeat);
+        playAudio(blobUrl, `call_${num}`, Math.min(1, player.annVolume), callRepeat);
       }
       const callAnn = makeAnnouncement(fullText, audioUrl, 'call');
       pushHistoryToLS(callAnn);
@@ -216,7 +224,7 @@ export default function AnnouncementsPage() {
     let playUrl: string;
     try { playUrl = await fetchBlobUrl(cachedUrl, sessionCacheKey(fullText, voice, speed)); }
     catch { playUrl = cachedUrl; }
-    playAudio(playUrl, `call_${n}`, player.volume * annVolume / 100, callRepeat);
+    playAudio(playUrl, `call_${n}`, Math.min(1, player.annVolume), callRepeat);
     setLastCalledNum(n);
     const callAnn = makeAnnouncement(fullText, cachedUrl, 'call');
     pushHistoryToLS(callAnn);
@@ -260,7 +268,7 @@ export default function AnnouncementsPage() {
       if (player.track) {
         player.playAnnouncement(playUrl, { duck_volume: duckVolume, play_mode: playMode, ann_volume: annVolume });
       } else {
-        playAudio(playUrl, '__new__', player.volume * annVolume / 100);
+        playAudio(playUrl, '__new__', Math.min(1, player.annVolume));
       }
     } catch (e: any) {
       alert(`실패: ${e.message}`);
@@ -279,7 +287,7 @@ export default function AnnouncementsPage() {
     if (player.track) {
       player.playAnnouncement(playUrl, { duck_volume: duckVol, play_mode: pm, ann_volume: annVolume });
     } else {
-      playAudio(playUrl, id, player.volume * annVolume / 100);
+      playAudio(playUrl, id, Math.min(1, player.annVolume));
     }
   };
 
@@ -369,7 +377,7 @@ export default function AnnouncementsPage() {
       if (player.track) {
         player.playAnnouncement(data.audio_url, { duck_volume: (ann as any).duck_volume ?? duckVolume, play_mode: ann.play_mode });
       } else {
-        playAudio(data.audio_url, ann.id, player.volume);
+        playAudio(data.audio_url, ann.id, Math.min(1, player.annVolume));
       }
     } catch (e: any) {
       alert(`재생성 실패: ${e.message}`);
