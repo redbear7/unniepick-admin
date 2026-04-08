@@ -750,7 +750,7 @@ export default function ShortsPage() {
   // 요소 위치 (% from top)
   const [headerTop, setHeaderTop] = useState(8);
   const [infoTop, setInfoTop] = useState(72);
-  const [couponTop, setCouponTop] = useState(62);
+  const [couponTop, setCouponTop] = useState(58);
 
   // 렌더링
   const [rendering, setRendering] = useState(false);
