@@ -880,6 +880,7 @@ export default function ShortsPage() {
                     자동 감지
                   </button>
                 </div>
+                <p className="text-[9px] text-[#FF6F0F]/40 font-mono text-right -mt-1">에너지 분석 알고리즘</p>
 
                 {analyzed && (
                   <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-500/10 border border-green-500/20">
