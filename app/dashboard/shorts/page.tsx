@@ -53,6 +53,7 @@ interface MusicTrack {
   duration_sec: number;
   bpm: number | null;
   energy_level: 'low' | 'medium' | 'high' | null;
+  mood: string | null;
   mood_tags: string[];
   energy_score?: number | null;
 }
@@ -276,7 +277,7 @@ export default function ShortsPage() {
     const { data, error } = await sb
       .from('music_tracks')
       .select(
-        'id, title, artist, audio_url, cover_image_url, cover_emoji, duration_sec, bpm, energy_level, mood_tags, energy_score',
+        'id, title, artist, audio_url, cover_image_url, cover_emoji, duration_sec, bpm, energy_level, mood, mood_tags, energy_score',
       )
       .eq('is_active', true)
       .order('created_at', { ascending: false })
@@ -562,6 +563,21 @@ export default function ShortsPage() {
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-primary truncate">{track.title}</p>
                           <p className="text-xs text-muted truncate">{track.artist}</p>
+                          {/* 장르 + 무드태그 */}
+                          {(track.mood || (track.mood_tags ?? []).length > 0) && (
+                            <div className="flex items-center gap-1 mt-1 flex-wrap">
+                              {track.mood && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#FF6F0F]/15 text-[#FF9F4F] font-semibold leading-none shrink-0">
+                                  {track.mood}
+                                </span>
+                              )}
+                              {(track.mood_tags ?? []).slice(0, 3).map(tag => (
+                                <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-white/40 leading-none shrink-0">
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
 
                         {/* 메타 */}
