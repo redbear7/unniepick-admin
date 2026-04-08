@@ -377,27 +377,44 @@ function LivePreviewFrame({
   headerTop, infoTop, couponTop,
   onPlayStart,
 }: LivePreviewFrameProps) {
-  const audioRef    = useRef<HTMLAudioElement | null>(null);
-  const animRef     = useRef<number>(0);
-  const canvasRef   = useRef<HTMLCanvasElement>(null);
-  const [playing,   setPlaying]   = useState(false);
-  const [progress,  setProgress]  = useState(0); // 0~1
-  const [wavePhase, setWavePhase] = useState(0);
+  const audioRef      = useRef<HTMLAudioElement | null>(null);
+  const animRef       = useRef<number>(0);
+  const canvasRef     = useRef<HTMLCanvasElement>(null);
+  const containerRef  = useRef<HTMLDivElement>(null);
+  const [playing,     setPlaying]     = useState(false);
+  const [progress,    setProgress]    = useState(0);
+  const [wavePhase,   setWavePhase]   = useState(0);
+  const [frameWidth,  setFrameWidth]  = useState(360);
 
-  // Animated waveform bars on canvas
+  // 기준 해상도 (이 크기로 모든 px 값 설계)
+  const BASE_W = 360;
+  const BASE_H = 640;
+  const scale  = frameWidth / BASE_W;
+
+  // 컨테이너 폭 감지 → scale 계산
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(entries => {
+      setFrameWidth(entries[0].contentRect.width || BASE_W);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // 웨이브폼 캔버스 드로우
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const dpr = window.devicePixelRatio || 1;
-    const W = canvas.offsetWidth || 150;
-    const H = canvas.offsetHeight || 24;
+    const W = canvas.offsetWidth  || BASE_W;
+    const H = canvas.offsetHeight || 36;
     canvas.width  = W * dpr;
     canvas.height = H * dpr;
     const ctx = canvas.getContext('2d')!;
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, W, H);
-
-    const bars = 24;
+    const bars = 32;
     const bw   = W / bars;
     const mid  = H / 2;
     for (let i = 0; i < bars; i++) {
@@ -410,21 +427,15 @@ function LivePreviewFrame({
     }
   }, [playing, wavePhase]);
 
-  // Animate wavePhase while playing
   useEffect(() => {
     if (!playing) return;
     let phase = wavePhase;
-    const tick = () => {
-      phase += 0.12;
-      setWavePhase(phase);
-      animRef.current = requestAnimationFrame(tick);
-    };
+    const tick = () => { phase += 0.12; setWavePhase(phase); animRef.current = requestAnimationFrame(tick); };
     animRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(animRef.current);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playing]);
 
-  // Stop on startSec change
   useEffect(() => {
     if (playing && audioRef.current) {
       audioRef.current.pause();
@@ -472,102 +483,108 @@ function LivePreviewFrame({
   };
 
   return (
-    <div className="flex flex-col items-center gap-1.5 flex-1 min-w-0">
-      <p className="text-[10px] text-dim">라이브 미리보기</p>
+    <div className="flex flex-col items-center gap-2 w-full">
+      <p className="text-[10px] text-dim self-start">라이브 미리보기</p>
       {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
       <audio ref={audioRef} src={audioUrl} preload="auto" />
 
-      {/* 9:16 프레임 */}
+      {/* 9:16 외부 컨테이너 — 폭 감지용 */}
       <div
+        ref={containerRef}
         className="relative rounded-xl overflow-hidden w-full"
         style={{ aspectRatio: '9/16', background: '#111' }}
       >
-        {/* 배경: 동영상 or 커버 이미지 */}
-        {bgVideoUrl ? (
-          // eslint-disable-next-line jsx-a11y/media-has-caption
-          <video
-            src={bgVideoUrl}
-            className="absolute inset-0 w-full h-full object-cover"
-            muted loop autoPlay playsInline
-          />
-        ) : coverUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={coverUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center text-5xl bg-[#1a1a2e]">{coverEmoji}</div>
-        )}
+        {/* 기준 크기(360×640) 내부 래퍼 — scale로 비례 확대/축소 */}
+        <div
+          style={{
+            position: 'absolute',
+            top: 0, left: 0,
+            width:  BASE_W,
+            height: BASE_H,
+            transform: `scale(${scale})`,
+            transformOrigin: 'top left',
+          }}
+        >
+          {/* 배경 */}
+          {bgVideoUrl ? (
+            // eslint-disable-next-line jsx-a11y/media-has-caption
+            <video src={bgVideoUrl} style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover' }} muted loop autoPlay playsInline />
+          ) : coverUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={coverUrl} alt="" style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover' }} />
+          ) : (
+            <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:80, background:'#1a1a2e' }}>{coverEmoji}</div>
+          )}
 
-        {/* 그라디언트 오버레이 */}
-        <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg,rgba(0,0,0,0.72) 0%,rgba(0,0,0,0.05) 45%,rgba(0,0,0,0.75) 100%)' }} />
+          {/* 그라디언트 */}
+          <div style={{ position:'absolute', inset:0, background:'linear-gradient(180deg,rgba(0,0,0,0.72) 0%,rgba(0,0,0,0.05) 45%,rgba(0,0,0,0.78) 100%)' }} />
 
-        {/* 제목 / 강조 문구 */}
-        <div className="absolute left-3 right-3" style={{ top: `${headerTop}%` }}>
-          {shortsTitle   && <p className="text-white text-[9px] font-black leading-tight line-clamp-2">{shortsTitle}</p>}
-          {shortsTagline && <p className="text-[#FF9F4F] text-[8px] font-bold mt-0.5 truncate">{shortsTagline}</p>}
-        </div>
+          {/* 제목 / 강조 문구 */}
+          <div style={{ position:'absolute', left:16, right:16, top:`${headerTop}%` }}>
+            {shortsTitle   && <p style={{ color:'#fff', fontSize:22, fontWeight:900, lineHeight:1.25, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{shortsTitle}</p>}
+            {shortsTagline && <p style={{ color:'#FF9F4F', fontSize:16, fontWeight:700, marginTop:4, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{shortsTagline}</p>}
+          </div>
 
-        {/* 쿠폰 */}
-        {selectedCoupon && (
-          <div className="absolute left-3 right-3" style={{ top: `${couponTop}%` }}>
-            <div className="bg-[#FF6F0F]/90 rounded-lg px-2 py-1 flex items-center gap-1.5">
-              <span className="text-sm">🎟</span>
-              <div className="min-w-0">
-                <p className="text-white text-[7px] font-semibold truncate">{selectedCoupon.title}</p>
-                <p className="text-white text-[8px] font-black">
-                  {selectedCoupon.discount_type === 'percent'
-                    ? `${selectedCoupon.discount_value}% 할인`
-                    : `${selectedCoupon.discount_value.toLocaleString()}원 할인`}
-                </p>
+          {/* 쿠폰 */}
+          {selectedCoupon && (
+            <div style={{ position:'absolute', left:16, right:16, top:`${couponTop}%` }}>
+              <div style={{ background:'rgba(255,111,15,0.92)', borderRadius:12, padding:'10px 14px', display:'flex', alignItems:'center', gap:10 }}>
+                <span style={{ fontSize:24 }}>🎟</span>
+                <div style={{ minWidth:0 }}>
+                  <p style={{ color:'#fff', fontSize:13, fontWeight:600, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{selectedCoupon.title}</p>
+                  <p style={{ color:'#fff', fontSize:17, fontWeight:900, marginTop:2 }}>
+                    {selectedCoupon.discount_type === 'percent'
+                      ? `${selectedCoupon.discount_value}% 할인`
+                      : `${selectedCoupon.discount_value.toLocaleString()}원 할인`}
+                  </p>
+                </div>
               </div>
             </div>
+          )}
+
+          {/* 곡 정보 */}
+          <div style={{ position:'absolute', left:16, right:16, top:`${infoTop}%` }}>
+            <p style={{ color:'#fff', fontSize:15, fontWeight:600, lineHeight:1.3, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>🎵 {trackTitle}</p>
+            <p style={{ color:'rgba(255,255,255,0.55)', fontSize:12, marginTop:3, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{artist}</p>
           </div>
-        )}
 
-        {/* 곡 정보 */}
-        <div className="absolute left-3 right-3" style={{ top: `${infoTop}%` }}>
-          <p className="text-white text-[8px] font-semibold leading-tight truncate">🎵 {trackTitle}</p>
-          <p className="text-white/60 text-[7px] truncate mt-0.5">{artist}</p>
-        </div>
+          {/* 언니픽 배지 */}
+          <div style={{ position:'absolute', top:12, right:12, background:'rgba(255,111,15,0.92)', borderRadius:5, color:'#fff', fontSize:11, fontWeight:700, padding:'3px 7px' }}>언니픽</div>
 
-        {/* 언니픽 배지 */}
-        <div className="absolute top-2 right-2 bg-[#FF6F0F]/90 rounded text-white text-[6px] font-bold px-1 py-0.5">언니픽</div>
-
-
-
-        {/* 파형 */}
-        <div className="absolute bottom-8 left-3 right-3">
-          <canvas ref={canvasRef} className="w-full block" style={{ height: 24 }} />
-        </div>
-
-        {/* 진행 바 */}
-        <div className="absolute bottom-4 left-3 right-3 h-0.5 bg-white/15 rounded">
-          <div
-            className="h-full bg-[#FF6F0F] rounded transition-none"
-            style={{ width: `${progress * 100}%` }}
-          />
-        </div>
-
-        {/* 시간 표시 */}
-        <div className="absolute bottom-1 left-3 right-3 flex justify-between">
-          <span className="text-[7px] font-mono text-white/50">{fmtSec(startSec + progress * durationSec)}</span>
-          <span className="text-[7px] font-mono text-white/30">{fmtSec(startSec + durationSec)}</span>
-        </div>
-
-        {/* 재생 버튼 (중앙, hover 시 표시 or 항상) */}
-        <button
-          onClick={togglePlay}
-          className={`absolute inset-0 flex items-center justify-center transition ${playing ? 'opacity-0 hover:opacity-100' : 'opacity-100'}`}
-        >
-          <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition ${playing ? 'bg-black/40' : 'bg-black/50 hover:bg-black/70'}`}>
-            {playing
-              ? <Pause size={16} className="text-white" />
-              : <Play  size={16} className="text-white ml-0.5" />}
+          {/* 파형 */}
+          <div style={{ position:'absolute', bottom:44, left:16, right:16 }}>
+            <canvas ref={canvasRef} style={{ width:'100%', display:'block', height:36 }} />
           </div>
-        </button>
+
+          {/* 진행 바 */}
+          <div style={{ position:'absolute', bottom:22, left:16, right:16, height:3, background:'rgba(255,255,255,0.15)', borderRadius:2 }}>
+            <div style={{ height:'100%', width:`${progress * 100}%`, background:'#FF6F0F', borderRadius:2 }} />
+          </div>
+
+          {/* 시간 표시 */}
+          <div style={{ position:'absolute', bottom:4, left:16, right:16, display:'flex', justifyContent:'space-between' }}>
+            <span style={{ fontSize:12, fontFamily:'monospace', color:'rgba(255,255,255,0.5)' }}>{fmtSec(startSec + progress * durationSec)}</span>
+            <span style={{ fontSize:12, fontFamily:'monospace', color:'rgba(255,255,255,0.3)' }}>{fmtSec(startSec + durationSec)}</span>
+          </div>
+
+          {/* 재생 버튼 */}
+          <button
+            onClick={togglePlay}
+            style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', opacity: playing ? 0 : 1, transition:'opacity 0.2s' }}
+            onMouseEnter={e => { if (playing) (e.currentTarget as HTMLButtonElement).style.opacity = '1'; }}
+            onMouseLeave={e => { if (playing) (e.currentTarget as HTMLButtonElement).style.opacity = '0'; }}
+          >
+            <div style={{ width:64, height:64, borderRadius:'50%', background: playing ? 'rgba(0,0,0,0.4)' : 'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 4px 16px rgba(0,0,0,0.4)' }}>
+              {playing
+                ? <Pause size={24} color="white" />
+                : <Play  size={24} color="white" style={{ marginLeft:3 }} />}
+            </div>
+          </button>
+        </div>
       </div>
 
       {/* 구간 표시 */}
-      <p className="text-[9px] font-mono text-dim">
+      <p className="text-[10px] font-mono text-dim self-start">
         {fmtSec(startSec)} ~ {fmtSec(startSec + durationSec)}
         <span className="text-[#FF6F0F]/60 ml-1">({durationSec}초)</span>
       </p>
