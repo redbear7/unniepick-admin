@@ -387,6 +387,7 @@ interface LivePreviewFrameProps {
   genreTag?: string;
   moodTag?: string;
   waveformStyle?: 'bar' | 'mirror' | 'wave' | 'circle' | 'dots';
+  showGuide?: boolean;
   onPlayStart?: () => void;
 }
 
@@ -398,6 +399,7 @@ function LivePreviewFrame({
   headerTop, infoTop, couponTop,
   genreTag, moodTag,
   waveformStyle = 'bar',
+  showGuide = false,
   onPlayStart,
 }: LivePreviewFrameProps) {
   const audioRef      = useRef<HTMLAudioElement | null>(null);
@@ -688,6 +690,58 @@ function LivePreviewFrame({
             <span style={{ fontSize:12, fontFamily:'monospace', color:'rgba(255,255,255,0.3)' }}>{fmtSec(startSec + durationSec)}</span>
           </div>
 
+          {/* 안전 영역 가이드 */}
+          {showGuide && (
+            <div style={{ position:'absolute', inset:0, pointerEvents:'none', zIndex:20 }}>
+              {/* ── 상단 안전바 (Instagram 10% / YouTube 7%) ── */}
+              {/* YouTube 상단 7% */}
+              <div style={{ position:'absolute', top:0, left:0, right:0, height:'7%', background:'rgba(255,59,59,0.18)', borderBottom:'1.5px dashed rgba(255,90,90,0.75)' }}>
+                <span style={{ position:'absolute', bottom:2, left:5, fontSize:7, color:'rgba(255,130,130,0.95)', fontWeight:700, letterSpacing:0.3 }}>▶ YT 상단</span>
+              </div>
+              {/* Instagram 상단 10% */}
+              <div style={{ position:'absolute', top:'7%', left:0, right:0, height:'3%', background:'rgba(255,111,15,0.18)', borderBottom:'1.5px dashed rgba(255,150,50,0.8)' }}>
+                <span style={{ position:'absolute', bottom:2, left:5, fontSize:7, color:'rgba(255,170,80,0.95)', fontWeight:700 }}>📷 IG 상단</span>
+              </div>
+
+              {/* ── 하단 안전바 (Instagram 20% / YouTube 25%) ── */}
+              {/* Instagram 하단 20% */}
+              <div style={{ position:'absolute', bottom:0, left:0, right:0, height:'20%', background:'rgba(255,111,15,0.18)', borderTop:'1.5px dashed rgba(255,150,50,0.8)' }}>
+                <span style={{ position:'absolute', top:3, left:5, fontSize:7, color:'rgba(255,170,80,0.95)', fontWeight:700 }}>📷 IG 하단 액션</span>
+              </div>
+              {/* YouTube 하단 추가 5% (총 25%) */}
+              <div style={{ position:'absolute', bottom:'20%', left:0, right:0, height:'5%', background:'rgba(255,59,59,0.18)', borderTop:'1.5px dashed rgba(255,90,90,0.75)' }}>
+                <span style={{ position:'absolute', top:2, left:5, fontSize:7, color:'rgba(255,130,130,0.95)', fontWeight:700 }}>▶ YT 하단</span>
+              </div>
+
+              {/* ── 우측 액션 버튼 영역 (Instagram 15% / YouTube 12%) ── */}
+              {/* YouTube 우측 12% */}
+              <div style={{ position:'absolute', top:'7%', right:0, bottom:'20%', width:'12%', background:'rgba(255,59,59,0.13)', borderLeft:'1.5px dashed rgba(255,90,90,0.75)' }}>
+                <span style={{ position:'absolute', top:'50%', right:1, transform:'translateY(-50%) rotate(90deg)', transformOrigin:'center', fontSize:7, color:'rgba(255,130,130,0.9)', fontWeight:700, whiteSpace:'nowrap' }}>▶ YT</span>
+              </div>
+              {/* Instagram 우측 15% (추가 3%) */}
+              <div style={{ position:'absolute', top:'10%', right:'12%', bottom:'20%', width:'3%', background:'rgba(255,111,15,0.13)', borderLeft:'1.5px dashed rgba(255,150,50,0.7)' }}>
+                <span style={{ position:'absolute', top:'50%', right:0, transform:'translateY(-50%) rotate(90deg)', transformOrigin:'center', fontSize:6, color:'rgba(255,170,80,0.85)', fontWeight:700, whiteSpace:'nowrap' }}>📷</span>
+              </div>
+
+              {/* ── 안전 영역 레이블 ── */}
+              <div style={{ position:'absolute', top:'10%', left:5, background:'rgba(0,0,0,0.55)', borderRadius:4, padding:'2px 6px', border:'1px solid rgba(255,255,255,0.15)' }}>
+                <span style={{ fontSize:8, color:'rgba(255,255,255,0.8)', fontWeight:700 }}>SAFE ZONE</span>
+              </div>
+
+              {/* 범례 */}
+              <div style={{ position:'absolute', top:'10%', right:'15%', display:'flex', flexDirection:'column', gap:2, background:'rgba(0,0,0,0.6)', borderRadius:4, padding:'3px 5px' }}>
+                <div style={{ display:'flex', alignItems:'center', gap:3 }}>
+                  <div style={{ width:8, height:1.5, background:'rgba(255,150,50,0.9)' }} />
+                  <span style={{ fontSize:6.5, color:'rgba(255,170,80,0.9)', fontWeight:700 }}>Instagram</span>
+                </div>
+                <div style={{ display:'flex', alignItems:'center', gap:3 }}>
+                  <div style={{ width:8, height:1.5, background:'rgba(255,90,90,0.9)' }} />
+                  <span style={{ fontSize:6.5, color:'rgba(255,130,130,0.9)', fontWeight:700 }}>YouTube</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* 재생 버튼 */}
           <button
             onClick={togglePlay}
@@ -782,6 +836,14 @@ export default function ShortsPage() {
   const toggleLike = (id: string) => setLikedIds(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
   const wasPlayingRef = useRef(false);
   const [previewExpanded, setPreviewExpanded] = useState(false);
+  const [showGuide, setShowGuide] = useState<boolean>(() => {
+    try { return localStorage.getItem('shorts_show_guide') === 'true'; } catch { return false; }
+  });
+  const toggleGuide = () => setShowGuide(v => {
+    const next = !v;
+    try { localStorage.setItem('shorts_show_guide', String(next)); } catch {}
+    return next;
+  });
   useEffect(() => { setHistory(loadShortsHistory()); }, []);
 
   const openHistoryPlayer = (h: ShortsHistoryItem) => {
@@ -1830,18 +1892,27 @@ export default function ShortsPage() {
         <div className="min-w-[200px] w-[22vw] max-w-[420px] shrink overflow-y-auto p-4 flex flex-col gap-4">
           {selected ? (
             <>
-              {/* 제목 + 크게 보기 버튼 */}
+              {/* 제목 + 가이드/크게 보기 버튼 */}
               <div className="flex items-center justify-between">
                 <p className="text-sm font-semibold text-primary flex items-center gap-2">
                   <Film size={14} className="text-[#FF6F0F]" /> 미리보기
                 </p>
-                <button
-                  onClick={() => setPreviewExpanded(true)}
-                  className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-muted hover:text-primary hover:bg-white/5 transition"
-                  title="크게 보기"
-                >
-                  <Maximize2 size={13} /> 크게 보기
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={toggleGuide}
+                    className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold transition ${showGuide ? 'bg-white/10 text-primary' : 'text-muted hover:text-primary hover:bg-white/5'}`}
+                    title="안전 영역 가이드"
+                  >
+                    <span className="text-[10px]">⊞</span> 가이드
+                  </button>
+                  <button
+                    onClick={() => setPreviewExpanded(true)}
+                    className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-muted hover:text-primary hover:bg-white/5 transition"
+                    title="크게 보기"
+                  >
+                    <Maximize2 size={13} /> 크게 보기
+                  </button>
+                </div>
               </div>
 
               {/* 라이브 미리보기 */}
@@ -1861,6 +1932,7 @@ export default function ShortsPage() {
                 infoTop={infoTop}
                 couponTop={couponTop}
                 waveformStyle={waveformStyle}
+                showGuide={showGuide}
                 onPlayStart={() => { if (player.isPlaying) player.pause(); }}
               />
 
@@ -2068,6 +2140,7 @@ export default function ShortsPage() {
                 infoTop={infoTop}
                 couponTop={couponTop}
                 waveformStyle={waveformStyle}
+                showGuide={showGuide}
                 onPlayStart={() => { if (player.isPlaying) player.pause(); }}
               />
             </div>
