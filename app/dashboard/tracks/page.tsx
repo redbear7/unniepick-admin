@@ -2,8 +2,9 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase';
-import { Search, Plus, Pencil, Trash2, ToggleLeft, ToggleRight, X, Check, Play, Pause, Upload, ImagePlus, Link, Heart, ListMusic as ListMusicIcon, ArrowDownUp, Headphones, GripVertical, Copy, ClipboardCheck } from 'lucide-react';
+import { Search, Plus, Pencil, Trash2, ToggleLeft, ToggleRight, X, Check, Play, Pause, Upload, ImagePlus, Link, Heart, ListMusic as ListMusicIcon, ArrowDownUp, Headphones, GripVertical, Copy, ClipboardCheck, Film } from 'lucide-react';
 import { usePlayer } from '@/contexts/PlayerContext';
+import { useRouter } from 'next/navigation';
 
 // ─── 타입 ──────────────────────────────────────────────────────
 interface MusicTrack {
@@ -312,6 +313,7 @@ function fmtBytes(n: number) {
 export default function TracksPage() {
   const sb       = createClient();
   const player   = usePlayer();
+  const router   = useRouter();
   const audioInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
@@ -1717,6 +1719,13 @@ export default function TracksPage() {
                         }
                       </button>
                       <div className="flex gap-1">
+                        <button
+                          onClick={() => router.push(`/dashboard/shorts?trackId=${track.id}`)}
+                          className="flex items-center gap-1 h-6 px-2 rounded bg-[#FF6F0F]/15 text-[#FF9F4F] text-[10px] font-semibold hover:bg-[#FF6F0F]/25 transition"
+                          title="쇼츠 만들기"
+                        >
+                          <Film size={10} /> 쇼츠
+                        </button>
                         <button onClick={() => openEdit(track)}
                           className="w-6 h-6 flex items-center justify-center rounded bg-fill-subtle text-muted hover:text-primary transition">
                           <Pencil size={11} />

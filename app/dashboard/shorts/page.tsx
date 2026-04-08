@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase';
 import { usePlayer } from '@/contexts/PlayerContext';
+import { useSearchParams } from 'next/navigation';
 import {
   Film,
   Search,
@@ -594,8 +595,10 @@ function LivePreviewFrame({
 
 // ─── 메인 페이지 ───────────────────────────────────────────────
 export default function ShortsPage() {
-  const sb = createClient();
-  const player = usePlayer();
+  const sb           = createClient();
+  const player       = usePlayer();
+  const searchParams = useSearchParams();
+  const initTrackId  = searchParams.get('trackId');
 
   // 트랙 목록
   const [tracks, setTracks] = useState<MusicTrack[]>([]);
@@ -707,6 +710,11 @@ export default function ShortsPage() {
     if (!error && data) {
       setTracks(data as MusicTrack[]);
       setFiltered(data as MusicTrack[]);
+      // URL 파라미터로 전달된 트랙 자동 선택
+      if (initTrackId) {
+        const found = (data as MusicTrack[]).find(t => t.id === initTrackId);
+        if (found) handleSelect(found);
+      }
     }
     setLoadingTracks(false);
   };
@@ -1113,12 +1121,12 @@ export default function ShortsPage() {
                       <span className="text-xs font-normal text-muted">{trackHistory.length}개</span>
                     </p>
                   </div>
-                  <div className="flex gap-3 overflow-x-auto scrollbar-none pb-1">
+                  <div className="flex flex-col gap-4">
                     {trackHistory.map(h => (
-                      <div key={h.id} className="shrink-0 w-28 flex flex-col gap-1.5">
-                        {/* 썸네일 + 플레이 */}
+                      <div key={h.id} className="flex flex-col gap-2">
+                        {/* 썸네일 */}
                         <div
-                          className="relative rounded-lg overflow-hidden cursor-pointer group bg-black"
+                          className="relative rounded-xl overflow-hidden cursor-pointer group bg-black w-full"
                           style={{ aspectRatio: '9/16' }}
                           onClick={() => openHistoryPlayer(h)}
                         >
@@ -1129,42 +1137,35 @@ export default function ShortsPage() {
                             onMouseEnter={e => (e.target as HTMLVideoElement).play().catch(() => {})}
                             onMouseLeave={e => { const v = e.target as HTMLVideoElement; v.pause(); v.currentTime = 0; }}
                           />
-                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition flex items-center justify-center opacity-0 group-hover:opacity-100">
-                            <div className="w-9 h-9 rounded-full bg-white/90 flex items-center justify-center">
-                              <Play size={14} className="text-black ml-0.5" />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition flex items-center justify-center opacity-0 group-hover:opacity-100">
+                            <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center">
+                              <Play size={18} className="text-black ml-0.5" />
                             </div>
                           </div>
-                          <div className="absolute bottom-1 left-1 right-1 text-center space-y-0.5">
-                            {h.storeName && (
-                              <span className="block text-[8px] text-white/80 bg-[#FF6F0F]/70 rounded px-1 truncate">
-                                {h.storeName}
-                              </span>
-                            )}
-                            <span className="block text-[8px] text-white/60 bg-black/50 rounded px-1">
-                              {new Date(h.createdAt).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
-                            </span>
+                          <div className="absolute top-2 right-2 text-[10px] text-white/70 bg-black/50 rounded px-1.5 py-0.5">
+                            {new Date(h.createdAt).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
                           </div>
                         </div>
-                        {/* 버튼들 */}
-                        <button
-                          onClick={() => loadFromHistory(h)}
-                          className="w-full flex items-center justify-center gap-1 py-1.5 rounded-lg bg-[#FF6F0F]/15 text-[#FF9F4F] text-[10px] font-semibold hover:bg-[#FF6F0F]/25 transition"
-                        >
-                          <RotateCcw size={10} /> 설정 불러오기
-                        </button>
-                        <div className="flex gap-1">
+                        {/* 액션 */}
+                        <div className="flex gap-1.5">
+                          <button
+                            onClick={() => loadFromHistory(h)}
+                            className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg bg-[#FF6F0F]/15 text-[#FF9F4F] text-xs font-semibold hover:bg-[#FF6F0F]/25 transition"
+                          >
+                            <RotateCcw size={11} /> 설정 불러오기
+                          </button>
                           <a
                             href={h.videoUrl}
                             download={`shorts_${h.trackTitle}.mp4`}
-                            className="flex-1 flex items-center justify-center py-1 rounded-lg bg-white/5 text-muted text-[10px] hover:bg-white/10 transition"
+                            className="flex items-center justify-center px-3 rounded-lg bg-white/5 text-muted hover:bg-white/10 transition"
                           >
-                            <Download size={10} />
+                            <Download size={13} />
                           </a>
                           <button
                             onClick={() => { removeShortsHistory(h.id); setHistory(loadShortsHistory()); }}
-                            className="flex-1 flex items-center justify-center py-1 rounded-lg bg-white/5 text-muted text-[10px] hover:text-red-400 hover:bg-red-500/10 transition"
+                            className="flex items-center justify-center px-3 rounded-lg bg-white/5 text-muted hover:text-red-400 hover:bg-red-500/10 transition"
                           >
-                            <Trash2 size={10} />
+                            <Trash2 size={13} />
                           </button>
                         </div>
                       </div>
@@ -1715,11 +1716,12 @@ export default function ShortsPage() {
                   <Trash2 size={11} /> 전체 삭제
                 </button>
               </div>
-              <div className="flex gap-3 overflow-x-auto scrollbar-none pb-1">
+              <div className="flex flex-col gap-4">
                 {history.map(h => (
-                  <div key={h.id} className="shrink-0 w-36 bg-fill-subtle border border-border-subtle rounded-xl overflow-hidden group">
+                  <div key={h.id} className="flex flex-col gap-2">
                     <div
-                      className="relative aspect-[9/16] cursor-pointer"
+                      className="relative w-full rounded-xl overflow-hidden group cursor-pointer"
+                      style={{ aspectRatio: '9/16' }}
                       onClick={() => openHistoryPlayer(h)}
                     >
                       <video
@@ -1730,42 +1732,37 @@ export default function ShortsPage() {
                         onMouseLeave={e => { const v = e.target as HTMLVideoElement; v.pause(); v.currentTime = 0; }}
                       />
                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition flex items-center justify-center opacity-0 group-hover:opacity-100">
-                        <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center">
-                          <Play size={16} className="text-black ml-0.5" />
+                        <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center">
+                          <Play size={18} className="text-black ml-0.5" />
                         </div>
+                      </div>
+                      <div className="absolute top-2 right-2 bg-black/50 rounded px-1.5 py-0.5 text-[9px] text-white/70">
+                        {new Date(h.createdAt).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
                       </div>
                     </div>
-                    <div className="p-2 space-y-1.5">
-                      <p className="text-[10px] text-primary font-semibold truncate">{h.trackTitle}</p>
-                      <p className="text-[9px] text-dim truncate">{h.artist}</p>
-                      {h.storeName && (
-                        <p className="text-[9px] text-[#FF9F4F] truncate">🏪 {h.storeName}</p>
-                      )}
+                    <div className="px-1 space-y-1">
+                      <p className="text-xs text-primary font-semibold truncate">{h.trackTitle}</p>
+                      <p className="text-[10px] text-dim truncate">{h.artist}</p>
                       <div className="flex gap-1">
                         {h.durationSec && (
-                          <span className="text-[8px] px-1 py-0.5 rounded bg-white/5 text-dim">{h.durationSec}초</span>
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/5 text-dim">{h.durationSec}초</span>
                         )}
                         {h.waveformStyle && (
-                          <span className="text-[8px] px-1 py-0.5 rounded bg-white/5 text-dim capitalize">{h.waveformStyle}</span>
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/5 text-dim capitalize">{h.waveformStyle}</span>
                         )}
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-[8px] text-dim">
-                          {new Date(h.createdAt).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
-                        </span>
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => { if (selected?.id === h.trackId) loadFromHistory(h); }}
-                            title="설정 불러오기"
-                            className={`p-0.5 transition ${selected?.id === h.trackId ? 'text-[#FF6F0F] hover:text-[#FF9F4F]' : 'text-dim opacity-30 cursor-not-allowed'}`}>
-                            <RotateCcw size={9} />
-                          </button>
-                          <button
-                            onClick={() => { removeShortsHistory(h.id); setHistory(loadShortsHistory()); }}
-                            className="text-dim hover:text-red-400 transition p-0.5">
-                            <Trash2 size={9} />
-                          </button>
-                        </div>
+                      <div className="flex gap-1.5">
+                        <button
+                          onClick={() => { if (selected?.id === h.trackId) loadFromHistory(h); }}
+                          title="설정 불러오기"
+                          className={`flex-1 py-1 rounded text-[10px] font-semibold transition border ${selected?.id === h.trackId ? 'border-[#FF6F0F]/40 text-[#FF9F4F] hover:bg-[#FF6F0F]/10' : 'border-border-subtle text-dim opacity-40 cursor-not-allowed'}`}>
+                          <RotateCcw size={9} className="inline mr-0.5" /> 설정
+                        </button>
+                        <button
+                          onClick={() => { removeShortsHistory(h.id); setHistory(loadShortsHistory()); }}
+                          className="flex-1 py-1 rounded text-[10px] font-semibold border border-border-subtle text-dim hover:text-red-400 hover:border-red-500/30 transition">
+                          <Trash2 size={9} className="inline mr-0.5" /> 삭제
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -1827,6 +1824,60 @@ export default function ShortsPage() {
                   </div>
                 ))}
               </div>
+
+              {/* 이 트랙의 쇼츠 영상 (세로 피드) */}
+              {trackHistory.length > 0 && (
+                <div className="flex flex-col gap-3 border-t border-border-main pt-3">
+                  <p className="text-[10px] font-semibold text-muted flex items-center gap-1">
+                    <Film size={11} /> 이 트랙으로 만든 쇼츠 ({trackHistory.length})
+                  </p>
+                  <div className="flex flex-col gap-4">
+                    {trackHistory.map(h => (
+                      <div key={h.id} className="flex flex-col gap-2">
+                        <div
+                          className="relative w-full rounded-xl overflow-hidden group cursor-pointer"
+                          style={{ aspectRatio: '9/16' }}
+                          onClick={() => openHistoryPlayer(h)}
+                        >
+                          <video
+                            src={h.videoUrl}
+                            className="w-full h-full object-cover"
+                            muted playsInline
+                            onMouseEnter={e => (e.target as HTMLVideoElement).play().catch(() => {})}
+                            onMouseLeave={e => { const v = e.target as HTMLVideoElement; v.pause(); v.currentTime = 0; }}
+                          />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition flex items-center justify-center opacity-0 group-hover:opacity-100">
+                            <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center">
+                              <Play size={16} className="text-black ml-0.5" />
+                            </div>
+                          </div>
+                          <div className="absolute top-2 right-2 bg-black/50 rounded px-1.5 py-0.5 text-[9px] text-white/70">
+                            {new Date(h.createdAt).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
+                          </div>
+                        </div>
+                        <div className="flex gap-1.5 px-0.5">
+                          <button
+                            onClick={() => loadFromHistory(h)}
+                            className="flex-1 py-1 rounded text-[10px] font-semibold border border-[#FF6F0F]/40 text-[#FF9F4F] hover:bg-[#FF6F0F]/10 transition">
+                            <RotateCcw size={9} className="inline mr-0.5" /> 설정
+                          </button>
+                          <a
+                            href={h.videoUrl}
+                            download
+                            className="flex-1 py-1 rounded text-[10px] font-semibold border border-border-subtle text-dim hover:text-primary hover:border-border-main transition text-center">
+                            ↓ 저장
+                          </a>
+                          <button
+                            onClick={() => { removeShortsHistory(h.id); setHistory(loadShortsHistory()); }}
+                            className="flex-1 py-1 rounded text-[10px] font-semibold border border-border-subtle text-dim hover:text-red-400 hover:border-red-500/30 transition">
+                            <Trash2 size={9} className="inline mr-0.5" /> 삭제
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             <div className="flex flex-col items-center justify-center h-full gap-3 opacity-30">
