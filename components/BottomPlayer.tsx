@@ -56,6 +56,7 @@ export default function BottomPlayer() {
     bassLevel, announcementPlaying,
     togglePlay, play, next, prev, seek, setVolume, setAnnVolume,
     toggleShuffle, toggleRepeat, close,
+    crossfadeSec, setCrossfadeSec,
   } = usePlayer();
 
   // ── 스페이스바 단축키 ──────────────────────────────────────────
@@ -225,6 +226,26 @@ export default function BottomPlayer() {
             {queueIndex + 1} / {queue.length}
           </span>
         )}
+
+        {/* 디졸브 시간 */}
+        <div className="flex items-center gap-0.5" title="연속 재생 디졸브 시간">
+          {([2, 3, 4] as const).map(s => (
+            <button
+              key={s}
+              onClick={() => setCrossfadeSec(s)}
+              className={`text-[9px] font-semibold px-1.5 py-0.5 rounded transition ${
+                crossfadeSec === s
+                  ? 'bg-[#FF6F0F]/80 text-white'
+                  : 'text-dim hover:text-primary hover:bg-white/5'
+              }`}
+            >
+              {s}초
+            </button>
+          ))}
+        </div>
+
+        {/* 구분선 */}
+        <div className="w-px h-4 bg-border-subtle" />
 
         {/* 트랙 볼륨 */}
         <div className="flex items-center gap-1 group" title="트랙 볼륨">

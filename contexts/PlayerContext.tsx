@@ -55,6 +55,8 @@ interface PlayerCtx {
   toggleRepeat:       () => void;
   close:              () => void;
   playAnnouncement:   (url: string, opts: { duck_volume?: number; play_mode?: 'immediate' | 'between_tracks'; ann_volume?: number }) => void;
+  crossfadeSec:       2 | 3 | 4;
+  setCrossfadeSec:    (v: 2 | 3 | 4) => void;
 }
 
 const Ctx = createContext<PlayerCtx | null>(null);
@@ -71,6 +73,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const annAudioRef      = useRef<HTMLAudioElement | null>(null);
   const pendingAnnRef    = useRef<{ url: string; duck_volume: number } | null>(null); // 곡간 삽입 대기
   const origVolRef       = useRef<number | null>(null); // 안내방송 전 원본 트랙 볼륨
+  const crossfadeAudioRef   = useRef<HTMLAudioElement | null>(null);
+  const crossfadeActiveRef  = useRef(false);
 
   // ── 베이스 분석 (시뮬레이션 — Web Audio 연결 없이 재생에 영향 없음) ──
   const rafRef           = useRef<number>(0);
@@ -92,6 +96,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [bassFreqBand, setBassFreqBand] = useState(0); // 0~4
   const bassSpeedRef = useRef(1.0);
   const bassFreqRef  = useRef(0);
+  const [crossfadeSec, setCrossfadeSec] = useState<2 | 3 | 4>(3);
+  const crossfadeSecRef = useRef<number>(3);
+
+  // crossfadeSecRef sync
+  useEffect(() => { crossfadeSecRef.current = crossfadeSec; }, [crossfadeSec]);
 
   // localStorage → lastTrack 복원 (클라이언트 마운트 후)
   useEffect(() => {
@@ -164,6 +173,10 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   // 특정 트랙 로드+재생
   const loadAndPlay = useCallback((t: PlayableTrack) => {
+    // 진행 중인 crossfade 취소
+    crossfadeAudioRef.current?.pause();
+    crossfadeAudioRef.current = null;
+    crossfadeActiveRef.current = false;
     audioRef.current?.pause();
     stopBassAnalysis();
     setError(null);
@@ -191,6 +204,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     const audio = audioRef.current;
     if (!audio) return;
     const handleEnded = () => {
+      // crossfade가 이미 다음 트랙을 처리 중이면 무시
+      if (crossfadeActiveRef.current) return;
       const pending = pendingAnnRef.current;
       if (pending) {
         pendingAnnRef.current = null;
@@ -309,7 +324,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   ), []);
 
   // ── 볼륨 페이드 헬퍼 ─────────────────────────────────────────
-  const fadeVolume = (audio: HTMLAudioElement, from: number, to: number, ms: number): Promise<void> =>
+  const fadeVolume = useCallback((audio: HTMLAudioElement, from: number, to: number, ms: number): Promise<void> =>
     new Promise(resolve => {
       const steps    = 30;
       const stepTime = ms / steps;
@@ -320,7 +335,56 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         audio.volume = Math.min(1, Math.max(0, from + diff * step));
         if (step >= steps) { clearInterval(id); resolve(); }
       }, stepTime);
+    }), []);
+
+  // ── Crossfade: 트랙 종료 N초 전에 다음 트랙 페이드인 ────────────
+  useEffect(() => {
+    const cf = crossfadeSecRef.current;
+    if (!isPlaying || !duration || duration < cf + 2) return;
+    if (currentTime < duration - cf) return;
+    if (crossfadeActiveRef.current) return;
+    if (repeat === 'one' && !shuffle) return; // 1곡 반복은 crossfade 불필요
+
+    // 다음 트랙 인덱스 결정
+    let nextIdx = queueIndex + 1;
+    if (shuffle) nextIdx = Math.floor(Math.random() * queue.length);
+    if (nextIdx >= queue.length) {
+      if (repeat === 'all') nextIdx = 0;
+      else return; // 마지막 트랙 — 자연 종료
+    }
+    const nextTrack = queue[nextIdx];
+    if (!nextTrack) return;
+
+    crossfadeActiveRef.current = true;
+    const fadeMs = cf * 1000;
+    const currentAudio = audioRef.current;
+    const startVol = currentAudio?.volume ?? volume;
+
+    // 다음 트랙 오디오 준비
+    const nextAudio = new Audio(nextTrack.audio_url);
+    nextAudio.volume = 0;
+    crossfadeAudioRef.current = nextAudio;
+    nextAudio.play().catch(() => {});
+
+    // 동시 페이드: 현재 → 0, 다음 → volume
+    if (currentAudio) fadeVolume(currentAudio, startVol, 0, fadeMs);
+    fadeVolume(nextAudio, 0, volume, fadeMs).then(() => {
+      if (!crossfadeActiveRef.current) return; // 도중에 취소됨
+      currentAudio?.pause();
+      bindAudio(nextAudio, nextTrack.title);
+      audioRef.current = nextAudio;
+      crossfadeAudioRef.current = null;
+      crossfadeActiveRef.current = false;
+      setTrack(nextTrack);
+      setLastTrack(nextTrack);
+      try { localStorage.setItem('player_last_track', JSON.stringify(nextTrack)); } catch {}
+      setQueueIndex(nextIdx);
+      setCurrentTime(0);
+      setDuration(nextTrack.duration_sec ?? 0);
+      setIsPlaying(true);
+      startBassAnalysis(nextAudio);
     });
+  }, [currentTime, duration, isPlaying, queue, queueIndex, repeat, shuffle, volume, fadeVolume, bindAudio, startBassAnalysis]);
 
   // ── Web Audio Context (안내방송 볼륨 1.0 초과 증폭용) ──────────
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -414,6 +478,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       next, prev, seek, setVolume, setAnnVolume,
       toggleShuffle, toggleRepeat, close,
       playAnnouncement,
+      crossfadeSec, setCrossfadeSec,
     }}>
       {children}
     </Ctx.Provider>
