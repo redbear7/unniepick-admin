@@ -52,7 +52,7 @@ export default function OwnerNoticesPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        <div className="px-4 py-5">
+        <div className="px-4 py-5 w-[500px]">
 
           {loading ? (
             <div className="space-y-3">
