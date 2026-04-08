@@ -79,7 +79,7 @@ const DEFAULT_GROUPS: NavGroup[] = [
       { id: 'references',    href: '/dashboard/references',    icon: 'PlaySquare', label: '레퍼런스 음악' },
       { id: 'announcements', href: '/dashboard/announcements', icon: 'Megaphone',  label: 'AI음성안내' },
       { id: 'cardnews',      href: '/dashboard/cardnews',      icon: 'Video',      label: '카드뉴스' },
-      { id: 'shorts',        href: '/dashboard/shorts',        icon: 'Film',       label: '쇼츠 생성' },
+      { id: 'shorts',        href: '/dashboard/shorts',        icon: 'Film',       label: '숏폼 생성' },
       { id: 'tags',          href: '/dashboard/tags',          icon: 'Tag',        label: '태그관리' },
     ],
   },

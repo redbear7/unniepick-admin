@@ -68,7 +68,7 @@ function fmtSec(sec: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
-// ─── 쇼츠 히스토리 (로컬 저장) ──────────────────────────────────
+// ─── 숏폼 히스토리 (로컬 저장) ──────────────────────────────────
 interface ShortsHistoryItem {
   id: string;
   trackId: string;
@@ -683,9 +683,9 @@ export default function ShortsPage() {
   const [bgVideoDurationSec, setBgVideoDurationSec] = useState(0);
   const [uploadingBgVideo, setUploadingBgVideo] = useState(false);
 
-  // 쇼츠 제목 / 강조 문구
-  const [shortsTitle, setShortsTitle] = useState('');
-  const [shortsTagline, setShortsTagline] = useState('');
+  // 숏폼 제목 / 강조 문구
+  const [shortsTitle, setShortsTitle] = useState('제목을 입력하세요');
+  const [shortsTagline, setShortsTagline] = useState('부제목을 입력하세요');
 
   // 오디오 페이드인 / 파형 스타일
   const [audioFadeInSec, setAudioFadeInSec] = useState(1.5);
@@ -877,7 +877,7 @@ export default function ShortsPage() {
     }
   };
 
-  // ── 쇼츠 렌더링 요청 ──
+  // ── 숏폼 렌더링 요청 ──
   const handleRender = async () => {
     if (!selected) return;
     setRendering(true);
@@ -973,7 +973,7 @@ export default function ShortsPage() {
 
 
 
-  // 현재 선택 트랙의 기존 쇼츠 필터
+  // 현재 선택 트랙의 기존 숏폼 필터
   const trackHistory = selected
     ? history.filter(h => h.trackId === selected.id)
     : [];
@@ -998,9 +998,9 @@ export default function ShortsPage() {
           <Film size={18} className="text-[#FF6F0F]" />
         </div>
         <div>
-          <h1 className="text-lg font-bold text-primary">쇼츠 영상 생성</h1>
+          <h1 className="text-lg font-bold text-primary">숏폼 영상 생성</h1>
           <p className="text-xs text-muted mt-0.5">
-            음악 트랙에서 클라이맥스 구간을 추출해 9:16 쇼츠 영상(30초)을 생성합니다.
+            음악 트랙에서 클라이맥스 구간을 추출해 9:16 숏폼 영상(30초)을 생성합니다.
           </p>
         </div>
       </div>
@@ -1159,13 +1159,13 @@ export default function ShortsPage() {
                 </div>
               </div>
 
-              {/* ── 이 트랙의 기존 쇼츠 ── */}
+              {/* ── 이 트랙의 기존 숏폼 ── */}
               {trackHistory.length > 0 && (
                 <div className="bg-card border border-[#FF6F0F]/30 rounded-xl p-4 flex flex-col gap-3">
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-semibold text-primary flex items-center gap-2">
                       <Film size={14} className="text-[#FF6F0F]" />
-                      이 트랙의 쇼츠 영상
+                      이 트랙의 숏폼 영상
                       <span className="text-xs font-normal text-muted">{trackHistory.length}개</span>
                     </p>
                   </div>
@@ -1324,12 +1324,12 @@ export default function ShortsPage() {
                 )}
               </div>
 
-              {/* ── 쇼츠 제목 / 강조 문구 ── */}
+              {/* ── 숏폼 제목 / 강조 문구 ── */}
               <div className="bg-card border border-border-main rounded-xl p-5 flex flex-col gap-3">
                 <p className="text-sm font-semibold text-primary">영상 텍스트</p>
                 <div className="space-y-2">
                   <div>
-                    <label className="text-xs text-muted mb-1 block">쇼츠 제목 (상단 큰 텍스트)</label>
+                    <label className="text-xs text-muted mb-1 block">숏폼 제목 (상단 큰 텍스트)</label>
                     <input
                       type="text"
                       placeholder="예: 가을 감성 플레이리스트"
@@ -1620,7 +1620,7 @@ export default function ShortsPage() {
               <div className="bg-card border border-border-main rounded-xl p-5 flex flex-col gap-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-semibold text-primary">쇼츠 생성</p>
+                    <p className="text-sm font-semibold text-primary">숏폼 생성</p>
                     <p className="text-xs text-muted mt-0.5">
                       Remotion으로 서버사이드 렌더링됩니다 (수 분 소요)
                     </p>
@@ -1638,7 +1638,7 @@ export default function ShortsPage() {
                     ) : (
                       <>
                         <Film size={15} />
-                        쇼츠 생성
+                        숏폼 생성
                       </>
                     )}
                   </button>
@@ -1670,7 +1670,7 @@ export default function ShortsPage() {
                   <div className="rounded-lg bg-green-500/10 border border-green-500/20 px-4 py-4 flex flex-col gap-3">
                     <div className="flex items-center gap-2">
                       <Sparkles size={15} className="text-green-400" />
-                      <p className="text-sm text-green-400 font-semibold">쇼츠 영상이 생성되었습니다!</p>
+                      <p className="text-sm text-green-400 font-semibold">숏폼 영상이 생성되었습니다!</p>
                     </div>
                     {/* 영상 미리보기 */}
                     <video
@@ -1759,7 +1759,7 @@ export default function ShortsPage() {
                   <span className="text-dim font-normal">· {history.length}건 · 로컬 저장</span>
                 </h2>
                 <button
-                  onClick={() => { if (confirm('쇼츠 히스토리를 모두 삭제할까요?')) { saveShortsHistory([]); setHistory([]); } }}
+                  onClick={() => { if (confirm('숏폼 히스토리를 모두 삭제할까요?')) { saveShortsHistory([]); setHistory([]); } }}
                   className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold text-dim hover:text-red-400 hover:bg-red-500/10 transition">
                   <Trash2 size={11} /> 전체 삭제
                 </button>
@@ -1873,11 +1873,11 @@ export default function ShortsPage() {
                 ))}
               </div>
 
-              {/* 이 트랙의 쇼츠 영상 (세로 피드) */}
+              {/* 이 트랙의 숏폼 영상 (세로 피드) */}
               {trackHistory.length > 0 && (
                 <div className="flex flex-col gap-3 border-t border-border-main pt-3">
                   <p className="text-[10px] font-semibold text-muted flex items-center gap-1">
-                    <Film size={11} /> 이 트랙으로 만든 쇼츠 ({trackHistory.length})
+                    <Film size={11} /> 이 트랙으로 만든 숏폼 ({trackHistory.length})
                   </p>
                   <div className="flex flex-col gap-4">
                     {trackHistory.map(h => (

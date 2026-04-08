@@ -1722,9 +1722,9 @@ export default function TracksPage() {
                         <button
                           onClick={() => router.push(`/dashboard/shorts?trackId=${track.id}`)}
                           className="flex items-center gap-1 h-6 px-2 rounded bg-[#FF6F0F]/15 text-[#FF9F4F] text-[10px] font-semibold hover:bg-[#FF6F0F]/25 transition"
-                          title="쇼츠 만들기"
+                          title="숏폼 만들기"
                         >
-                          <Film size={10} /> 쇼츠
+                          <Film size={10} /> 숏폼
                         </button>
                         <button onClick={() => openEdit(track)}
                           className="w-6 h-6 flex items-center justify-center rounded bg-fill-subtle text-muted hover:text-primary transition">
