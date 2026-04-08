@@ -112,6 +112,7 @@ function WaveformEditor({
   windowSec,
   onStartChange,
   onPlayStart,
+  autoPlayOnSelect = false,
 }: {
   audioUrl: string;
   durationSec: number;
@@ -119,12 +120,14 @@ function WaveformEditor({
   windowSec: number;
   onStartChange: (s: number) => void;
   onPlayStart?: () => void;
+  autoPlayOnSelect?: boolean;
 }) {
-  const canvasRef    = useRef<HTMLCanvasElement>(null);
-  const audioRef     = useRef<HTMLAudioElement | null>(null);
-  const animFrameRef = useRef<number>(0);
-  const dragging     = useRef(false);
-  const lastSec      = useRef(0);
+  const canvasRef      = useRef<HTMLCanvasElement>(null);
+  const audioRef       = useRef<HTMLAudioElement | null>(null);
+  const animFrameRef   = useRef<number>(0);
+  const dragging       = useRef(false);
+  const lastSec        = useRef(0);
+  const userDraggedRef = useRef(false); // 사용자가 직접 구간을 이동했는지
 
   const [peaks,   setPeaks]   = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
@@ -248,6 +251,7 @@ function WaveformEditor({
   const onMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     e.preventDefault();
     dragging.current = true;
+    userDraggedRef.current = true;
     const sec = secFromX(e.clientX);
     lastSec.current = sec;
     const ns = Math.max(0, Math.min(sec - windowSec / 2, durationSec - windowSec));
@@ -255,6 +259,7 @@ function WaveformEditor({
   };
   const onMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!dragging.current) return;
+    userDraggedRef.current = true;
     const sec   = secFromX(e.clientX);
     const delta = sec - lastSec.current;
     lastSec.current = sec;
@@ -294,10 +299,12 @@ function WaveformEditor({
     }
   }, [playing, startSec, windowSec, onPlayStart]);
 
-  // 구간 변경 시 즉시 새 위치에서 재생
+  // 구간 변경 시 재생 (드래그 직접 이동 or autoPlayOnSelect ON)
   useEffect(() => {
+    const shouldPlay = userDraggedRef.current || autoPlayOnSelect;
+    userDraggedRef.current = false; // 매번 리셋
     const el = audioRef.current;
-    if (!el) return;
+    if (!el || !shouldPlay) return;
     cancelAnimationFrame(animFrameRef.current);
     setPlayPos(0);
     el.currentTime = startSec;
@@ -836,6 +843,7 @@ export default function ShortsPage() {
   const toggleLike = (id: string) => setLikedIds(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
   const wasPlayingRef = useRef(false);
   const [previewExpanded, setPreviewExpanded] = useState(false);
+  const [autoPlayOnSelect, setAutoPlayOnSelect] = useState(false);
   const [showGuide, setShowGuide] = useState<boolean>(() => {
     try { return localStorage.getItem('shorts_show_guide') === 'true'; } catch { return false; }
   });
@@ -1133,12 +1141,25 @@ export default function ShortsPage() {
         <div className="w-9 h-9 rounded-xl bg-[#FF6F0F]/15 flex items-center justify-center">
           <Film size={18} className="text-[#FF6F0F]" />
         </div>
-        <div>
+        <div className="flex-1">
           <h1 className="text-lg font-bold text-primary">숏폼 영상 생성</h1>
           <p className="text-xs text-muted mt-0.5">
             음악 트랙에서 클라이맥스 구간을 추출해 9:16 숏폼 영상(30초)을 생성합니다.
           </p>
         </div>
+        {/* 선택 즉시 재생 토글 */}
+        <button
+          onClick={() => setAutoPlayOnSelect(v => !v)}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-bold transition ${
+            autoPlayOnSelect
+              ? 'bg-[#FF6F0F] border-[#FF6F0F] text-white shadow-lg shadow-[#FF6F0F]/30'
+              : 'bg-white/5 border-white/10 text-muted hover:border-white/20 hover:text-primary'
+          }`}
+          title="트랙 선택 시 클라이맥스 구간 즉시 재생"
+        >
+          <span className={`w-2 h-2 rounded-full ${autoPlayOnSelect ? 'bg-white animate-pulse' : 'bg-white/30'}`} />
+          선택 즉시 재생 {autoPlayOnSelect ? 'ON' : 'OFF'}
+        </button>
       </div>
 
       <div className="flex flex-1 min-h-0 overflow-hidden">
@@ -1606,6 +1627,7 @@ export default function ShortsPage() {
                     windowSec={durationSec}
                     onStartChange={(s) => { setStartSec(s); setAnalyzed(false); }}
                     onPlayStart={() => { if (player.isPlaying) player.pause(); }}
+                    autoPlayOnSelect={autoPlayOnSelect}
                   />
                 )}
 
