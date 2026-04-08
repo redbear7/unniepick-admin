@@ -146,7 +146,7 @@ export default function NoticesPage() {
       <div className="flex-1 overflow-hidden flex">
 
         {/* ── 왼쪽: 글쓰기 ── */}
-        <div className="w-96 shrink-0 border-r border-border-main overflow-y-auto p-5 flex flex-col gap-4">
+        <div className="w-[500px] shrink-0 border-r border-border-main overflow-y-auto p-5 flex flex-col gap-4">
           <p className="text-xs font-semibold text-muted uppercase tracking-wider">
             {editingId ? '공지 수정' : '새 공지 작성'}
           </p>
@@ -252,7 +252,7 @@ export default function NoticesPage() {
 
         {/* ── 오른쪽: 피드 1단 ── */}
         <div className="flex-1 overflow-y-auto">
-          <div className="max-w-2xl mx-auto px-5 py-5 space-y-3">
+          <div className="px-5 py-5 space-y-3">
 
             {loading ? (
               [...Array(3)].map((_, i) => (
