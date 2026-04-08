@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase';
 import { useOwnerSession } from '@/components/OwnerShell';
-import { User, Phone, CalendarDays, KeyRound, Store, Music, MapPin, Check, Loader2, Bell, AlertTriangle, Megaphone, MessageCircle, Pin, Heart, ChevronRight } from 'lucide-react';
+import { User, Phone, CalendarDays, KeyRound, Store, Music, MapPin, Check, Loader2, Bell, AlertTriangle, Megaphone, MessageCircle, Pin, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 
 interface Notice {
@@ -101,7 +101,6 @@ export default function OwnerDashboardHome() {
   const [weather,      setWeather]      = useState<WeatherData | null>(null);
   const [weatherLabel, setWeatherLabel] = useState('');
   const [notices,      setNotices]      = useState<Notice[]>([]);
-  const [likedIds,     setLikedIds]     = useState<Set<string>>(new Set());
 
   // 주소 입력 상태
   const [addressInput,  setAddressInput]  = useState('');
@@ -113,16 +112,6 @@ export default function OwnerDashboardHome() {
       .then(r => r.ok ? r.json() : [])
       .then(data => setNotices(data));
   }, []);
-
-  const toggleLike = async (n: Notice) => {
-    const already = likedIds.has(n.id);
-    setLikedIds(prev => { const s = new Set(prev); already ? s.delete(n.id) : s.add(n.id); return s; });
-    setNotices(prev => prev.map(x => x.id === n.id ? { ...x, like_count: x.like_count + (already ? -1 : 1) } : x));
-    await fetch(`/api/notices/${n.id}`, {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ like_count: n.like_count + (already ? -1 : 1) }),
-    });
-  };
 
   useEffect(() => {
     if (!session) return;
@@ -219,45 +208,39 @@ export default function OwnerDashboardHome() {
             </div>
 
             <div className="space-y-0">
-              {notices.slice(0, 1).map((n, idx) => {
+              {notices.slice(0, 1).map((n) => {
                 const { label, color, bg, Icon } = NOTICE_TYPE_META[n.notice_type];
                 const fresh = isNew(n.created_at);
-                const isLast = idx === Math.min(notices.length, 1) - 1;
-                const isLiked = likedIds.has(n.id);
                 return (
-                  <div key={n.id} className="relative">
-                    {!isLast && (
-                      <div className="absolute left-[21px] top-[44px] bottom-0 w-px bg-border-main/50 z-0" />
-                    )}
-                    <div className="relative z-10 pb-5 flex gap-3 items-start">
-                      {/* 아바타 */}
-                      <div className="w-11 h-11 rounded-full bg-fill-medium flex items-center justify-center text-xl shrink-0 border border-border-main/60">
-                        {n.author_emoji}
-                      </div>
-                      {/* 내용 */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap mb-1">
-                          <span className="text-xs font-semibold text-muted">{n.author_name}</span>
-                          <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${bg} ${color}`}>
-                            <Icon size={9} />{label}
-                          </span>
-                          {fresh && (
-                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-500 text-white leading-none animate-pulse">NEW</span>
-                          )}
-                          {n.is_pinned && <Pin size={11} className="text-[#FF6F0F] ml-auto shrink-0" />}
-                          {!n.is_pinned && <span className="text-[10px] text-dim ml-auto whitespace-nowrap">{timeAgo(n.created_at)}</span>}
-                        </div>
-                        {n.title && (
-                          <p className="text-sm font-bold text-primary leading-snug mb-0.5">{n.title}</p>
+                  <div key={n.id} className="flex gap-3 items-start">
+                    {/* 아바타 */}
+                    <div className="w-11 h-11 rounded-full bg-fill-medium flex items-center justify-center text-xl shrink-0 border border-border-main/60">
+                      {n.author_emoji}
+                    </div>
+                    {/* 내용 */}
+                    <div className="flex-1 min-w-0">
+                      {/* 작성자 + 뱃지 + NEW + 날짜 */}
+                      <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                        <span className="text-xs font-semibold text-muted">{n.author_name}</span>
+                        <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${bg} ${color}`}>
+                          <Icon size={9} />{label}
+                        </span>
+                        {fresh && (
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-500 text-white leading-none animate-pulse">NEW</span>
                         )}
-                        <p className="text-sm text-secondary leading-relaxed line-clamp-2">{n.content}</p>
-                        <button
-                          onClick={() => toggleLike(n)}
-                          className={`mt-1.5 flex items-center gap-1.5 text-xs font-semibold transition ${isLiked ? 'text-red-400' : 'text-dim hover:text-red-400'}`}>
-                          <Heart size={13} fill={isLiked ? 'currentColor' : 'none'} />
-                          {n.like_count > 0 && <span>{n.like_count}</span>}
-                        </button>
+                        {n.is_pinned && <Pin size={11} className="text-[#FF6F0F]" />}
+                        <span className="text-[10px] text-dim ml-auto whitespace-nowrap">
+                          {new Date(n.created_at).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').replace(/\.$/, '')}
+                        </span>
                       </div>
+                      {/* 제목 */}
+                      {n.title && (
+                        <p className="text-sm font-bold text-primary leading-snug mb-1">{n.title}</p>
+                      )}
+                      {/* 구분선 */}
+                      {n.title && <div className="w-full h-px bg-border-main/40 mb-1.5" />}
+                      {/* 본문 */}
+                      <p className="text-sm text-secondary leading-relaxed line-clamp-2">{n.content}</p>
                     </div>
                   </div>
                 );

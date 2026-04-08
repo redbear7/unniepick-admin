@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Heart, Pin, AlertTriangle, Megaphone, MessageCircle } from 'lucide-react';
+import { Pin, AlertTriangle, Megaphone, MessageCircle } from 'lucide-react';
 
 interface Notice {
   id: string;
@@ -41,30 +41,12 @@ function timeAgo(iso: string) {
 export default function OwnerNoticesPage() {
   const [notices, setNotices] = useState<Notice[]>([]);
   const [loading, setLoading] = useState(true);
-  const [liked, setLiked]     = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetch('/api/notices')
       .then(r => r.ok ? r.json() : [])
       .then(data => { setNotices(data); setLoading(false); });
   }, []);
-
-  const toggleLike = async (n: Notice) => {
-    const already = liked.has(n.id);
-    setLiked(prev => {
-      const s = new Set(prev);
-      already ? s.delete(n.id) : s.add(n.id);
-      return s;
-    });
-    setNotices(prev => prev.map(x =>
-      x.id === n.id ? { ...x, like_count: x.like_count + (already ? -1 : 1) } : x
-    ));
-    await fetch(`/api/notices/${n.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ like_count: n.like_count + (already ? -1 : 1) }),
-    });
-  };
 
   return (
     <div className="flex flex-col h-full">
@@ -91,7 +73,6 @@ export default function OwnerNoticesPage() {
           ) : (
             notices.map((n, idx) => {
               const { label, color, bg, Icon } = TYPE_META[n.notice_type];
-              const isLiked = liked.has(n.id);
               const isLast = idx === notices.length - 1;
               const fresh = isNew(n.created_at);
               return (
@@ -130,13 +111,17 @@ export default function OwnerNoticesPage() {
                               NEW
                             </span>
                           )}
-                          <span className="text-[10px] text-dim ml-auto whitespace-nowrap">{timeAgo(n.created_at)}</span>
+                          <span className="text-[10px] text-dim ml-auto whitespace-nowrap">
+                            {new Date(n.created_at).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').replace(/\.$/, '')}
+                          </span>
                         </div>
 
                         {/* 제목 */}
                         {n.title && (
                           <p className="text-base font-bold text-primary leading-snug mb-1.5">{n.title}</p>
                         )}
+                        {/* 제목 구분선 */}
+                        {n.title && <div className="w-full h-px bg-border-main/40 mb-2" />}
 
                         {/* 본문 */}
                         <p className="text-sm text-secondary leading-relaxed whitespace-pre-wrap mb-2">{n.content}</p>
@@ -145,20 +130,6 @@ export default function OwnerNoticesPage() {
                         {n.image_url && (
                           <img src={n.image_url} alt="" className="w-full rounded-xl object-cover max-h-64 mb-3 border border-border-main/30" />
                         )}
-
-                        {/* 좋아요 */}
-                        <button
-                          onClick={() => toggleLike(n)}
-                          className={`flex items-center gap-1.5 text-xs font-semibold transition ${isLiked ? 'text-red-400' : 'text-dim hover:text-red-400'}`}
-                        >
-                          <Heart
-                            size={14}
-                            fill={isLiked ? 'currentColor' : 'none'}
-                            className="transition"
-                          />
-                          {n.like_count > 0 && <span>{n.like_count}</span>}
-                          <span className="font-normal ml-0.5">{isLiked ? '좋아요 취소' : '좋아요'}</span>
-                        </button>
                       </div>
                     </div>
                   </div>
