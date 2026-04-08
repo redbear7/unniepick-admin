@@ -22,6 +22,8 @@ import {
   Check,
   ImageIcon,
   RotateCcw,
+  Maximize2,
+  X,
 } from 'lucide-react';
 
 // ─── 타입 ──────────────────────────────────────────────────────
@@ -365,6 +367,7 @@ interface LivePreviewFrameProps {
   infoTop: number;
   couponTop: number;
   onPlayStart?: () => void;
+  fullSize?: boolean;
 }
 
 function LivePreviewFrame({
@@ -374,6 +377,7 @@ function LivePreviewFrame({
   trackTitle, artist,
   headerTop, infoTop, couponTop,
   onPlayStart,
+  fullSize = false,
 }: LivePreviewFrameProps) {
   const audioRef    = useRef<HTMLAudioElement | null>(null);
   const animRef     = useRef<number>(0);
@@ -478,7 +482,7 @@ function LivePreviewFrame({
       {/* 9:16 프레임 */}
       <div
         className="relative rounded-xl overflow-hidden w-full"
-        style={{ maxWidth: 160, aspectRatio: '9/16', background: '#111' }}
+        style={{ maxWidth: fullSize ? undefined : 160, aspectRatio: '9/16', background: '#111' }}
       >
         {/* 배경: 동영상 or 커버 이미지 */}
         {bgVideoUrl ? (
@@ -637,6 +641,7 @@ export default function ShortsPage() {
   const [history, setHistory] = useState<ShortsHistoryItem[]>([]);
   const [playingHistory, setPlayingHistory] = useState<ShortsHistoryItem | null>(null);
   const wasPlayingRef = useRef(false);
+  const [previewExpanded, setPreviewExpanded] = useState(false);
   useEffect(() => { setHistory(loadShortsHistory()); }, []);
 
   const openHistoryPlayer = (h: ShortsHistoryItem) => {
@@ -1759,10 +1764,19 @@ export default function ShortsPage() {
         <div className="w-[300px] shrink-0 overflow-y-auto p-4 flex flex-col gap-4">
           {selected ? (
             <>
-              {/* 제목 */}
-              <p className="text-sm font-semibold text-primary flex items-center gap-2">
-                <Film size={14} className="text-[#FF6F0F]" /> 미리보기
-              </p>
+              {/* 제목 + 크게 보기 버튼 */}
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold text-primary flex items-center gap-2">
+                  <Film size={14} className="text-[#FF6F0F]" /> 미리보기
+                </p>
+                <button
+                  onClick={() => setPreviewExpanded(true)}
+                  className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-muted hover:text-primary hover:bg-white/5 transition"
+                  title="크게 보기"
+                >
+                  <Maximize2 size={13} /> 크게 보기
+                </button>
+              </div>
 
               {/* 라이브 미리보기 */}
               <LivePreviewFrame
@@ -1808,6 +1822,50 @@ export default function ShortsPage() {
         </div>
 
       </div>
+
+      {/* ── 미리보기 크게 보기 모달 ── */}
+      {previewExpanded && selected && (
+        <div
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-6"
+          onClick={() => setPreviewExpanded(false)}
+        >
+          <div
+            className="relative flex flex-col items-center gap-4"
+            style={{ height: 'min(90vh, 720px)', aspectRatio: '9/16' }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* 닫기 버튼 */}
+            <button
+              onClick={() => setPreviewExpanded(false)}
+              className="absolute -top-11 right-0 flex items-center gap-1.5 text-white/60 hover:text-white transition text-sm font-semibold"
+            >
+              <X size={16} /> 닫기
+            </button>
+
+            {/* 확대된 LivePreviewFrame */}
+            <div className="w-full h-full">
+              <LivePreviewFrame
+                audioUrl={selected.audio_url}
+                coverUrl={coverPreviewUrl ?? selected.cover_image_url}
+                coverEmoji={selected.cover_emoji}
+                bgVideoUrl={bgVideoPreviewUrl}
+                startSec={startSec}
+                durationSec={durationSec}
+                shortsTitle={shortsTitle}
+                shortsTagline={shortsTagline}
+                selectedCoupon={selectedCoupon}
+                trackTitle={selected.title}
+                artist={selected.artist}
+                headerTop={headerTop}
+                infoTop={infoTop}
+                fullSize
+                couponTop={couponTop}
+                onPlayStart={() => { if (player.isPlaying) player.pause(); }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── 히스토리 영상 플레이 모달 ── */}
       {playingHistory && (
