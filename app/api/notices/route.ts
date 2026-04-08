@@ -9,13 +9,20 @@ function sb() {
 }
 
 // GET /api/notices
-export async function GET() {
-  const { data, error } = await sb()
+// ?admin=1 → 전체 반환 (관리자용)
+// 기본    → is_active=true 만 반환 (사장님용)
+export async function GET(req: NextRequest) {
+  const isAdmin = new URL(req.url).searchParams.get('admin') === '1';
+
+  let query = sb()
     .from('notices')
     .select('*')
     .order('is_pinned', { ascending: false })
     .order('created_at', { ascending: false });
 
+  if (!isAdmin) query = query.eq('is_active', true);
+
+  const { data, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json(data);
 }

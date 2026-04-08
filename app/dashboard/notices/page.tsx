@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   Pin, Trash2, Pencil, PlusCircle, ImagePlus, X,
-  Heart, Check, AlertTriangle, Megaphone, MessageCircle,
+  Heart, Check, AlertTriangle, Megaphone, MessageCircle, Eye, EyeOff,
 } from 'lucide-react';
 
 interface Notice {
@@ -14,6 +14,7 @@ interface Notice {
   image_url: string | null;
   notice_type: 'general' | 'important' | 'event';
   is_pinned: boolean;
+  is_active: boolean;
   like_count: number;
   view_count: number;
   created_at: string;
@@ -48,7 +49,7 @@ export default function NoticesPage() {
   const [submitting, setSubmitting] = useState(false);
   const [editingId, setEditingId]   = useState<string | null>(null);
 
-  // 작성 폼
+  // 폼
   const [content,     setContent]     = useState('');
   const [imageUrl,    setImageUrl]    = useState('');
   const [noticeType,  setNoticeType]  = useState<Notice['notice_type']>('general');
@@ -60,14 +61,13 @@ export default function NoticesPage() {
 
   const load = async () => {
     setLoading(true);
-    const res = await fetch('/api/notices');
+    const res = await fetch('/api/notices?admin=1');
     if (res.ok) setNotices(await res.json());
     setLoading(false);
   };
 
   useEffect(() => { load(); }, []);
 
-  // textarea 자동 높이
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
@@ -110,10 +110,10 @@ export default function NoticesPage() {
     setSubmitting(false);
   };
 
-  const togglePin = async (n: Notice) => {
-    await fetch(`/api/notices/${n.id}`, {
+  const patch = async (id: string, fields: Partial<Notice>) => {
+    await fetch(`/api/notices/${id}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ is_pinned: !n.is_pinned }),
+      body: JSON.stringify(fields),
     });
     load();
   };
@@ -121,24 +121,31 @@ export default function NoticesPage() {
   const del = async (id: string) => {
     if (!confirm('공지사항을 삭제할까요?')) return;
     await fetch(`/api/notices/${id}`, { method: 'DELETE' });
+    if (editingId === id) resetForm();
     load();
   };
+
+  const activeCount  = notices.filter(n => n.is_active).length;
+  const hiddenCount  = notices.filter(n => !n.is_active).length;
 
   return (
     <div className="flex flex-col h-full">
       {/* 헤더 */}
-      <div className="px-6 py-4 border-b border-border-main shrink-0 flex items-center justify-between">
-        <div>
+      <div className="px-6 py-4 border-b border-border-main shrink-0 flex items-center gap-4">
+        <div className="flex-1">
           <h1 className="text-lg font-bold text-primary">공지사항 관리</h1>
           <p className="text-xs text-muted mt-0.5">사장님 대시보드에 스레드 형식으로 노출됩니다</p>
         </div>
-        <span className="text-xs text-dim">{notices.length}개</span>
+        <div className="flex items-center gap-3 text-xs text-dim">
+          <span className="flex items-center gap-1"><Eye size={12} className="text-green-400" /> {activeCount}개 노출</span>
+          <span className="flex items-center gap-1"><EyeOff size={12} className="text-dim" /> {hiddenCount}개 숨김</span>
+        </div>
       </div>
 
       {/* ── 2단 레이아웃 ── */}
       <div className="flex-1 overflow-hidden flex">
 
-        {/* ── 왼쪽: 글쓰기 컴포저 (고정) ── */}
+        {/* ── 왼쪽: 글쓰기 ── */}
         <div className="w-96 shrink-0 border-r border-border-main overflow-y-auto p-5 flex flex-col gap-4">
           <p className="text-xs font-semibold text-muted uppercase tracking-wider">
             {editingId ? '공지 수정' : '새 공지 작성'}
@@ -196,7 +203,7 @@ export default function NoticesPage() {
               </div>
             )}
 
-            {/* 이미지 URL 입력 */}
+            {/* 이미지 URL */}
             <div className="px-4 pb-3">
               <label className="flex items-center gap-1.5 text-xs text-dim cursor-pointer">
                 <ImagePlus size={12} className="shrink-0" />
@@ -212,7 +219,6 @@ export default function NoticesPage() {
 
             {/* 하단 툴바 */}
             <div className="px-4 pb-4 flex flex-wrap items-center gap-2 border-t border-border-main/50 pt-3">
-              {/* 유형 */}
               <div className="flex gap-1">
                 {(Object.keys(TYPE_META) as Notice['notice_type'][]).map(t => {
                   const { label, color, Icon } = TYPE_META[t];
@@ -229,15 +235,11 @@ export default function NoticesPage() {
                   );
                 })}
               </div>
-
-              {/* 고정 */}
               <button onClick={() => setIsPinned(p => !p)}
                 className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold border transition ${isPinned ? 'text-[#FF6F0F] border-[#FF6F0F]/40 bg-[#FF6F0F]/10' : 'text-dim border-border-main hover:border-border-main/60'}`}>
                 <Pin size={11} />
                 고정
               </button>
-
-              {/* 게시 버튼 */}
               <button
                 onClick={submit}
                 disabled={!content.trim() || submitting}
@@ -248,89 +250,107 @@ export default function NoticesPage() {
           </div>
         </div>
 
-        {/* ── 오른쪽: 피드 (스크롤) ── */}
+        {/* ── 오른쪽: 피드 1단 ── */}
         <div className="flex-1 overflow-y-auto">
-          <div className="grid grid-cols-2 gap-4 p-5 content-start">
+          <div className="max-w-2xl mx-auto px-5 py-5 space-y-3">
 
             {loading ? (
-              <>
-                {[...Array(4)].map((_, i) => (
-                  <div key={i} className="bg-card border border-border-main rounded-2xl p-4 h-36 animate-pulse" />
-                ))}
-              </>
+              [...Array(3)].map((_, i) => (
+                <div key={i} className="bg-card border border-border-main rounded-2xl p-4 h-28 animate-pulse" />
+              ))
             ) : notices.length === 0 ? (
-              <div className="col-span-2 py-20 text-center text-muted text-sm">아직 공지사항이 없습니다.</div>
+              <div className="py-20 text-center text-muted text-sm">아직 공지사항이 없습니다.</div>
             ) : (
               notices.map(n => {
                 const { label, color, bg, Icon } = TYPE_META[n.notice_type];
                 const fresh = isNew(n.created_at);
                 return (
                   <div key={n.id}
-                    className={`bg-card border rounded-2xl overflow-hidden flex flex-col transition ${
-                      editingId === n.id ? 'ring-2 ring-[#FF6F0F]/50 border-[#FF6F0F]/40' : n.is_pinned ? 'border-[#FF6F0F]/30' : 'border-border-main'
+                    className={`bg-card border rounded-2xl overflow-hidden transition ${
+                      !n.is_active       ? 'opacity-50 border-border-main'
+                      : editingId === n.id ? 'ring-2 ring-[#FF6F0F]/50 border-[#FF6F0F]/40'
+                      : n.is_pinned       ? 'border-[#FF6F0F]/30'
+                      :                     'border-border-main'
                     }`}>
 
                     {/* 고정 배너 */}
-                    {n.is_pinned && (
-                      <div className="px-3 py-1 bg-[#FF6F0F]/8 border-b border-[#FF6F0F]/20 flex items-center gap-1.5">
+                    {n.is_pinned && n.is_active && (
+                      <div className="px-4 py-1 bg-[#FF6F0F]/8 border-b border-[#FF6F0F]/20 flex items-center gap-1.5">
                         <Pin size={10} className="text-[#FF6F0F]" />
                         <span className="text-[10px] font-semibold text-[#FF6F0F]">고정된 공지</span>
                       </div>
                     )}
 
-                    {/* 헤더 */}
-                    <div className="px-3 pt-3 pb-2 flex items-start gap-2.5">
-                      <div className="w-9 h-9 rounded-full bg-fill-medium flex items-center justify-center text-lg shrink-0">
+                    {/* 비노출 배너 */}
+                    {!n.is_active && (
+                      <div className="px-4 py-1 bg-fill-medium border-b border-border-main flex items-center gap-1.5">
+                        <EyeOff size={10} className="text-dim" />
+                        <span className="text-[10px] font-semibold text-dim">비노출 — 사장님에게 보이지 않습니다</span>
+                      </div>
+                    )}
+
+                    <div className="px-4 pt-3 pb-2 flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-full bg-fill-medium flex items-center justify-center text-xl shrink-0">
                         {n.author_emoji}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-xs font-bold text-primary truncate">{n.author_name}</span>
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <span className="text-sm font-bold text-primary">{n.author_name}</span>
+                          <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${bg} ${color}`}>
+                            <Icon size={9} />{label}
+                          </span>
                           {fresh && (
                             <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-500 text-white leading-none">NEW</span>
                           )}
+                          <span className="text-[10px] text-dim ml-auto">{timeAgo(n.created_at)}</span>
                         </div>
-                        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                          <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full border ${bg} ${color}`}>
-                            <Icon size={9} />
-                            {label}
-                          </span>
-                          <span className="text-[10px] text-dim">{timeAgo(n.created_at)}</span>
-                        </div>
+                        <p className="text-sm text-primary leading-relaxed whitespace-pre-wrap">{n.content}</p>
                       </div>
                     </div>
 
-                    {/* 본문 */}
-                    <div className="px-3 pb-2 flex-1">
-                      <p className="text-xs text-primary leading-relaxed whitespace-pre-wrap line-clamp-4">{n.content}</p>
-                    </div>
-
-                    {/* 이미지 */}
                     {n.image_url && (
-                      <div className="px-3 pb-2">
-                        <img src={n.image_url} alt="" className="w-full rounded-lg object-cover max-h-32" />
+                      <div className="px-4 pb-3">
+                        <img src={n.image_url} alt="" className="w-full rounded-xl object-cover max-h-52" />
                       </div>
                     )}
 
                     {/* 액션 바 */}
-                    <div className="px-3 pb-2.5 flex items-center gap-1 border-t border-border-main/40 pt-2">
+                    <div className="px-4 pb-3 pt-2 flex items-center gap-1 border-t border-border-main/40">
                       <div className="flex items-center gap-1 text-dim">
                         <Heart size={12} />
-                        <span className="text-[10px]">{n.like_count}</span>
+                        <span className="text-[11px]">{n.like_count}</span>
                       </div>
                       <div className="flex-1" />
-                      <button onClick={() => togglePin(n)}
+
+                      {/* 노출/비노출 토글 */}
+                      <button
+                        onClick={() => patch(n.id, { is_active: !n.is_active })}
+                        title={n.is_active ? '비노출로 변경' : '노출로 변경'}
+                        className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold border transition ${
+                          n.is_active
+                            ? 'text-green-400 border-green-500/30 bg-green-500/10 hover:bg-green-500/20'
+                            : 'text-dim border-border-main hover:text-primary hover:border-border-main/60'
+                        }`}>
+                        {n.is_active ? <><Eye size={11} /> 노출</> : <><EyeOff size={11} /> 비노출</>}
+                      </button>
+
+                      {/* 고정 */}
+                      <button onClick={() => patch(n.id, { is_pinned: !n.is_pinned })}
                         title={n.is_pinned ? '고정 해제' : '고정'}
-                        className={`p-1 rounded transition ${n.is_pinned ? 'text-[#FF6F0F]' : 'text-dim hover:text-primary'}`}>
-                        <Pin size={12} />
+                        className={`p-1.5 rounded-lg transition ${n.is_pinned ? 'text-[#FF6F0F]' : 'text-dim hover:text-primary'}`}>
+                        <Pin size={13} />
                       </button>
+
+                      {/* 수정 */}
                       <button onClick={() => startEdit(n)}
-                        className="p-1 rounded text-dim hover:text-primary transition">
-                        <Pencil size={12} />
+                        className="p-1.5 rounded-lg text-dim hover:text-primary transition">
+                        <Pencil size={13} />
                       </button>
+
+                      {/* 삭제 */}
                       <button onClick={() => del(n.id)}
-                        className="p-1 rounded text-dim hover:text-red-400 transition">
-                        <Trash2 size={12} />
+                        className="p-1.5 rounded-lg text-dim hover:text-red-400 transition">
+                        <Trash2 size={13} />
                       </button>
                     </div>
                   </div>
