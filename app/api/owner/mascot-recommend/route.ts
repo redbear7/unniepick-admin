@@ -4,7 +4,6 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import Anthropic from '@anthropic-ai/sdk';
 
 function sb() {
   return createClient(
@@ -103,15 +102,25 @@ ${JSON.stringify(playlistSummary, null, 2)}
 - playlist_id는 반드시 위 목록에 있는 실제 id만 사용`;
 
   try {
-    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const apiKey = process.env.GEMINI_API_KEY;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
-    const message = await client.messages.create({
-      model:      'claude-haiku-4-5-20251001',
-      max_tokens: 1024,
-      messages:   [{ role: 'user', content: prompt }],
+    const res = await fetch(url, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.8, maxOutputTokens: 1024 },
+      }),
     });
 
-    const raw = (message.content[0] as { type: string; text: string }).text || '';
+    if (!res.ok) {
+      const e = await res.json().catch(() => ({}));
+      throw new Error(e?.error?.message || `HTTP ${res.status}`);
+    }
+
+    const resp = await res.json();
+    const raw  = resp.candidates?.[0]?.content?.parts?.[0]?.text || '';
     const jsonStr = raw.match(/```json\s*([\s\S]*?)```/)?.[1]
       || raw.match(/```\s*([\s\S]*?)```/)?.[1]
       || raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1);
