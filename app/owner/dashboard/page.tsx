@@ -3,19 +3,33 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase';
 import { useOwnerSession } from '@/components/OwnerShell';
-import { User, Phone, CalendarDays, KeyRound, Store } from 'lucide-react';
+import { User, Phone, CalendarDays, KeyRound, Store, Music } from 'lucide-react';
 
 interface StoreInfo {
-  id:       string;
-  name:     string;
-  address:  string | null;
-  phone:    string | null;
-  category: string | null;
+  id:        string;
+  name:      string;
+  address:   string | null;
+  phone:     string | null;
+  category:  string | null;
+  latitude:  number | null;
+  longitude: number | null;
 }
 
 interface PinStatus {
   pin_changes:      number;
   pin_change_month: string;
+}
+
+interface WeatherData {
+  current: {
+    temp: number; feelsLike: number; humidity: number;
+    windSpeed: number; label: string; emoji: string; category: string;
+  };
+  daily: {
+    date: string; dayOfWeek: string; tempMax: number; tempMin: number;
+    precipProb: number; label: string; emoji: string;
+  }[];
+  moodRecommendation: { moods: string[]; message: string };
 }
 
 const MAX_CHANGES = 2;
@@ -29,6 +43,7 @@ export default function OwnerDashboardHome() {
   const { session } = useOwnerSession();
   const [storeInfo, setStoreInfo] = useState<StoreInfo | null>(null);
   const [pinStatus, setPinStatus] = useState<PinStatus | null>(null);
+  const [weather,   setWeather]   = useState<WeatherData | null>(null);
 
   useEffect(() => {
     if (!session) return;
@@ -41,10 +56,22 @@ export default function OwnerDashboardHome() {
       .then(({ data }) => { if (data) setPinStatus(data as PinStatus); });
 
     sb.from('stores')
-      .select('id, name, address, phone, category')
+      .select('id, name, address, phone, category, latitude, longitude')
       .eq('owner_id', session.user_id)
       .maybeSingle()
-      .then(({ data }) => { if (data) setStoreInfo(data as StoreInfo); });
+      .then(({ data }) => {
+        if (data) {
+          setStoreInfo(data as StoreInfo);
+          // 날씨 로드 — 가게 위경도가 있으면 해당 위치, 없으면 서울 기본값
+          const lat = (data as StoreInfo).latitude;
+          const lng = (data as StoreInfo).longitude;
+          const qs  = lat && lng ? `?lat=${lat}&lng=${lng}` : '';
+          fetch(`/api/weather${qs}`)
+            .then(r => r.json())
+            .then(d => { if (!d.error) setWeather(d); })
+            .catch(() => {});
+        }
+      });
   }, [session]);
 
   if (!session) return null;
@@ -95,7 +122,8 @@ export default function OwnerDashboardHome() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
-        {/* 계정 정보 카드 그리드 */}
+
+        {/* 계정 정보 카드 */}
         <div>
           <h2 className="text-xs font-semibold text-muted uppercase tracking-wider mb-3">계정 정보</h2>
           <div className="grid grid-cols-2 gap-3">
@@ -128,12 +156,8 @@ export default function OwnerDashboardHome() {
                     {storeInfo.category}
                   </span>
                 )}
-                {storeInfo.address && (
-                  <p className="text-xs text-muted">{storeInfo.address}</p>
-                )}
-                {storeInfo.phone && (
-                  <p className="text-xs text-muted">{storeInfo.phone}</p>
-                )}
+                {storeInfo.address && <p className="text-xs text-muted">{storeInfo.address}</p>}
+                {storeInfo.phone   && <p className="text-xs text-muted">{storeInfo.phone}</p>}
               </div>
             </div>
           ) : (
@@ -144,6 +168,84 @@ export default function OwnerDashboardHome() {
             </div>
           )}
         </div>
+
+        {/* 날씨 + BGM 추천 */}
+        {weather && (
+          <div>
+            <h2 className="text-xs font-semibold text-muted uppercase tracking-wider mb-3">
+              오늘의 날씨
+              {storeInfo?.latitude && storeInfo?.longitude && (
+                <span className="ml-2 text-[10px] text-dim normal-case font-normal">매장 위치 기준</span>
+              )}
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+
+              {/* 현재 날씨 */}
+              <div className="bg-card border border-border-main rounded-xl p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs font-bold text-tertiary">현재 날씨</p>
+                  <span className="text-[10px] text-dim">
+                    {new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })} 기준
+                  </span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span className="text-5xl">{weather.current.emoji}</span>
+                  <div>
+                    <p className="text-3xl font-bold text-primary">{Math.round(weather.current.temp)}°</p>
+                    <p className="text-xs text-muted">{weather.current.label} · 체감 {Math.round(weather.current.feelsLike)}°</p>
+                    <p className="text-[10px] text-dim mt-0.5">
+                      💧 {weather.current.humidity}% · 💨 {Math.round(weather.current.windSpeed)}km/h
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 주간 예보 */}
+              <div className="bg-card border border-border-main rounded-xl p-4">
+                <p className="text-xs font-bold text-tertiary mb-3">7일 예보</p>
+                <div className="flex gap-1">
+                  {weather.daily.map((d, i) => (
+                    <div
+                      key={d.date}
+                      className={`flex-1 text-center rounded-lg py-1.5 transition ${i === 0 ? 'bg-[#FF6F0F]/10' : ''}`}
+                    >
+                      <p className={`text-[10px] font-semibold ${i === 0 ? 'text-[#FF6F0F]' : 'text-muted'}`}>
+                        {i === 0 ? '오늘' : d.dayOfWeek}
+                      </p>
+                      <p className="text-base my-0.5">{d.emoji}</p>
+                      <p className="text-[10px] text-primary font-bold">{Math.round(d.tempMax)}°</p>
+                      <p className="text-[10px] text-dim">{Math.round(d.tempMin)}°</p>
+                      {d.precipProb > 30 && (
+                        <p className="text-[8px] text-blue-400 font-semibold mt-0.5">💧{d.precipProb}%</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* BGM 무드 추천 */}
+              <div className="bg-card border border-border-main rounded-xl p-4">
+                <p className="text-xs font-bold text-tertiary mb-2">🎵 오늘의 추천 BGM 무드</p>
+                <p className="text-xs text-muted leading-relaxed mb-3">{weather.moodRecommendation.message}</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {weather.moodRecommendation.moods.map(m => (
+                    <span
+                      key={m}
+                      className="text-[10px] px-2 py-0.5 rounded-full bg-[#FF6F0F]/15 text-[#FF6F0F] border border-[#FF6F0F]/30 font-semibold"
+                    >
+                      {m}
+                    </span>
+                  ))}
+                </div>
+                <p className="mt-3 flex items-center gap-1 text-[10px] text-dim">
+                  <Music size={10} /> 유니가 날씨에 맞는 플레이리스트를 추천해드려요
+                </p>
+              </div>
+
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );
