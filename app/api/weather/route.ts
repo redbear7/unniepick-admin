@@ -7,8 +7,30 @@ const CORS = { 'Access-Control-Allow-Origin': '*' };
  * Open-Meteo 무료 API (키 불필요) — 7일 예보 + 현재 날씨
  */
 export async function GET(req: NextRequest) {
-  const lat = req.nextUrl.searchParams.get('lat') || '37.5665'; // 서울 기본값
-  const lng = req.nextUrl.searchParams.get('lng') || '126.978';
+  let lat = req.nextUrl.searchParams.get('lat');
+  let lng = req.nextUrl.searchParams.get('lng');
+  const address = req.nextUrl.searchParams.get('address');
+
+  // 주소로 위경도 조회 (lat/lng 없고 address 있을 때)
+  if ((!lat || !lng) && address) {
+    try {
+      const geoUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1&countrycodes=kr`;
+      const geoRes = await fetch(geoUrl, {
+        headers: { 'User-Agent': 'unniepick-admin/1.0' },
+      });
+      const geoData = await geoRes.json();
+      if (geoData?.[0]) {
+        lat = geoData[0].lat;
+        lng = geoData[0].lon;
+      }
+    } catch {
+      // 지오코딩 실패 시 서울 기본값으로 fallback
+    }
+  }
+
+  // 최종 fallback: 서울
+  if (!lat) lat = '37.5665';
+  if (!lng) lng = '126.978';
 
   try {
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,apparent_temperature&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,wind_speed_10m_max&timezone=Asia/Seoul&forecast_days=7`;

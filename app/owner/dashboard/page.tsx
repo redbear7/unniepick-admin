@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase';
 import { useOwnerSession } from '@/components/OwnerShell';
-import { User, Phone, CalendarDays, KeyRound, Store, Music } from 'lucide-react';
+import { User, Phone, CalendarDays, KeyRound, Store, Music, MapPin, Check, Loader2 } from 'lucide-react';
 
 interface StoreInfo {
   id:        string;
@@ -39,11 +39,36 @@ function currentMonth() {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 }
 
+async function fetchWeather(store: StoreInfo): Promise<WeatherData | null> {
+  let qs = '';
+  if (store.latitude && store.longitude) {
+    qs = `?lat=${store.latitude}&lng=${store.longitude}`;
+  } else if (store.address) {
+    qs = `?address=${encodeURIComponent(store.address)}`;
+  }
+  // 주소도 위경도도 없으면 null 반환 (서울 기본값 사용 안 함 — 유도 UI 표시)
+  if (!qs) return null;
+
+  try {
+    const res = await fetch(`/api/weather${qs}`);
+    const data = await res.json();
+    return data.error ? null : (data as WeatherData);
+  } catch {
+    return null;
+  }
+}
+
 export default function OwnerDashboardHome() {
   const { session } = useOwnerSession();
-  const [storeInfo, setStoreInfo] = useState<StoreInfo | null>(null);
-  const [pinStatus, setPinStatus] = useState<PinStatus | null>(null);
-  const [weather,   setWeather]   = useState<WeatherData | null>(null);
+  const [storeInfo,    setStoreInfo]    = useState<StoreInfo | null>(null);
+  const [pinStatus,    setPinStatus]    = useState<PinStatus | null>(null);
+  const [weather,      setWeather]      = useState<WeatherData | null>(null);
+  const [weatherLabel, setWeatherLabel] = useState('');
+
+  // 주소 입력 상태
+  const [addressInput,  setAddressInput]  = useState('');
+  const [savingAddress, setSavingAddress] = useState(false);
+  const [addressSaved,  setAddressSaved]  = useState(false);
 
   useEffect(() => {
     if (!session) return;
@@ -60,19 +85,40 @@ export default function OwnerDashboardHome() {
       .eq('owner_id', session.user_id)
       .maybeSingle()
       .then(({ data }) => {
-        if (data) {
-          setStoreInfo(data as StoreInfo);
-          // 날씨 로드 — 가게 위경도가 있으면 해당 위치, 없으면 서울 기본값
-          const lat = (data as StoreInfo).latitude;
-          const lng = (data as StoreInfo).longitude;
-          const qs  = lat && lng ? `?lat=${lat}&lng=${lng}` : '';
-          fetch(`/api/weather${qs}`)
-            .then(r => r.json())
-            .then(d => { if (!d.error) setWeather(d); })
-            .catch(() => {});
-        }
+        if (!data) return;
+        const store = data as StoreInfo;
+        setStoreInfo(store);
+        loadWeather(store);
       });
   }, [session]);
+
+  const loadWeather = async (store: StoreInfo) => {
+    const data = await fetchWeather(store);
+    setWeather(data);
+    if (store.latitude && store.longitude) {
+      setWeatherLabel('매장 위치 기준');
+    } else if (store.address) {
+      setWeatherLabel('매장 주소 기준');
+    }
+  };
+
+  const saveAddress = async () => {
+    if (!addressInput.trim() || !storeInfo) return;
+    setSavingAddress(true);
+    const sb = createClient();
+    const { error } = await sb
+      .from('stores')
+      .update({ address: addressInput.trim() })
+      .eq('id', storeInfo.id);
+
+    if (!error) {
+      const updated = { ...storeInfo, address: addressInput.trim() };
+      setStoreInfo(updated);
+      setAddressSaved(true);
+      await loadWeather(updated);
+    }
+    setSavingAddress(false);
+  };
 
   if (!session) return null;
 
@@ -83,35 +129,13 @@ export default function OwnerDashboardHome() {
     : MAX_CHANGES;
 
   const stats = [
-    {
-      label: '이름',
-      value: session.name,
-      icon: User,
-      color: 'text-[#FF6F0F]',
-      bg: 'bg-[#FF6F0F]/10',
-    },
-    {
-      label: '전화번호',
-      value: session.phone.replace(/(\d{3})(\d{3,4})(\d{4})/, '$1-$2-$3'),
-      icon: Phone,
-      color: 'text-blue-400',
-      bg: 'bg-blue-500/10',
-    },
-    {
-      label: '가입일',
-      value: new Date(session.created_at).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' }),
-      icon: CalendarDays,
-      color: 'text-purple-400',
-      bg: 'bg-purple-500/10',
-    },
-    {
-      label: 'PIN 변경 잔여',
-      value: `${remaining}회 / ${MAX_CHANGES}회`,
-      icon: KeyRound,
-      color: remaining === 0 ? 'text-red-400' : 'text-green-400',
-      bg: remaining === 0 ? 'bg-red-500/10' : 'bg-green-500/10',
-    },
+    { label: '이름',       value: session.name,                                                                                   icon: User,        color: 'text-[#FF6F0F]',  bg: 'bg-[#FF6F0F]/10' },
+    { label: '전화번호',   value: session.phone.replace(/(\d{3})(\d{3,4})(\d{4})/, '$1-$2-$3'),                                   icon: Phone,       color: 'text-blue-400',   bg: 'bg-blue-500/10' },
+    { label: '가입일',     value: new Date(session.created_at).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' }), icon: CalendarDays, color: 'text-purple-400', bg: 'bg-purple-500/10' },
+    { label: 'PIN 변경 잔여', value: `${remaining}회 / ${MAX_CHANGES}회`,                                                         icon: KeyRound,    color: remaining === 0 ? 'text-red-400' : 'text-green-400', bg: remaining === 0 ? 'bg-red-500/10' : 'bg-green-500/10' },
   ];
+
+  const noAddress = storeInfo && !storeInfo.address && !storeInfo.latitude;
 
   return (
     <div className="flex flex-col h-full">
@@ -123,7 +147,7 @@ export default function OwnerDashboardHome() {
 
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
 
-        {/* 계정 정보 카드 */}
+        {/* 계정 정보 */}
         <div>
           <h2 className="text-xs font-semibold text-muted uppercase tracking-wider mb-3">계정 정보</h2>
           <div className="grid grid-cols-2 gap-3">
@@ -156,8 +180,11 @@ export default function OwnerDashboardHome() {
                     {storeInfo.category}
                   </span>
                 )}
-                {storeInfo.address && <p className="text-xs text-muted">{storeInfo.address}</p>}
-                {storeInfo.phone   && <p className="text-xs text-muted">{storeInfo.phone}</p>}
+                {storeInfo.address
+                  ? <p className="text-xs text-muted">{storeInfo.address}</p>
+                  : <p className="text-xs text-amber-400">📍 주소가 등록되어 있지 않습니다.</p>
+                }
+                {storeInfo.phone && <p className="text-xs text-muted">{storeInfo.phone}</p>}
               </div>
             </div>
           ) : (
@@ -169,15 +196,46 @@ export default function OwnerDashboardHome() {
           )}
         </div>
 
-        {/* 날씨 + BGM 추천 */}
-        {weather && (
-          <div>
-            <h2 className="text-xs font-semibold text-muted uppercase tracking-wider mb-3">
-              오늘의 날씨
-              {storeInfo?.latitude && storeInfo?.longitude && (
-                <span className="ml-2 text-[10px] text-dim normal-case font-normal">매장 위치 기준</span>
-              )}
-            </h2>
+        {/* 날씨 위젯 */}
+        <div>
+          <h2 className="text-xs font-semibold text-muted uppercase tracking-wider mb-3">
+            오늘의 날씨
+            {weatherLabel && (
+              <span className="ml-2 text-[10px] text-dim normal-case font-normal">{weatherLabel}</span>
+            )}
+          </h2>
+
+          {/* 주소 없을 때 — 입력 유도 */}
+          {noAddress && !addressSaved ? (
+            <div className="bg-amber-500/10 border border-amber-500/25 rounded-xl p-5">
+              <div className="flex items-start gap-3 mb-4">
+                <MapPin size={18} className="text-amber-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold text-primary">매장 주소를 등록하면 날씨를 확인할 수 있어요</p>
+                  <p className="text-xs text-muted mt-0.5">주소를 기반으로 매장 위치의 날씨와 맞춤 BGM을 추천해드립니다.</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <input
+                  value={addressInput}
+                  onChange={e => setAddressInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && saveAddress()}
+                  placeholder="예) 서울시 강남구 테헤란로 123"
+                  className="flex-1 px-3 py-2 text-sm bg-surface border border-border-main rounded-lg outline-none focus:border-amber-400 text-primary"
+                />
+                <button
+                  onClick={saveAddress}
+                  disabled={!addressInput.trim() || savingAddress}
+                  className="flex items-center gap-1.5 px-4 py-2 text-sm rounded-lg bg-amber-500 text-white hover:bg-amber-600 transition disabled:opacity-40 shrink-0"
+                >
+                  {savingAddress
+                    ? <Loader2 size={14} className="animate-spin" />
+                    : <Check size={14} />}
+                  저장
+                </button>
+              </div>
+            </div>
+          ) : weather ? (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
 
               {/* 현재 날씨 */}
@@ -205,10 +263,7 @@ export default function OwnerDashboardHome() {
                 <p className="text-xs font-bold text-tertiary mb-3">7일 예보</p>
                 <div className="flex gap-1">
                   {weather.daily.map((d, i) => (
-                    <div
-                      key={d.date}
-                      className={`flex-1 text-center rounded-lg py-1.5 transition ${i === 0 ? 'bg-[#FF6F0F]/10' : ''}`}
-                    >
+                    <div key={d.date} className={`flex-1 text-center rounded-lg py-1.5 ${i === 0 ? 'bg-[#FF6F0F]/10' : ''}`}>
                       <p className={`text-[10px] font-semibold ${i === 0 ? 'text-[#FF6F0F]' : 'text-muted'}`}>
                         {i === 0 ? '오늘' : d.dayOfWeek}
                       </p>
@@ -229,10 +284,7 @@ export default function OwnerDashboardHome() {
                 <p className="text-xs text-muted leading-relaxed mb-3">{weather.moodRecommendation.message}</p>
                 <div className="flex flex-wrap gap-1.5">
                   {weather.moodRecommendation.moods.map(m => (
-                    <span
-                      key={m}
-                      className="text-[10px] px-2 py-0.5 rounded-full bg-[#FF6F0F]/15 text-[#FF6F0F] border border-[#FF6F0F]/30 font-semibold"
-                    >
+                    <span key={m} className="text-[10px] px-2 py-0.5 rounded-full bg-[#FF6F0F]/15 text-[#FF6F0F] border border-[#FF6F0F]/30 font-semibold">
                       {m}
                     </span>
                   ))}
@@ -243,8 +295,15 @@ export default function OwnerDashboardHome() {
               </div>
 
             </div>
-          </div>
-        )}
+          ) : storeInfo ? (
+            /* 주소는 있지만 날씨 로딩 중 */
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="bg-card border border-border-main rounded-xl p-4 h-28 animate-pulse" />
+              ))}
+            </div>
+          ) : null}
+        </div>
 
       </div>
     </div>
