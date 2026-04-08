@@ -25,6 +25,7 @@ import {
   RotateCcw,
   Maximize2,
   X,
+  Heart,
 } from 'lucide-react';
 
 // ─── 타입 ──────────────────────────────────────────────────────
@@ -367,6 +368,8 @@ interface LivePreviewFrameProps {
   headerTop: number;
   infoTop: number;
   couponTop: number;
+  genreTag?: string;
+  moodTag?: string;
   onPlayStart?: () => void;
 }
 
@@ -376,6 +379,7 @@ function LivePreviewFrame({
   shortsTitle, shortsTagline, selectedCoupon,
   trackTitle, artist,
   headerTop, infoTop, couponTop,
+  genreTag, moodTag,
   onPlayStart,
 }: LivePreviewFrameProps) {
   const audioRef      = useRef<HTMLAudioElement | null>(null);
@@ -387,6 +391,7 @@ function LivePreviewFrame({
   const [wavePhase,     setWavePhase]     = useState(0);
   const [frameWidth,    setFrameWidth]    = useState(360);
   const [couponAnimKey, setCouponAnimKey] = useState(0);
+  const [liked,         setLiked]         = useState(false);
 
   // 기준 해상도 (이 크기로 모든 px 값 설계)
   const BASE_W = 360;
@@ -559,6 +564,41 @@ function LivePreviewFrame({
 
           {/* 언니픽 배지 */}
           <div style={{ position:'absolute', top:12, right:12, background:'rgba(255,111,15,0.92)', borderRadius:5, color:'#fff', fontSize:11, fontWeight:700, padding:'3px 7px' }}>언니픽</div>
+
+          {/* 장르·무드 태그 */}
+          {(genreTag || moodTag) && (
+            <div style={{ position:'absolute', bottom:90, left:16, display:'flex', gap:6 }}>
+              {genreTag && (
+                <span style={{ background:'rgba(255,111,15,0.85)', color:'#fff', fontSize:11, fontWeight:700, padding:'3px 9px', borderRadius:20 }}>
+                  #{genreTag}
+                </span>
+              )}
+              {moodTag && (
+                <span style={{ background:'rgba(255,255,255,0.15)', color:'rgba(255,255,255,0.9)', fontSize:11, fontWeight:600, padding:'3px 9px', borderRadius:20, backdropFilter:'blur(4px)' }}>
+                  #{moodTag}
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* 좋아요 버튼 */}
+          <button
+            onClick={e => { e.stopPropagation(); setLiked(l => !l); }}
+            style={{
+              position:'absolute', right:14, bottom:110,
+              width:44, height:44, borderRadius:'50%',
+              background: liked ? 'rgba(255,59,95,0.85)' : 'rgba(0,0,0,0.4)',
+              border: liked ? 'none' : '1px solid rgba(255,255,255,0.25)',
+              display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:2,
+              cursor:'pointer', transition:'transform 0.15s, background 0.2s',
+              transform: liked ? 'scale(1.12)' : 'scale(1)',
+            }}
+          >
+            <Heart size={20} fill={liked ? '#fff' : 'none'} color={liked ? '#fff' : 'rgba(255,255,255,0.9)'} />
+            <span style={{ fontSize:9, color:'rgba(255,255,255,0.8)', fontWeight:600, lineHeight:1 }}>
+              {liked ? '♥' : '좋아요'}
+            </span>
+          </button>
 
           {/* 파형 */}
           <div style={{ position:'absolute', bottom:44, left:16, right:16 }}>
