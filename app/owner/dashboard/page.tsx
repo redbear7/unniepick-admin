@@ -197,9 +197,6 @@ export default function OwnerDashboardHome() {
               <h2 className="text-xs font-semibold text-muted uppercase tracking-wider flex items-center gap-1.5">
                 <Bell size={12} />
                 공지사항
-                {notices.some(n => isNew(n.created_at)) && (
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-500 text-white leading-none">NEW</span>
-                )}
               </h2>
               <Link href="/owner/dashboard/notices"
                 className="flex items-center gap-0.5 text-[11px] text-dim hover:text-primary transition">
