@@ -362,6 +362,7 @@ interface LivePreviewFrameProps {
   headerTop: number;
   infoTop: number;
   couponTop: number;
+  storeName?: string;
   onPlayStart?: () => void;
 }
 
@@ -371,6 +372,7 @@ function LivePreviewFrame({
   shortsTitle, shortsTagline, selectedCoupon,
   trackTitle, artist,
   headerTop, infoTop, couponTop,
+  storeName,
   onPlayStart,
 }: LivePreviewFrameProps) {
   const audioRef    = useRef<HTMLAudioElement | null>(null);
@@ -525,6 +527,15 @@ function LivePreviewFrame({
         {/* 언니픽 배지 */}
         <div className="absolute top-2 right-2 bg-[#FF6F0F]/90 rounded text-white text-[6px] font-bold px-1 py-0.5">언니픽</div>
 
+        {/* 가게명 */}
+        {storeName && (
+          <div className="absolute bottom-10 left-3 right-3 text-center">
+            <span className="text-[8px] font-bold text-white bg-black/60 px-2 py-0.5 rounded truncate block">
+              {storeName}
+            </span>
+          </div>
+        )}
+
         {/* 파형 */}
         <div className="absolute bottom-8 left-3 right-3">
           <canvas ref={canvasRef} className="w-full block" style={{ height: 24 }} />
@@ -585,9 +596,8 @@ export default function ShortsPage() {
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzed, setAnalyzed] = useState(false);
 
-  // 가게
-  const [stores,        setStores]        = useState<{ id: string; name: string }[]>([]);
-  const [selectedStore, setSelectedStore] = useState<{ id: string; name: string } | null>(null);
+  // 가게명 (직접 입력)
+  const [storeName, setStoreName] = useState('');
 
   // 쿠폰
   const [coupons, setCoupons] = useState<Coupon[]>([]);
@@ -655,12 +665,6 @@ export default function ShortsPage() {
   // ── 초기 데이터 로드 ──
   useEffect(() => {
     loadTracks();
-    // 가게 로드
-    sb.from('stores')
-      .select('id, name')
-      .eq('is_active', true)
-      .order('name')
-      .then(({ data }) => setStores((data ?? []) as { id: string; name: string }[]));
     // 활성 쿠폰 로드
     sb.from('coupons')
       .select('id, title, discount_type, discount_value, is_active, expires_at')
@@ -882,7 +886,7 @@ export default function ShortsPage() {
         startSec,
         moodTags: selected.mood_tags ?? [],
         createdAt: new Date().toISOString(),
-        storeName: selectedStore?.name,
+        storeName: storeName.trim() || undefined,
         waveformStyle,
         durationSec,
         shortsTitle,
@@ -1551,6 +1555,13 @@ export default function ShortsPage() {
                         <p className="text-white/60 text-[5px] truncate mt-0.5">{selected.artist}</p>
                       </div>
                       <div className="absolute top-1.5 right-1.5 bg-[#FF6F0F]/90 rounded text-white text-[5px] font-bold px-1 py-0.5">언니픽</div>
+                      {storeName && (
+                        <div className="absolute bottom-5 left-2 right-2 text-center">
+                          <span className="text-[6px] font-bold text-white bg-black/60 px-1.5 py-0.5 rounded truncate block">
+                            {storeName}
+                          </span>
+                        </div>
+                      )}
                       <div className="absolute bottom-2 left-2 right-2 h-0.5 bg-white/10 rounded">
                         <div className="h-full w-1/3 bg-[#FF6F0F] rounded" />
                       </div>
@@ -1573,6 +1584,7 @@ export default function ShortsPage() {
                     headerTop={headerTop}
                     infoTop={infoTop}
                     couponTop={couponTop}
+                    storeName={storeName.trim() || undefined}
                     onPlayStart={() => { if (player.isPlaying) player.pause(); }}
                   />
                 </div>
@@ -1678,22 +1690,17 @@ export default function ShortsPage() {
 
               {/* ── 생성 버튼 & 결과 ── */}
               <div className="bg-card border border-border-main rounded-xl p-5 flex flex-col gap-4">
-                {/* 가게 선택 */}
+                {/* 가게명 입력 */}
                 <div>
-                  <label className="text-xs text-muted mb-1.5 block">🏪 제작 가게 (선택)</label>
-                  <select
-                    value={selectedStore?.id ?? ''}
-                    onChange={e => {
-                      const s = stores.find(s => s.id === e.target.value) ?? null;
-                      setSelectedStore(s);
-                    }}
-                    className="w-full appearance-none px-3 py-2 text-sm bg-[#0f1117] border border-border-main rounded-lg text-primary outline-none focus:border-[#FF6F0F]/50 cursor-pointer"
-                  >
-                    <option value="">— 가게 선택 안 함 —</option>
-                    {stores.map(s => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
-                    ))}
-                  </select>
+                  <label className="text-xs text-muted mb-1.5 block">🏪 가게명 (선택)</label>
+                  <input
+                    type="text"
+                    placeholder="예: 강남 카페 아메노"
+                    value={storeName}
+                    onChange={e => setStoreName(e.target.value)}
+                    className="w-full px-3 py-2 text-sm bg-[#0f1117] border border-border-main rounded-lg text-primary placeholder:text-muted outline-none focus:border-[#FF6F0F]/50"
+                  />
+                  <p className="text-[10px] text-dim mt-1">입력 시 썸네일 하단에 가게명이 표시됩니다.</p>
                 </div>
 
                 <div className="flex items-center justify-between">
