@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase';
 import {
   Search, ToggleLeft, ToggleRight, MapPin, Phone,
-  Plus, Pencil, Trash2, X, Check, ChevronDown,
+  Plus, Pencil, Trash2, X, Check,
+  ExternalLink, User, FlaskConical,
 } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
@@ -67,6 +68,10 @@ export default function StoresPage() {
   const [rejectReason,  setRejectReason]  = useState('');
   const [processing,    setProcessing]    = useState<string | null>(null);
 
+  /* ---- owner map (user_id → { name, phone, isDummy }) ---- */
+  const [ownerMap, setOwnerMap] = useState<Record<string, { name: string; phone: string | null; isDummy: boolean }>>({});
+  const [previewingId, setPreviewingId] = useState<string | null>(null);
+
   /* ---- store crud modal ---- */
   const [editModal,   setEditModal]   = useState<Store | null | 'new'>(null);
   const [form,        setForm]        = useState<StoreForm>(EMPTY_FORM);
@@ -81,17 +86,36 @@ export default function StoresPage() {
   /* ---------------------------------------------------------------- */
 
   const loadStores = async () => {
-
     const { data } = await sb
       .from('stores')
       .select('id, name, address, phone, category, is_active, created_at, owner_id, image_url')
       .order('created_at', { ascending: false });
-    setStores(data ?? []);
+    const rows = data ?? [];
+    setStores(rows);
     setLoadingStores(false);
+
+    // owner 정보 일괄 로드
+    const ownerIds = [...new Set(rows.map(s => s.owner_id).filter(Boolean))] as string[];
+    if (ownerIds.length) {
+      const { data: owners } = await sb
+        .from('users')
+        .select('id, name, phone, email')
+        .in('id', ownerIds);
+      if (owners) {
+        const map: Record<string, { name: string; phone: string | null; isDummy: boolean }> = {};
+        owners.forEach(o => {
+          map[o.id] = {
+            name: o.name,
+            phone: o.phone,
+            isDummy: (o.email ?? '').endsWith('@test.unnipick.dev'),
+          };
+        });
+        setOwnerMap(map);
+      }
+    }
   };
 
   const loadRequests = async () => {
-
     const { data } = await sb
       .from('store_requests')
       .select('*')
@@ -100,8 +124,27 @@ export default function StoresPage() {
     setLoadingReqs(false);
   };
 
-  useEffect(() => {
+  // 시샵 → 사장님 대시보드 바로가기
+  const openOwnerDashboard = async (userId: string) => {
+    setPreviewingId(userId);
+    try {
+      const res = await fetch('/api/admin/owner-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId }),
+      });
+      const data = await res.json();
+      if (!res.ok) { alert(data.error || '세션 발급 실패'); return; }
+      const encoded = btoa(JSON.stringify(data.session));
+      window.open(`/owner/preview?s=${encoded}`, '_blank');
+    } catch (e) {
+      alert((e as Error).message);
+    } finally {
+      setPreviewingId(null);
+    }
+  };
 
+  useEffect(() => {
     loadStores();
     loadRequests();
     const ch = sb.channel('stores-rt')
@@ -426,6 +469,7 @@ export default function StoresPage() {
                   <th className="text-left px-5 py-3.5 text-xs font-semibold text-muted">가게명</th>
                   <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">카테고리</th>
                   <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">연락처</th>
+                  <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">사장님</th>
                   <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">등록일</th>
                   <th className="text-center px-4 py-3.5 text-xs font-semibold text-muted">상태</th>
                   <th className="text-center px-4 py-3.5 text-xs font-semibold text-muted">관리</th>
@@ -435,17 +479,19 @@ export default function StoresPage() {
                 {loadingStores ? (
                   [...Array(5)].map((_, i) => (
                     <tr key={i} className="border-b border-border-main">
-                      {[...Array(6)].map((_, j) => (
+                      {[...Array(7)].map((_, j) => (
                         <td key={j} className="px-5 py-4"><div className="h-4 bg-fill-subtle rounded animate-pulse" /></td>
                       ))}
                     </tr>
                   ))
                 ) : filteredStores.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="text-center py-12 text-dim">가게가 없어요</td>
+                    <td colSpan={7} className="text-center py-12 text-dim">가게가 없어요</td>
                   </tr>
                 ) : (
-                  filteredStores.map(store => (
+                  filteredStores.map(store => {
+                    const owner = store.owner_id ? ownerMap[store.owner_id] : null;
+                    return (
                     <tr key={store.id} className="border-b border-border-main hover:bg-white/[0.02] transition">
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
@@ -469,6 +515,38 @@ export default function StoresPage() {
                         {store.phone
                           ? <p className="text-secondary flex items-center gap-1.5"><Phone size={12} className="text-muted" />{store.phone}</p>
                           : <span className="text-dim">-</span>}
+                      </td>
+                      {/* 사장님 열 */}
+                      <td className="px-4 py-4">
+                        {owner ? (
+                          <div className="flex items-center gap-2">
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <p className="text-xs font-medium text-primary truncate">{owner.name}</p>
+                                {owner.isDummy && (
+                                  <span className="shrink-0 inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded bg-yellow-500/15 text-yellow-400 border border-yellow-500/25">
+                                    <FlaskConical size={8} /> 더미
+                                  </span>
+                                )}
+                              </div>
+                              {owner.phone && <p className="text-[10px] text-muted mt-0.5">{owner.phone}</p>}
+                            </div>
+                            <button
+                              onClick={() => openOwnerDashboard(store.owner_id!)}
+                              disabled={previewingId === store.owner_id}
+                              title="사장님 대시보드 바로가기"
+                              className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-lg bg-[#FF6F0F]/10 text-[#FF6F0F] text-[10px] font-semibold hover:bg-[#FF6F0F]/25 transition disabled:opacity-40"
+                            >
+                              <ExternalLink size={10} />
+                              대시보드
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 text-xs text-dim">
+                            <User size={11} />
+                            미연결
+                          </div>
+                        )}
                       </td>
                       <td className="px-4 py-4 text-muted text-xs">
                         {new Date(store.created_at).toLocaleDateString('ko-KR')}
@@ -505,7 +583,8 @@ export default function StoresPage() {
                         </div>
                       </td>
                     </tr>
-                  ))
+                    );
+                  })
                 )}
               </tbody>
             </table>
