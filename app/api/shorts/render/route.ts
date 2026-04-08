@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
       coupon: coupon ?? null,
       announcementUrl: announcement_url ?? '',
       announcementDurationSec: typeof announcement_duration_sec === 'number' ? announcement_duration_sec : 0,
-      elementPositions: element_positions ?? { headerTop: 11, infoTop: 72, couponTop: 58 },
+      elementPositions: element_positions ?? { headerTop: 11, infoTop: 72, couponTop: 60 },
       audioFadeInSec: typeof audio_fade_in_sec === 'number' ? audio_fade_in_sec : 1.5,
       waveformStyle: waveform_style ?? 'bar',
       bgVideoUrl: bg_video_url ?? null,
