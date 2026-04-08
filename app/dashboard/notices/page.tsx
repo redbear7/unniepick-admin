@@ -28,6 +28,10 @@ const TYPE_META: Record<Notice['notice_type'], { label: string; color: string; b
 
 const AUTHOR_EMOJIS = ['🍖', '🎵', '🎸', '🌟', '📢', '💡', '🔥', '🎉'];
 
+function isNew(iso: string) {
+  return Date.now() - new Date(iso).getTime() < 24 * 60 * 60 * 1000;
+}
+
 function timeAgo(iso: string) {
   const diff = Date.now() - new Date(iso).getTime();
   const m = Math.floor(diff / 60000);
@@ -39,10 +43,10 @@ function timeAgo(iso: string) {
 }
 
 export default function NoticesPage() {
-  const [notices, setNotices]     = useState<Notice[]>([]);
-  const [loading, setLoading]     = useState(true);
+  const [notices, setNotices]       = useState<Notice[]>([]);
+  const [loading, setLoading]       = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingId, setEditingId]   = useState<string | null>(null);
 
   // 작성 폼
   const [content,     setContent]     = useState('');
@@ -63,7 +67,7 @@ export default function NoticesPage() {
 
   useEffect(() => { load(); }, []);
 
-  // 자동 높이 조절
+  // textarea 자동 높이
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
@@ -86,7 +90,6 @@ export default function NoticesPage() {
     setAuthorEmoji(n.author_emoji);
     setEditingId(n.id);
     textareaRef.current?.focus();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const submit = async () => {
@@ -97,7 +100,6 @@ export default function NoticesPage() {
       content, image_url: imageUrl || null,
       notice_type: noticeType, is_pinned: isPinned,
     };
-
     if (editingId) {
       await fetch(`/api/notices/${editingId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     } else {
@@ -133,30 +135,36 @@ export default function NoticesPage() {
         <span className="text-xs text-dim">{notices.length}개</span>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+      {/* ── 2단 레이아웃 ── */}
+      <div className="flex-1 overflow-hidden flex">
 
-          {/* ── 작성 컴포저 ── */}
+        {/* ── 왼쪽: 글쓰기 컴포저 (고정) ── */}
+        <div className="w-96 shrink-0 border-r border-border-main overflow-y-auto p-5 flex flex-col gap-4">
+          <p className="text-xs font-semibold text-muted uppercase tracking-wider">
+            {editingId ? '공지 수정' : '새 공지 작성'}
+          </p>
+
           <div className="bg-card border border-border-main rounded-2xl overflow-hidden">
-            <div className="p-4 border-b border-border-main flex items-center gap-2">
+            {/* 컴포저 헤더 */}
+            <div className="px-4 py-3 border-b border-border-main flex items-center gap-2">
               <span className="text-base">{authorEmoji}</span>
-              <span className="text-sm font-semibold text-primary flex-1">{authorName || '관리자'}</span>
+              <span className="text-sm font-semibold text-primary flex-1 truncate">{authorName || '관리자'}</span>
               {editingId && (
-                <button onClick={resetForm} className="text-dim hover:text-secondary text-xs flex items-center gap-1">
+                <button onClick={resetForm} className="text-dim hover:text-secondary text-xs flex items-center gap-1 shrink-0">
                   <X size={12} /> 취소
                 </button>
               )}
             </div>
 
-            {/* 저자 설정 */}
-            <div className="px-4 pt-3 flex items-center gap-3 flex-wrap">
+            {/* 저자 */}
+            <div className="px-4 pt-3 flex flex-wrap items-center gap-2">
               <input
                 value={authorName}
                 onChange={e => setAuthorName(e.target.value)}
                 placeholder="작성자 이름"
                 className="text-xs px-2 py-1 rounded-lg bg-surface border border-border-main text-primary outline-none focus:border-[#FF6F0F]/50 w-28"
               />
-              <div className="flex gap-1">
+              <div className="flex gap-1 flex-wrap">
                 {AUTHOR_EMOJIS.map(em => (
                   <button key={em} onClick={() => setAuthorEmoji(em)}
                     className={`w-7 h-7 rounded-lg text-base flex items-center justify-center transition ${authorEmoji === em ? 'bg-[#FF6F0F]/20 ring-1 ring-[#FF6F0F]/50' : 'hover:bg-fill-medium'}`}>
@@ -173,46 +181,48 @@ export default function NoticesPage() {
                 value={content}
                 onChange={e => setContent(e.target.value)}
                 placeholder="공지 내용을 입력하세요..."
-                rows={3}
-                className="w-full bg-transparent text-sm text-primary placeholder:text-dim outline-none resize-none leading-relaxed"
+                rows={4}
+                className="w-full bg-transparent text-sm text-primary placeholder:text-dim outline-none resize-none leading-relaxed min-h-[80px]"
               />
             </div>
 
-            {/* 이미지 URL */}
+            {/* 이미지 미리보기 */}
             {imageUrl && (
               <div className="px-4 pb-2 relative">
-                <img src={imageUrl} alt="" className="w-full rounded-xl object-cover max-h-56" onError={() => setImageUrl('')} />
+                <img src={imageUrl} alt="" className="w-full rounded-xl object-cover max-h-40" onError={() => setImageUrl('')} />
                 <button onClick={() => setImageUrl('')} className="absolute top-3 right-6 w-6 h-6 rounded-full bg-black/60 flex items-center justify-center text-white hover:bg-black/80">
                   <X size={12} />
                 </button>
               </div>
             )}
 
-            {/* 하단 툴바 */}
-            <div className="px-4 pb-4 flex items-center gap-2 flex-wrap">
-              {/* 이미지 URL 입력 토글 */}
-              <label className="flex items-center gap-1.5 cursor-pointer px-2.5 py-1.5 rounded-lg text-dim hover:text-primary hover:bg-fill-medium transition text-xs">
-                <ImagePlus size={13} />
-                <span>이미지</span>
+            {/* 이미지 URL 입력 */}
+            <div className="px-4 pb-3">
+              <label className="flex items-center gap-1.5 text-xs text-dim cursor-pointer">
+                <ImagePlus size={12} className="shrink-0" />
                 <input
                   type="text"
-                  placeholder="이미지 URL"
+                  placeholder="이미지 URL 입력 (선택)"
                   value={imageUrl}
                   onChange={e => setImageUrl(e.target.value)}
-                  className="ml-1 w-44 bg-transparent outline-none text-primary placeholder:text-dim border-b border-border-main focus:border-[#FF6F0F]/60"
+                  className="flex-1 bg-transparent outline-none text-primary placeholder:text-dim border-b border-border-main focus:border-[#FF6F0F]/60 text-xs py-0.5"
                 />
               </label>
+            </div>
 
+            {/* 하단 툴바 */}
+            <div className="px-4 pb-4 flex flex-wrap items-center gap-2 border-t border-border-main/50 pt-3">
               {/* 유형 */}
-              <div className="flex gap-1 ml-auto">
+              <div className="flex gap-1">
                 {(Object.keys(TYPE_META) as Notice['notice_type'][]).map(t => {
                   const { label, color, Icon } = TYPE_META[t];
+                  const active = noticeType === t;
                   return (
                     <button key={t} onClick={() => setNoticeType(t)}
                       className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold border transition ${
-                        noticeType === t ? `${color} bg-current/10 border-current/30` : 'text-dim border-border-main hover:border-border-main/60'
+                        active ? `${color} border-current/30 bg-current/10` : 'text-dim border-border-main hover:border-border-main/60'
                       }`}
-                      style={noticeType === t ? { borderColor: 'currentColor', backgroundColor: undefined } : {}}>
+                      style={active ? { borderColor: 'currentColor' } : {}}>
                       <Icon size={11} />
                       {label}
                     </button>
@@ -227,96 +237,109 @@ export default function NoticesPage() {
                 고정
               </button>
 
-              {/* 게시 */}
+              {/* 게시 버튼 */}
               <button
                 onClick={submit}
                 disabled={!content.trim() || submitting}
-                className="ml-2 flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold bg-[#FF6F0F] text-white hover:bg-[#FF6F0F]/90 transition disabled:opacity-40">
-                {submitting ? '저장 중...' : editingId ? <><Check size={12} /> 수정</>  : <><PlusCircle size={12} /> 게시</>}
+                className="ml-auto flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold bg-[#FF6F0F] text-white hover:bg-[#FF6F0F]/90 transition disabled:opacity-40">
+                {submitting ? '저장 중...' : editingId ? <><Check size={12} /> 수정</> : <><PlusCircle size={12} /> 게시</>}
               </button>
             </div>
           </div>
+        </div>
 
-          {/* ── 피드 ── */}
-          {loading ? (
-            <div className="space-y-4">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="bg-card border border-border-main rounded-2xl p-4 h-28 animate-pulse" />
-              ))}
-            </div>
-          ) : notices.length === 0 ? (
-            <div className="py-16 text-center text-muted text-sm">아직 공지사항이 없습니다.</div>
-          ) : (
-            <div className="space-y-3">
-              {notices.map(n => {
+        {/* ── 오른쪽: 피드 (스크롤) ── */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="grid grid-cols-2 gap-4 p-5 content-start">
+
+            {loading ? (
+              <>
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="bg-card border border-border-main rounded-2xl p-4 h-36 animate-pulse" />
+                ))}
+              </>
+            ) : notices.length === 0 ? (
+              <div className="col-span-2 py-20 text-center text-muted text-sm">아직 공지사항이 없습니다.</div>
+            ) : (
+              notices.map(n => {
                 const { label, color, bg, Icon } = TYPE_META[n.notice_type];
+                const fresh = isNew(n.created_at);
                 return (
                   <div key={n.id}
-                    className={`bg-card border rounded-2xl overflow-hidden transition ${n.is_pinned ? 'border-[#FF6F0F]/40' : 'border-border-main'}`}>
+                    className={`bg-card border rounded-2xl overflow-hidden flex flex-col transition ${
+                      editingId === n.id ? 'ring-2 ring-[#FF6F0F]/50 border-[#FF6F0F]/40' : n.is_pinned ? 'border-[#FF6F0F]/30' : 'border-border-main'
+                    }`}>
+
                     {/* 고정 배너 */}
                     {n.is_pinned && (
-                      <div className="px-4 py-1.5 bg-[#FF6F0F]/8 border-b border-[#FF6F0F]/20 flex items-center gap-1.5">
-                        <Pin size={11} className="text-[#FF6F0F]" />
+                      <div className="px-3 py-1 bg-[#FF6F0F]/8 border-b border-[#FF6F0F]/20 flex items-center gap-1.5">
+                        <Pin size={10} className="text-[#FF6F0F]" />
                         <span className="text-[10px] font-semibold text-[#FF6F0F]">고정된 공지</span>
                       </div>
                     )}
 
                     {/* 헤더 */}
-                    <div className="px-4 pt-4 pb-2 flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-full bg-fill-medium flex items-center justify-center text-xl shrink-0">
+                    <div className="px-3 pt-3 pb-2 flex items-start gap-2.5">
+                      <div className="w-9 h-9 rounded-full bg-fill-medium flex items-center justify-center text-lg shrink-0">
                         {n.author_emoji}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-sm font-bold text-primary">{n.author_name}</span>
-                          <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${bg} ${color}`}>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-xs font-bold text-primary truncate">{n.author_name}</span>
+                          {fresh && (
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-500 text-white leading-none">NEW</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                          <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full border ${bg} ${color}`}>
                             <Icon size={9} />
                             {label}
                           </span>
-                          <span className="text-[10px] text-dim ml-auto">{timeAgo(n.created_at)}</span>
+                          <span className="text-[10px] text-dim">{timeAgo(n.created_at)}</span>
                         </div>
                       </div>
                     </div>
 
                     {/* 본문 */}
-                    <div className="px-4 pb-3">
-                      <p className="text-sm text-primary leading-relaxed whitespace-pre-wrap">{n.content}</p>
+                    <div className="px-3 pb-2 flex-1">
+                      <p className="text-xs text-primary leading-relaxed whitespace-pre-wrap line-clamp-4">{n.content}</p>
                     </div>
 
                     {/* 이미지 */}
                     {n.image_url && (
-                      <div className="px-4 pb-3">
-                        <img src={n.image_url} alt="" className="w-full rounded-xl object-cover max-h-64" />
+                      <div className="px-3 pb-2">
+                        <img src={n.image_url} alt="" className="w-full rounded-lg object-cover max-h-32" />
                       </div>
                     )}
 
                     {/* 액션 바 */}
-                    <div className="px-4 pb-3 flex items-center gap-1 border-t border-border-main/50 pt-2.5">
-                      <div className="flex items-center gap-1 text-dim mr-3">
-                        <Heart size={13} />
-                        <span className="text-[11px]">{n.like_count}</span>
+                    <div className="px-3 pb-2.5 flex items-center gap-1 border-t border-border-main/40 pt-2">
+                      <div className="flex items-center gap-1 text-dim">
+                        <Heart size={12} />
+                        <span className="text-[10px]">{n.like_count}</span>
                       </div>
                       <div className="flex-1" />
                       <button onClick={() => togglePin(n)}
                         title={n.is_pinned ? '고정 해제' : '고정'}
-                        className={`p-1.5 rounded-lg transition ${n.is_pinned ? 'text-[#FF6F0F]' : 'text-dim hover:text-primary'}`}>
-                        <Pin size={13} />
+                        className={`p-1 rounded transition ${n.is_pinned ? 'text-[#FF6F0F]' : 'text-dim hover:text-primary'}`}>
+                        <Pin size={12} />
                       </button>
                       <button onClick={() => startEdit(n)}
-                        className="p-1.5 rounded-lg text-dim hover:text-primary transition">
-                        <Pencil size={13} />
+                        className="p-1 rounded text-dim hover:text-primary transition">
+                        <Pencil size={12} />
                       </button>
                       <button onClick={() => del(n.id)}
-                        className="p-1.5 rounded-lg text-dim hover:text-red-400 transition">
-                        <Trash2 size={13} />
+                        className="p-1 rounded text-dim hover:text-red-400 transition">
+                        <Trash2 size={12} />
                       </button>
                     </div>
                   </div>
                 );
-              })}
-            </div>
-          )}
+              })
+            )}
+          </div>
         </div>
+
       </div>
     </div>
   );
