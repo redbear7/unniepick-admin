@@ -270,21 +270,24 @@ function WaveformEditor({
     } else {
       onPlayStart?.();
       el.currentTime = startSec;
-      el.play().catch(() => {});
-      setPlaying(true);
-      const tick = () => {
-        if (!audioRef.current) return;
-        const elapsed  = audioRef.current.currentTime - startSec;
-        const progress = Math.min(elapsed / windowSec, 1);
-        setPlayPos(progress);
-        if (progress < 1 && !audioRef.current.paused) {
-          animFrameRef.current = requestAnimationFrame(tick);
-        } else {
-          audioRef.current.pause();
-          setPlaying(false); setPlayPos(0);
-        }
-      };
-      animFrameRef.current = requestAnimationFrame(tick);
+      el.play().then(() => {
+        setPlaying(true);
+        const tick = () => {
+          if (!audioRef.current) return;
+          const elapsed  = audioRef.current.currentTime - startSec;
+          const progress = Math.min(elapsed / windowSec, 1);
+          setPlayPos(progress);
+          if (progress < 1 && !audioRef.current.paused) {
+            animFrameRef.current = requestAnimationFrame(tick);
+          } else {
+            audioRef.current.pause();
+            setPlaying(false); setPlayPos(0);
+          }
+        };
+        animFrameRef.current = requestAnimationFrame(tick);
+      }).catch((err) => {
+        console.error('[WaveformEditor] play() 실패:', err);
+      });
     }
   }, [playing, startSec, windowSec, onPlayStart]);
 
@@ -303,7 +306,7 @@ function WaveformEditor({
   return (
     <div className="flex flex-col gap-2 select-none">
       {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-      <audio ref={audioRef} src={audioUrl} preload="metadata" />
+      <audio ref={audioRef} src={audioUrl} preload="auto" />
 
       <div className="relative">
         {loading && (
@@ -445,23 +448,26 @@ function LivePreviewFrame({
     } else {
       onPlayStart?.();
       el.currentTime = startSec;
-      el.play().catch(() => {});
-      setPlaying(true);
-      const startTime = performance.now();
-      const totalMs   = durationSec * 1000;
-      const tick = () => {
-        const elapsed = performance.now() - startTime;
-        const pct = Math.min(elapsed / totalMs, 1);
-        setProgress(pct);
-        if (pct < 1 && !el.paused) {
-          animRef.current = requestAnimationFrame(tick);
-        } else {
-          el.pause();
-          setPlaying(false);
-          setProgress(0);
-        }
-      };
-      animRef.current = requestAnimationFrame(tick);
+      el.play().then(() => {
+        setPlaying(true);
+        const startTime = performance.now();
+        const totalMs   = durationSec * 1000;
+        const tick = () => {
+          const elapsed = performance.now() - startTime;
+          const pct = Math.min(elapsed / totalMs, 1);
+          setProgress(pct);
+          if (pct < 1 && !el.paused) {
+            animRef.current = requestAnimationFrame(tick);
+          } else {
+            el.pause();
+            setPlaying(false);
+            setProgress(0);
+          }
+        };
+        animRef.current = requestAnimationFrame(tick);
+      }).catch((err) => {
+        console.error('[LivePreviewFrame] play() 실패:', err);
+      });
     }
   };
 
@@ -469,7 +475,7 @@ function LivePreviewFrame({
     <div className="flex flex-col items-center gap-1.5 flex-1 min-w-0">
       <p className="text-[10px] text-dim">라이브 미리보기</p>
       {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-      <audio ref={audioRef} src={audioUrl} preload="metadata" />
+      <audio ref={audioRef} src={audioUrl} preload="auto" />
 
       {/* 9:16 프레임 */}
       <div
