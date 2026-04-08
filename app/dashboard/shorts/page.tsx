@@ -1806,74 +1806,6 @@ export default function ShortsPage() {
             </>
           )}
 
-          {/* ── 히스토리 (오른쪽 패널 하단) ── */}
-          {history.length > 0 && (
-            <div className="bg-card border border-border-main rounded-xl p-4 flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <h2 className="text-sm font-bold text-tertiary flex items-center gap-2">
-                  <Clock size={14} /> 생성 히스토리
-                  <span className="text-dim font-normal">· {history.length}건 · 로컬 저장</span>
-                </h2>
-                <button
-                  onClick={() => { if (confirm('숏폼 히스토리를 모두 삭제할까요?')) { saveShortsHistory([]); setHistory([]); } }}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold text-dim hover:text-red-400 hover:bg-red-500/10 transition">
-                  <Trash2 size={11} /> 전체 삭제
-                </button>
-              </div>
-              <div className="flex flex-col gap-4">
-                {history.map(h => (
-                  <div key={h.id} className="flex flex-col gap-2">
-                    <div
-                      className="relative w-full rounded-xl overflow-hidden group cursor-pointer"
-                      style={{ aspectRatio: '9/16' }}
-                      onClick={() => openHistoryPlayer(h)}
-                    >
-                      <video
-                        src={h.videoUrl}
-                        className="w-full h-full object-cover"
-                        muted playsInline
-                        onMouseEnter={e => (e.target as HTMLVideoElement).play().catch(() => {})}
-                        onMouseLeave={e => { const v = e.target as HTMLVideoElement; v.pause(); v.currentTime = 0; }}
-                      />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition flex items-center justify-center opacity-0 group-hover:opacity-100">
-                        <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center">
-                          <Play size={18} className="text-black ml-0.5" />
-                        </div>
-                      </div>
-                      <div className="absolute top-2 right-2 bg-black/50 rounded px-1.5 py-0.5 text-[9px] text-white/70">
-                        {new Date(h.createdAt).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
-                      </div>
-                    </div>
-                    <div className="px-1 space-y-1">
-                      <p className="text-xs text-primary font-semibold truncate">{h.trackTitle}</p>
-                      <p className="text-[10px] text-dim truncate">{h.artist}</p>
-                      <div className="flex gap-1">
-                        {h.durationSec && (
-                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/5 text-dim">{h.durationSec}초</span>
-                        )}
-                        {h.waveformStyle && (
-                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/5 text-dim capitalize">{h.waveformStyle}</span>
-                        )}
-                      </div>
-                      <div className="flex gap-1.5">
-                        <button
-                          onClick={() => { if (selected?.id === h.trackId) loadFromHistory(h); }}
-                          title="설정 불러오기"
-                          className={`flex-1 py-1 rounded text-[10px] font-semibold transition border ${selected?.id === h.trackId ? 'border-[#FF6F0F]/40 text-[#FF9F4F] hover:bg-[#FF6F0F]/10' : 'border-border-subtle text-dim opacity-40 cursor-not-allowed'}`}>
-                          <RotateCcw size={9} className="inline mr-0.5" /> 설정
-                        </button>
-                        <button
-                          onClick={() => { removeShortsHistory(h.id); setHistory(loadShortsHistory()); }}
-                          className="flex-1 py-1 rounded text-[10px] font-semibold border border-border-subtle text-dim hover:text-red-400 hover:border-red-500/30 transition">
-                          <Trash2 size={9} className="inline mr-0.5" /> 삭제
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
 
         {/* ── 4단: 미리보기 패널 ── */}
@@ -1988,6 +1920,75 @@ export default function ShortsPage() {
             <div className="flex flex-col items-center justify-center h-full gap-3 opacity-30">
               <Film size={28} className="text-muted" />
               <p className="text-xs text-muted text-center">트랙 선택 후<br/>미리보기가 표시됩니다</p>
+            </div>
+          )}
+
+          {/* ── 생성 히스토리 ── */}
+          {history.length > 0 && (
+            <div className="bg-card border border-border-main rounded-xl p-4 flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-bold text-tertiary flex items-center gap-2">
+                  <Film size={14} className="text-[#FF6F0F]" /> 생성 히스토리
+                  <span className="text-dim font-normal">· {history.length}건</span>
+                </h2>
+                <button
+                  onClick={() => { if (confirm('숏폼 히스토리를 모두 삭제할까요?')) { saveShortsHistory([]); setHistory([]); } }}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold text-dim hover:text-red-400 hover:bg-red-500/10 transition">
+                  <Trash2 size={11} /> 전체 삭제
+                </button>
+              </div>
+              <div className="flex flex-col gap-4">
+                {history.map(h => (
+                  <div key={h.id} className="flex flex-col gap-2">
+                    <div
+                      className="relative w-full rounded-xl overflow-hidden group cursor-pointer"
+                      style={{ aspectRatio: '9/16' }}
+                      onClick={() => openHistoryPlayer(h)}
+                    >
+                      <video
+                        src={h.videoUrl}
+                        className="w-full h-full object-cover"
+                        muted playsInline
+                        onMouseEnter={e => (e.target as HTMLVideoElement).play().catch(() => {})}
+                        onMouseLeave={e => { const v = e.target as HTMLVideoElement; v.pause(); v.currentTime = 0; }}
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition flex items-center justify-center opacity-0 group-hover:opacity-100">
+                        <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center">
+                          <Play size={18} className="text-black ml-0.5" />
+                        </div>
+                      </div>
+                      <div className="absolute top-2 right-2 bg-black/50 rounded px-1.5 py-0.5 text-[9px] text-white/70">
+                        {new Date(h.createdAt).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
+                      </div>
+                    </div>
+                    <div className="px-1 space-y-1">
+                      <p className="text-xs text-primary font-semibold truncate">{h.trackTitle}</p>
+                      <p className="text-[10px] text-dim truncate">{h.artist}</p>
+                      <div className="flex gap-1">
+                        {h.durationSec && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/5 text-dim">{h.durationSec}초</span>
+                        )}
+                        {h.waveformStyle && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/5 text-dim capitalize">{h.waveformStyle}</span>
+                        )}
+                      </div>
+                      <div className="flex gap-1.5">
+                        <button
+                          onClick={() => { if (selected?.id === h.trackId) loadFromHistory(h); }}
+                          title="설정 불러오기"
+                          className={`flex-1 py-1 rounded text-[10px] font-semibold transition border ${selected?.id === h.trackId ? 'border-[#FF6F0F]/40 text-[#FF9F4F] hover:bg-[#FF6F0F]/10' : 'border-border-subtle text-dim opacity-40 cursor-not-allowed'}`}>
+                          <RotateCcw size={9} className="inline mr-0.5" /> 설정
+                        </button>
+                        <button
+                          onClick={() => { removeShortsHistory(h.id); setHistory(loadShortsHistory()); }}
+                          className="flex-1 py-1 rounded text-[10px] font-semibold border border-border-subtle text-dim hover:text-red-400 hover:border-red-500/30 transition">
+                          <Trash2 size={9} className="inline mr-0.5" /> 삭제
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
