@@ -370,6 +370,7 @@ interface LivePreviewFrameProps {
   couponTop: number;
   genreTag?: string;
   moodTag?: string;
+  waveformStyle?: 'bar' | 'mirror' | 'wave' | 'circle' | 'dots';
   onPlayStart?: () => void;
 }
 
@@ -380,6 +381,7 @@ function LivePreviewFrame({
   trackTitle, artist,
   headerTop, infoTop, couponTop,
   genreTag, moodTag,
+  waveformStyle = 'bar',
   onPlayStart,
 }: LivePreviewFrameProps) {
   const audioRef      = useRef<HTMLAudioElement | null>(null);
@@ -421,18 +423,72 @@ function LivePreviewFrame({
     const ctx = canvas.getContext('2d')!;
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, W, H);
-    const bars = 32;
-    const bw   = W / bars;
     const mid  = H / 2;
-    for (let i = 0; i < bars; i++) {
-      const amp = playing
-        ? Math.max(0.15, Math.abs(Math.sin((wavePhase + i * 0.55) * 1.3)) * 0.85)
-        : 0.18;
-      const h = amp * H * 0.85;
-      ctx.fillStyle = playing ? `rgba(255,111,15,${0.4 + amp * 0.6})` : 'rgba(255,255,255,0.18)';
-      ctx.fillRect(i * bw + 1, mid - h / 2, Math.max(bw - 2, 1), h);
+    const color  = (alpha: number) => playing ? `rgba(255,111,15,${alpha})` : `rgba(255,255,255,${alpha * 0.4})`;
+    const getAmp = (i: number) =>
+      playing ? Math.max(0.15, Math.abs(Math.sin((wavePhase + i * 0.55) * 1.3)) * 0.85) : 0.18 + 0.08 * Math.abs(Math.sin(i * 0.7));
+
+    if (waveformStyle === 'bar') {
+      const bars = 32; const bw = W / bars;
+      for (let i = 0; i < bars; i++) {
+        const amp = getAmp(i);
+        const h = amp * H * 0.85;
+        ctx.fillStyle = color(0.4 + amp * 0.6);
+        ctx.fillRect(i * bw + 1, mid - h / 2, Math.max(bw - 2, 1), h);
+      }
+
+    } else if (waveformStyle === 'mirror') {
+      const bars = 32; const bw = W / bars;
+      for (let i = 0; i < bars; i++) {
+        const amp = getAmp(i);
+        const h = amp * H * 0.42;
+        ctx.fillStyle = color(0.4 + amp * 0.6);
+        ctx.fillRect(i * bw + 1, mid - h, Math.max(bw - 2, 1), h);        // 위
+        ctx.fillRect(i * bw + 1, mid,      Math.max(bw - 2, 1), h);        // 아래
+      }
+
+    } else if (waveformStyle === 'wave') {
+      const pts = 64;
+      ctx.beginPath();
+      for (let i = 0; i <= pts; i++) {
+        const amp = getAmp(i);
+        const x = (i / pts) * W;
+        const y = mid + Math.sin((wavePhase + i * 0.4) * 1.5) * amp * mid * 0.8;
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = color(0.85);
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+    } else if (waveformStyle === 'circle') {
+      const bars = 24;
+      const cx = W / 2; const cy = H / 2;
+      const baseR = Math.min(cx, cy) * 0.45;
+      for (let i = 0; i < bars; i++) {
+        const amp = getAmp(i);
+        const angle = (i / bars) * Math.PI * 2 - Math.PI / 2;
+        const r1 = baseR;
+        const r2 = baseR + amp * H * 0.38;
+        ctx.beginPath();
+        ctx.moveTo(cx + Math.cos(angle) * r1, cy + Math.sin(angle) * r1);
+        ctx.lineTo(cx + Math.cos(angle) * r2, cy + Math.sin(angle) * r2);
+        ctx.strokeStyle = color(0.4 + amp * 0.6);
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+
+    } else if (waveformStyle === 'dots') {
+      const dots = 32; const bw = W / dots;
+      for (let i = 0; i < dots; i++) {
+        const amp = getAmp(i);
+        const r = Math.max(1.5, amp * H * 0.22);
+        ctx.beginPath();
+        ctx.arc(i * bw + bw / 2, mid, r, 0, Math.PI * 2);
+        ctx.fillStyle = color(0.4 + amp * 0.6);
+        ctx.fill();
+      }
     }
-  }, [playing, wavePhase]);
+  }, [playing, wavePhase, waveformStyle]);
 
   useEffect(() => {
     if (!playing) return;
@@ -1138,7 +1194,7 @@ export default function ShortsPage() {
                   <h2 className="text-base font-bold text-primary truncate">{selected.title}</h2>
                   <p className="text-sm text-muted mt-0.5">{selected.artist}</p>
                   <div className="flex flex-wrap gap-1.5 mt-2">
-                    {(selected.mood_tags ?? []).slice(0, 5).map((tag) => (
+                    {(selected.mood_tags ?? []).slice(0, 3).map((tag) => (
                       <span
                         key={tag}
                         className="text-[10px] px-2 py-0.5 rounded-full bg-[#FF6F0F]/15 text-[#FF9F4F] border border-[#FF6F0F]/20"
@@ -1854,6 +1910,7 @@ export default function ShortsPage() {
                 headerTop={headerTop}
                 infoTop={infoTop}
                 couponTop={couponTop}
+                waveformStyle={waveformStyle}
                 onPlayStart={() => { if (player.isPlaying) player.pause(); }}
               />
 
@@ -1973,6 +2030,7 @@ export default function ShortsPage() {
                 headerTop={headerTop}
                 infoTop={infoTop}
                 couponTop={couponTop}
+                waveformStyle={waveformStyle}
                 onPlayStart={() => { if (player.isPlaying) player.pause(); }}
               />
             </div>
