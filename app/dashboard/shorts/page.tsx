@@ -13,7 +13,6 @@ import {
   Pause,
   ChevronLeft,
   ChevronRight,
-  Music2,
   Sparkles,
   ExternalLink,
   Trash2,
@@ -1047,16 +1046,9 @@ export default function ShortsPage() {
           </div>
         </div>
 
-        {/* ── 오른쪽: 편집 & 생성 패널 ── */}
-        <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-4">
-          {!selected ? (
-            <div className="bg-card border border-border-main rounded-xl flex flex-col items-center justify-center py-24 gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center">
-                <Music2 size={28} className="text-muted" />
-              </div>
-              <p className="text-sm text-muted">왼쪽에서 트랙을 선택하세요</p>
-            </div>
-          ) : (
+        {/* ── 2단: 기본 설정 패널 ── */}
+        <div className="w-[300px] shrink-0 border-r border-white/5 overflow-y-auto p-4 flex flex-col gap-4">
+          {selected && (
             <>
               {/* ── 선택 트랙 정보 ── */}
               <div className="bg-card border border-border-main rounded-xl p-5 flex gap-4 items-start">
@@ -1296,7 +1288,14 @@ export default function ShortsPage() {
                   <p className="text-[10px] text-muted">비워두면 해당 텍스트는 영상에 표시되지 않습니다.</p>
                 </div>
               </div>
+            </>
+          )}
+        </div>
 
+        {/* ── 3단: 구간 설정 & 생성 패널 ── */}
+        <div className="flex-1 border-r border-white/5 overflow-y-auto p-4 flex flex-col gap-4">
+          {selected && (
+            <>
               {/* ── 클라이맥스 구간 설정 ── */}
               <div className="bg-card border border-border-main rounded-xl p-5 flex flex-col gap-4">
                 <div className="flex items-center justify-between">
@@ -1514,140 +1513,6 @@ export default function ShortsPage() {
                 </div>
               )}
 
-              {/* ── 쇼츠 구성 미리보기 ── */}
-              <div className="bg-card border border-border-main rounded-xl p-5 flex flex-col gap-4">
-                <p className="text-sm font-semibold text-primary">쇼츠 구성 미리보기</p>
-
-                <div className="flex gap-4 items-start">
-                  {/* ── 왼쪽: 정적 레이아웃 썸네일 ── */}
-                  <div className="flex flex-col items-center gap-1.5 shrink-0">
-                    <p className="text-[10px] text-dim">레이아웃</p>
-                    <div
-                      className="relative rounded-xl overflow-hidden shrink-0"
-                      style={{ width: 108, height: 192, background: '#111' }}
-                    >
-                      {(coverPreviewUrl || selected.cover_image_url) ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={coverPreviewUrl ?? selected.cover_image_url!} alt="" className="absolute inset-0 w-full h-full object-cover" />
-                      ) : (
-                        <div className="absolute inset-0 flex items-center justify-center text-4xl bg-[#1a1a2e]">{selected.cover_emoji}</div>
-                      )}
-                      <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg,rgba(0,0,0,0.72) 0%,rgba(0,0,0,0.05) 45%,rgba(0,0,0,0.75) 100%)' }} />
-                      <div className="absolute left-2 right-2" style={{ top: `${headerTop}%` }}>
-                        {shortsTitle   && <p className="text-white text-[7px] font-black leading-tight line-clamp-2">{shortsTitle}</p>}
-                        {shortsTagline && <p className="text-[#FF9F4F] text-[6px] font-bold mt-0.5 truncate">{shortsTagline}</p>}
-                      </div>
-                      {selectedCoupon && (
-                        <div className="absolute left-2 right-2" style={{ top: `${couponTop}%` }}>
-                          <div className="bg-[#FF6F0F]/90 rounded-md px-1.5 py-0.5 flex items-center gap-1">
-                            <span className="text-[9px]">🎟</span>
-                            <div className="min-w-0">
-                              <p className="text-white text-[5px] font-semibold truncate">{selectedCoupon.title}</p>
-                              <p className="text-white text-[6px] font-black">
-                                {selectedCoupon.discount_type === 'percent' ? `${selectedCoupon.discount_value}% 할인` : `${selectedCoupon.discount_value.toLocaleString()}원 할인`}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                      <div className="absolute left-2 right-2" style={{ top: `${infoTop}%` }}>
-                        <p className="text-white text-[6px] font-semibold leading-tight truncate">🎵 {selected.title}</p>
-                        <p className="text-white/60 text-[5px] truncate mt-0.5">{selected.artist}</p>
-                      </div>
-                      <div className="absolute top-1.5 right-1.5 bg-[#FF6F0F]/90 rounded text-white text-[5px] font-bold px-1 py-0.5">언니픽</div>
-                      {storeName && (
-                        <div className="absolute bottom-5 left-2 right-2 text-center">
-                          <span className="text-[6px] font-bold text-white bg-black/60 px-1.5 py-0.5 rounded truncate block">
-                            {storeName}
-                          </span>
-                        </div>
-                      )}
-                      <div className="absolute bottom-2 left-2 right-2 h-0.5 bg-white/10 rounded">
-                        <div className="h-full w-1/3 bg-[#FF6F0F] rounded" />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* ── 오른쪽: 라이브 미리보기 ── */}
-                  <LivePreviewFrame
-                    audioUrl={selected.audio_url}
-                    coverUrl={coverPreviewUrl ?? selected.cover_image_url}
-                    coverEmoji={selected.cover_emoji}
-                    bgVideoUrl={bgVideoPreviewUrl}
-                    startSec={startSec}
-                    durationSec={durationSec}
-                    shortsTitle={shortsTitle}
-                    shortsTagline={shortsTagline}
-                    selectedCoupon={selectedCoupon}
-                    trackTitle={selected.title}
-                    artist={selected.artist}
-                    headerTop={headerTop}
-                    infoTop={infoTop}
-                    couponTop={couponTop}
-                    storeName={storeName.trim() || undefined}
-                    onPlayStart={() => { if (player.isPlaying) player.pause(); }}
-                  />
-                </div>
-
-                {/* ── 구성 정보 ── */}
-                <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-muted border-t border-border-main pt-3">
-                  {[
-                    ['해상도',    '720 × 1280 (9:16)'],
-                    ['프레임레이트', '30fps'],
-                    ['영상 길이',  `${durationSec}초 (${durationSec * 30}f)`],
-                    ['코덱',      'H.264 MP4'],
-                    ['오디오 시작', fmtSec(startSec)],
-                    ['무드 태그',  (selected.mood_tags ?? []).slice(0, 3).join(', ') || '-'],
-                  ].map(([k, v]) => (
-                    <div key={k} className="flex justify-between">
-                      <span>{k}</span>
-                      <span className="text-primary font-medium">{v}</span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* ── 이 음원으로 제작된 영상 ── */}
-                {trackHistory.length > 0 && (
-                  <div className="border-t border-border-main pt-3">
-                    <p className="text-xs font-semibold text-tertiary mb-2 flex items-center gap-1.5">
-                      <Film size={12} /> 이 음원으로 제작된 영상 · {trackHistory.length}개
-                    </p>
-                    <div className="flex gap-3 overflow-x-auto scrollbar-none pb-1">
-                      {trackHistory.map(h => (
-                        <div key={h.id} className="shrink-0 flex flex-col gap-1">
-                          <div
-                            className="relative rounded-lg overflow-hidden cursor-pointer group bg-black"
-                            style={{ width: 72, aspectRatio: '9/16' }}
-                            onClick={() => openHistoryPlayer(h)}
-                          >
-                            {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-                            <video
-                              src={h.videoUrl}
-                              className="w-full h-full object-cover"
-                              muted playsInline
-                              onMouseEnter={e => (e.target as HTMLVideoElement).play().catch(() => {})}
-                              onMouseLeave={e => { const v = e.target as HTMLVideoElement; v.pause(); v.currentTime = 0; }}
-                            />
-                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition flex items-center justify-center opacity-0 group-hover:opacity-100">
-                              <div className="w-7 h-7 rounded-full bg-white/90 flex items-center justify-center">
-                                <Play size={11} className="text-black ml-0.5" />
-                              </div>
-                            </div>
-                            {h.storeName && (
-                              <div className="absolute bottom-0 left-0 right-0 bg-black/60 px-1 py-0.5">
-                                <p className="text-[7px] text-[#FF9F4F] truncate text-center">{h.storeName}</p>
-                              </div>
-                            )}
-                          </div>
-                          <p className="text-[8px] text-dim text-center">
-                            {new Date(h.createdAt).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
 
               {/* ── 요소 위치 조정 ── */}
               <div className="bg-card border border-border-main rounded-xl p-5 flex flex-col gap-4">
@@ -1905,6 +1770,106 @@ export default function ShortsPage() {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+        </div>
+
+        {/* ── 4단: 미리보기 패널 ── */}
+        <div className="w-[230px] shrink-0 overflow-y-auto p-4 flex flex-col gap-4">
+          {selected ? (
+            <>
+              {/* 제목 */}
+              <p className="text-sm font-semibold text-primary flex items-center gap-2">
+                <Film size={14} className="text-[#FF6F0F]" /> 미리보기
+              </p>
+
+              {/* 정적 레이아웃 썸네일 */}
+              <div className="flex flex-col items-center gap-1">
+                <p className="text-[10px] text-dim self-start">레이아웃</p>
+                <div
+                  className="relative rounded-xl overflow-hidden w-full"
+                  style={{ aspectRatio: '9/16', background: '#111' }}
+                >
+                  {(coverPreviewUrl || selected.cover_image_url) ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={coverPreviewUrl ?? selected.cover_image_url!} alt="" className="absolute inset-0 w-full h-full object-cover" />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center text-5xl bg-[#1a1a2e]">{selected.cover_emoji}</div>
+                  )}
+                  <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg,rgba(0,0,0,0.72) 0%,rgba(0,0,0,0.05) 45%,rgba(0,0,0,0.75) 100%)' }} />
+                  <div className="absolute left-2 right-2" style={{ top: `${headerTop}%` }}>
+                    {shortsTitle   && <p className="text-white text-[8px] font-black leading-tight line-clamp-2">{shortsTitle}</p>}
+                    {shortsTagline && <p className="text-[#FF9F4F] text-[7px] font-bold mt-0.5 truncate">{shortsTagline}</p>}
+                  </div>
+                  {selectedCoupon && (
+                    <div className="absolute left-2 right-2" style={{ top: `${couponTop}%` }}>
+                      <div className="bg-[#FF6F0F]/90 rounded-md px-1.5 py-0.5 flex items-center gap-1">
+                        <span className="text-[10px]">🎟</span>
+                        <div className="min-w-0">
+                          <p className="text-white text-[6px] font-semibold truncate">{selectedCoupon.title}</p>
+                          <p className="text-white text-[7px] font-black">
+                            {selectedCoupon.discount_type === 'percent' ? `${selectedCoupon.discount_value}% 할인` : `${selectedCoupon.discount_value.toLocaleString()}원 할인`}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <div className="absolute left-2 right-2" style={{ top: `${infoTop}%` }}>
+                    <p className="text-white text-[7px] font-semibold leading-tight truncate">🎵 {selected.title}</p>
+                    <p className="text-white/60 text-[6px] truncate mt-0.5">{selected.artist}</p>
+                  </div>
+                  <div className="absolute top-1.5 right-1.5 bg-[#FF6F0F]/90 rounded text-white text-[6px] font-bold px-1 py-0.5">언니픽</div>
+                  {storeName && (
+                    <div className="absolute bottom-5 left-2 right-2 text-center">
+                      <span className="text-[7px] font-bold text-white bg-black/60 px-1.5 py-0.5 rounded truncate block">{storeName}</span>
+                    </div>
+                  )}
+                  <div className="absolute bottom-2 left-2 right-2 h-0.5 bg-white/10 rounded">
+                    <div className="h-full w-1/3 bg-[#FF6F0F] rounded" />
+                  </div>
+                </div>
+              </div>
+
+              {/* 라이브 미리보기 */}
+              <LivePreviewFrame
+                audioUrl={selected.audio_url}
+                coverUrl={coverPreviewUrl ?? selected.cover_image_url}
+                coverEmoji={selected.cover_emoji}
+                bgVideoUrl={bgVideoPreviewUrl}
+                startSec={startSec}
+                durationSec={durationSec}
+                shortsTitle={shortsTitle}
+                shortsTagline={shortsTagline}
+                selectedCoupon={selectedCoupon}
+                trackTitle={selected.title}
+                artist={selected.artist}
+                headerTop={headerTop}
+                infoTop={infoTop}
+                couponTop={couponTop}
+                storeName={storeName.trim() || undefined}
+                onPlayStart={() => { if (player.isPlaying) player.pause(); }}
+              />
+
+              {/* 구성 정보 */}
+              <div className="flex flex-col gap-1 text-[10px] text-muted border-t border-border-main pt-3">
+                {[
+                  ['해상도', '720×1280'],
+                  ['길이', `${durationSec}초`],
+                  ['시작', fmtSec(startSec)],
+                  ['파형', waveformStyle],
+                  ['코덱', 'H.264'],
+                ].map(([k, v]) => (
+                  <div key={k} className="flex justify-between">
+                    <span>{k}</span>
+                    <span className="text-primary font-medium">{v}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full gap-3 opacity-30">
+              <Film size={28} className="text-muted" />
+              <p className="text-xs text-muted text-center">트랙 선택 후<br/>미리보기가 표시됩니다</p>
             </div>
           )}
         </div>
