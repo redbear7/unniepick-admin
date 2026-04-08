@@ -294,13 +294,30 @@ function WaveformEditor({
     }
   }, [playing, startSec, windowSec, onPlayStart]);
 
-  // Stop playback on section change
+  // 구간 변경 시 즉시 새 위치에서 재생
   useEffect(() => {
-    if (playing && audioRef.current) {
-      audioRef.current.pause();
-      cancelAnimationFrame(animFrameRef.current);
-      setPlaying(false); setPlayPos(0);
-    }
+    const el = audioRef.current;
+    if (!el) return;
+    cancelAnimationFrame(animFrameRef.current);
+    setPlayPos(0);
+    el.currentTime = startSec;
+    onPlayStart?.();
+    el.play().then(() => {
+      setPlaying(true);
+      const tick = () => {
+        if (!audioRef.current) return;
+        const elapsed  = audioRef.current.currentTime - startSec;
+        const progress = Math.min(elapsed / windowSec, 1);
+        setPlayPos(progress);
+        if (progress < 1 && !audioRef.current.paused) {
+          animFrameRef.current = requestAnimationFrame(tick);
+        } else {
+          audioRef.current.pause();
+          setPlaying(false); setPlayPos(0);
+        }
+      };
+      animFrameRef.current = requestAnimationFrame(tick);
+    }).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startSec]);
 
