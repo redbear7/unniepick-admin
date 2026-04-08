@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import OwnerSidebar from '@/components/OwnerSidebar';
+import MascotWidget from '@/components/MascotWidget';
 import { Loader2 } from 'lucide-react';
 
 interface OwnerSession {
@@ -65,6 +66,7 @@ export default function OwnerShell({ children }: { children: React.ReactNode }) 
       <main className="flex-1 overflow-auto">
         {children}
       </main>
+      <MascotWidget userId={session.user_id} />
     </div>
   );
 }
