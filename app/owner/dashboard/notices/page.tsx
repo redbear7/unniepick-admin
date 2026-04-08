@@ -21,6 +21,10 @@ const TYPE_META: Record<Notice['notice_type'], { label: string; color: string; b
   event:     { label: '이벤트', color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/20', Icon: Megaphone },
 };
 
+function isNew(iso: string) {
+  return Date.now() - new Date(iso).getTime() < 24 * 60 * 60 * 1000;
+}
+
 function timeAgo(iso: string) {
   const diff = Date.now() - new Date(iso).getTime();
   const m = Math.floor(diff / 60000);
@@ -70,7 +74,7 @@ export default function OwnerNoticesPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-xl mx-auto px-4 py-5 space-y-0">
+        <div className="w-full px-4 py-5 space-y-0">
 
           {loading ? (
             <div className="space-y-4 pt-2">
@@ -88,17 +92,18 @@ export default function OwnerNoticesPage() {
               const { label, color, bg, Icon } = TYPE_META[n.notice_type];
               const isLiked = liked.has(n.id);
               const isLast = idx === notices.length - 1;
+              const fresh = isNew(n.created_at);
               return (
                 <div key={n.id} className="relative">
                   {/* 스레드 연결선 */}
                   {!isLast && (
-                    <div className="absolute left-[28px] top-[52px] bottom-0 w-px bg-border-main/60 z-0" />
+                    <div className="absolute left-[21px] top-[44px] bottom-0 w-px bg-border-main/50 z-0" />
                   )}
 
-                  <div className={`relative z-10 pb-6 ${n.is_pinned ? '' : ''}`}>
+                  <div className="relative z-10 pb-5">
                     {/* 고정 배너 */}
                     {n.is_pinned && (
-                      <div className="flex items-center gap-1.5 mb-2 pl-14">
+                      <div className="flex items-center gap-1.5 mb-2 pl-12">
                         <Pin size={11} className="text-[#FF6F0F]" />
                         <span className="text-[10px] font-semibold text-[#FF6F0F]">고정된 공지</span>
                       </div>
@@ -112,13 +117,18 @@ export default function OwnerNoticesPage() {
 
                       {/* 본문 */}
                       <div className="flex-1 min-w-0">
-                        {/* 이름 + 뱃지 + 시간 */}
+                        {/* 이름 + 뱃지 + NEW + 시간 */}
                         <div className="flex items-center gap-2 flex-wrap mb-1.5">
                           <span className="text-sm font-bold text-primary">{n.author_name}</span>
                           <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${bg} ${color}`}>
                             <Icon size={9} />
                             {label}
                           </span>
+                          {fresh && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-500 text-white leading-none animate-pulse">
+                              NEW
+                            </span>
+                          )}
                           <span className="text-[10px] text-dim ml-auto whitespace-nowrap">{timeAgo(n.created_at)}</span>
                         </div>
 
