@@ -367,7 +367,6 @@ interface LivePreviewFrameProps {
   infoTop: number;
   couponTop: number;
   onPlayStart?: () => void;
-  fullSize?: boolean;
 }
 
 function LivePreviewFrame({
@@ -377,7 +376,6 @@ function LivePreviewFrame({
   trackTitle, artist,
   headerTop, infoTop, couponTop,
   onPlayStart,
-  fullSize = false,
 }: LivePreviewFrameProps) {
   const audioRef    = useRef<HTMLAudioElement | null>(null);
   const animRef     = useRef<number>(0);
@@ -482,7 +480,7 @@ function LivePreviewFrame({
       {/* 9:16 프레임 */}
       <div
         className="relative rounded-xl overflow-hidden w-full"
-        style={{ maxWidth: fullSize ? undefined : 160, aspectRatio: '9/16', background: '#111' }}
+        style={{ aspectRatio: '9/16', background: '#111' }}
       >
         {/* 배경: 동영상 or 커버 이미지 */}
         {bgVideoUrl ? (
@@ -1858,7 +1856,6 @@ export default function ShortsPage() {
                 artist={selected.artist}
                 headerTop={headerTop}
                 infoTop={infoTop}
-                fullSize
                 couponTop={couponTop}
                 onPlayStart={() => { if (player.isPlaying) player.pause(); }}
               />
