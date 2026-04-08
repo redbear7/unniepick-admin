@@ -204,40 +204,49 @@ export default function OwnerDashboardHome() {
               </Link>
             </div>
 
-            <div className="space-y-0">
+            <div>
               {notices.slice(0, 1).map((n) => {
                 const { label, color, bg, Icon } = NOTICE_TYPE_META[n.notice_type];
                 const fresh = isNew(n.created_at);
                 return (
-                  <div key={n.id} className="flex gap-3 items-start">
-                    {/* 아바타 */}
-                    <div className="w-11 h-11 rounded-full bg-fill-medium flex items-center justify-center text-xl shrink-0 border border-border-main/60">
-                      {n.author_emoji}
-                    </div>
-                    {/* 내용 */}
-                    <div className="flex-1 min-w-0">
-                      {/* 작성자 + 뱃지 + NEW + 날짜 */}
-                      <div className="flex items-center gap-2 flex-wrap mb-1.5">
-                        <span className="text-xs font-semibold text-muted">{n.author_name}</span>
-                        <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${bg} ${color}`}>
-                          <Icon size={9} />{label}
-                        </span>
-                        {fresh && (
-                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-500 text-white leading-none animate-pulse">NEW</span>
-                        )}
-                        {n.is_pinned && <Pin size={11} className="text-[#FF6F0F]" />}
-                        <span className="text-[10px] text-dim ml-auto whitespace-nowrap">
-                          {new Date(n.created_at).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').replace(/\.$/, '')}
-                        </span>
+                  <div key={n.id} className={`bg-card border rounded-2xl overflow-hidden ${n.is_pinned ? 'border-[#FF6F0F]/30' : 'border-border-main'}`}>
+
+                    {/* 핀 고정 배너 */}
+                    {n.is_pinned && (
+                      <div className="px-4 py-1 bg-[#FF6F0F]/8 border-b border-[#FF6F0F]/20 flex items-center gap-1.5">
+                        <Pin size={10} className="text-[#FF6F0F]" />
+                        <span className="text-[10px] font-semibold text-[#FF6F0F]">고정된 공지</span>
                       </div>
-                      {/* 제목 */}
+                    )}
+
+                    {/* 헤더 */}
+                    <div className="px-4 pt-3 pb-2 flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-full bg-fill-medium flex items-center justify-center text-xl shrink-0">
+                        {n.author_emoji}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs font-semibold text-muted">{n.author_name}</span>
+                          <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${bg} ${color}`}>
+                            <Icon size={9} />{label}
+                          </span>
+                          {fresh && (
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-500 text-white leading-none animate-pulse">NEW</span>
+                          )}
+                          <span className="text-[10px] text-dim ml-auto whitespace-nowrap">
+                            {new Date(n.created_at).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').replace(/\.$/, '')}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 제목 + 본문 */}
+                    <div className="px-4 pb-4">
                       {n.title && (
                         <p className="text-sm font-bold text-primary leading-snug mb-1">{n.title}</p>
                       )}
-                      {/* 구분선 */}
                       {n.title && <div className="w-full h-px bg-border-main/40 mb-1.5" />}
-                      {/* 본문 */}
-                      <p className="text-sm text-secondary leading-relaxed line-clamp-2">{n.content}</p>
+                      <p className="text-sm text-secondary leading-relaxed line-clamp-3">{n.content}</p>
                     </div>
                   </div>
                 );
