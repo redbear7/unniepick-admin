@@ -3,7 +3,43 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase';
 import { useOwnerSession } from '@/components/OwnerShell';
-import { User, Phone, CalendarDays, KeyRound, Store, Music, MapPin, Check, Loader2 } from 'lucide-react';
+import { User, Phone, CalendarDays, KeyRound, Store, Music, MapPin, Check, Loader2, Bell, AlertTriangle, Megaphone, MessageCircle, Pin, Heart, ChevronRight } from 'lucide-react';
+import Link from 'next/link';
+
+interface Notice {
+  id: string;
+  author_name: string;
+  author_emoji: string;
+  title: string;
+  content: string;
+  image_url: string | null;
+  notice_type: 'general' | 'important' | 'event';
+  is_pinned: boolean;
+  like_count: number;
+  created_at: string;
+}
+
+const NOTICE_TYPE_META: Record<Notice['notice_type'], { label: string; color: string; bg: string; Icon: React.ComponentType<{ size?: number; className?: string }> }> = {
+  general:   { label: '일반',   color: 'text-blue-400',  bg: 'bg-blue-500/10 border-blue-500/20',   Icon: MessageCircle },
+  important: { label: '중요',   color: 'text-red-400',   bg: 'bg-red-500/10 border-red-500/20',    Icon: AlertTriangle },
+  event:     { label: '이벤트', color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/20', Icon: Megaphone },
+};
+
+function isNew(iso: string) {
+  return Date.now() - new Date(iso).getTime() < 24 * 60 * 60 * 1000;
+}
+
+function timeAgo(iso: string) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return '방금 전';
+  if (m < 60) return `${m}분 전`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}시간 전`;
+  const d = Math.floor(h / 24);
+  if (d < 30) return `${d}일 전`;
+  return new Date(iso).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' });
+}
 
 interface StoreInfo {
   id:        string;
@@ -64,11 +100,29 @@ export default function OwnerDashboardHome() {
   const [pinStatus,    setPinStatus]    = useState<PinStatus | null>(null);
   const [weather,      setWeather]      = useState<WeatherData | null>(null);
   const [weatherLabel, setWeatherLabel] = useState('');
+  const [notices,      setNotices]      = useState<Notice[]>([]);
+  const [likedIds,     setLikedIds]     = useState<Set<string>>(new Set());
 
   // 주소 입력 상태
   const [addressInput,  setAddressInput]  = useState('');
   const [savingAddress, setSavingAddress] = useState(false);
   const [addressSaved,  setAddressSaved]  = useState(false);
+
+  useEffect(() => {
+    fetch('/api/notices')
+      .then(r => r.ok ? r.json() : [])
+      .then(data => setNotices(data));
+  }, []);
+
+  const toggleLike = async (n: Notice) => {
+    const already = likedIds.has(n.id);
+    setLikedIds(prev => { const s = new Set(prev); already ? s.delete(n.id) : s.add(n.id); return s; });
+    setNotices(prev => prev.map(x => x.id === n.id ? { ...x, like_count: x.like_count + (already ? -1 : 1) } : x));
+    await fetch(`/api/notices/${n.id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ like_count: n.like_count + (already ? -1 : 1) }),
+    });
+  };
 
   useEffect(() => {
     if (!session) return;
@@ -146,6 +200,71 @@ export default function OwnerDashboardHome() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
+
+        {/* 공지사항 */}
+        {notices.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-xs font-semibold text-muted uppercase tracking-wider flex items-center gap-1.5">
+                <Bell size={12} />
+                공지사항
+                {notices.some(n => isNew(n.created_at)) && (
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-500 text-white leading-none">NEW</span>
+                )}
+              </h2>
+              <Link href="/owner/dashboard/notices"
+                className="flex items-center gap-0.5 text-[11px] text-dim hover:text-primary transition">
+                전체보기 <ChevronRight size={11} />
+              </Link>
+            </div>
+
+            <div className="space-y-0">
+              {notices.slice(0, 5).map((n, idx) => {
+                const { label, color, bg, Icon } = NOTICE_TYPE_META[n.notice_type];
+                const fresh = isNew(n.created_at);
+                const isLast = idx === Math.min(notices.length, 5) - 1;
+                const isLiked = likedIds.has(n.id);
+                return (
+                  <div key={n.id} className="relative">
+                    {!isLast && (
+                      <div className="absolute left-[21px] top-[44px] bottom-0 w-px bg-border-main/50 z-0" />
+                    )}
+                    <div className="relative z-10 pb-5 flex gap-3 items-start">
+                      {/* 아바타 */}
+                      <div className="w-11 h-11 rounded-full bg-fill-medium flex items-center justify-center text-xl shrink-0 border border-border-main/60">
+                        {n.author_emoji}
+                      </div>
+                      {/* 내용 */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <span className="text-xs font-semibold text-muted">{n.author_name}</span>
+                          <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${bg} ${color}`}>
+                            <Icon size={9} />{label}
+                          </span>
+                          {fresh && (
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-500 text-white leading-none animate-pulse">NEW</span>
+                          )}
+                          {n.is_pinned && <Pin size={11} className="text-[#FF6F0F] ml-auto shrink-0" />}
+                          {!n.is_pinned && <span className="text-[10px] text-dim ml-auto whitespace-nowrap">{timeAgo(n.created_at)}</span>}
+                        </div>
+                        {n.title && (
+                          <p className="text-sm font-bold text-primary leading-snug mb-0.5">{n.title}</p>
+                        )}
+                        <p className="text-sm text-secondary leading-relaxed line-clamp-2">{n.content}</p>
+                        <button
+                          onClick={() => toggleLike(n)}
+                          className={`mt-1.5 flex items-center gap-1.5 text-xs font-semibold transition ${isLiked ? 'text-red-400' : 'text-dim hover:text-red-400'}`}>
+                          <Heart size={13} fill={isLiked ? 'currentColor' : 'none'} />
+                          {n.like_count > 0 && <span>{n.like_count}</span>}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* 계정 정보 */}
         <div>
