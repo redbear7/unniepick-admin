@@ -267,7 +267,7 @@ export default function NoticesPage() {
 
         {/* ── 오른쪽: 피드 1단 ── */}
         <div className="flex-1 overflow-y-auto">
-          <div className="px-5 py-5 space-y-3">
+          <div className="px-5 py-5 space-y-3 w-[500px]">
 
             {loading ? (
               [...Array(3)].map((_, i) => (
