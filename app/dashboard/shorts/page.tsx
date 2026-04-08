@@ -382,10 +382,11 @@ function LivePreviewFrame({
   const animRef       = useRef<number>(0);
   const canvasRef     = useRef<HTMLCanvasElement>(null);
   const containerRef  = useRef<HTMLDivElement>(null);
-  const [playing,     setPlaying]     = useState(false);
-  const [progress,    setProgress]    = useState(0);
-  const [wavePhase,   setWavePhase]   = useState(0);
-  const [frameWidth,  setFrameWidth]  = useState(360);
+  const [playing,       setPlaying]       = useState(false);
+  const [progress,      setProgress]      = useState(0);
+  const [wavePhase,     setWavePhase]     = useState(0);
+  const [frameWidth,    setFrameWidth]    = useState(360);
+  const [couponAnimKey, setCouponAnimKey] = useState(0);
 
   // 기준 해상도 (이 크기로 모든 px 값 설계)
   const BASE_W = 360;
@@ -462,6 +463,7 @@ function LivePreviewFrame({
       el.currentTime = startSec;
       el.play().then(() => {
         setPlaying(true);
+        setCouponAnimKey(k => k + 1);
         const startTime = performance.now();
         const totalMs   = durationSec * 1000;
         const tick = () => {
@@ -485,6 +487,12 @@ function LivePreviewFrame({
 
   return (
     <div className="flex flex-col items-center gap-2 w-full">
+      <style>{`
+        @keyframes couponSlideIn {
+          0%   { opacity: 0; transform: translateY(24px) scale(0.92); }
+          100% { opacity: 1; transform: translateY(0)    scale(1); }
+        }
+      `}</style>
       <p className="text-[10px] text-dim self-start">라이브 미리보기</p>
       {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
       <audio ref={audioRef} src={audioUrl} preload="auto" />
@@ -528,7 +536,7 @@ function LivePreviewFrame({
 
           {/* 쿠폰 */}
           {selectedCoupon && (
-            <div style={{ position:'absolute', left:16, right:16, top:`${couponTop}%` }}>
+            <div key={couponAnimKey} style={{ position:'absolute', left:16, right:16, top:`${couponTop}%`, animation: couponAnimKey > 0 ? 'couponSlideIn 0.5s cubic-bezier(0.34,1.56,0.64,1) both' : 'none' }}>
               <div style={{ background:'rgba(255,111,15,0.92)', borderRadius:12, padding:'10px 14px', display:'flex', alignItems:'center', gap:10 }}>
                 <span style={{ fontSize:24 }}>🎟</span>
                 <div style={{ minWidth:0 }}>
