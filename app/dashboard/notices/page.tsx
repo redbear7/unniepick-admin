@@ -203,8 +203,8 @@ export default function NoticesPage() {
                 value={content}
                 onChange={e => setContent(e.target.value)}
                 placeholder="공지 내용을 입력하세요..."
-                rows={4}
-                className="w-full bg-transparent text-sm text-primary placeholder:text-dim outline-none resize-none leading-relaxed min-h-[80px]"
+                rows={6}
+                className="w-full bg-transparent text-sm text-primary placeholder:text-dim outline-none resize-none leading-relaxed min-h-[104px]"
               />
             </div>
 
