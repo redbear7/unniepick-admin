@@ -77,6 +77,7 @@ interface ShortsHistoryItem {
   startSec: number;
   moodTags: string[];
   createdAt: string;
+  storeName?: string;
   // 재생성을 위한 설정 스냅샷
   waveformStyle?: 'bar' | 'mirror' | 'wave' | 'circle' | 'dots';
   durationSec?: number;
@@ -364,6 +365,10 @@ export default function ShortsPage() {
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzed, setAnalyzed] = useState(false);
 
+  // 가게
+  const [stores,        setStores]        = useState<{ id: string; name: string }[]>([]);
+  const [selectedStore, setSelectedStore] = useState<{ id: string; name: string } | null>(null);
+
   // 쿠폰
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
@@ -430,6 +435,12 @@ export default function ShortsPage() {
   // ── 초기 데이터 로드 ──
   useEffect(() => {
     loadTracks();
+    // 가게 로드
+    sb.from('stores')
+      .select('id, name')
+      .eq('is_active', true)
+      .order('name')
+      .then(({ data }) => setStores((data ?? []) as { id: string; name: string }[]));
     // 활성 쿠폰 로드
     sb.from('coupons')
       .select('id, title, discount_type, discount_value, is_active, expires_at')
@@ -651,6 +662,7 @@ export default function ShortsPage() {
         startSec,
         moodTags: selected.mood_tags ?? [],
         createdAt: new Date().toISOString(),
+        storeName: selectedStore?.name,
         waveformStyle,
         durationSec,
         shortsTitle,
@@ -892,8 +904,13 @@ export default function ShortsPage() {
                               <Play size={14} className="text-black ml-0.5" />
                             </div>
                           </div>
-                          <div className="absolute bottom-1 left-1 right-1 text-center">
-                            <span className="text-[8px] text-white/70 bg-black/50 rounded px-1">
+                          <div className="absolute bottom-1 left-1 right-1 text-center space-y-0.5">
+                            {h.storeName && (
+                              <span className="block text-[8px] text-white/80 bg-[#FF6F0F]/70 rounded px-1 truncate">
+                                {h.storeName}
+                              </span>
+                            )}
+                            <span className="block text-[8px] text-white/60 bg-black/50 rounded px-1">
                               {new Date(h.createdAt).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
                             </span>
                           </div>
@@ -1422,6 +1439,24 @@ export default function ShortsPage() {
 
               {/* ── 생성 버튼 & 결과 ── */}
               <div className="bg-card border border-border-main rounded-xl p-5 flex flex-col gap-4">
+                {/* 가게 선택 */}
+                <div>
+                  <label className="text-xs text-muted mb-1.5 block">🏪 제작 가게 (선택)</label>
+                  <select
+                    value={selectedStore?.id ?? ''}
+                    onChange={e => {
+                      const s = stores.find(s => s.id === e.target.value) ?? null;
+                      setSelectedStore(s);
+                    }}
+                    className="w-full appearance-none px-3 py-2 text-sm bg-[#0f1117] border border-border-main rounded-lg text-primary outline-none focus:border-[#FF6F0F]/50 cursor-pointer"
+                  >
+                    <option value="">— 가게 선택 안 함 —</option>
+                    {stores.map(s => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
+                </div>
+
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-semibold text-primary">쇼츠 생성</p>
@@ -1591,6 +1626,9 @@ export default function ShortsPage() {
                     <div className="p-2 space-y-1.5">
                       <p className="text-[10px] text-primary font-semibold truncate">{h.trackTitle}</p>
                       <p className="text-[9px] text-dim truncate">{h.artist}</p>
+                      {h.storeName && (
+                        <p className="text-[9px] text-[#FF9F4F] truncate">🏪 {h.storeName}</p>
+                      )}
                       <div className="flex gap-1">
                         {h.durationSec && (
                           <span className="text-[8px] px-1 py-0.5 rounded bg-white/5 text-dim">{h.durationSec}초</span>
