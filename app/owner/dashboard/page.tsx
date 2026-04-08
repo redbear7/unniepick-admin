@@ -219,10 +219,10 @@ export default function OwnerDashboardHome() {
             </div>
 
             <div className="space-y-0">
-              {notices.slice(0, 5).map((n, idx) => {
+              {notices.slice(0, 1).map((n, idx) => {
                 const { label, color, bg, Icon } = NOTICE_TYPE_META[n.notice_type];
                 const fresh = isNew(n.created_at);
-                const isLast = idx === Math.min(notices.length, 5) - 1;
+                const isLast = idx === Math.min(notices.length, 1) - 1;
                 const isLiked = likedIds.has(n.id);
                 return (
                   <div key={n.id} className="relative">
