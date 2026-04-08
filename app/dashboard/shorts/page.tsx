@@ -1045,6 +1045,34 @@ export default function ShortsPage() {
                 )}
               </div>
 
+              {/* ── 쇼츠 제목 / 강조 문구 ── */}
+              <div className="bg-card border border-border-main rounded-xl p-5 flex flex-col gap-3">
+                <p className="text-sm font-semibold text-primary">영상 텍스트</p>
+                <div className="space-y-2">
+                  <div>
+                    <label className="text-xs text-muted mb-1 block">쇼츠 제목 (상단 큰 텍스트)</label>
+                    <input
+                      type="text"
+                      placeholder="예: 가을 감성 플레이리스트"
+                      value={shortsTitle}
+                      onChange={(e) => setShortsTitle(e.target.value)}
+                      className="w-full bg-[#0f1117] border border-border-main rounded-lg px-3 py-2 text-sm text-primary placeholder:text-muted focus:outline-none focus:border-[#FF6F0F]/50"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted mb-1 block">강조 문구 (서브 텍스트)</label>
+                    <input
+                      type="text"
+                      placeholder="예: 언니픽이 큐레이션한 매장 BGM"
+                      value={shortsTagline}
+                      onChange={(e) => setShortsTagline(e.target.value)}
+                      className="w-full bg-[#0f1117] border border-border-main rounded-lg px-3 py-2 text-sm text-primary placeholder:text-muted focus:outline-none focus:border-[#FF6F0F]/50"
+                    />
+                  </div>
+                  <p className="text-[10px] text-muted">비워두면 해당 텍스트는 영상에 표시되지 않습니다.</p>
+                </div>
+              </div>
+
               {/* ── 클라이맥스 구간 설정 ── */}
               <div className="bg-card border border-border-main rounded-xl p-5 flex flex-col gap-4">
                 <div className="flex items-center justify-between">
@@ -1088,34 +1116,6 @@ export default function ShortsPage() {
                 <p className="text-[10px] text-muted">
                   * 웨이브폼을 클릭하거나 드래그해서 구간을 이동하세요.
                 </p>
-              </div>
-
-              {/* ── 쇼츠 제목 / 강조 문구 ── */}
-              <div className="bg-card border border-border-main rounded-xl p-5 flex flex-col gap-3">
-                <p className="text-sm font-semibold text-primary">영상 텍스트</p>
-                <div className="space-y-2">
-                  <div>
-                    <label className="text-xs text-muted mb-1 block">쇼츠 제목 (상단 큰 텍스트)</label>
-                    <input
-                      type="text"
-                      placeholder="예: 가을 감성 플레이리스트"
-                      value={shortsTitle}
-                      onChange={(e) => setShortsTitle(e.target.value)}
-                      className="w-full bg-[#0f1117] border border-border-main rounded-lg px-3 py-2 text-sm text-primary placeholder:text-muted focus:outline-none focus:border-[#FF6F0F]/50"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-muted mb-1 block">강조 문구 (서브 텍스트)</label>
-                    <input
-                      type="text"
-                      placeholder="예: 언니픽이 큐레이션한 매장 BGM"
-                      value={shortsTagline}
-                      onChange={(e) => setShortsTagline(e.target.value)}
-                      className="w-full bg-[#0f1117] border border-border-main rounded-lg px-3 py-2 text-sm text-primary placeholder:text-muted focus:outline-none focus:border-[#FF6F0F]/50"
-                    />
-                  </div>
-                  <p className="text-[10px] text-muted">비워두면 해당 텍스트는 영상에 표시되지 않습니다.</p>
-                </div>
               </div>
 
               {/* ── 음원 설정 ── */}
