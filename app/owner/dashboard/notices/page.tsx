@@ -46,74 +46,86 @@ export default function OwnerNoticesPage() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* 헤더 */}
       <div className="px-6 py-4 border-b border-border-main shrink-0">
         <h1 className="text-lg font-bold text-primary">공지사항</h1>
         <p className="text-xs text-muted mt-0.5">언니픽 새 소식을 확인하세요</p>
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        <div className="px-4 py-5 space-y-3">
+        <div className="px-4 py-5">
 
           {loading ? (
-            [...Array(4)].map((_, i) => (
-              <div key={i} className="bg-card border border-border-main rounded-2xl p-4 h-28 animate-pulse" />
-            ))
+            <div className="space-y-3">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="bg-card border border-border-main rounded-2xl p-4 h-28 animate-pulse" />
+              ))}
+            </div>
           ) : notices.length === 0 ? (
             <div className="py-20 text-center">
               <p className="text-4xl mb-3">📭</p>
               <p className="text-sm text-muted">공지사항이 없습니다.</p>
             </div>
           ) : (
-            notices.map(n => {
+            notices.map((n, idx) => {
               const { label, color, bg, Icon } = TYPE_META[n.notice_type];
               const fresh = isNew(n.created_at);
+              const isLast = idx === notices.length - 1;
               return (
-                <div key={n.id}
-                  className={`bg-card border rounded-2xl overflow-hidden ${n.is_pinned ? 'border-[#FF6F0F]/30' : 'border-border-main'}`}>
+                /* 래퍼: pb로 카드 간 간격 확보 → 연결선이 gap까지 관통 */
+                <div key={n.id} className={`relative ${isLast ? '' : 'pb-3'}`}>
 
-                  {/* 고정 배너 */}
-                  {n.is_pinned && (
-                    <div className="px-4 py-1 bg-[#FF6F0F]/8 border-b border-[#FF6F0F]/20 flex items-center gap-1.5">
-                      <Pin size={10} className="text-[#FF6F0F]" />
-                      <span className="text-[10px] font-semibold text-[#FF6F0F]">고정된 공지</span>
-                    </div>
+                  {/* 스레드 연결선 — 아바타 하단에서 래퍼 하단까지 */}
+                  {!isLast && (
+                    <div className="absolute left-[36px] top-[52px] bottom-0 w-px bg-border-main/60 z-0" />
                   )}
 
-                  {/* 카드 헤더 */}
-                  <div className="px-4 pt-3 pb-2 flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-full bg-fill-medium flex items-center justify-center text-xl shrink-0">
-                      {n.author_emoji}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                        <span className="text-xs font-semibold text-muted">{n.author_name}</span>
-                        <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${bg} ${color}`}>
-                          <Icon size={9} />{label}
-                        </span>
-                        {fresh && (
-                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-500 text-white leading-none animate-pulse">NEW</span>
-                        )}
-                        <span className="text-[10px] text-dim ml-auto whitespace-nowrap">{fmtDate(n.created_at)}</span>
+                  {/* 카드 */}
+                  <div className={`relative z-10 bg-card border rounded-2xl overflow-hidden ${n.is_pinned ? 'border-[#FF6F0F]/30' : 'border-border-main'}`}>
+
+                    {/* 고정 배너 */}
+                    {n.is_pinned && (
+                      <div className="px-4 py-1 bg-[#FF6F0F]/8 border-b border-[#FF6F0F]/20 flex items-center gap-1.5">
+                        <Pin size={10} className="text-[#FF6F0F]" />
+                        <span className="text-[10px] font-semibold text-[#FF6F0F]">고정된 공지</span>
+                      </div>
+                    )}
+
+                    {/* 헤더 */}
+                    <div className="px-4 pt-3 pb-2 flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-full bg-fill-medium flex items-center justify-center text-xl shrink-0">
+                        {n.author_emoji}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs font-semibold text-muted">{n.author_name}</span>
+                          <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${bg} ${color}`}>
+                            <Icon size={9} />{label}
+                          </span>
+                          {fresh && (
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-500 text-white leading-none animate-pulse">NEW</span>
+                          )}
+                          <span className="text-[10px] text-dim ml-auto whitespace-nowrap">{fmtDate(n.created_at)}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* 제목 + 본문 */}
-                  <div className="px-4 pb-4">
-                    {n.title && (
-                      <p className="text-base font-bold text-primary leading-snug mb-1.5">{n.title}</p>
-                    )}
-                    {n.title && <div className="w-full h-px bg-border-main/40 mb-2" />}
-                    <p className="text-sm text-secondary leading-relaxed whitespace-pre-wrap">{n.content}</p>
-                  </div>
-
-                  {/* 이미지 */}
-                  {n.image_url && (
+                    {/* 제목 + 본문 */}
                     <div className="px-4 pb-4">
-                      <img src={n.image_url} alt="" className="w-full rounded-xl object-cover max-h-64 border border-border-main/30" />
+                      {n.title && (
+                        <p className="text-base font-bold text-primary leading-snug mb-1.5">{n.title}</p>
+                      )}
+                      {n.title && <div className="w-full h-px bg-border-main/40 mb-2" />}
+                      <p className="text-sm text-secondary leading-relaxed whitespace-pre-wrap">{n.content}</p>
                     </div>
-                  )}
+
+                    {/* 이미지 */}
+                    {n.image_url && (
+                      <div className="px-4 pb-4">
+                        <img src={n.image_url} alt="" className="w-full rounded-xl object-cover max-h-64 border border-border-main/30" />
+                      </div>
+                    )}
+                  </div>
+
                 </div>
               );
             })

@@ -269,21 +269,30 @@ export default function NoticesPage() {
 
         {/* ── 오른쪽: 피드 1단 ── */}
         <div className="flex-1 overflow-y-auto">
-          <div className="px-5 py-5 space-y-3 w-[500px]">
+          <div className="px-5 py-5 w-[500px]">
 
             {loading ? (
-              [...Array(3)].map((_, i) => (
-                <div key={i} className="bg-card border border-border-main rounded-2xl p-4 h-28 animate-pulse" />
-              ))
+              <div className="space-y-3">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="bg-card border border-border-main rounded-2xl p-4 h-28 animate-pulse" />
+                ))}
+              </div>
             ) : notices.length === 0 ? (
               <div className="py-20 text-center text-muted text-sm">아직 공지사항이 없습니다.</div>
             ) : (
-              notices.map(n => {
+              notices.map((n, idx) => {
                 const { label, color, bg, Icon } = TYPE_META[n.notice_type];
                 const fresh = isNew(n.created_at);
+                const isLast = idx === notices.length - 1;
                 return (
-                  <div key={n.id}
-                    className={`bg-card border rounded-2xl overflow-hidden transition ${
+                  <div key={n.id} className={`relative ${isLast ? '' : 'pb-3'}`}>
+
+                    {/* 스레드 연결선 */}
+                    {!isLast && (
+                      <div className="absolute left-[36px] top-[52px] bottom-0 w-px bg-border-main/60 z-0" />
+                    )}
+
+                  <div className={`relative z-10 bg-card border rounded-2xl overflow-hidden transition ${
                       !n.is_active       ? 'opacity-50 border-border-main'
                       : editingId === n.id ? 'ring-2 ring-[#FF6F0F]/50 border-[#FF6F0F]/40'
                       : n.is_pinned       ? 'border-[#FF6F0F]/30'
@@ -378,6 +387,7 @@ export default function NoticesPage() {
                         <Trash2 size={13} />
                       </button>
                     </div>
+                  </div>
                   </div>
                 );
               })
