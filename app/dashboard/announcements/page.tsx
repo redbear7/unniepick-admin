@@ -661,6 +661,9 @@ export default function AnnouncementsPage() {
           <p className="text-[10px] text-dim text-center">
             {cacheHit ? '동일 문구·목소리 → 캐시 재사용 (API 미호출)' : 'Fish Audio TTS · 생성 후 즉시 미리듣기'}
           </p>
+          {!cacheHit && (
+            <p className="text-[9px] text-center font-mono text-[#FF6F0F]/40">Fish Audio · s2-pro</p>
+          )}
 
           {/* 재생 모드 + 반복 */}
           <div className="grid grid-cols-2 gap-3">

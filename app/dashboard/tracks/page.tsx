@@ -1434,6 +1434,7 @@ export default function TracksPage() {
                       : '✨ AI 자동 분석'
                     }
                   </button>
+                  <span className="text-[9px] text-purple-400/50 font-mono select-none">Gemini 2.0 Flash</span>
                 </div>
                 {([
                   { key: 'energy_score',       label: '⚡ 에너지',  color: '#F87171' },

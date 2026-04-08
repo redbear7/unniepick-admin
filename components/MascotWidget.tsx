@@ -152,7 +152,7 @@ export default function MascotWidget({ userId }: Props) {
             <MascotFace size={36} animate={false} />
             <div className="flex-1">
               <p className="text-sm font-bold text-white">유니의 플리 추천</p>
-              <p className="text-[10px] text-white/40">AI 큐레이션</p>
+              <p className="text-[10px] text-white/40">AI 큐레이션 · <span className="font-mono">Gemini 2.0 Flash</span></p>
             </div>
             <div className="flex items-center gap-1">
               <button

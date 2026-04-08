@@ -227,6 +227,7 @@ export default function CardNewsPage() {
                 </>
               )}
             </button>
+            <p className="text-[10px] text-indigo-400/50 text-center font-mono">Gemini 2.0 Flash</p>
           </div>
         </div>
 
