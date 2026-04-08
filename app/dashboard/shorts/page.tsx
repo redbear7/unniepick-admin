@@ -364,7 +364,6 @@ interface LivePreviewFrameProps {
   headerTop: number;
   infoTop: number;
   couponTop: number;
-  storeName?: string;
   onPlayStart?: () => void;
 }
 
@@ -374,7 +373,6 @@ function LivePreviewFrame({
   shortsTitle, shortsTagline, selectedCoupon,
   trackTitle, artist,
   headerTop, infoTop, couponTop,
-  storeName,
   onPlayStart,
 }: LivePreviewFrameProps) {
   const audioRef    = useRef<HTMLAudioElement | null>(null);
@@ -532,14 +530,7 @@ function LivePreviewFrame({
         {/* 언니픽 배지 */}
         <div className="absolute top-2 right-2 bg-[#FF6F0F]/90 rounded text-white text-[6px] font-bold px-1 py-0.5">언니픽</div>
 
-        {/* 가게명 */}
-        {storeName && (
-          <div className="absolute bottom-10 left-3 right-3 text-center">
-            <span className="text-[8px] font-bold text-white bg-black/60 px-2 py-0.5 rounded truncate block">
-              {storeName}
-            </span>
-          </div>
-        )}
+
 
         {/* 파형 */}
         <div className="absolute bottom-8 left-3 right-3">
@@ -601,8 +592,6 @@ export default function ShortsPage() {
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzed, setAnalyzed] = useState(false);
 
-  // 가게명 (직접 입력)
-  const [storeName, setStoreName] = useState('');
 
   // 쿠폰
   const [coupons, setCoupons] = useState<Coupon[]>([]);
@@ -891,7 +880,6 @@ export default function ShortsPage() {
         startSec,
         moodTags: selected.mood_tags ?? [],
         createdAt: new Date().toISOString(),
-        storeName: storeName.trim() || undefined,
         waveformStyle,
         durationSec,
         shortsTitle,
@@ -1561,19 +1549,6 @@ export default function ShortsPage() {
 
               {/* ── 생성 버튼 & 결과 ── */}
               <div className="bg-card border border-border-main rounded-xl p-5 flex flex-col gap-4">
-                {/* 가게명 입력 */}
-                <div>
-                  <label className="text-xs text-muted mb-1.5 block">🏪 가게명 (선택)</label>
-                  <input
-                    type="text"
-                    placeholder="예: 강남 카페 아메노"
-                    value={storeName}
-                    onChange={e => setStoreName(e.target.value)}
-                    className="w-full px-3 py-2 text-sm bg-[#0f1117] border border-border-main rounded-lg text-primary placeholder:text-muted outline-none focus:border-[#FF6F0F]/50"
-                  />
-                  <p className="text-[10px] text-dim mt-1">입력 시 썸네일 하단에 가게명이 표시됩니다.</p>
-                </div>
-
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-semibold text-primary">쇼츠 생성</p>
@@ -1781,60 +1756,13 @@ export default function ShortsPage() {
         </div>
 
         {/* ── 4단: 미리보기 패널 ── */}
-        <div className="w-[230px] shrink-0 overflow-y-auto p-4 flex flex-col gap-4">
+        <div className="w-[300px] shrink-0 overflow-y-auto p-4 flex flex-col gap-4">
           {selected ? (
             <>
               {/* 제목 */}
               <p className="text-sm font-semibold text-primary flex items-center gap-2">
                 <Film size={14} className="text-[#FF6F0F]" /> 미리보기
               </p>
-
-              {/* 정적 레이아웃 썸네일 */}
-              <div className="flex flex-col items-center gap-1">
-                <p className="text-[10px] text-dim self-start">레이아웃</p>
-                <div
-                  className="relative rounded-xl overflow-hidden w-full"
-                  style={{ aspectRatio: '9/16', background: '#111' }}
-                >
-                  {(coverPreviewUrl || selected.cover_image_url) ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={coverPreviewUrl ?? selected.cover_image_url!} alt="" className="absolute inset-0 w-full h-full object-cover" />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center text-5xl bg-[#1a1a2e]">{selected.cover_emoji}</div>
-                  )}
-                  <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg,rgba(0,0,0,0.72) 0%,rgba(0,0,0,0.05) 45%,rgba(0,0,0,0.75) 100%)' }} />
-                  <div className="absolute left-2 right-2" style={{ top: `${headerTop}%` }}>
-                    {shortsTitle   && <p className="text-white text-[8px] font-black leading-tight line-clamp-2">{shortsTitle}</p>}
-                    {shortsTagline && <p className="text-[#FF9F4F] text-[7px] font-bold mt-0.5 truncate">{shortsTagline}</p>}
-                  </div>
-                  {selectedCoupon && (
-                    <div className="absolute left-2 right-2" style={{ top: `${couponTop}%` }}>
-                      <div className="bg-[#FF6F0F]/90 rounded-md px-1.5 py-0.5 flex items-center gap-1">
-                        <span className="text-[10px]">🎟</span>
-                        <div className="min-w-0">
-                          <p className="text-white text-[6px] font-semibold truncate">{selectedCoupon.title}</p>
-                          <p className="text-white text-[7px] font-black">
-                            {selectedCoupon.discount_type === 'percent' ? `${selectedCoupon.discount_value}% 할인` : `${selectedCoupon.discount_value.toLocaleString()}원 할인`}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  <div className="absolute left-2 right-2" style={{ top: `${infoTop}%` }}>
-                    <p className="text-white text-[7px] font-semibold leading-tight truncate">🎵 {selected.title}</p>
-                    <p className="text-white/60 text-[6px] truncate mt-0.5">{selected.artist}</p>
-                  </div>
-                  <div className="absolute top-1.5 right-1.5 bg-[#FF6F0F]/90 rounded text-white text-[6px] font-bold px-1 py-0.5">언니픽</div>
-                  {storeName && (
-                    <div className="absolute bottom-5 left-2 right-2 text-center">
-                      <span className="text-[7px] font-bold text-white bg-black/60 px-1.5 py-0.5 rounded truncate block">{storeName}</span>
-                    </div>
-                  )}
-                  <div className="absolute bottom-2 left-2 right-2 h-0.5 bg-white/10 rounded">
-                    <div className="h-full w-1/3 bg-[#FF6F0F] rounded" />
-                  </div>
-                </div>
-              </div>
 
               {/* 라이브 미리보기 */}
               <LivePreviewFrame
@@ -1852,7 +1780,6 @@ export default function ShortsPage() {
                 headerTop={headerTop}
                 infoTop={infoTop}
                 couponTop={couponTop}
-                storeName={storeName.trim() || undefined}
                 onPlayStart={() => { if (player.isPlaying) player.pause(); }}
               />
 
