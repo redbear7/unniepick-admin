@@ -625,7 +625,7 @@ export default function ShortsPage() {
   // 오디오 페이드인 / 파형 스타일
   const [audioFadeInSec, setAudioFadeInSec] = useState(1.5);
   const [waveformStyle, setWaveformStyle] = useState<'bar' | 'mirror' | 'wave' | 'circle' | 'dots'>('bar');
-  const [durationSec, setDurationSec] = useState(15);
+  const [durationSec, setDurationSec] = useState(20);
 
   // 요소 위치 (% from top)
   const [headerTop, setHeaderTop] = useState(8);
@@ -1336,7 +1336,7 @@ export default function ShortsPage() {
                         }`}
                       >
                         {sec}초
-                        {sec === 15 && <span className="block text-[8px] opacity-60">기본</span>}
+                        {sec === 20 && <span className="block text-[8px] opacity-60">기본</span>}
                       </button>
                     ))}
                   </div>
