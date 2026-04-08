@@ -322,8 +322,10 @@ export default function NoticesPage() {
                         </div>
                         {/* 제목 */}
                         {n.title && (
-                          <p className="text-base font-bold text-primary leading-snug mb-1">{n.title}</p>
+                          <p className="text-base font-bold text-primary leading-snug mb-1.5">{n.title}</p>
                         )}
+                        {/* 구분선 */}
+                        {n.title && <div className="w-full h-px bg-border-main/40 mb-2" />}
                         {/* 본문 */}
                         <p className="text-sm text-secondary leading-relaxed whitespace-pre-wrap">{n.content}</p>
                       </div>
