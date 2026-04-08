@@ -346,6 +346,226 @@ function WaveformEditor({
 }
 
 
+// ─── 라이브 미리보기 프레임 ────────────────────────────────────────
+interface LivePreviewFrameProps {
+  audioUrl: string;
+  coverUrl: string | null;
+  coverEmoji: string;
+  bgVideoUrl: string | null;
+  startSec: number;
+  durationSec: number;
+  shortsTitle: string;
+  shortsTagline: string;
+  selectedCoupon: Coupon | null;
+  trackTitle: string;
+  artist: string;
+  headerTop: number;
+  infoTop: number;
+  couponTop: number;
+  onPlayStart?: () => void;
+}
+
+function LivePreviewFrame({
+  audioUrl, coverUrl, coverEmoji, bgVideoUrl,
+  startSec, durationSec,
+  shortsTitle, shortsTagline, selectedCoupon,
+  trackTitle, artist,
+  headerTop, infoTop, couponTop,
+  onPlayStart,
+}: LivePreviewFrameProps) {
+  const audioRef    = useRef<HTMLAudioElement | null>(null);
+  const animRef     = useRef<number>(0);
+  const canvasRef   = useRef<HTMLCanvasElement>(null);
+  const [playing,   setPlaying]   = useState(false);
+  const [progress,  setProgress]  = useState(0); // 0~1
+  const [wavePhase, setWavePhase] = useState(0);
+
+  // Animated waveform bars on canvas
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const dpr = window.devicePixelRatio || 1;
+    const W = canvas.offsetWidth || 150;
+    const H = canvas.offsetHeight || 24;
+    canvas.width  = W * dpr;
+    canvas.height = H * dpr;
+    const ctx = canvas.getContext('2d')!;
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, W, H);
+
+    const bars = 24;
+    const bw   = W / bars;
+    const mid  = H / 2;
+    for (let i = 0; i < bars; i++) {
+      const amp = playing
+        ? Math.max(0.15, Math.abs(Math.sin((wavePhase + i * 0.55) * 1.3)) * 0.85)
+        : 0.18;
+      const h = amp * H * 0.85;
+      ctx.fillStyle = playing ? `rgba(255,111,15,${0.4 + amp * 0.6})` : 'rgba(255,255,255,0.18)';
+      ctx.fillRect(i * bw + 1, mid - h / 2, Math.max(bw - 2, 1), h);
+    }
+  }, [playing, wavePhase]);
+
+  // Animate wavePhase while playing
+  useEffect(() => {
+    if (!playing) return;
+    let phase = wavePhase;
+    const tick = () => {
+      phase += 0.12;
+      setWavePhase(phase);
+      animRef.current = requestAnimationFrame(tick);
+    };
+    animRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(animRef.current);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playing]);
+
+  // Stop on startSec change
+  useEffect(() => {
+    if (playing && audioRef.current) {
+      audioRef.current.pause();
+      cancelAnimationFrame(animRef.current);
+      setPlaying(false);
+      setProgress(0);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startSec]);
+
+  useEffect(() => () => cancelAnimationFrame(animRef.current), []);
+
+  const togglePlay = () => {
+    const el = audioRef.current;
+    if (!el) return;
+    if (playing) {
+      el.pause();
+      cancelAnimationFrame(animRef.current);
+      setPlaying(false);
+      setProgress(0);
+    } else {
+      onPlayStart?.();
+      el.currentTime = startSec;
+      el.play().catch(() => {});
+      setPlaying(true);
+      const startTime = performance.now();
+      const totalMs   = durationSec * 1000;
+      const tick = () => {
+        const elapsed = performance.now() - startTime;
+        const pct = Math.min(elapsed / totalMs, 1);
+        setProgress(pct);
+        if (pct < 1 && !el.paused) {
+          animRef.current = requestAnimationFrame(tick);
+        } else {
+          el.pause();
+          setPlaying(false);
+          setProgress(0);
+        }
+      };
+      animRef.current = requestAnimationFrame(tick);
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-center gap-1.5 flex-1 min-w-0">
+      <p className="text-[10px] text-dim">라이브 미리보기</p>
+      {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+      <audio ref={audioRef} src={audioUrl} preload="metadata" />
+
+      {/* 9:16 프레임 */}
+      <div
+        className="relative rounded-xl overflow-hidden w-full"
+        style={{ maxWidth: 160, aspectRatio: '9/16', background: '#111' }}
+      >
+        {/* 배경: 동영상 or 커버 이미지 */}
+        {bgVideoUrl ? (
+          // eslint-disable-next-line jsx-a11y/media-has-caption
+          <video
+            src={bgVideoUrl}
+            className="absolute inset-0 w-full h-full object-cover"
+            muted loop autoPlay playsInline
+          />
+        ) : coverUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={coverUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center text-5xl bg-[#1a1a2e]">{coverEmoji}</div>
+        )}
+
+        {/* 그라디언트 오버레이 */}
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg,rgba(0,0,0,0.72) 0%,rgba(0,0,0,0.05) 45%,rgba(0,0,0,0.75) 100%)' }} />
+
+        {/* 제목 / 강조 문구 */}
+        <div className="absolute left-3 right-3" style={{ top: `${headerTop}%` }}>
+          {shortsTitle   && <p className="text-white text-[9px] font-black leading-tight line-clamp-2">{shortsTitle}</p>}
+          {shortsTagline && <p className="text-[#FF9F4F] text-[8px] font-bold mt-0.5 truncate">{shortsTagline}</p>}
+        </div>
+
+        {/* 쿠폰 */}
+        {selectedCoupon && (
+          <div className="absolute left-3 right-3" style={{ top: `${couponTop}%` }}>
+            <div className="bg-[#FF6F0F]/90 rounded-lg px-2 py-1 flex items-center gap-1.5">
+              <span className="text-sm">🎟</span>
+              <div className="min-w-0">
+                <p className="text-white text-[7px] font-semibold truncate">{selectedCoupon.title}</p>
+                <p className="text-white text-[8px] font-black">
+                  {selectedCoupon.discount_type === 'percent'
+                    ? `${selectedCoupon.discount_value}% 할인`
+                    : `${selectedCoupon.discount_value.toLocaleString()}원 할인`}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 곡 정보 */}
+        <div className="absolute left-3 right-3" style={{ top: `${infoTop}%` }}>
+          <p className="text-white text-[8px] font-semibold leading-tight truncate">🎵 {trackTitle}</p>
+          <p className="text-white/60 text-[7px] truncate mt-0.5">{artist}</p>
+        </div>
+
+        {/* 언니픽 배지 */}
+        <div className="absolute top-2 right-2 bg-[#FF6F0F]/90 rounded text-white text-[6px] font-bold px-1 py-0.5">언니픽</div>
+
+        {/* 파형 */}
+        <div className="absolute bottom-8 left-3 right-3">
+          <canvas ref={canvasRef} className="w-full block" style={{ height: 24 }} />
+        </div>
+
+        {/* 진행 바 */}
+        <div className="absolute bottom-4 left-3 right-3 h-0.5 bg-white/15 rounded">
+          <div
+            className="h-full bg-[#FF6F0F] rounded transition-none"
+            style={{ width: `${progress * 100}%` }}
+          />
+        </div>
+
+        {/* 시간 표시 */}
+        <div className="absolute bottom-1 left-3 right-3 flex justify-between">
+          <span className="text-[7px] font-mono text-white/50">{fmtSec(startSec + progress * durationSec)}</span>
+          <span className="text-[7px] font-mono text-white/30">{fmtSec(startSec + durationSec)}</span>
+        </div>
+
+        {/* 재생 버튼 (중앙, hover 시 표시 or 항상) */}
+        <button
+          onClick={togglePlay}
+          className={`absolute inset-0 flex items-center justify-center transition ${playing ? 'opacity-0 hover:opacity-100' : 'opacity-100'}`}
+        >
+          <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition ${playing ? 'bg-black/40' : 'bg-black/50 hover:bg-black/70'}`}>
+            {playing
+              ? <Pause size={16} className="text-white" />
+              : <Play  size={16} className="text-white ml-0.5" />}
+          </div>
+        </button>
+      </div>
+
+      {/* 구간 표시 */}
+      <p className="text-[9px] font-mono text-dim">
+        {fmtSec(startSec)} ~ {fmtSec(startSec + durationSec)}
+        <span className="text-[#FF6F0F]/60 ml-1">({durationSec}초)</span>
+      </p>
+    </div>
+  );
+}
+
 // ─── 메인 페이지 ───────────────────────────────────────────────
 export default function ShortsPage() {
   const sb = createClient();
@@ -1290,112 +1510,131 @@ export default function ShortsPage() {
                 </div>
               )}
 
-              {/* ── 쇼츠 미리보기 (정적 썸네일) ── */}
-              <div className="bg-card border border-border-main rounded-xl p-5 flex flex-col gap-3">
+              {/* ── 쇼츠 구성 미리보기 ── */}
+              <div className="bg-card border border-border-main rounded-xl p-5 flex flex-col gap-4">
                 <p className="text-sm font-semibold text-primary">쇼츠 구성 미리보기</p>
+
                 <div className="flex gap-4 items-start">
-                  {/* 9:16 썸네일 */}
-                  <div
-                    className="relative shrink-0 rounded-xl overflow-hidden"
-                    style={{ width: 120, height: 213, background: '#111' }}
-                  >
-                    {/* 커버 풀스크린 */}
-                    {(coverPreviewUrl || selected.cover_image_url) ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={coverPreviewUrl ?? selected.cover_image_url!}
-                        alt=""
-                        className="absolute inset-0 w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="absolute inset-0 flex items-center justify-center text-4xl bg-[#1a1a2e]">
-                        {selected.cover_emoji}
-                      </div>
-                    )}
-                    {/* 그라디언트 오버레이 */}
+                  {/* ── 왼쪽: 정적 레이아웃 썸네일 ── */}
+                  <div className="flex flex-col items-center gap-1.5 shrink-0">
+                    <p className="text-[10px] text-dim">레이아웃</p>
                     <div
-                      className="absolute inset-0"
-                      style={{
-                        background:
-                          'linear-gradient(180deg, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.05) 45%, rgba(0,0,0,0.75) 100%)',
-                      }}
-                    />
-                    {/* 상단: 쇼츠 제목 (위치 반영) */}
-                    <div className="absolute left-2 right-2" style={{ top: `${headerTop}%` }}>
-                      {shortsTitle && (
-                        <p className="text-white text-[8px] font-black leading-tight line-clamp-2">
-                          {shortsTitle}
-                        </p>
+                      className="relative rounded-xl overflow-hidden shrink-0"
+                      style={{ width: 108, height: 192, background: '#111' }}
+                    >
+                      {(coverPreviewUrl || selected.cover_image_url) ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={coverPreviewUrl ?? selected.cover_image_url!} alt="" className="absolute inset-0 w-full h-full object-cover" />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center text-4xl bg-[#1a1a2e]">{selected.cover_emoji}</div>
                       )}
-                      {shortsTagline && (
-                        <p className="text-[#FF9F4F] text-[6px] font-bold mt-0.5 truncate">
-                          {shortsTagline}
-                        </p>
-                      )}
-                    </div>
-                    {/* 쿠폰 (위치 반영) */}
-                    {selectedCoupon && (
-                      <div className="absolute left-2 right-2" style={{ top: `${couponTop}%` }}>
-                        <div className="bg-[#FF6F0F]/90 rounded-md px-2 py-1 flex items-center gap-1.5">
-                          <span className="text-[10px]">🎟</span>
-                          <div className="min-w-0">
-                            <p className="text-white text-[6px] font-semibold truncate">{selectedCoupon.title}</p>
-                            <p className="text-white text-[7px] font-black">
-                              {selectedCoupon.discount_type === 'percent'
-                                ? `${selectedCoupon.discount_value}% 할인`
-                                : `${selectedCoupon.discount_value.toLocaleString()}원 할인`}
-                            </p>
+                      <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg,rgba(0,0,0,0.72) 0%,rgba(0,0,0,0.05) 45%,rgba(0,0,0,0.75) 100%)' }} />
+                      <div className="absolute left-2 right-2" style={{ top: `${headerTop}%` }}>
+                        {shortsTitle   && <p className="text-white text-[7px] font-black leading-tight line-clamp-2">{shortsTitle}</p>}
+                        {shortsTagline && <p className="text-[#FF9F4F] text-[6px] font-bold mt-0.5 truncate">{shortsTagline}</p>}
+                      </div>
+                      {selectedCoupon && (
+                        <div className="absolute left-2 right-2" style={{ top: `${couponTop}%` }}>
+                          <div className="bg-[#FF6F0F]/90 rounded-md px-1.5 py-0.5 flex items-center gap-1">
+                            <span className="text-[9px]">🎟</span>
+                            <div className="min-w-0">
+                              <p className="text-white text-[5px] font-semibold truncate">{selectedCoupon.title}</p>
+                              <p className="text-white text-[6px] font-black">
+                                {selectedCoupon.discount_type === 'percent' ? `${selectedCoupon.discount_value}% 할인` : `${selectedCoupon.discount_value.toLocaleString()}원 할인`}
+                              </p>
+                            </div>
                           </div>
                         </div>
+                      )}
+                      <div className="absolute left-2 right-2" style={{ top: `${infoTop}%` }}>
+                        <p className="text-white text-[6px] font-semibold leading-tight truncate">🎵 {selected.title}</p>
+                        <p className="text-white/60 text-[5px] truncate mt-0.5">{selected.artist}</p>
                       </div>
-                    )}
-                    {/* 곡 정보 (위치 반영) */}
-                    <div className="absolute left-2 right-2" style={{ top: `${infoTop}%` }}>
-                      <p className="text-white text-[7px] font-semibold leading-tight truncate">
-                        🎵 {selected.title}
-                      </p>
-                      <p className="text-white/60 text-[6px] truncate mt-0.5">{selected.artist}</p>
-                    </div>
-                    {/* 브랜드 */}
-                    <div className="absolute top-2 right-1.5 bg-[#FF6F0F]/90 rounded text-white text-[6px] font-bold px-1 py-0.5">
-                      언니픽
-                    </div>
-                    {/* 진행바 */}
-                    <div className="absolute bottom-2 left-2 right-2 h-0.5 bg-white/10 rounded">
-                      <div className="h-full w-1/3 bg-[#FF6F0F] rounded" />
+                      <div className="absolute top-1.5 right-1.5 bg-[#FF6F0F]/90 rounded text-white text-[5px] font-bold px-1 py-0.5">언니픽</div>
+                      <div className="absolute bottom-2 left-2 right-2 h-0.5 bg-white/10 rounded">
+                        <div className="h-full w-1/3 bg-[#FF6F0F] rounded" />
+                      </div>
                     </div>
                   </div>
 
-                  {/* 구성 정보 */}
-                  <div className="flex-1 space-y-2 text-xs text-muted">
-                    <div className="flex justify-between">
-                      <span>해상도</span>
-                      <span className="text-primary font-medium">720 × 1280 (9:16)</span>
+                  {/* ── 오른쪽: 라이브 미리보기 ── */}
+                  <LivePreviewFrame
+                    audioUrl={selected.audio_url}
+                    coverUrl={coverPreviewUrl ?? selected.cover_image_url}
+                    coverEmoji={selected.cover_emoji}
+                    bgVideoUrl={bgVideoPreviewUrl}
+                    startSec={startSec}
+                    durationSec={durationSec}
+                    shortsTitle={shortsTitle}
+                    shortsTagline={shortsTagline}
+                    selectedCoupon={selectedCoupon}
+                    trackTitle={selected.title}
+                    artist={selected.artist}
+                    headerTop={headerTop}
+                    infoTop={infoTop}
+                    couponTop={couponTop}
+                    onPlayStart={() => { if (player.isPlaying) player.pause(); }}
+                  />
+                </div>
+
+                {/* ── 구성 정보 ── */}
+                <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-muted border-t border-border-main pt-3">
+                  {[
+                    ['해상도',    '720 × 1280 (9:16)'],
+                    ['프레임레이트', '30fps'],
+                    ['영상 길이',  `${durationSec}초 (${durationSec * 30}f)`],
+                    ['코덱',      'H.264 MP4'],
+                    ['오디오 시작', fmtSec(startSec)],
+                    ['무드 태그',  (selected.mood_tags ?? []).slice(0, 3).join(', ') || '-'],
+                  ].map(([k, v]) => (
+                    <div key={k} className="flex justify-between">
+                      <span>{k}</span>
+                      <span className="text-primary font-medium">{v}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span>프레임레이트</span>
-                      <span className="text-primary font-medium">30fps</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>영상 길이</span>
-                      <span className="text-primary font-medium">{durationSec}초 ({durationSec * 30} 프레임)</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>코덱</span>
-                      <span className="text-primary font-medium">H.264 MP4</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>오디오 시작</span>
-                      <span className="text-primary font-medium">{fmtSec(startSec)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>무드 태그</span>
-                      <span className="text-primary font-medium">
-                        {(selected.mood_tags ?? []).slice(0, 3).join(', ') || '-'}
-                      </span>
+                  ))}
+                </div>
+
+                {/* ── 이 음원으로 제작된 영상 ── */}
+                {trackHistory.length > 0 && (
+                  <div className="border-t border-border-main pt-3">
+                    <p className="text-xs font-semibold text-tertiary mb-2 flex items-center gap-1.5">
+                      <Film size={12} /> 이 음원으로 제작된 영상 · {trackHistory.length}개
+                    </p>
+                    <div className="flex gap-3 overflow-x-auto scrollbar-none pb-1">
+                      {trackHistory.map(h => (
+                        <div key={h.id} className="shrink-0 flex flex-col gap-1">
+                          <div
+                            className="relative rounded-lg overflow-hidden cursor-pointer group bg-black"
+                            style={{ width: 72, aspectRatio: '9/16' }}
+                            onClick={() => openHistoryPlayer(h)}
+                          >
+                            {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+                            <video
+                              src={h.videoUrl}
+                              className="w-full h-full object-cover"
+                              muted playsInline
+                              onMouseEnter={e => (e.target as HTMLVideoElement).play().catch(() => {})}
+                              onMouseLeave={e => { const v = e.target as HTMLVideoElement; v.pause(); v.currentTime = 0; }}
+                            />
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition flex items-center justify-center opacity-0 group-hover:opacity-100">
+                              <div className="w-7 h-7 rounded-full bg-white/90 flex items-center justify-center">
+                                <Play size={11} className="text-black ml-0.5" />
+                              </div>
+                            </div>
+                            {h.storeName && (
+                              <div className="absolute bottom-0 left-0 right-0 bg-black/60 px-1 py-0.5">
+                                <p className="text-[7px] text-[#FF9F4F] truncate text-center">{h.storeName}</p>
+                              </div>
+                            )}
+                          </div>
+                          <p className="text-[8px] text-dim text-center">
+                            {new Date(h.createdAt).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
+                          </p>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                </div>
+                )}
               </div>
 
               {/* ── 요소 위치 조정 ── */}
