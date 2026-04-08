@@ -3,14 +3,15 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  LayoutDashboard, KeyRound, LogOut, ChevronRight, Store,
+  LayoutDashboard, KeyRound, LogOut, ChevronRight, Store, Bell,
 } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 
 const NAV_ITEMS = [
-  { href: '/owner/dashboard',       icon: LayoutDashboard, label: '대시보드' },
-  { href: '/owner/dashboard/store', icon: Store,           label: '가게 정보' },
-  { href: '/owner/dashboard/pin',   icon: KeyRound,        label: 'PIN 관리' },
+  { href: '/owner/dashboard',         icon: LayoutDashboard, label: '대시보드' },
+  { href: '/owner/dashboard/notices', icon: Bell,            label: '공지사항' },
+  { href: '/owner/dashboard/store',   icon: Store,           label: '가게 정보' },
+  { href: '/owner/dashboard/pin',     icon: KeyRound,        label: 'PIN 관리' },
 ];
 
 interface Props {

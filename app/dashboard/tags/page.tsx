@@ -56,16 +56,29 @@ export default function TagsPage() {
     };
 
     const loadTagStats = async () => {
-      const { data } = await sb
-        .from('music_tracks')
-        .select('mood_tags, play_count')
-        .eq('is_active', true);
+      const [tracksRes, storesRes] = await Promise.all([
+        sb.from('music_tracks').select('mood_tags, play_count').eq('is_active', true),
+        sb.from('stores').select('name'),
+      ]);
+
+      // 가게 핸들 필터 세트 (가게명 정규화 + @제거)
+      const storeNames = new Set<string>(
+        (storesRes.data || []).map(s =>
+          (s.name as string).trim().toLowerCase().replace(/\s+/g, '')
+        )
+      );
+      const isStoreHandle = (tag: string) => {
+        if (tag.startsWith('@')) return true;
+        const norm = tag.toLowerCase().replace(/\s+/g, '').replace(/^@/, '');
+        return storeNames.has(norm);
+      };
 
       const counts: Record<string, number> = {};
       const plays:  Record<string, number> = {};
-      (data || []).forEach(row => {
+      (tracksRes.data || []).forEach(row => {
         const pc = (row as any).play_count ?? 0;
         (row.mood_tags as string[] || []).forEach(t => {
+          if (isStoreHandle(t)) return; // 가게 핸들 제외
           counts[t] = (counts[t] || 0) + 1;
           plays[t]  = (plays[t]  || 0) + pc;
         });
