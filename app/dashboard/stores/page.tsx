@@ -56,7 +56,7 @@ export default function StoresPage() {
   /* ---- stores state ---- */
   const [stores,   setStores]   = useState<Store[]>([]);
   const [storeQ,   setStoreQ]   = useState('');
-  const [storeFilter, setStoreFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [storeFilter, setStoreFilter] = useState<'all' | 'active' | 'inactive' | 'dummy'>('all');
   const [toggling, setToggling] = useState<string | null>(null);
   const [loadingStores, setLoadingStores] = useState(true);
 
@@ -273,7 +273,12 @@ export default function StoresPage() {
 
   const filteredStores = stores.filter(s => {
     const matchQ = !storeQ || s.name.includes(storeQ) || (s.address ?? '').includes(storeQ);
-    const matchF = storeFilter === 'all' || (storeFilter === 'active' ? s.is_active : !s.is_active);
+    const isDummyStore = s.owner_id ? (ownerMap[s.owner_id]?.isDummy ?? false) : false;
+    const matchF =
+      storeFilter === 'all'      ? true :
+      storeFilter === 'active'   ? s.is_active :
+      storeFilter === 'inactive' ? !s.is_active :
+      storeFilter === 'dummy'    ? isDummyStore : true;
     return matchQ && matchF;
   });
 
@@ -449,7 +454,7 @@ export default function StoresPage() {
                 className="w-full bg-card border border-border-subtle rounded-xl pl-9 pr-4 py-2.5 text-sm text-primary placeholder-gray-600 focus:outline-none focus:border-[#FF6F0F] transition"
               />
             </div>
-            {(['all', 'active', 'inactive'] as const).map(f => (
+            {(['all', 'active', 'inactive', 'dummy'] as const).map(f => (
               <button
                 key={f}
                 onClick={() => setStoreFilter(f)}
@@ -457,7 +462,7 @@ export default function StoresPage() {
                   storeFilter === f ? 'bg-[#FF6F0F] text-primary' : 'bg-card border border-border-subtle text-tertiary hover:text-primary'
                 }`}
               >
-                {f === 'all' ? '전체' : f === 'active' ? '활성' : '비활성'}
+                {f === 'all' ? '전체' : f === 'active' ? '활성' : f === 'inactive' ? '비활성' : '🧪 더미'}
               </button>
             ))}
           </div>
