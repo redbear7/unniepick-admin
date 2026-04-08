@@ -17,7 +17,6 @@ import {
   Sparkles,
   ExternalLink,
   Trash2,
-  Clock,
   Share2,
   Copy,
   Check,
@@ -762,6 +761,8 @@ export default function ShortsPage() {
   // 히스토리
   const [history, setHistory] = useState<ShortsHistoryItem[]>([]);
   const [playingHistory, setPlayingHistory] = useState<ShortsHistoryItem | null>(null);
+  const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
+  const toggleLike = (id: string) => setLikedIds(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
   const wasPlayingRef = useRef(false);
   const [previewExpanded, setPreviewExpanded] = useState(false);
   useEffect(() => { setHistory(loadShortsHistory()); }, []);
@@ -1891,6 +1892,15 @@ export default function ShortsPage() {
                           <div className="absolute top-2 right-2 bg-black/50 rounded px-1.5 py-0.5 text-[9px] text-white/70">
                             {new Date(h.createdAt).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
                           </div>
+                          <button
+                            onClick={e => { e.stopPropagation(); toggleLike(h.id); }}
+                            className="absolute bottom-3 right-3 flex flex-col items-center gap-0.5 transition-transform hover:scale-110 active:scale-95"
+                          >
+                            <div className={`w-9 h-9 rounded-full flex items-center justify-center ${likedIds.has(h.id) ? 'bg-red-500/80' : 'bg-black/40 border border-white/20'}`}>
+                              <Heart size={16} fill={likedIds.has(h.id) ? '#fff' : 'none'} color="#fff" />
+                            </div>
+                            <span className="text-[8px] text-white/70 font-semibold leading-none">좋아요</span>
+                          </button>
                         </div>
                         <div className="flex gap-1.5 px-0.5">
                           <button
@@ -1960,6 +1970,15 @@ export default function ShortsPage() {
                       <div className="absolute top-2 right-2 bg-black/50 rounded px-1.5 py-0.5 text-[9px] text-white/70">
                         {new Date(h.createdAt).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
                       </div>
+                      <button
+                        onClick={e => { e.stopPropagation(); toggleLike(h.id); }}
+                        className="absolute bottom-3 right-3 flex flex-col items-center gap-0.5 transition-transform hover:scale-110 active:scale-95"
+                      >
+                        <div className={`w-9 h-9 rounded-full flex items-center justify-center ${likedIds.has(h.id) ? 'bg-red-500/80' : 'bg-black/40 border border-white/20'}`}>
+                          <Heart size={16} fill={likedIds.has(h.id) ? '#fff' : 'none'} color="#fff" />
+                        </div>
+                        <span className="text-[8px] text-white/70 font-semibold leading-none">좋아요</span>
+                      </button>
                     </div>
                     <div className="px-1 space-y-1">
                       <p className="text-xs text-primary font-semibold truncate">{h.trackTitle}</p>
