@@ -101,84 +101,249 @@ function removeShortsHistory(id: string) {
   saveShortsHistory(loadShortsHistory().filter(h => h.id !== id));
 }
 
-// ─── 플레이어 (간이 오디오 미리듣기) ────────────────────────────
-function MiniPlayer({
+// ─── 웨이브폼 에디터 ──────────────────────────────────────────────
+function WaveformEditor({
   audioUrl,
+  durationSec,
   startSec,
+  windowSec,
+  onStartChange,
   onPlayStart,
 }: {
   audioUrl: string;
+  durationSec: number;
   startSec: number;
+  windowSec: number;
+  onStartChange: (s: number) => void;
   onPlayStart?: () => void;
 }) {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [playing, setPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
+  const canvasRef    = useRef<HTMLCanvasElement>(null);
+  const audioRef     = useRef<HTMLAudioElement | null>(null);
+  const animFrameRef = useRef<number>(0);
+  const dragging     = useRef(false);
+  const lastSec      = useRef(0);
 
-  const toggle = useCallback(() => {
+  const [peaks,   setPeaks]   = useState<number[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [playing, setPlaying] = useState(false);
+  const [playPos, setPlayPos] = useState(0); // 0~1 within window
+
+  // ── Decode audio → peaks ──
+  useEffect(() => {
+    if (!audioUrl) return;
+    let cancelled = false;
+    setLoading(true);
+    setPeaks([]);
+
+    (async () => {
+      try {
+        const res  = await fetch(audioUrl);
+        const buf  = await res.arrayBuffer();
+        if (cancelled) return;
+        const AC   = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        const ac   = new AC();
+        const decoded = await ac.decodeAudioData(buf);
+        await ac.close();
+        if (cancelled) return;
+
+        const raw = decoded.getChannelData(0);
+        const N   = 600;
+        const blk = Math.floor(raw.length / N);
+        const out: number[] = [];
+        for (let i = 0; i < N; i++) {
+          let mx = 0;
+          const base = i * blk;
+          for (let j = 0; j < blk; j++) { const v = Math.abs(raw[base + j] ?? 0); if (v > mx) mx = v; }
+          out.push(mx);
+        }
+        if (!cancelled) setPeaks(out);
+      } catch { /* silent — no waveform */ }
+      finally   { if (!cancelled) setLoading(false); }
+    })();
+
+    return () => { cancelled = true; };
+  }, [audioUrl]);
+
+  // ── Draw ──
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const dpr = window.devicePixelRatio || 1;
+    const W   = canvas.offsetWidth  || 400;
+    const H   = canvas.offsetHeight || 96;
+    canvas.width  = W * dpr;
+    canvas.height = H * dpr;
+    const ctx = canvas.getContext('2d')!;
+    ctx.scale(dpr, dpr);
+    const midY = H / 2;
+
+    ctx.fillStyle = '#0a0c14';
+    ctx.fillRect(0, 0, W, H);
+
+    const selX  = (startSec / durationSec) * W;
+    const selWx = (Math.min(windowSec, durationSec - startSec) / durationSec) * W;
+
+    // selection bg
+    ctx.fillStyle = 'rgba(255,111,15,0.10)';
+    ctx.fillRect(selX, 0, selWx, H);
+
+    if (peaks.length > 0) {
+      const bw = W / peaks.length;
+      peaks.forEach((p, i) => {
+        const x    = i * bw;
+        const h    = Math.max(p * H * 0.82, 1);
+        const inSel = x + bw > selX && x < selX + selWx;
+        // main bar
+        ctx.fillStyle = inSel ? '#FF6F0F' : '#252838';
+        ctx.fillRect(x + 0.5, midY - h / 2, Math.max(bw - 0.8, 0.5), h);
+        // reflection
+        ctx.fillStyle = inSel ? 'rgba(255,111,15,0.3)' : 'rgba(37,40,56,0.5)';
+        ctx.fillRect(x + 0.5, midY + h / 2, Math.max(bw - 0.8, 0.5), h * 0.35);
+      });
+    } else {
+      // placeholder shimmer
+      for (let i = 0; i < 80; i++) {
+        const ph = (Math.sin(i * 0.5) * 0.25 + 0.3) * H * 0.5;
+        ctx.fillStyle = '#1a1d2a';
+        ctx.fillRect(i * (W / 80) + 0.5, midY - ph / 2, W / 80 - 1, ph);
+      }
+    }
+
+    // boundary lines
+    ctx.lineWidth = 1.5;
+    [selX, selX + selWx].forEach(lx => {
+      ctx.strokeStyle = '#FF6F0F';
+      ctx.beginPath(); ctx.moveTo(lx, 0); ctx.lineTo(lx, H); ctx.stroke();
+      // handle nub
+      ctx.fillStyle = '#FF6F0F';
+      ctx.beginPath(); ctx.arc(lx, H / 2, 5, 0, Math.PI * 2); ctx.fill();
+    });
+
+    // playback cursor
+    if (playing && playPos > 0) {
+      const px = selX + playPos * selWx;
+      ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+      ctx.lineWidth   = 1.5;
+      ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, H); ctx.stroke();
+    }
+
+    // time label
+    const label = `${fmtSec(startSec)} – ${fmtSec(Math.min(startSec + windowSec, durationSec))}`;
+    ctx.font      = '10px monospace';
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    const lx = Math.min(selX + 5, W - 90);
+    ctx.fillText(label, lx, H - 5);
+
+  }, [peaks, startSec, durationSec, windowSec, playing, playPos]);
+
+  // ── Pointer interaction ──
+  const secFromX = useCallback((clientX: number) => {
+    const rect = canvasRef.current!.getBoundingClientRect();
+    return Math.max(0, Math.min(1, (clientX - rect.left) / rect.width)) * durationSec;
+  }, [durationSec]);
+
+  const onMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    dragging.current = true;
+    const sec = secFromX(e.clientX);
+    lastSec.current = sec;
+    const ns = Math.max(0, Math.min(sec - windowSec / 2, durationSec - windowSec));
+    onStartChange(Math.round(ns));
+  };
+  const onMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!dragging.current) return;
+    const sec   = secFromX(e.clientX);
+    const delta = sec - lastSec.current;
+    lastSec.current = sec;
+    onStartChange(Math.round(Math.max(0, Math.min(startSec + delta, durationSec - windowSec))));
+  };
+  const onMouseUp = () => { dragging.current = false; };
+
+  // ── Playback ──
+  const togglePlay = useCallback(() => {
     const el = audioRef.current;
     if (!el) return;
     if (playing) {
       el.pause();
-      setPlaying(false);
+      cancelAnimationFrame(animFrameRef.current);
+      setPlaying(false); setPlayPos(0);
     } else {
       onPlayStart?.();
       el.currentTime = startSec;
       el.play().catch(() => {});
       setPlaying(true);
+      const tick = () => {
+        if (!audioRef.current) return;
+        const elapsed  = audioRef.current.currentTime - startSec;
+        const progress = Math.min(elapsed / windowSec, 1);
+        setPlayPos(progress);
+        if (progress < 1 && !audioRef.current.paused) {
+          animFrameRef.current = requestAnimationFrame(tick);
+        } else {
+          audioRef.current.pause();
+          setPlaying(false); setPlayPos(0);
+        }
+      };
+      animFrameRef.current = requestAnimationFrame(tick);
     }
-  }, [playing, startSec, onPlayStart]);
+  }, [playing, startSec, windowSec, onPlayStart]);
 
+  // Stop playback on section change
   useEffect(() => {
-    const el = audioRef.current;
-    if (!el) return;
-    const onTime = () => setCurrentTime(el.currentTime);
-    const onEnd = () => setPlaying(false);
-    el.addEventListener('timeupdate', onTime);
-    el.addEventListener('ended', onEnd);
-    return () => {
-      el.removeEventListener('timeupdate', onTime);
-      el.removeEventListener('ended', onEnd);
-    };
-  }, []);
-
-  // 시작 시간 바뀌면 재생 중지
-  useEffect(() => {
-    const el = audioRef.current;
-    if (el && playing) {
-      el.pause();
-      setPlaying(false);
+    if (playing && audioRef.current) {
+      audioRef.current.pause();
+      cancelAnimationFrame(animFrameRef.current);
+      setPlaying(false); setPlayPos(0);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startSec]);
 
-  const elapsed = Math.max(0, currentTime - startSec);
-  const width = Math.min((elapsed / 30) * 100, 100);
+  useEffect(() => () => cancelAnimationFrame(animFrameRef.current), []);
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex flex-col gap-2 select-none">
       {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
       <audio ref={audioRef} src={audioUrl} preload="metadata" />
-      <button
-        onClick={toggle}
-        className="w-9 h-9 rounded-full bg-[#FF6F0F] flex items-center justify-center hover:bg-[#e86200] transition shrink-0"
-      >
-        {playing ? <Pause size={14} className="text-white" /> : <Play size={14} className="text-white ml-0.5" />}
-      </button>
-      <div className="flex-1 space-y-1">
-        <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-[#FF6F0F] rounded-full transition-all duration-300"
-            style={{ width: `${width}%` }}
-          />
+
+      <div className="relative">
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center gap-2 z-10 bg-[#0a0c14]/70 rounded-xl">
+            <Loader2 size={13} className="animate-spin text-[#FF6F0F]" />
+            <span className="text-xs text-muted">파형 분석 중...</span>
+          </div>
+        )}
+        <canvas
+          ref={canvasRef}
+          className={`w-full rounded-xl block ${dragging.current ? 'cursor-grabbing' : 'cursor-crosshair'}`}
+          style={{ height: 96 }}
+          onMouseDown={onMouseDown}
+          onMouseMove={onMouseMove}
+          onMouseUp={onMouseUp}
+          onMouseLeave={onMouseUp}
+        />
+      </div>
+
+      <div className="flex items-center gap-3">
+        <button
+          onClick={togglePlay}
+          className="w-8 h-8 rounded-full bg-[#FF6F0F] flex items-center justify-center hover:bg-[#e86200] transition shrink-0"
+        >
+          {playing
+            ? <Pause size={11} className="text-white" />
+            : <Play  size={11} className="text-white ml-0.5" />}
+        </button>
+        <div className="flex-1 flex justify-between text-[10px] font-mono text-muted">
+          <span>0:00</span>
+          <span className="text-[#FF9F4F]">
+            {fmtSec(startSec)} → {fmtSec(Math.min(startSec + windowSec, durationSec))} ({windowSec}초)
+          </span>
+          <span>{fmtSec(durationSec)}</span>
         </div>
-        <p className="text-[10px] text-muted">
-          {fmtSec(startSec)} ~ {fmtSec(startSec + 30)} 미리듣기
-        </p>
       </div>
     </div>
   );
 }
+
 
 // ─── 메인 페이지 ───────────────────────────────────────────────
 export default function ShortsPage() {
@@ -501,7 +666,7 @@ export default function ShortsPage() {
     }
   };
 
-  const maxStart = selected ? Math.max(0, selected.duration_sec - 30) : 0;
+
 
   // 현재 선택 트랙의 기존 쇼츠 필터
   const trackHistory = selected
@@ -891,39 +1056,20 @@ export default function ShortsPage() {
                   </div>
                 )}
 
-                {/* 슬라이더 */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs text-muted">시작 시간 (직접 조정)</label>
-                    <span className="text-sm font-semibold text-primary tabular-nums">
-                      {fmtSec(startSec)} ~ {fmtSec(Math.min(startSec + 30, selected.duration_sec))}
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min={0}
-                    max={maxStart}
-                    step={1}
-                    value={startSec}
-                    onChange={(e) => {
-                      setStartSec(Number(e.target.value));
-                      setAnalyzed(false);
-                    }}
-                    className="w-full accent-[#FF6F0F]"
-                  />
-                  <div className="flex justify-between text-[10px] text-muted">
-                    <span>0:00</span>
-                    <span>{fmtSec(maxStart)}</span>
-                  </div>
-                </div>
-
-                {/* 미니 오디오 플레이어 */}
+                {/* 웨이브폼 에디터 */}
                 {selected.audio_url && (
-                  <MiniPlayer audioUrl={selected.audio_url} startSec={startSec} onPlayStart={() => { if (player.isPlaying) player.pause(); }} />
+                  <WaveformEditor
+                    audioUrl={selected.audio_url}
+                    durationSec={selected.duration_sec}
+                    startSec={startSec}
+                    windowSec={durationSec}
+                    onStartChange={(s) => { setStartSec(s); setAnalyzed(false); }}
+                    onPlayStart={() => { if (player.isPlaying) player.pause(); }}
+                  />
                 )}
 
                 <p className="text-[10px] text-muted">
-                  * 선택한 시작 시간부터 30초 구간이 쇼츠 영상에 사용됩니다.
+                  * 웨이브폼을 클릭하거나 드래그해서 구간을 이동하세요.
                 </p>
               </div>
 
