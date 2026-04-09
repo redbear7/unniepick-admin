@@ -559,54 +559,6 @@ export default function AnnouncementsPage() {
             onVoicesLoaded={setFishVoices}
           />
 
-          {/* 템플릿 */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="text-xs text-muted font-semibold flex items-center gap-1.5">
-                <BookMarked size={11} /> 템플릿
-              </label>
-              <button onClick={() => openTplModal(null)}
-                className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-lg bg-[#FF6F0F]/10 border border-[#FF6F0F]/20 text-[#FF6F0F] hover:bg-[#FF6F0F]/20 transition">
-                <Plus size={9} /> 추가
-              </button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {templates.map((tpl, i) => {
-                const key = `${i}`;
-                const isActive = selectedTplId === key;
-                return (
-                  <div key={key} className="relative group">
-                    <button onClick={() => handleSelectTemplate(tpl, key)}
-                      className={`flex flex-col items-center gap-0.5 px-2.5 py-2 rounded-xl border transition min-w-[56px] ${
-                        isActive ? 'bg-[#FF6F0F]/15 border-[#FF6F0F]/50' : 'bg-white/[0.03] border-border-subtle hover:border-border-main'
-                      }`}>
-                      <span className="text-xl leading-none">{tpl.emoji}</span>
-                      <span className={`text-[9px] font-bold mt-0.5 text-center leading-tight ${isActive ? 'text-[#FF6F0F]' : 'text-tertiary'}`}>
-                        {tpl.label}
-                      </span>
-                      {tpl.sched_time !== '' && <span className="text-[8px]">⏰</span>}
-                    </button>
-                    <button onClick={e => { e.stopPropagation(); openTplModal(tpl); }}
-                      className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-card border border-border-main flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
-                      <Pencil size={7} className="text-tertiary" />
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-            {selectedTplId !== null && (
-              <div className="flex items-center gap-2">
-                <button onClick={handleSaveToTemplate}
-                  className="flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-lg bg-fill-subtle border border-border-subtle text-tertiary hover:text-primary hover:border-border-main transition">
-                  <BookMarked size={9} /> 📌 현재 설정을 템플릿에 저장
-                </button>
-                <button onClick={() => setSelectedTplId(null)} className="text-[10px] text-dim hover:text-tertiary">
-                  <X size={10} />
-                </button>
-              </div>
-            )}
-          </div>
-
           {/* 차량 이동 */}
           <div className="border border-white/8 rounded-2xl overflow-hidden">
             <button onClick={() => setCarOpen(v => !v)}
@@ -752,6 +704,54 @@ export default function AnnouncementsPage() {
                     <p className="text-[10px] text-dim text-center py-3">시작 번호를 입력하면 번호 카드가 나타납니다</p>
                   )}
                 </div>
+              </div>
+            )}
+          </div>
+
+          {/* 템플릿 */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-xs text-muted font-semibold flex items-center gap-1.5">
+                <BookMarked size={11} /> 템플릿
+              </label>
+              <button onClick={() => openTplModal(null)}
+                className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-lg bg-[#FF6F0F]/10 border border-[#FF6F0F]/20 text-[#FF6F0F] hover:bg-[#FF6F0F]/20 transition">
+                <Plus size={9} /> 추가
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {templates.map((tpl, i) => {
+                const key = `${i}`;
+                const isActive = selectedTplId === key;
+                return (
+                  <div key={key} className="relative group">
+                    <button onClick={() => handleSelectTemplate(tpl, key)}
+                      className={`flex flex-col items-center gap-0.5 px-2.5 py-2 rounded-xl border transition min-w-[56px] ${
+                        isActive ? 'bg-[#FF6F0F]/15 border-[#FF6F0F]/50' : 'bg-white/[0.03] border-border-subtle hover:border-border-main'
+                      }`}>
+                      <span className="text-xl leading-none">{tpl.emoji}</span>
+                      <span className={`text-[9px] font-bold mt-0.5 text-center leading-tight ${isActive ? 'text-[#FF6F0F]' : 'text-tertiary'}`}>
+                        {tpl.label}
+                      </span>
+                      {tpl.sched_time !== '' && <span className="text-[8px]">⏰</span>}
+                    </button>
+                    <button onClick={e => { e.stopPropagation(); openTplModal(tpl); }}
+                      className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-card border border-border-main flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                      <Pencil size={7} className="text-tertiary" />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+            {selectedTplId !== null && (
+              <div className="flex items-center gap-2">
+                <button onClick={handleSaveToTemplate}
+                  className="flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-lg bg-fill-subtle border border-border-subtle text-tertiary hover:text-primary hover:border-border-main transition">
+                  <BookMarked size={9} /> 📌 현재 설정을 템플릿에 저장
+                </button>
+                <button onClick={() => setSelectedTplId(null)} className="text-[10px] text-dim hover:text-tertiary">
+                  <X size={10} />
+                </button>
               </div>
             )}
           </div>
