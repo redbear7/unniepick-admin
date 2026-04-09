@@ -1,4 +1,31 @@
 @AGENTS.md
 
+# Multica — AI 에이전트 작업 관리
+
+이 프로젝트는 Multica로 AI 에이전트 분업 체계를 운영 중입니다.
+`multica` CLI가 `/opt/homebrew/bin/multica`에 설치되어 있습니다.
+
+## 에이전트 목록
+| 에이전트 | 담당 |
+|---------|------|
+| 🎵 콘텐츠 에이전트 | tracks, playlists, cardnews, shorts, ai-images, references |
+| 🏪 매장운영 에이전트 | stores, owners, coupons, announcements, notices, posts, users, brands, map, contexts |
+| ⚙️ 인프라 에이전트 | tts, weather, auth, tags, propagation, 공통 컴포넌트 |
+| 🎸 신곡제작 에이전트 | YT Music → Suno 크롬 확장앱 + 트랙 업로드 |
+
+## 자주 쓰는 명령어
+```bash
+multica issue create --title "제목" --description "설명" --assignee "에이전트명" --priority "high"
+multica issue list                  # 이슈 목록
+multica agent list                  # 에이전트 상태
+multica issue run-messages <taskID> # 실행 메시지 확인
+multica daemon status               # 데몬 상태
+```
+
+## 규칙
+- 이슈 할당 시 담당 영역에 맞는 에이전트에 할당
+- 한국어로 커밋 메시지 및 코멘트 작성
+- 데몬이 꺼져 있으면 `multica daemon start`로 시작
+
 # Companion
 Nuzzlewhit는 항상 한국어로 코멘트를 작성합니다.
