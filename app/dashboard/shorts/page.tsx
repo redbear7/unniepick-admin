@@ -405,10 +405,16 @@ interface LivePreviewFrameProps {
   genreTag?: string;
   moodTag?: string;
   waveformStyle?: 'bar' | 'mirror' | 'wave' | 'circle' | 'dots';
+  coverAnimStyle?: 'none' | 'breathing' | 'beat' | 'vinyl';
+  particleStyle?: 'none' | 'sakura' | 'bubbles' | 'hearts' | 'stars' | 'rose' | 'snow';
   showGuide?: boolean;
   onPlayStart?: () => void;
   stopToken?: number;
 }
+
+const PARTICLE_EMOJI: Record<string, string> = {
+  sakura: '🌸', bubbles: '🫧', hearts: '💕', stars: '✨', rose: '🌹', snow: '❄️',
+};
 
 function LivePreviewFrame({
   audioUrl, coverUrl, coverEmoji, bgVideoUrl,
@@ -418,6 +424,8 @@ function LivePreviewFrame({
   headerTop, infoTop, couponTop,
   genreTag, moodTag,
   waveformStyle = 'bar',
+  coverAnimStyle = 'none',
+  particleStyle = 'none',
   showGuide = false,
   onPlayStart,
   stopToken = 0,
@@ -600,6 +608,34 @@ function LivePreviewFrame({
           0%   { opacity: 0; transform: translateY(24px) scale(0.92); }
           100% { opacity: 1; transform: translateY(0)    scale(1); }
         }
+        @keyframes coverBreath {
+          0%,100% { transform: scale(1); }
+          50%     { transform: scale(1.025); }
+        }
+        @keyframes coverBeat {
+          0%   { transform: scale(1.035); filter: brightness(1.15); }
+          100% { transform: scale(1);     filter: brightness(1); }
+        }
+        @keyframes particleFall {
+          0%   { transform: translateY(-10%) rotate(0deg);   opacity:0; }
+          10%  { opacity:0.85; }
+          90%  { opacity:0.7; }
+          100% { transform: translateY(110%) rotate(360deg); opacity:0; }
+        }
+        @keyframes particleFloat {
+          0%   { transform: translateY(110%) rotate(0deg);   opacity:0; }
+          10%  { opacity:0.85; }
+          90%  { opacity:0.7; }
+          100% { transform: translateY(-10%) rotate(-20deg); opacity:0; }
+        }
+        @keyframes particleTwinkle {
+          0%,100% { opacity:0.1; transform: scale(0.6); }
+          50%     { opacity:0.9; transform: scale(1.1); }
+        }
+        @keyframes vinylSpin {
+          from { transform: rotate(0deg); }
+          to   { transform: rotate(360deg); }
+        }
       `}</style>
       <p className="text-[10px] text-dim self-start">라이브 미리보기</p>
       {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
@@ -628,9 +664,61 @@ function LivePreviewFrame({
             <video src={bgVideoUrl} style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover' }} muted loop autoPlay playsInline />
           ) : coverUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={coverUrl} alt="" style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover' }} />
+            <img src={coverUrl} alt="" style={{
+              position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover',
+              filter: coverAnimStyle === 'vinyl' ? 'brightness(0.3) blur(6px)' : undefined,
+              animation: coverAnimStyle === 'breathing' ? 'coverBreath 2.5s ease-in-out infinite'
+                       : coverAnimStyle === 'beat'      ? 'coverBeat 0.5s ease-out infinite'
+                       : undefined,
+            }} />
           ) : (
-            <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:80, background:'#1a1a2e' }}>{coverEmoji}</div>
+            <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:80, background:'#1a1a2e',
+              animation: coverAnimStyle === 'breathing' ? 'coverBreath 2.5s ease-in-out infinite' : undefined,
+            }}>{coverEmoji}</div>
+          )}
+
+          {/* 바이닐 디스크 오버레이 (이미지 모드 전용) */}
+          {!bgVideoUrl && coverAnimStyle === 'vinyl' && (
+            <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'flex-start', justifyContent:'center', paddingTop:60 }}>
+              <div style={{ position:'relative', width:160, height:160 }}>
+                <div style={{ width:160, height:160, borderRadius:'50%', background:'radial-gradient(circle,#242424 0%,#0a0a0a 100%)', animation:'vinylSpin 4s linear infinite', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 12px 40px rgba(0,0,0,0.8)' }}>
+                  {[1,2,3,4].map(k => <div key={k} style={{ position:'absolute', width:160-k*28, height:160-k*28, borderRadius:'50%', border:'0.5px solid rgba(255,255,255,0.05)', top:'50%', left:'50%', transform:'translate(-50%,-50%)' }} />)}
+                  <div style={{ width:62, height:62, borderRadius:'50%', overflow:'hidden', zIndex:1 }}>
+                    {coverUrl
+                      // eslint-disable-next-line @next/next/no-img-element
+                      ? <img src={coverUrl} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                      : <div style={{ width:'100%', height:'100%', background:'#2a2a3a', display:'flex', alignItems:'center', justifyContent:'center', fontSize:24 }}>{coverEmoji}</div>}
+                  </div>
+                </div>
+                <div style={{ position:'absolute', top:'50%', left:'50%', transform:'translate(-50%,-50%)', width:10, height:10, borderRadius:'50%', background:'#030303', border:'1.5px solid rgba(255,255,255,0.15)', zIndex:10 }} />
+              </div>
+            </div>
+          )}
+
+          {/* 파티클 오버레이 */}
+          {particleStyle !== 'none' && (
+            <div style={{ position:'absolute', inset:0, pointerEvents:'none', overflow:'hidden' }}>
+              {Array.from({ length: 9 }, (_, i) => {
+                const isFalling = particleStyle === 'sakura' || particleStyle === 'rose' || particleStyle === 'snow';
+                const isTwinkle = particleStyle === 'stars';
+                return (
+                  <div key={i} style={{
+                    position:'absolute',
+                    left: `${8 + i * 10}%`,
+                    top: isFalling ? '-5%' : isTwinkle ? `${10 + i * 9}%` : undefined,
+                    bottom: (!isFalling && !isTwinkle) ? '-5%' : undefined,
+                    fontSize: particleStyle === 'bubbles' ? 20 : particleStyle === 'stars' ? 14 : 16,
+                    animation: isTwinkle
+                      ? `particleTwinkle ${1.5 + i * 0.4}s ${i * 0.25}s ease-in-out infinite`
+                      : isFalling
+                      ? `particleFall ${3.5 + i * 0.6}s ${i * 0.35}s ease-in-out infinite`
+                      : `particleFloat ${3 + i * 0.5}s ${i * 0.3}s ease-in-out infinite`,
+                  }}>
+                    {PARTICLE_EMOJI[particleStyle] ?? '✨'}
+                  </div>
+                );
+              })}
+            </div>
           )}
 
           {/* 그라디언트 */}
@@ -845,6 +933,8 @@ export default function ShortsPage() {
   // 오디오 페이드인 / 파형 스타일
   const [audioFadeInSec, setAudioFadeInSec] = useState(1.5);
   const [waveformStyle, setWaveformStyle] = useState<'bar' | 'mirror' | 'wave' | 'circle' | 'dots'>('bar');
+  const [coverAnimStyle, setCoverAnimStyle] = useState<'none' | 'breathing' | 'beat' | 'vinyl'>('none');
+  const [particleStyle, setParticleStyle]   = useState<'none' | 'sakura' | 'bubbles' | 'hearts' | 'stars' | 'rose' | 'snow'>('none');
   const [durationSec, setDurationSec] = useState(20);
 
   // 요소 위치 (% from top)
@@ -1108,6 +1198,8 @@ export default function ShortsPage() {
           duration_sec: durationSec,
           bg_video_url: finalBgVideoUrl,
           bg_video_duration_sec: bgVideoDurationSec,
+          cover_anim_style: coverAnimStyle,
+          particle_style: particleStyle,
         }),
       });
       const json = await res.json();
@@ -1615,6 +1707,57 @@ export default function ShortsPage() {
                     ))}
                   </div>
                 </div>
+
+                {/* 커버 애니메이션 (이미지 전용) */}
+                {!bgVideoPreviewUrl && (
+                  <div>
+                    <p className="text-xs text-muted mb-2">커버 애니메이션 <span className="text-dim">(이미지 전용)</span></p>
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {([
+                        { id: 'none',      label: 'OFF',    icon: '—'  },
+                        { id: 'breathing', label: 'Breath', icon: '🌊' },
+                        { id: 'beat',      label: 'Beat',   icon: '🥁' },
+                        { id: 'vinyl',     label: 'Vinyl',  icon: '💿' },
+                      ] as const).map(({ id, label, icon }) => (
+                        <button key={id} onClick={() => setCoverAnimStyle(id)}
+                          className={`flex flex-col items-center gap-1 py-2 px-1 rounded-lg border-2 transition text-center ${
+                            coverAnimStyle === id
+                              ? 'bg-[#FF6F0F]/15 border-[#FF6F0F] text-primary'
+                              : 'bg-fill-subtle border-border-subtle text-muted hover:border-border-main'
+                          }`}>
+                          <span className="text-sm leading-none">{icon}</span>
+                          <span className="text-[9px] font-semibold">{label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 파티클 효과 */}
+                <div>
+                  <p className="text-xs text-muted mb-2">파티클 효과</p>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {([
+                      { id: 'none',    label: 'OFF',     icon: '—'  },
+                      { id: 'sakura',  label: '벚꽃',    icon: '🌸' },
+                      { id: 'bubbles', label: '비누방울', icon: '🫧' },
+                      { id: 'hearts',  label: '하트',    icon: '💕' },
+                      { id: 'stars',   label: '별빛',    icon: '✨' },
+                      { id: 'rose',    label: '장미',    icon: '🌹' },
+                      { id: 'snow',    label: '눈꽃',    icon: '❄️' },
+                    ] as const).map(({ id, label, icon }) => (
+                      <button key={id} onClick={() => setParticleStyle(id)}
+                        className={`flex flex-col items-center gap-1 py-2 px-1 rounded-lg border-2 transition text-center ${
+                          particleStyle === id
+                            ? 'bg-[#FF6F0F]/15 border-[#FF6F0F] text-primary'
+                            : 'bg-fill-subtle border-border-subtle text-muted hover:border-border-main'
+                        }`}>
+                        <span className="text-sm leading-none">{icon}</span>
+                        <span className="text-[9px] font-semibold">{label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               {/* ── 클라이맥스 구간 설정 ── */}
@@ -1982,6 +2125,8 @@ export default function ShortsPage() {
                 infoTop={infoTop}
                 couponTop={couponTop}
                 waveformStyle={waveformStyle}
+                coverAnimStyle={coverAnimStyle}
+                particleStyle={particleStyle}
                 showGuide={showGuide}
                 onPlayStart={() => { if (player.isPlaying) player.pause(); setWaveStopToken(t => t + 1); }}
                 stopToken={liveStopToken}
@@ -2191,6 +2336,8 @@ export default function ShortsPage() {
                 infoTop={infoTop}
                 couponTop={couponTop}
                 waveformStyle={waveformStyle}
+                coverAnimStyle={coverAnimStyle}
+                particleStyle={particleStyle}
                 showGuide={showGuide}
                 onPlayStart={() => { if (player.isPlaying) player.pause(); setWaveStopToken(t => t + 1); }}
                 stopToken={liveStopToken}

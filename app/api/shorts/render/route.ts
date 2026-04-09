@@ -48,6 +48,8 @@ export async function POST(req: NextRequest) {
       bg_video_url,
       bg_video_duration_sec,
       duration_sec,
+      cover_anim_style,
+      particle_style,
     } = await req.json();
 
     if (!track_id || !audio_url || !title || !artist) {
@@ -79,6 +81,8 @@ export async function POST(req: NextRequest) {
       waveformStyle: waveform_style ?? 'bar',
       bgVideoUrl: bg_video_url ?? null,
       bgVideoDurationSec: typeof bg_video_duration_sec === 'number' ? bg_video_duration_sec : 0,
+      coverAnimStyle: cover_anim_style ?? 'none',
+      particleStyle: particle_style ?? 'none',
     };
 
     const VALID_DURATIONS = [10, 15, 20, 25, 30];
