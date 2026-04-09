@@ -16,6 +16,7 @@
     "@fal-ai/client": "^1.9.5",
     "@google/genai": "^1.49.0",
     "@orrery/core": "^0.4.2",
+    "@pixiv/three-vrm": "^3.5.1",
     "@remotion/bundler": "^4.0.445",
     "@remotion/player": "^4.0.445",
     "@remotion/renderer": "^4.0.445",
@@ -27,7 +28,8 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "remotion": "^4.0.445",
-    "ssaju": "^0.1.1"
+    "ssaju": "^0.1.1",
+    "three": "^0.183.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
