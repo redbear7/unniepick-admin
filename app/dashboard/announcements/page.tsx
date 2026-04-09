@@ -299,7 +299,18 @@ export default function AnnouncementsPage() {
 
   // ── 히스토리 재생 ──
   const playWithVolume = async (originalUrl: string, id: string, duckVol: number, pm: 'immediate' | 'between_tracks') => {
-    if (announcingId === id) { setAnnouncingId(null); return; }
+    if (announcingId === id) {
+      // 정지
+      setAnnouncingId(null);
+      if (player.track) {
+        player.stopAnnouncement();
+      } else {
+        audioRef.current?.pause();
+        audioRef.current = null;
+        setPlayingId(null);
+      }
+      return;
+    }
     let playUrl: string;
     try { playUrl = await fetchBlobUrl(originalUrl, `__hist__${originalUrl}`); }
     catch { playUrl = originalUrl; }

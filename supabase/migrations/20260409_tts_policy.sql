@@ -8,11 +8,11 @@ create table if not exists tts_policies (
   created_at       timestamptz default now()
 );
 
+-- 회원 등급: 스타터 / 프로 / 프리미엄 (랜딩 요금제와 동일)
 insert into tts_policies (name, daily_char_limit, description, sort_order) values
-  ('무료',   500,  '하루 500자',   0),
-  ('베이직', 2000, '하루 2,000자', 1),
-  ('프로',   5000, '하루 5,000자', 2),
-  ('무제한',   -1, '제한 없음',    3)
+  ('스타터',   500,  '하루 500자 (기본 템플릿)',     0),
+  ('프로',    3000,  '하루 3,000자 (커스텀 TTS)',    1),
+  ('프리미엄',   -1,  '무제한 (다국어 AI 음성안내)',  2)
 on conflict (name) do nothing;
 
 -- stores 테이블에 정책 컬럼 추가

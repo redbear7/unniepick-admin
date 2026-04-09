@@ -55,6 +55,7 @@ interface PlayerCtx {
   toggleRepeat:       () => void;
   close:              () => void;
   playAnnouncement:   (url: string, opts: { duck_volume?: number; play_mode?: 'immediate' | 'between_tracks'; ann_volume?: number }) => void;
+  stopAnnouncement:   () => void;
   crossfadeSec:       3 | 4 | 5;
   setCrossfadeSec:    (v: 3 | 4 | 5) => void;
 }
@@ -457,6 +458,20 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     })();
   }, [volume, annVolume]);
 
+  const stopAnnouncement = useCallback(() => {
+    if (!annAudioRef.current) return;
+    annAudioRef.current.pause();
+    annAudioRef.current = null;
+    annGainRef.current = null;
+    // 원본 트랙 볼륨 복원
+    const target = audioRef.current;
+    if (target && origVolRef.current !== null) {
+      target.volume = origVolRef.current;
+    }
+    origVolRef.current = null;
+    setAnnouncementPlaying(false);
+  }, []);
+
   const close = useCallback(() => {
     audioRef.current?.pause();
     audioRef.current = null;
@@ -477,7 +492,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       play, pause, resume, togglePlay,
       next, prev, seek, setVolume, setAnnVolume,
       toggleShuffle, toggleRepeat, close,
-      playAnnouncement,
+      playAnnouncement, stopAnnouncement,
       crossfadeSec, setCrossfadeSec,
     }}>
       {children}

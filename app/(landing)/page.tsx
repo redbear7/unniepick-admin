@@ -128,7 +128,7 @@ const PLANS = [
     period: '/월',
     desc: '성장하는 매장의 필수 플랜',
     badge: '가장 인기',
-    badgeColor: 'bg-[#FF6F0F]/15 text-[#FF6F0F]',
+    badgeColor: 'bg-[#FF6F0F] text-white',
     features: [
       '무제한 플레이리스트',
       'AI 음성안내 커스텀 TTS',
