@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Music, Mic, BarChart3, Ticket, Zap, Shield,
@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import LandingNav from '@/components/LandingNav';
 import LandingFooter from '@/components/LandingFooter';
+import { createClient } from '@/lib/supabase';
 
 /* ------------------------------------------------------------------ */
 /* Data                                                                 */

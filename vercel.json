@@ -1,0 +1,15 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "next build",
+  "installCommand": "npm install",
+  "functions": {
+    "app/api/shorts/render/route.ts": {
+      "maxDuration": 300,
+      "memory": 3009
+    },
+    "app/api/cardnews/render/route.ts": {
+      "maxDuration": 300,
+      "memory": 3009
+    }
+  }
+}
