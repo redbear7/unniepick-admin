@@ -85,20 +85,6 @@ export async function POST(req: NextRequest) {
     const durationSec = VALID_DURATIONS.includes(duration_sec) ? duration_sec : 15;
     const durationInFrames = durationSec * 30; // 30fps
 
-    // 1-a. 오디오 파일 로컬 다운로드 (원격 URL 간헐적 fetch 실패 방지)
-    let localAudioPath: string | null = null;
-    try {
-      const audioRes = await fetch(audio_url);
-      if (!audioRes.ok) throw new Error(`오디오 다운로드 실패: ${audioRes.status}`);
-      const audioBuffer = Buffer.from(await audioRes.arrayBuffer());
-      const ext = audio_url.split('?')[0].split('.').pop() ?? 'mp3';
-      localAudioPath = path.join(os.tmpdir(), `audio_${track_id}_${Date.now()}.${ext}`);
-      fs.writeFileSync(localAudioPath, audioBuffer);
-      inputProps.audioUrl = `file://${localAudioPath}`;
-    } catch (e) {
-      console.warn('[shorts/render] 오디오 로컬 다운로드 실패, 원본 URL 사용:', (e as Error).message);
-    }
-
     // 1. Remotion 번들링
     const bundled = await bundle({
       entryPoint: path.join(process.cwd(), 'remotion', 'index.ts'),
@@ -148,7 +134,6 @@ export async function POST(req: NextRequest) {
 
     // 6. 임시 파일 정리
     try { fs.unlinkSync(outputPath); } catch { /* 무시 */ }
-    if (localAudioPath) { try { fs.unlinkSync(localAudioPath); } catch { /* 무시 */ } }
 
     return NextResponse.json({ video_url: urlData.publicUrl }, { headers: CORS });
   } catch (e) {
