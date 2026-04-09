@@ -408,6 +408,10 @@ interface LivePreviewFrameProps {
   coverAnimStyle?: 'none' | 'breathing' | 'beat' | 'vinyl';
   particleStyle?: 'none' | 'sakura' | 'bubbles' | 'hearts' | 'stars' | 'rose' | 'snow';
   bpm?: number;
+  vinylBgBlur?: number;
+  vinylPosX?: number;
+  vinylPosY?: number;
+  onVinylPosChange?: (x: number, y: number) => void;
   showGuide?: boolean;
   onPlayStart?: () => void;
   stopToken?: number;
@@ -428,14 +432,19 @@ function LivePreviewFrame({
   coverAnimStyle = 'none',
   particleStyle = 'none',
   bpm = 120,
+  vinylBgBlur = 14,
+  vinylPosX = 50,
+  vinylPosY = 28,
+  onVinylPosChange,
   showGuide = false,
   onPlayStart,
   stopToken = 0,
 }: LivePreviewFrameProps) {
   const audioRef      = useRef<HTMLAudioElement | null>(null);
   const animRef       = useRef<number>(0);
-  const canvasRef     = useRef<HTMLCanvasElement>(null);
-  const containerRef  = useRef<HTMLDivElement>(null);
+  const canvasRef      = useRef<HTMLCanvasElement>(null);
+  const containerRef   = useRef<HTMLDivElement>(null);
+  const vinylDragRef   = useRef<{ startX: number; startY: number; px: number; py: number } | null>(null);
   const [playing,       setPlaying]       = useState(false);
   const [progress,      setProgress]      = useState(0);
   const [wavePhase,     setWavePhase]     = useState(0);
@@ -668,7 +677,7 @@ function LivePreviewFrame({
             // eslint-disable-next-line @next/next/no-img-element
             <img src={coverUrl} alt="" style={{
               position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover',
-              filter: coverAnimStyle === 'vinyl' ? 'brightness(0.3) blur(6px)' : undefined,
+              filter: coverAnimStyle === 'vinyl' ? `brightness(0.3) blur(${vinylBgBlur / 2}px)` : undefined,
               animation: coverAnimStyle === 'breathing' ? `coverBreath ${(60 / bpm) * 4}s ease-in-out infinite`
                        : coverAnimStyle === 'beat'      ? `coverBeat ${60 / bpm}s ease-out infinite`
                        : undefined,
@@ -681,7 +690,36 @@ function LivePreviewFrame({
 
           {/* 바이닐 디스크 오버레이 (이미지 모드 전용) */}
           {!bgVideoUrl && coverAnimStyle === 'vinyl' && (
-            <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'flex-start', justifyContent:'center', paddingTop:60 }}>
+            <div
+              style={{
+                position: 'absolute',
+                left: `${vinylPosX}%`,
+                top: `${vinylPosY}%`,
+                transform: 'translate(-50%, -50%)',
+                cursor: 'grab',
+                userSelect: 'none',
+              }}
+              onMouseDown={e => {
+                e.preventDefault();
+                vinylDragRef.current = { startX: e.clientX, startY: e.clientY, px: vinylPosX, py: vinylPosY };
+                const onMove = (me: MouseEvent) => {
+                  if (!vinylDragRef.current || !containerRef.current) return;
+                  const rect = containerRef.current.getBoundingClientRect();
+                  const dx = (me.clientX - vinylDragRef.current.startX) / rect.width  * 100;
+                  const dy = (me.clientY - vinylDragRef.current.startY) / rect.height * 100;
+                  const nx = Math.max(10, Math.min(90, vinylDragRef.current.px + dx));
+                  const ny = Math.max(5,  Math.min(92, vinylDragRef.current.py + dy));
+                  onVinylPosChange?.(nx, ny);
+                };
+                const onUp = () => {
+                  vinylDragRef.current = null;
+                  window.removeEventListener('mousemove', onMove);
+                  window.removeEventListener('mouseup', onUp);
+                };
+                window.addEventListener('mousemove', onMove);
+                window.addEventListener('mouseup', onUp);
+              }}
+            >
               <div style={{ position:'relative', width:160, height:160 }}>
                 <div style={{ width:160, height:160, borderRadius:'50%', background:'radial-gradient(circle,#242424 0%,#0a0a0a 100%)', animation:'vinylSpin 4s linear infinite', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 12px 40px rgba(0,0,0,0.8)' }}>
                   {[1,2,3,4].map(k => <div key={k} style={{ position:'absolute', width:160-k*28, height:160-k*28, borderRadius:'50%', border:'0.5px solid rgba(255,255,255,0.05)', top:'50%', left:'50%', transform:'translate(-50%,-50%)' }} />)}
@@ -937,6 +975,9 @@ export default function ShortsPage() {
   const [waveformStyle, setWaveformStyle] = useState<'bar' | 'mirror' | 'wave' | 'circle' | 'dots'>('bar');
   const [coverAnimStyle, setCoverAnimStyle] = useState<'none' | 'breathing' | 'beat' | 'vinyl'>('none');
   const [particleStyle, setParticleStyle]   = useState<'none' | 'sakura' | 'bubbles' | 'hearts' | 'stars' | 'rose' | 'snow'>('none');
+  const [vinylBgBlur, setVinylBgBlur] = useState(14);
+  const [vinylPosX,   setVinylPosX]   = useState(50); // % of container
+  const [vinylPosY,   setVinylPosY]   = useState(28);
   const [durationSec, setDurationSec] = useState(20);
 
   // 요소 위치 (% from top)
@@ -1203,6 +1244,9 @@ export default function ShortsPage() {
           cover_anim_style: coverAnimStyle,
           particle_style: particleStyle,
           bpm: selected.bpm ?? 120,
+          vinyl_pos_x: vinylPosX,
+          vinyl_pos_y: vinylPosY,
+          vinyl_bg_blur: vinylBgBlur,
         }),
       });
       const json = await res.json();
@@ -1736,6 +1780,25 @@ export default function ShortsPage() {
                   </div>
                 )}
 
+                {/* 바이닐 배경 블러 슬라이더 */}
+                {coverAnimStyle === 'vinyl' && !bgVideoPreviewUrl && (
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <p className="text-xs text-muted">배경 블러</p>
+                      <span className="text-xs font-bold text-primary">{vinylBgBlur}</span>
+                    </div>
+                    <input
+                      type="range" min={0} max={20} step={1}
+                      value={vinylBgBlur}
+                      onChange={e => setVinylBgBlur(Number(e.target.value))}
+                      className="w-full accent-[#FF6F0F]"
+                    />
+                    <div className="flex justify-between text-[10px] text-dim mt-0.5">
+                      <span>없음</span><span>강함</span>
+                    </div>
+                  </div>
+                )}
+
                 {/* 파티클 효과 */}
                 <div>
                   <p className="text-xs text-muted mb-2">파티클 효과</p>
@@ -2131,6 +2194,10 @@ export default function ShortsPage() {
                 coverAnimStyle={coverAnimStyle}
                 particleStyle={particleStyle}
                 bpm={selected?.bpm ?? 120}
+                vinylBgBlur={vinylBgBlur}
+                vinylPosX={vinylPosX}
+                vinylPosY={vinylPosY}
+                onVinylPosChange={(x, y) => { setVinylPosX(x); setVinylPosY(y); }}
                 showGuide={showGuide}
                 onPlayStart={() => { if (player.isPlaying) player.pause(); setWaveStopToken(t => t + 1); }}
                 stopToken={liveStopToken}
@@ -2343,6 +2410,10 @@ export default function ShortsPage() {
                 coverAnimStyle={coverAnimStyle}
                 particleStyle={particleStyle}
                 bpm={selected?.bpm ?? 120}
+                vinylBgBlur={vinylBgBlur}
+                vinylPosX={vinylPosX}
+                vinylPosY={vinylPosY}
+                onVinylPosChange={(x, y) => { setVinylPosX(x); setVinylPosY(y); }}
                 showGuide={showGuide}
                 onPlayStart={() => { if (player.isPlaying) player.pause(); setWaveStopToken(t => t + 1); }}
                 stopToken={liveStopToken}

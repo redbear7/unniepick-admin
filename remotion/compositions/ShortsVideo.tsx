@@ -45,6 +45,9 @@ interface ShortsVideoProps {
   coverAnimStyle?: CoverAnimStyle;
   particleStyle?: ParticleStyle;
   bpm?: number;
+  vinylPosX?: number;
+  vinylPosY?: number;
+  vinylBgBlur?: number;
 }
 
 /* ------------------------------------------------------------------ */
@@ -325,15 +328,17 @@ function ParticleLayer({ type, frame }: { type: ParticleStyle; frame: number }) 
 /* Vinyl Overlay (image mode only)                                     */
 /* ------------------------------------------------------------------ */
 
-function VinylOverlay({ frame, fps, coverUrl, coverEmoji }: {
+function VinylOverlay({ frame, fps, coverUrl, coverEmoji, posX = 50, posY = 28 }: {
   frame: number; fps: number; coverUrl: string | null; coverEmoji: string;
+  posX?: number; posY?: number; // % of 720×1280
 }) {
-  const rotDeg = (frame / fps) * 28; // ~28°/s = 1 rotation per ~13s
+  const rotDeg = (frame / fps) * 28;
   const DISC = 360;
   const ART  = 140;
 
   return (
-    <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'flex-start', paddingTop: 200 }}>
+    <AbsoluteFill>
+      <div style={{ position: 'absolute', left: `${posX}%`, top: `${posY}%`, transform: 'translate(-50%, -50%)' }}>
       <div style={{ position: 'relative', width: DISC, height: DISC }}>
         {/* Outer disc */}
         <div style={{
@@ -419,6 +424,9 @@ export const ShortsVideo: React.FC<ShortsVideoProps> = ({
   coverAnimStyle = 'none',
   particleStyle  = 'none',
   bpm = 120,
+  vinylPosX = 50,
+  vinylPosY = 28,
+  vinylBgBlur = 14,
 }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
@@ -446,7 +454,7 @@ export const ShortsVideo: React.FC<ShortsVideoProps> = ({
     : isImageBg && coverAnimStyle === 'vinyl'
     ? 0.3
     : 1;
-  const coverBlur = isImageBg && coverAnimStyle === 'vinyl' ? 14 : 0;
+  const coverBlur = isImageBg && coverAnimStyle === 'vinyl' ? vinylBgBlur : 0;
 
   // ── Volume / fade
   const annFrames    = Math.ceil(announcementDurationSec * fps);
@@ -519,7 +527,8 @@ export const ShortsVideo: React.FC<ShortsVideoProps> = ({
 
       {/* ── Vinyl disc overlay (image mode only) ── */}
       {isImageBg && coverAnimStyle === 'vinyl' && (
-        <VinylOverlay frame={frame} fps={fps} coverUrl={coverUrl} coverEmoji={coverEmoji} />
+        <VinylOverlay frame={frame} fps={fps} coverUrl={coverUrl} coverEmoji={coverEmoji}
+          posX={vinylPosX} posY={vinylPosY} />
       )}
 
       {/* ── 그라데이션 오버레이 ── */}

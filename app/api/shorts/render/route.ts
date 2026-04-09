@@ -51,6 +51,9 @@ export async function POST(req: NextRequest) {
       cover_anim_style,
       particle_style,
       bpm,
+      vinyl_pos_x,
+      vinyl_pos_y,
+      vinyl_bg_blur,
     } = await req.json();
 
     if (!track_id || !audio_url || !title || !artist) {
@@ -85,6 +88,9 @@ export async function POST(req: NextRequest) {
       coverAnimStyle: cover_anim_style ?? 'none',
       particleStyle: particle_style ?? 'none',
       bpm: typeof bpm === 'number' ? bpm : 120,
+      vinylPosX: typeof vinyl_pos_x === 'number' ? vinyl_pos_x : 50,
+      vinylPosY: typeof vinyl_pos_y === 'number' ? vinyl_pos_y : 28,
+      vinylBgBlur: typeof vinyl_bg_blur === 'number' ? vinyl_bg_blur : 14,
     };
 
     const VALID_DURATIONS = [10, 15, 20, 25, 30];
