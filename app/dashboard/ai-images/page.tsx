@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { ImagePlus, Download, Copy, Loader, Sparkles, Check, ChevronLeft, ChevronRight, RotateCcw, Eye, EyeOff } from 'lucide-react';
+import { useState, useCallback, useRef } from 'react';
+import { ImagePlus, Download, Copy, Loader, Sparkles, Check, ChevronLeft, ChevronRight, RotateCcw, Eye, EyeOff, ClipboardPaste, X, Upload } from 'lucide-react';
 
 // ── 에셋 유형 ──────────────────────────────────────────────
 const ASSET_TYPES = [

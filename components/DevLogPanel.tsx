@@ -172,6 +172,8 @@ export default function DevLogPanel() {
     window.addEventListener('mouseup', onUp);
   }, [height]);
 
+  const filtered = filter === 'all' ? entries : entries.filter(e => e.level === filter);
+
   const handleCopy = useCallback(() => {
     const text = filtered
       .map(e => `[${e.time}] [${e.level.toUpperCase()}]${e.count > 1 ? ` ×${e.count}` : ''} ${e.args}`)
@@ -181,8 +183,6 @@ export default function DevLogPanel() {
       setTimeout(() => setCopied(false), 1500);
     });
   }, [filtered]);
-
-  const filtered = filter === 'all' ? entries : entries.filter(e => e.level === filter);
 
   const counts: Record<LogLevel, number> = { log: 0, info: 0, warn: 0, error: 0, debug: 0 };
   entries.forEach(e => counts[e.level]++);
