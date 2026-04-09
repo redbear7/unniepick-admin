@@ -198,8 +198,9 @@ export default function Sidebar() {
   const pathname = usePathname();
   const router   = useRouter();
 
-  const [groups,   setGroups]   = useState<NavGroup[]>(DEFAULT_GROUPS);
-  const [editMode, setEditMode] = useState(false);
+  const [groups,       setGroups]       = useState<NavGroup[]>(DEFAULT_GROUPS);
+  const [editMode,     setEditMode]     = useState(false);
+  const [preEditSnap,  setPreEditSnap]  = useState<NavGroup[] | null>(null);
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [editingLabel,   setEditingLabel]   = useState('');
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -389,20 +390,44 @@ export default function Sidebar() {
 
       {/* 하단 */}
       <div className="px-3 py-4 border-t border-border-main space-y-1">
-        <button
-          onClick={() => {
-            setEditMode(e => !e);
-            setEditingGroupId(null);
-          }}
-          className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition ${
-            editMode
-              ? 'bg-[#FF6F0F]/15 text-[#FF6F0F]'
-              : 'text-muted hover:bg-card hover:text-primary'
-          }`}
-        >
-          <Settings size={16} />
-          <span>{editMode ? '편집 완료' : '메뉴 편집'}</span>
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => {
+              if (editMode) {
+                setPreEditSnap(null);
+              } else {
+                setPreEditSnap(groups.map(g => ({ ...g, items: [...g.items] })));
+              }
+              setEditMode(e => !e);
+              setEditingGroupId(null);
+            }}
+            className={`flex items-center gap-3 flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition ${
+              editMode
+                ? 'bg-[#FF6F0F]/15 text-[#FF6F0F]'
+                : 'text-muted hover:bg-card hover:text-primary'
+            }`}
+          >
+            <Settings size={16} />
+            <span>{editMode ? '편집 완료' : '메뉴 편집'}</span>
+          </button>
+          {editMode && (
+            <button
+              onClick={() => {
+                if (preEditSnap) {
+                  setGroups(preEditSnap);
+                  localStorage.setItem(STORAGE_KEY, JSON.stringify(preEditSnap));
+                }
+                setPreEditSnap(null);
+                setEditMode(false);
+                setEditingGroupId(null);
+              }}
+              title="편집 취소 (원래 순서로 복원)"
+              className="p-2.5 rounded-lg text-muted hover:bg-card hover:text-red-400 transition"
+            >
+              <X size={16} />
+            </button>
+          )}
+        </div>
 
         {editMode && (
           <button
