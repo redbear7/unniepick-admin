@@ -106,10 +106,11 @@ export default function StoresPage() {
       .select('id, name, address, phone, category, is_active, created_at, owner_id, image_url, tts_policy_id')
       .order('created_at', { ascending: false });
     if (error) {
-      console.warn('[loadStores] tts_policy_id 컬럼 없음, fallback 쿼리 사용:', error.message);
+      console.warn('[loadStores] 1차 쿼리 실패, fallback:', error.message);
+      // 기본 컬럼만으로 재시도
       const { data: data2, error: err2 } = await sb
         .from('stores')
-        .select('id, name, address, phone, category, is_active, created_at, owner_id, image_url')
+        .select('id, name, address, phone, category, is_active, created_at, owner_id')
         .order('created_at', { ascending: false });
       if (err2) console.error('[loadStores] fallback 쿼리 실패:', err2.message);
       rows = (data2 ?? []) as Store[];
