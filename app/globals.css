@@ -1,38 +1,54 @@
 @import "tailwindcss";
 
 :root {
-  /* Spotify-inspired light mode */
-  --bg-surface: #f8f8f8;
-  --bg-sidebar: #ffffff;
-  --bg-card: #ffffff;
-  --bg-card-hover: #eeeeee;
-  --border-main: rgba(0, 0, 0, 0.10);
-  --text-primary: #121212;
-  --text-secondary: #535353;
-  --text-tertiary: #6a6a6a;
-  --text-muted: #a7a7a7;
-  --text-dim: #b3b3b3;
-  --fill-subtle: rgba(0, 0, 0, 0.04);
-  --fill-medium: rgba(0, 0, 0, 0.08);
-  --border-subtle: rgba(0, 0, 0, 0.10);
-  --accent: #1ed760;
-  --accent-dark: #1db954;
+  /* Apple-inspired light mode */
+  --bg-surface:    #f2f2f7;   /* iOS systemGroupedBackground */
+  --bg-sidebar:    #ffffff;
+  --bg-card:       #ffffff;
+  --bg-card-hover: #f2f2f7;
+  --bg-input:      #f2f2f7;   /* iOS secondarySystemBackground */
+
+  --border-main:   rgba(60, 60, 67, 0.13);
+  --border-subtle: rgba(60, 60, 67, 0.10);
+
+  --text-primary:   #1d1d1f;  /* Apple near-black */
+  --text-secondary: #3c3c43;  /* Apple label */
+  --text-tertiary:  #6e6e73;  /* Apple secondary label */
+  --text-muted:     #8e8e93;  /* Apple tertiary label */
+  --text-dim:       #aeaeb2;  /* Apple quaternary label */
+
+  --fill-subtle: rgba(60, 60, 67, 0.05);
+  --fill-medium: rgba(60, 60, 67, 0.10);
+
+  --accent:      #FF6F0F;
+  --accent-dark: #e05a00;
+
+  /* Apple card shadow */
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-sm:   0 1px 2px rgba(0,0,0,0.06);
 }
 
 .dark {
-  --bg-surface: #13161c;
-  --bg-sidebar: #1a1d24;
-  --bg-card: #22262f;
+  --bg-surface:    #13161c;
+  --bg-sidebar:    #1a1d24;
+  --bg-card:       #22262f;
   --bg-card-hover: #2a2f3a;
-  --border-main: rgba(255, 255, 255, 0.10);
-  --text-primary: #f0f4ff;
+  --bg-input:      #0f0f10;
+
+  --border-main:   rgba(255, 255, 255, 0.10);
+  --border-subtle: rgba(255, 255, 255, 0.13);
+
+  --text-primary:   #f0f4ff;
   --text-secondary: #c8d0e0;
-  --text-tertiary: #8fa0b8;
-  --text-muted: #6a7d96;
-  --text-dim: #4a5a6e;
+  --text-tertiary:  #8fa0b8;
+  --text-muted:     #6a7d96;
+  --text-dim:       #4a5a6e;
+
   --fill-subtle: rgba(255, 255, 255, 0.07);
   --fill-medium: rgba(255, 255, 255, 0.13);
-  --border-subtle: rgba(255, 255, 255, 0.13);
+
+  --shadow-card: none;
+  --shadow-sm:   none;
 }
 
 @theme inline {
@@ -40,6 +56,7 @@
   --color-sidebar: var(--bg-sidebar);
   --color-card: var(--bg-card);
   --color-card-hover: var(--bg-card-hover);
+  --color-input: var(--bg-input);
   --color-border-main: var(--border-main);
   --color-primary: var(--text-primary);
   --color-secondary: var(--text-secondary);
@@ -56,5 +73,62 @@
 body {
   background: var(--bg-surface);
   color: var(--text-primary);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text',
+               'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Light mode: hardcoded dark color overrides ──────────────────────────── */
+/* inputs & textareas with forced dark bg */
+html:not(.dark) .bg-\[\#0f0f10\] {
+  background-color: var(--bg-input) !important;
+  color: var(--text-primary) !important;
+}
+html:not(.dark) .bg-\[\#1F2937\] {
+  background-color: var(--bg-input) !important;
+  color: var(--text-primary) !important;
+}
+html:not(.dark) .bg-\[\#13161D\] {
+  background-color: #ffffff !important;
+  color: var(--text-primary) !important;
+}
+
+/* border overrides on dark inputs */
+html:not(.dark) .border-border-main {
+  border-color: var(--border-main) !important;
+}
+
+/* placeholder 색상 */
+html:not(.dark) .placeholder-gray-600::placeholder {
+  color: var(--text-muted) !important;
+}
+
+/* ── Light mode: card & section 개선 ─────────────────────────────────────── */
+html:not(.dark) .bg-surface   { background-color: var(--bg-surface) !important; }
+html:not(.dark) .bg-card,
+html:not(.dark) [class*="bg-card"] {
+  box-shadow: var(--shadow-card);
+}
+
+/* rounded-xl, rounded-2xl 카드에 Apple 그림자 */
+html:not(.dark) .rounded-xl,
+html:not(.dark) .rounded-2xl {
+  box-shadow: var(--shadow-sm);
+}
+
+/* 사이드바 구분선 */
+html:not(.dark) .border-border-main {
+  border-color: var(--border-main);
+}
+
+/* scrollbar: Apple macOS 스타일 */
+html:not(.dark) ::-webkit-scrollbar       { width: 6px; height: 6px; }
+html:not(.dark) ::-webkit-scrollbar-track { background: transparent; }
+html:not(.dark) ::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.18);
+  border-radius: 999px;
+}
+html:not(.dark) ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0,0,0,0.28);
 }
