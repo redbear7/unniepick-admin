@@ -36,6 +36,18 @@ export default function AnnouncementsPage() {
   const [greeting,     setGreeting]     = useState('안내말씀드립니다.');
   const [greetingOn,   setGreetingOn]   = useState(true);
 
+  // 차량 이동
+  const [carOpen,       setCarOpen]       = useState(false);
+  const [carPlate,      setCarPlate]      = useState(['', '', '', '']);
+  const [carTemplate,   setCarTemplate]   = useState('{plate}번 차량 고객님, 차량을 이동해주시기 바랍니다.');
+  const [callingCar,    setCallingCar]    = useState(false);
+  const carInputRefs = [
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+  ];
+
   // 고객 호출
   const [callOpen,       setCallOpen]       = useState(false);
   const [callFullscreen, setCallFullscreen] = useState(false);
@@ -188,6 +200,51 @@ export default function AnnouncementsPage() {
       };
     };
     playOnce();
+  };
+
+  // ── 차량 이동 ──
+  const handleCarCall = async () => {
+    const plate = carPlate.join('').trim();
+    if (plate.length < 4) { alert('차량 번호 4자리를 모두 입력하세요'); return; }
+    if (!voice) { alert('성우를 먼저 선택하세요'); return; }
+    setCallingCar(true);
+    // 각 자리를 한글 발음으로 변환 (숫자는 한글로)
+    const plateSpoken = carPlate.map(d => /^\d$/.test(d) ? numToKorean(Number(d)) : d).join(' ');
+    const fullText = `${greetingPfx()}${carTemplate.replaceAll('{plate}', plateSpoken)}`;
+    const ttsText = replaceNumbersWithKorean(fullText);
+    try {
+      let audioUrl: string;
+      const cached = getCachedAudio(ttsText, voice, speed);
+      if (cached) { audioUrl = cached; }
+      else {
+        const res = await fetch('/api/tts/generate', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: ttsText, voice_type: voice, speed, store_id: selectedStore || null, play_mode: 'immediate', repeat_count: 1, duck_volume: duckVolume }),
+        });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        audioUrl = data.audio_url;
+        setCachedAudio(ttsText, voice, speed, audioUrl);
+      }
+      let blobUrl: string;
+      try { blobUrl = await fetchBlobUrl(audioUrl, sessionCacheKey(ttsText, voice, speed)); }
+      catch { blobUrl = audioUrl; }
+      if (player.track) {
+        player.playAnnouncement(blobUrl, { duck_volume: duckVolume, play_mode: 'immediate', ann_volume: annVolume });
+      } else {
+        playAudio(blobUrl, '__car__', Math.min(1, player.annVolume));
+      }
+      const ann = makeAnnouncement(fullText, audioUrl, 'template');
+      pushHistoryToLS(ann);
+      setAnnouncements(prev => [ann, ...prev]);
+      // 입력 초기화
+      setCarPlate(['', '', '', '']);
+      carInputRefs[0].current?.focus();
+    } catch (e: any) {
+      alert(`차량 이동 안내 실패: ${e.message}`);
+    } finally {
+      setCallingCar(false);
+    }
   };
 
   // ── 고객 호출 ──
@@ -500,6 +557,76 @@ export default function AnnouncementsPage() {
             onSetDefault={setDefaultVoice}
             onVoicesLoaded={setFishVoices}
           />
+
+          {/* 차량 이동 */}
+          <div className="border border-white/8 rounded-2xl overflow-hidden">
+            <button onClick={() => setCarOpen(v => !v)}
+              className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/[0.03] transition">
+              <span className="text-xs font-bold text-primary flex items-center gap-2">
+                🚗 차량 이동 안내
+              </span>
+              <ChevronDown size={13} className={`text-muted transition-transform ${carOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {carOpen && (
+              <div className="px-4 pb-4 space-y-3 border-t border-border-main">
+                {/* 문구 템플릿 */}
+                <div className="pt-3 space-y-1">
+                  <label className="text-[10px] text-muted font-semibold">안내 문구 ({'{plate}'}는 번호로 대체)</label>
+                  <input
+                    value={carTemplate}
+                    onChange={e => setCarTemplate(e.target.value)}
+                    className="w-full px-3 py-2 bg-white/[0.03] border border-border-subtle rounded-xl text-sm text-primary placeholder-gray-600 outline-none focus:border-[#FF6F0F]/40"
+                  />
+                </div>
+
+                {/* 번호판 4칸 입력 */}
+                <div className="space-y-2">
+                  <label className="text-[10px] text-muted font-semibold">차량 번호 (끝 4자리)</label>
+                  <div className="flex items-center gap-2">
+                    {carPlate.map((val, idx) => (
+                      <input
+                        key={idx}
+                        ref={carInputRefs[idx]}
+                        type="text"
+                        inputMode="text"
+                        maxLength={1}
+                        value={val}
+                        onChange={e => {
+                          const v = e.target.value.slice(-1);
+                          const next = [...carPlate];
+                          next[idx] = v;
+                          setCarPlate(next);
+                          if (v && idx < 3) carInputRefs[idx + 1].current?.focus();
+                        }}
+                        onKeyDown={e => {
+                          if (e.key === 'Backspace' && !val && idx > 0) {
+                            carInputRefs[idx - 1].current?.focus();
+                          }
+                          if (e.key === 'Enter') handleCarCall();
+                        }}
+                        placeholder={['가', '나', '다', '라'][idx]}
+                        className="w-14 h-14 text-center text-xl font-bold bg-[#0f0f10] border-2 border-border-main rounded-xl text-primary outline-none focus:border-[#FF6F0F] transition placeholder:text-white/15"
+                      />
+                    ))}
+                    <button
+                      onClick={handleCarCall}
+                      disabled={callingCar || carPlate.join('').trim().length < 4}
+                      className="flex-1 h-14 bg-[#FF6F0F] text-white text-sm font-bold rounded-xl disabled:opacity-40 transition hover:bg-[#FF6F0F]/90 flex items-center justify-center gap-2">
+                      {callingCar
+                        ? <Loader2 size={16} className="animate-spin" />
+                        : <><span>📢</span> 방송</>}
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-dim">
+                    미리보기: <span className="text-tertiary">
+                      "{greetingPfx()}{carTemplate.replaceAll('{plate}', carPlate.some(Boolean) ? carPlate.join(' ') : '1 2 3 4')}"
+                    </span>
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* 고객 호출 */}
           <div className="border border-white/8 rounded-2xl overflow-hidden">
