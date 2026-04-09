@@ -553,7 +553,7 @@ export default function BrandsPage() {
                 <div>
                   <h2 className="text-xl font-bold text-primary">{selected.name}</h2>
                   {selected.handle ? (
-                    <p className="text-sm font-mono font-bold mt-0.5 flex items-center gap-1" style={{ color: selected.color }}>
+                    <p className="text-sm font-mono font-bold mt-0.5 flex items-center gap-0" style={{ color: selected.color }}>
                       <AtSign size={13} />{selected.handle}
                     </p>
                   ) : (
