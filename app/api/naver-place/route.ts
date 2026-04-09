@@ -87,8 +87,8 @@ export async function GET(req: NextRequest) {
   const addrMatch = html.match(/data-kakaotalk-description="([^"]+)"/);
   const address = addrMatch ? addrMatch[1].replace(/&amp;/g, '&').trim() : '';
 
-  /* ---- 전화번호: 0XX-XXXX-XXXX 패턴 (첫 번째) ---- */
-  const phoneMatches = html.match(/0\d{1,2}-\d{3,4}-\d{4}/g) ?? [];
+  /* ---- 전화번호: 0XX(X)-XXXX-XXXX 패턴 (첫 번째) ---- */
+  const phoneMatches = html.match(/0\d{1,3}-\d{3,4}-\d{4}/g) ?? [];
   const phone = phoneMatches[0] ?? '';
 
   /* ---- 카테고리: "category":"..." JSON 패턴 ---- */
