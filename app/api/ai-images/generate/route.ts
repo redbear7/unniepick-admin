@@ -33,7 +33,7 @@ interface AssetRequest {
 
 export async function POST(req: NextRequest) {
   try {
-    const { store_id, store_name, category, assets, subject, scene_override, style_preset, mood_override, text_elements } = await req.json() as {
+    const { store_id, store_name, category, assets, subject, scene_override, style_preset, mood_override, text_elements, gemini_api_key } = await req.json() as {
       store_id?: string;
       store_name: string;
       category: string;
@@ -43,6 +43,7 @@ export async function POST(req: NextRequest) {
       style_preset?: string;
       mood_override?: string;
       text_elements?: Array<{ content: string; position: string; color: string }>;
+      gemini_api_key?: string;
     };
 
     if (!assets?.length || !store_name) {
@@ -100,7 +101,7 @@ export async function POST(req: NextRequest) {
       }
 
       try {
-        const { buffer, mimeType } = await generateImage(promptData);
+        const { buffer, mimeType } = await generateImage(promptData, gemini_api_key || undefined);
         const ext = mimeType.includes('png') ? 'png' : 'jpg';
         const path = `ai-images/${store_id || 'general'}/${asset.type}_${Date.now()}.${ext}`;
         const url = await uploadToSupabase(buffer, path, mimeType);

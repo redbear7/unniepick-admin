@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
-import { ImagePlus, Download, Copy, Loader, Sparkles, Check, ChevronLeft, ChevronRight, RotateCcw, Eye, EyeOff, ClipboardPaste, X, Upload, History, FileDown, FileUp, Trash2 } from 'lucide-react';
+import { ImagePlus, Download, Copy, Loader, Sparkles, Check, ChevronLeft, ChevronRight, RotateCcw, Eye, EyeOff, ClipboardPaste, X, Upload, History, FileDown, FileUp, Trash2, Key, ExternalLink, ChevronDown } from 'lucide-react';
 
 // ── 에셋 유형 ──────────────────────────────────────────────
 const ASSET_TYPES = [
@@ -203,6 +203,20 @@ export default function AIImagesPage() {
   const [activeTab, setActiveTab] = useState<'wizard' | 'history'>('wizard');
   const importRef = useRef<HTMLInputElement>(null);
 
+  // Gemini API 키
+  const [geminiApiKey, setGeminiApiKey] = useState<string>(() => {
+    if (typeof window === 'undefined') return '';
+    return localStorage.getItem('gemini_api_key') || '';
+  });
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [showApiKeyPanel, setShowApiKeyPanel] = useState(false);
+
+  const saveApiKey = (key: string) => {
+    setGeminiApiKey(key);
+    if (key.trim()) localStorage.setItem('gemini_api_key', key.trim());
+    else localStorage.removeItem('gemini_api_key');
+  };
+
   // 히스토리
   const [history, setHistory] = useState<AIImageHistoryItem[]>(() => {
     if (typeof window === 'undefined') return [];
@@ -367,6 +381,7 @@ export default function AIImagesPage() {
           scene_override: sceneOverride || undefined,
           style_preset: selectedStyle?.defaults.stylePreset || 'lifestyle-in-context',
           mood_override: moodOverride || undefined,
+          gemini_api_key: geminiApiKey.trim() || undefined,
         }),
       });
       const data = await res.json();
@@ -992,6 +1007,63 @@ export default function AIImagesPage() {
             )}
           </button>
         </div>
+      </div>
+
+      {/* Gemini API 키 패널 */}
+      <div className="border-b border-border-main">
+        <button
+          onClick={() => setShowApiKeyPanel(v => !v)}
+          className="w-full flex items-center gap-2 px-6 py-2.5 text-xs hover:bg-fill-subtle transition">
+          <Key size={12} className={geminiApiKey ? 'text-green-400' : 'text-[#FF6F0F]'} />
+          <span className={`font-semibold ${geminiApiKey ? 'text-green-400' : 'text-[#FF6F0F]'}`}>
+            Gemini API 키
+          </span>
+          <span className={`text-[10px] ${geminiApiKey ? 'text-green-400/70' : 'text-amber-400'}`}>
+            {geminiApiKey ? '● 설정됨' : '○ 미설정 (서버 환경변수 사용)'}
+          </span>
+          <ChevronDown size={12} className={`ml-auto text-muted transition-transform ${showApiKeyPanel ? 'rotate-180' : ''}`} />
+        </button>
+
+        {showApiKeyPanel && (
+          <div className="px-6 pb-4 space-y-3">
+            {/* 발급 안내 */}
+            <div className="flex items-start gap-2 bg-blue-500/10 border border-blue-500/20 rounded-lg px-3 py-2.5 text-[11px] text-blue-300">
+              <span className="mt-0.5 shrink-0">ℹ️</span>
+              <div className="space-y-1">
+                <p className="font-semibold">Gemini API 키 발급 방법</p>
+                <p className="text-blue-300/70">1. <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" className="underline hover:text-blue-200 inline-flex items-center gap-0.5">Google AI Studio <ExternalLink size={9} /></a> 접속 후 로그인</p>
+                <p className="text-blue-300/70">2. <strong>Get API key → Create API key</strong> 클릭</p>
+                <p className="text-blue-300/70">3. 생성된 키를 복사해 아래에 붙여넣기</p>
+                <p className="text-blue-300/50 mt-1">※ 무료 플랜 제공 (일일 한도 있음) · 키는 이 브라우저에만 저장됩니다</p>
+              </div>
+            </div>
+
+            {/* 키 입력 */}
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <input
+                  type={showApiKey ? 'text' : 'password'}
+                  value={geminiApiKey}
+                  onChange={e => saveApiKey(e.target.value)}
+                  placeholder="AIza..."
+                  className="w-full px-3 py-2 pr-9 bg-[#0f0f10] border border-border-main rounded-lg text-primary text-xs font-mono placeholder:text-muted focus:outline-none focus:border-[#FF6F0F]"
+                />
+                <button
+                  onClick={() => setShowApiKey(v => !v)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted hover:text-primary transition">
+                  {showApiKey ? <EyeOff size={13} /> : <Eye size={13} />}
+                </button>
+              </div>
+              {geminiApiKey && (
+                <button
+                  onClick={() => saveApiKey('')}
+                  className="px-3 py-2 text-[11px] font-semibold bg-red-500/10 border border-red-500/30 text-red-400 rounded-lg hover:bg-red-500/20 transition">
+                  삭제
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {activeTab === 'wizard' ? (

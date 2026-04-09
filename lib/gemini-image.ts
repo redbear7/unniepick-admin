@@ -204,8 +204,9 @@ export function jsonToTextPrompt(data: GeminiPromptSchema): string {
 
 export async function generateImage(
   promptData: GeminiPromptSchema,
+  apiKeyOverride?: string,
 ): Promise<{ buffer: Buffer; mimeType: string }> {
-  const apiKey = process.env.GEMINI_API_KEY || process.env.NANOBANANA_API_KEY;
+  const apiKey = apiKeyOverride || process.env.GEMINI_API_KEY || process.env.NANOBANANA_API_KEY;
   if (!apiKey) throw new Error('GEMINI_API_KEY가 설정되지 않았습니다');
 
   const ai = new GoogleGenAI({ apiKey });
@@ -229,8 +230,9 @@ export async function generateImage(
 export async function generateImageFromText(
   prompt: string,
   aspectRatio: string = '1:1',
+  apiKeyOverride?: string,
 ): Promise<{ buffer: Buffer; mimeType: string }> {
-  const apiKey = process.env.GEMINI_API_KEY || process.env.NANOBANANA_API_KEY;
+  const apiKey = apiKeyOverride || process.env.GEMINI_API_KEY || process.env.NANOBANANA_API_KEY;
   if (!apiKey) throw new Error('GEMINI_API_KEY가 설정되지 않았습니다');
 
   const ai = new GoogleGenAI({ apiKey });
