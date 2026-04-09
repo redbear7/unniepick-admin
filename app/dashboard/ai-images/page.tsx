@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { ImagePlus, Download, Copy, Loader, Sparkles, Check, ChevronLeft, ChevronRight, RotateCcw, Eye, EyeOff, ClipboardPaste, X, Upload } from 'lucide-react';
+import { useState, useCallback, useRef } from 'react';
+import { ImagePlus, Download, Copy, Loader, Sparkles, Check, ChevronLeft, ChevronRight, RotateCcw, Eye, EyeOff, ClipboardPaste, X, Upload, History, FileDown, FileUp, Trash2 } from 'lucide-react';
 
 // ── 에셋 유형 ──────────────────────────────────────────────
 const ASSET_TYPES = [
@@ -184,9 +184,71 @@ interface GeneratedImage {
   error?: string;
 }
 
+interface AIImageHistoryItem {
+  id: string;
+  createdAt: string;
+  categoryName: string;
+  styleName: string;
+  storeName: string;
+  subject: string;
+  results: GeneratedImage[];
+}
+
+const HISTORY_KEY = 'ai_images_history';
+
 // ── 메인 컴포넌트 ──────────────────────────────────────────
 
 export default function AIImagesPage() {
+  // 탭
+  const [activeTab, setActiveTab] = useState<'wizard' | 'history'>('wizard');
+  const importRef = useRef<HTMLInputElement>(null);
+
+  // 히스토리
+  const [history, setHistory] = useState<AIImageHistoryItem[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch { return []; }
+  });
+
+  const saveHistory = (items: AIImageHistoryItem[]) => {
+    setHistory(items);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(items));
+  };
+
+  const addHistory = (item: AIImageHistoryItem) => {
+    const updated = [item, ...history].slice(0, 200);
+    saveHistory(updated);
+  };
+
+  const deleteHistoryItem = (id: string) => {
+    saveHistory(history.filter(h => h.id !== id));
+  };
+
+  const exportHistory = () => {
+    const blob = new Blob([JSON.stringify(history, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ai-image-history-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const importHistory = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result as string);
+        if (Array.isArray(data)) {
+          saveHistory(data);
+          alert(`${data.length}개 히스토리 불러오기 완료.`);
+        } else {
+          alert('올바른 히스토리 파일이 아닙니다.');
+        }
+      } catch { alert('파일 파싱 실패.'); }
+    };
+    reader.readAsText(file);
+  };
+
   // 위저드 상태
   const [step, setStep] = useState(1);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
@@ -310,6 +372,16 @@ export default function AIImagesPage() {
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       setResults(data.results);
+      // 히스토리 저장
+      addHistory({
+        id: Date.now().toString(),
+        createdAt: new Date().toISOString(),
+        categoryName: selectedCategory?.name ?? '',
+        styleName: selectedStyle?.name ?? '',
+        storeName,
+        subject,
+        results: data.results,
+      });
     } catch (e: any) {
       alert(`이미지 생성 실패: ${e.message}`);
     } finally {
@@ -754,6 +826,105 @@ export default function AIImagesPage() {
     </div>
   );
 
+  // ── 히스토리 탭 ─────────────────────────────────────────
+
+  const HistoryTab = () => (
+    <div className="space-y-4">
+      {/* 툴바 */}
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted">{history.length}개 기록</p>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={exportHistory}
+            disabled={history.length === 0}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold bg-fill-subtle border border-border-subtle text-tertiary rounded-lg hover:border-border-main disabled:opacity-30 disabled:cursor-not-allowed transition">
+            <FileDown size={12} /> 백업
+          </button>
+          <button
+            onClick={() => importRef.current?.click()}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold bg-fill-subtle border border-border-subtle text-tertiary rounded-lg hover:border-border-main transition">
+            <FileUp size={12} /> 불러오기
+          </button>
+          <input
+            ref={importRef} type="file" accept="application/json" className="hidden"
+            onChange={e => { if (e.target.files?.[0]) importHistory(e.target.files[0]); e.target.value = ''; }}
+          />
+        </div>
+      </div>
+
+      {history.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-muted gap-3">
+          <History size={32} className="opacity-20" />
+          <p className="text-sm">생성 히스토리가 없습니다.</p>
+          <p className="text-xs">이미지를 생성하면 여기에 기록됩니다.</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {history.map(item => (
+            <div key={item.id} className="bg-surface border border-border-subtle rounded-xl overflow-hidden">
+              {/* 카드 헤더 */}
+              <div className="flex items-start justify-between px-4 py-3 border-b border-border-subtle">
+                <div>
+                  <p className="text-xs font-bold text-primary">
+                    {item.categoryName} → {item.styleName}
+                  </p>
+                  <p className="text-[10px] text-muted mt-0.5">{item.storeName}</p>
+                  {item.subject && (
+                    <p className="text-[10px] text-dim mt-0.5 line-clamp-1">{item.subject}</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 shrink-0 ml-3">
+                  <span className="text-[10px] text-dim">
+                    {new Date(item.createdAt).toLocaleString('ko-KR', {
+                      month: '2-digit', day: '2-digit',
+                      hour: '2-digit', minute: '2-digit',
+                    })}
+                  </span>
+                  <button
+                    onClick={() => deleteHistoryItem(item.id)}
+                    className="text-white/20 hover:text-red-400 transition">
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              </div>
+              {/* 이미지 그리드 */}
+              <div className="p-3 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                {item.results.map((r, idx) => (
+                  <div key={idx} className="rounded-lg overflow-hidden bg-black/30 border border-border-subtle">
+                    {r.status === 'success' && r.url ? (
+                      <div className="relative group">
+                        <img src={r.url} alt={r.label} className="w-full aspect-square object-cover" />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100">
+                          <button
+                            onClick={() => window.open(r.url!, '_blank')}
+                            className="p-1.5 bg-white/90 rounded hover:bg-white transition" title="다운로드">
+                            <Download size={11} className="text-gray-800" />
+                          </button>
+                          <button
+                            onClick={() => { navigator.clipboard.writeText(r.url!); }}
+                            className="p-1.5 bg-white/90 rounded hover:bg-white transition" title="URL 복사">
+                            <Copy size={11} className="text-gray-800" />
+                          </button>
+                        </div>
+                        <span className="absolute bottom-0 left-0 right-0 text-[9px] text-white bg-black/60 text-center py-0.5">
+                          {r.label}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="aspect-square flex items-center justify-center p-2 text-center">
+                        <p className="text-[9px] text-red-400">{r.label} 실패</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
   // ── 하단 네비게이션 ──────────────────────────────────────
 
   const canGoNext = () => {
@@ -798,29 +969,57 @@ export default function AIImagesPage() {
   return (
     <div className="flex flex-col h-full">
       {/* 헤더 */}
-      <div className="px-6 py-4 border-b border-border-main">
-        <h1 className="text-lg font-bold text-primary">🎨 AI 마케팅 이미지 생성</h1>
-        <p className="text-xs text-muted mt-0.5">카테고리 선택 → 스타일 선택 → 맞춤 설정 → 생성</p>
+      <div className="px-6 py-4 border-b border-border-main flex items-center justify-between">
+        <div>
+          <h1 className="text-lg font-bold text-primary">🎨 AI 마케팅 이미지 생성</h1>
+          <p className="text-xs text-muted mt-0.5">카테고리 선택 → 스타일 선택 → 맞춤 설정 → 생성</p>
+        </div>
+        {/* 탭 토글 */}
+        <div className="flex items-center gap-1 bg-fill-subtle rounded-lg p-1">
+          <button
+            onClick={() => setActiveTab('wizard')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold transition ${activeTab === 'wizard' ? 'bg-[#FF6F0F] text-white' : 'text-muted hover:text-primary'}`}>
+            <Sparkles size={12} /> 생성
+          </button>
+          <button
+            onClick={() => setActiveTab('history')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold transition ${activeTab === 'history' ? 'bg-[#FF6F0F] text-white' : 'text-muted hover:text-primary'}`}>
+            <History size={12} /> 히스토리
+            {history.length > 0 && (
+              <span className="ml-0.5 min-w-[16px] h-4 flex items-center justify-center rounded-full bg-white/20 text-[9px] px-1">
+                {history.length}
+              </span>
+            )}
+          </button>
+        </div>
       </div>
 
-      {/* 스텝 인디케이터 */}
-      <StepIndicator />
+      {activeTab === 'wizard' ? (
+        <>
+          {/* 스텝 인디케이터 */}
+          <StepIndicator />
 
-      {/* 스텝 콘텐츠 */}
-      <div className="flex-1 overflow-auto px-6 py-4">
-        {step === 1 && <StepCategory />}
-        {step === 2 && <StepStyle />}
-        {step === 3 && <StepCustomize />}
-        {step === 4 && <StepResults />}
-      </div>
+          {/* 스텝 콘텐츠 */}
+          <div className="flex-1 overflow-auto px-6 py-4">
+            {step === 1 && <StepCategory />}
+            {step === 2 && <StepStyle />}
+            {step === 3 && <StepCustomize />}
+            {step === 4 && <StepResults />}
+          </div>
 
-      {/* 하단 네비게이션 */}
-      <BottomNav />
+          {/* 하단 네비게이션 */}
+          <BottomNav />
 
-      {/* 푸터 */}
-      <p className="text-[10px] text-purple-400/30 text-center font-mono py-1">
-        Powered by Gemini 2.5 Flash Image · Nano Banana 2
-      </p>
+          {/* 푸터 */}
+          <p className="text-[10px] text-purple-400/30 text-center font-mono py-1">
+            Powered by Gemini 2.5 Flash Image · Nano Banana 2
+          </p>
+        </>
+      ) : (
+        <div className="flex-1 overflow-auto px-6 py-4">
+          <HistoryTab />
+        </div>
+      )}
     </div>
   );
 }
