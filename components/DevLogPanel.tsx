@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import {
   Terminal, X, Trash2, ChevronDown, ChevronUp,
-  AlertTriangle, AlertCircle, Info, Bug,
+  AlertTriangle, AlertCircle, Info, Bug, Copy, CopyCheck,
 } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
@@ -75,10 +75,11 @@ const MAX_ENTRIES = 300;
 /* ------------------------------------------------------------------ */
 
 export default function DevLogPanel() {
-  const [entries, setEntries]   = useState<LogEntry[]>([]);
-  const [open,    setOpen]      = useState(false);
-  const [filter,  setFilter]    = useState<LogLevel | 'all'>('all');
-  const [height,  setHeight]    = useState(260);
+  const [entries,  setEntries]  = useState<LogEntry[]>([]);
+  const [open,     setOpen]     = useState(false);
+  const [filter,   setFilter]   = useState<LogLevel | 'all'>('all');
+  const [height,   setHeight]   = useState(260);
+  const [copied,   setCopied]   = useState(false);
 
   const idRef       = useRef(0);
   const bodyRef     = useRef<HTMLDivElement>(null);
@@ -167,6 +168,16 @@ export default function DevLogPanel() {
     window.addEventListener('mouseup', onUp);
   }, [height]);
 
+  const handleCopy = useCallback(() => {
+    const text = filtered
+      .map(e => `[${e.time}] [${e.level.toUpperCase()}]${e.count > 1 ? ` ×${e.count}` : ''} ${e.args}`)
+      .join('\n');
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  }, [filtered]);
+
   const filtered = filter === 'all' ? entries : entries.filter(e => e.level === filter);
 
   const counts: Record<LogLevel, number> = { log: 0, info: 0, warn: 0, error: 0, debug: 0 };
@@ -253,9 +264,17 @@ export default function DevLogPanel() {
             </label>
 
             <button
+              onClick={handleCopy}
+              title={copied ? '복사됨!' : '현재 로그 복사'}
+              className={`transition ml-1 ${copied ? 'text-green-400' : 'text-white/30 hover:text-white/70'}`}
+            >
+              {copied ? <CopyCheck size={13} /> : <Copy size={13} />}
+            </button>
+
+            <button
               onClick={() => setEntries([])}
               title="지우기"
-              className="text-white/30 hover:text-white/70 transition ml-1"
+              className="text-white/30 hover:text-white/70 transition"
             >
               <Trash2 size={13} />
             </button>
