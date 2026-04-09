@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, PATCH, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, PATCH, PUT, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 
@@ -44,6 +44,20 @@ export async function PATCH(req: NextRequest) {
     .update({ tts_policy_id: policy_id ?? null })
     .eq('id', store_id);
 
+  if (error) return NextResponse.json({ error: error.message }, { status: 500, headers: CORS });
+  return NextResponse.json({ ok: true }, { headers: CORS });
+}
+
+// PUT /api/tts/policy — 정책 속성 수정 (daily_char_limit, description)
+// body: { id: string, daily_char_limit?: number, description?: string }
+export async function PUT(req: NextRequest) {
+  const body = await req.json();
+  const { id, daily_char_limit, description } = body as { id: string; daily_char_limit?: number; description?: string };
+  if (!id) return NextResponse.json({ error: 'id 필요' }, { status: 400, headers: CORS });
+  const updates: Record<string, unknown> = {};
+  if (daily_char_limit !== undefined) updates.daily_char_limit = daily_char_limit;
+  if (description !== undefined) updates.description = description;
+  const { error } = await sb().from('tts_policies').update(updates).eq('id', id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500, headers: CORS });
   return NextResponse.json({ ok: true }, { headers: CORS });
 }

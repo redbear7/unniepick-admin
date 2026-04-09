@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase';
 import {
   Search, ToggleLeft, ToggleRight, MapPin, Phone,
   Plus, Pencil, Trash2, X, Check,
-  ExternalLink, User, FlaskConical,
+  ExternalLink, User, FlaskConical, History, Calendar,
 } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
@@ -13,16 +13,17 @@ import {
 /* ------------------------------------------------------------------ */
 
 interface Store {
-  id:            string;
-  name:          string;
-  address:       string | null;
-  phone:         string | null;
-  category:      string | null;
-  is_active:     boolean;
-  created_at:    string;
-  owner_id:      string | null;
-  image_url:     string | null;
-  tts_policy_id: string | null;
+  id:                      string;
+  name:                    string;
+  address:                 string | null;
+  phone:                   string | null;
+  category:                string | null;
+  is_active:               boolean;
+  created_at:              string;
+  owner_id:                string | null;
+  image_url:               string | null;
+  tts_policy_id:           string | null;
+  subscription_expires_at: string | null;
 }
 
 interface TtsPolicy {
@@ -52,7 +53,32 @@ interface StoreForm extends Omit<Store, 'id' | 'created_at'> {
   latitude:  number | null;
   longitude: number | null;
 }
-const EMPTY_FORM: StoreForm = { name: '', address: '', phone: '', category: '', is_active: true, owner_id: null, image_url: null, tts_policy_id: null, latitude: null, longitude: null };
+const EMPTY_FORM: StoreForm = { name: '', address: '', phone: '', category: '', is_active: true, owner_id: null, image_url: null, tts_policy_id: null, subscription_expires_at: null, latitude: null, longitude: null };
+
+// TTS 정책 색상 맵 (name 기준)
+const POLICY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+  '스타터':   { bg: 'bg-slate-500/15',  text: 'text-slate-300',  border: 'border-slate-500/25' },
+  '프로':     { bg: 'bg-blue-500/15',   text: 'text-blue-400',   border: 'border-blue-500/25'  },
+  '프리미엄': { bg: 'bg-amber-400/15',  text: 'text-amber-400',  border: 'border-amber-400/25' },
+};
+const DEFAULT_POLICY_COLOR = { bg: 'bg-fill-subtle', text: 'text-dim', border: 'border-border-subtle' };
+
+// localStorage 히스토리 헬퍼
+interface StoreHistoryEntry {
+  changed_at: string;
+  label: string;  // '가게 추가' or '정보 수정'
+  snapshot: Record<string, unknown>;
+}
+function getStoreHistory(id: string): StoreHistoryEntry[] {
+  try { return JSON.parse(localStorage.getItem(`sh_${id}`) ?? '[]'); } catch { return []; }
+}
+function pushStoreHistory(id: string, entry: StoreHistoryEntry) {
+  try {
+    const list = getStoreHistory(id);
+    list.unshift(entry);
+    localStorage.setItem(`sh_${id}`, JSON.stringify(list.slice(0, 30)));
+  } catch {}
+}
 
 /* ------------------------------------------------------------------ */
 /* Component                                                            */
@@ -72,6 +98,13 @@ export default function StoresPage() {
   /* ---- TTS 정책 state ---- */
   const [ttsPolicies,    setTtsPolicies]    = useState<TtsPolicy[]>([]);
   const [policyChanging, setPolicyChanging] = useState<string | null>(null);
+  const [policyEditId,   setPolicyEditId]   = useState<string | null>(null);
+  const [policyEditLimit, setPolicyEditLimit] = useState<number>(500);
+  const [savingPolicy,   setSavingPolicy]   = useState(false);
+
+  /* ---- 수정 히스토리 state ---- */
+  const [historyStoreId,  setHistoryStoreId]  = useState<string | null>(null);
+  const [historyEntries,  setHistoryEntries]  = useState<StoreHistoryEntry[]>([]);
 
   /* ---- request state ---- */
   const [requests,      setRequests]      = useState<StoreRequest[]>([]);
@@ -103,7 +136,7 @@ export default function StoresPage() {
     let rows: Store[] = [];
     const { data, error } = await sb
       .from('stores')
-      .select('id, name, address, phone, category, is_active, created_at, owner_id, image_url, tts_policy_id')
+      .select('id, name, address, phone, category, is_active, created_at, owner_id, image_url, tts_policy_id, subscription_expires_at')
       .order('created_at', { ascending: false });
     if (error) {
       console.warn('[loadStores] 1차 쿼리 실패, fallback:', error.message);
@@ -191,6 +224,26 @@ export default function StoresPage() {
     }
   };
 
+  const handlePolicyEdit = async (policyId: string) => {
+    setSavingPolicy(true);
+    try {
+      await fetch('/api/tts/policy', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: policyId, daily_char_limit: policyEditLimit }),
+      });
+      await loadTtsPolicies();
+      setPolicyEditId(null);
+    } finally {
+      setSavingPolicy(false);
+    }
+  };
+
+  const openHistoryPanel = (storeId: string) => {
+    setHistoryEntries(getStoreHistory(storeId));
+    setHistoryStoreId(storeId);
+  };
+
   useEffect(() => {
     loadStores();
     loadRequests();
@@ -217,7 +270,7 @@ export default function StoresPage() {
 
   const openNew = () => { setForm(EMPTY_FORM); setNaverUrl(''); setAutoFillErr(''); setEditModal('new'); };
   const openEdit = (store: Store) => {
-    setForm({ name: store.name, address: store.address ?? '', phone: store.phone ?? '', category: store.category ?? '', is_active: store.is_active, owner_id: store.owner_id, image_url: store.image_url, tts_policy_id: store.tts_policy_id, latitude: null, longitude: null });
+    setForm({ name: store.name, address: store.address ?? '', phone: store.phone ?? '', category: store.category ?? '', is_active: store.is_active, owner_id: store.owner_id, image_url: store.image_url, tts_policy_id: store.tts_policy_id, subscription_expires_at: store.subscription_expires_at ?? null, latitude: null, longitude: null });
     setNaverUrl(''); setAutoFillErr('');
     setEditModal(store);
   };
@@ -252,14 +305,15 @@ export default function StoresPage() {
     setSaving(true);
 
     const payload = {
-      name:          form.name.trim(),
-      address:       form.address       || null,
-      phone:         form.phone         || null,
-      category:      form.category      || null,
-      is_active:     form.is_active,
-      owner_id:      form.owner_id,
-      image_url:     form.image_url,
-      tts_policy_id: form.tts_policy_id || null,
+      name:                    form.name.trim(),
+      address:                 form.address       || null,
+      phone:                   form.phone         || null,
+      category:                form.category      || null,
+      is_active:               form.is_active,
+      owner_id:                form.owner_id,
+      image_url:               form.image_url,
+      tts_policy_id:           form.tts_policy_id || null,
+      subscription_expires_at: form.subscription_expires_at || null,
       ...(form.latitude  != null ? { latitude:  form.latitude  } : {}),
       ...(form.longitude != null ? { longitude: form.longitude } : {}),
     };
@@ -267,6 +321,11 @@ export default function StoresPage() {
       await sb.from('stores').insert(payload);
     } else if (editModal) {
       await sb.from('stores').update(payload).eq('id', (editModal as Store).id);
+      pushStoreHistory((editModal as Store).id, {
+        changed_at: new Date().toISOString(),
+        label: '정보 수정',
+        snapshot: { ...form } as Record<string, unknown>,
+      });
     }
     await loadStores();
     setEditModal(null);
@@ -516,6 +575,50 @@ export default function StoresPage() {
             ))}
           </div>
 
+          {/* 유료 회원 TTS 정책 관리 */}
+          <div className="bg-card border border-border-main rounded-2xl p-4 mb-5">
+            <p className="text-xs font-semibold text-muted mb-3">유료 회원 TTS 정책</p>
+            <div className="flex gap-3 flex-wrap">
+              {ttsPolicies.length === 0 && <p className="text-xs text-dim">정책 로드 중...</p>}
+              {ttsPolicies.map(p => {
+                const col = POLICY_COLORS[p.name] ?? DEFAULT_POLICY_COLOR;
+                const isEditing = policyEditId === p.id;
+                return (
+                  <div key={p.id} className={`flex-1 min-w-[140px] rounded-xl border p-3 ${col.bg} ${col.border}`}>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className={`text-xs font-bold ${col.text}`}>{p.name}</span>
+                      {isEditing ? (
+                        <div className="flex gap-1">
+                          <button onClick={() => handlePolicyEdit(p.id)} disabled={savingPolicy}
+                            className="text-[10px] px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded font-bold hover:bg-emerald-500/30 transition disabled:opacity-40">저장</button>
+                          <button onClick={() => setPolicyEditId(null)}
+                            className="text-[10px] p-0.5 bg-fill-subtle text-dim rounded hover:text-primary transition"><X size={9}/></button>
+                        </div>
+                      ) : (
+                        <button onClick={() => { setPolicyEditId(p.id); setPolicyEditLimit(p.daily_char_limit); }}
+                          className="text-dim hover:text-primary transition"><Pencil size={10}/></button>
+                      )}
+                    </div>
+                    {isEditing ? (
+                      <div className="flex items-center gap-1">
+                        <input type="number" value={policyEditLimit === -1 ? '' : policyEditLimit}
+                          onChange={e => setPolicyEditLimit(e.target.value === '' ? -1 : Number(e.target.value))}
+                          placeholder="-1 무제한"
+                          className="w-full px-2 py-1 bg-black/20 border border-white/10 rounded-lg text-xs text-primary outline-none"/>
+                        <span className="text-[10px] text-dim shrink-0">자/일</span>
+                      </div>
+                    ) : (
+                      <p className="text-[11px] text-secondary">
+                        {p.daily_char_limit === -1 ? '무제한' : `${p.daily_char_limit.toLocaleString()}자/일`}
+                      </p>
+                    )}
+                    <p className="text-[10px] text-dim mt-1 truncate">{p.description}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
           <div className="bg-card border border-border-main rounded-2xl overflow-hidden">
             <table className="w-full text-sm">
               <thead>
@@ -607,11 +710,15 @@ export default function StoresPage() {
                       <td className="px-4 py-4">
                         <div className="flex flex-col gap-1.5">
                           {/* 현재 정책 배지 */}
-                          {store.tts_policy_id ? (
-                            <span className="inline-flex w-fit items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#FF6F0F]/15 text-[#FF6F0F] border border-[#FF6F0F]/25">
-                              {ttsPolicies.find(p => p.id === store.tts_policy_id)?.name ?? '정책'}
-                            </span>
-                          ) : (
+                          {store.tts_policy_id ? (() => {
+                            const pol = ttsPolicies.find(p => p.id === store.tts_policy_id);
+                            const col = pol ? (POLICY_COLORS[pol.name] ?? DEFAULT_POLICY_COLOR) : DEFAULT_POLICY_COLOR;
+                            return (
+                              <span className={`inline-flex w-fit items-center px-2 py-0.5 rounded-md text-[10px] font-bold ${col.bg} ${col.text} border ${col.border}`}>
+                                {pol?.name ?? '정책'}
+                              </span>
+                            );
+                          })() : (
                             <span className="inline-flex w-fit items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-fill-subtle text-dim border border-border-subtle">
                               미설정
                             </span>
@@ -628,10 +735,21 @@ export default function StoresPage() {
                               <option key={p.id} value={p.id}>{p.name}</option>
                             ))}
                           </select>
+                          {(store as any).subscription_expires_at && (() => {
+                            const exp = new Date((store as any).subscription_expires_at);
+                            const daysLeft = Math.ceil((exp.getTime() - Date.now()) / 86400000);
+                            return (
+                              <div className={`flex items-center gap-1 text-[10px] mt-0.5 ${daysLeft < 0 ? 'text-red-400' : daysLeft <= 7 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                                <Calendar size={9}/>
+                                {daysLeft < 0 ? `만료됨 (${exp.toLocaleDateString('ko-KR')})` : `D-${daysLeft} (${exp.toLocaleDateString('ko-KR')})`}
+                              </div>
+                            );
+                          })()}
                         </div>
                       </td>
-                      <td className="px-4 py-4 text-muted text-xs">
-                        {new Date(store.created_at).toLocaleDateString('ko-KR')}
+                      <td className="px-4 py-4 text-xs">
+                        <p className="text-muted">{new Date(store.created_at).toLocaleDateString('ko-KR')}</p>
+                        <p className="text-dim text-[10px] mt-0.5">{new Date(store.created_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</p>
                       </td>
                       <td className="px-4 py-4 text-center">
                         <button
@@ -655,6 +773,13 @@ export default function StoresPage() {
                             className="p-1.5 rounded-lg text-muted hover:text-primary hover:bg-fill-medium transition"
                           >
                             <Pencil size={14} />
+                          </button>
+                          <button
+                            onClick={() => openHistoryPanel(store.id)}
+                            title="수정 히스토리"
+                            className="p-1.5 rounded-lg text-muted hover:text-blue-400 hover:bg-blue-500/10 transition"
+                          >
+                            <History size={14} />
                           </button>
                           <button
                             onClick={() => setDeleteId(store.id)}
@@ -735,6 +860,16 @@ export default function StoresPage() {
                   />
                 </div>
               ))}
+
+              <div>
+                <label className="block text-xs text-muted mb-1">구독 만료일</label>
+                <input
+                  type="datetime-local"
+                  value={form.subscription_expires_at ? new Date(form.subscription_expires_at).toISOString().slice(0, 16) : ''}
+                  onChange={e => setForm(f => ({ ...f, subscription_expires_at: e.target.value ? new Date(e.target.value).toISOString() : null }))}
+                  className="w-full bg-sidebar border border-border-subtle rounded-xl px-4 py-2.5 text-sm text-primary focus:outline-none focus:border-[#FF6F0F] transition"
+                />
+              </div>
 
               <div className="flex items-center gap-3 pt-1">
                 <label className="text-xs text-muted">활성 상태</label>
@@ -831,6 +966,42 @@ export default function StoresPage() {
               >
                 거절 확인
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: 수정 히스토리 */}
+      {historyStoreId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-card border border-border-subtle rounded-2xl p-6 shadow-2xl max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-bold text-primary flex items-center gap-2">
+                <History size={16}/> 수정 히스토리
+              </h2>
+              <button onClick={() => setHistoryStoreId(null)} className="text-muted hover:text-primary transition">
+                <X size={18}/>
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1 space-y-2 pr-1">
+              {historyEntries.length === 0 ? (
+                <p className="text-sm text-dim text-center py-8">수정 기록이 없어요</p>
+              ) : (
+                historyEntries.map((entry, i) => (
+                  <div key={i} className="bg-fill-subtle border border-border-main rounded-xl p-3 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-primary">{entry.label}</span>
+                      <span className="text-[10px] text-dim">{new Date(entry.changed_at).toLocaleString('ko-KR')}</span>
+                    </div>
+                    <div className="text-[10px] text-muted space-y-0.5">
+                      {entry.snapshot.name && <p>가게명: {String(entry.snapshot.name)}</p>}
+                      {entry.snapshot.phone && <p>연락처: {String(entry.snapshot.phone)}</p>}
+                      {entry.snapshot.address && <p>주소: {String(entry.snapshot.address)}</p>}
+                      {entry.snapshot.category && <p>카테고리: {String(entry.snapshot.category)}</p>}
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
