@@ -385,10 +385,10 @@ export default function StoresPage() {
     // 1. 필터
     const filtered = stores.filter(s => {
       const matchQ = !storeQ || s.name.includes(storeQ) || (s.address ?? '').includes(storeQ);
-      // 더미: 오너가 @test.unnipick.dev 이거나, owner_id 없이 관리자가 직접 등록한 가게
+      // 더미: 오너가 @test.unnipick.dev 이메일인 경우만 해당
       const isDummyStore = s.owner_id
         ? (ownerMap[s.owner_id]?.isDummy ?? false)
-        : true; // owner 없는 가게 = 더미(관리자 테스트)로 분류
+        : false; // owner 없는 가게 = 관리자 직접 등록 → 정식 회원
       const matchF =
         storeFilter === 'all'      ? true :
         storeFilter === 'active'   ? s.is_active :
