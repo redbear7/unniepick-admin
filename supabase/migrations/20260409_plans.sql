@@ -44,3 +44,22 @@ insert into plans (provider, plan_type, name, price, period, description, badge,
     false, 3
   )
 on conflict do nothing;
+
+-- RLS
+alter table plans enable row level security;
+
+create policy "plans_select_all"
+  on plans for select
+  using (true);
+
+create policy "plans_insert_admin"
+  on plans for insert
+  with check (auth.role() = 'authenticated');
+
+create policy "plans_update_admin"
+  on plans for update
+  using (auth.role() = 'authenticated');
+
+create policy "plans_delete_admin"
+  on plans for delete
+  using (auth.role() = 'authenticated');
