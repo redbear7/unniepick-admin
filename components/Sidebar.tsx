@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase';
 import {
   LayoutDashboard, Store, FileText, Music, Ticket,
   Users, LogOut, ChevronRight, ScrollText, MapPin, PlaySquare, Zap, Map, ListMusic, Tag, Building2, Megaphone, Film, Video, KeyRound, Bell,
-  GripVertical, Pencil, Check, X, Settings,
+  GripVertical, Pencil, Check, X, Settings, ImagePlus,
 } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 import {
@@ -36,7 +36,7 @@ import { CSS } from '@dnd-kit/utilities';
 
 const ICON_MAP: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
   LayoutDashboard, Store, FileText, Music, Ticket,
-  Users, ScrollText, MapPin, PlaySquare, Zap, Map, ListMusic, Tag, Building2, Megaphone, Film, Video, KeyRound, Bell,
+  Users, ScrollText, MapPin, PlaySquare, Zap, Map, ListMusic, Tag, Building2, Megaphone, Film, Video, KeyRound, Bell, ImagePlus,
 };
 
 interface NavItem {
@@ -91,7 +91,8 @@ const DEFAULT_GROUPS: NavGroup[] = [
       { id: 'owners',  href: '/dashboard/owners',  icon: 'KeyRound', label: '사장님 PIN 관리' },
       { id: 'notices', href: '/dashboard/notices', icon: 'Bell',     label: '공지사항' },
       { id: 'posts',   href: '/dashboard/posts',   icon: 'FileText', label: '게시물 관리' },
-      { id: 'coupons', href: '/dashboard/coupons', icon: 'Ticket',   label: '쿠폰 관리' },
+      { id: 'coupons',   href: '/dashboard/coupons',   icon: 'Ticket',    label: '쿠폰 관리' },
+      { id: 'ai-images', href: '/dashboard/ai-images', icon: 'ImagePlus', label: 'AI 이미지 생성' },
     ],
   },
   {

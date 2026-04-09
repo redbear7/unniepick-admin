@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Copy, Eye, AlertCircle, Sparkles, Loader } from 'lucide-react';
+import { Plus, Copy, Eye, AlertCircle, Sparkles, Loader, ImagePlus } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 
 const sb = createClient(
@@ -55,6 +55,8 @@ export default function CardNewsPage() {
   const [editingCardIdx, setEditingCardIdx] = useState<number | null>(null);
   const [generatingVideo, setGeneratingVideo] = useState(false);
   const [cardNewsList, setCardNewsList] = useState<CardNews[]>([]);
+  const [bgImages, setBgImages] = useState<(string | null)[]>([]);
+  const [loadingBgImages, setLoadingBgImages] = useState(false);
 
   // Gemini로 카드 문구 생성
   const handleGenerateCards = async () => {
@@ -93,6 +95,43 @@ export default function CardNewsPage() {
     setCards(updated);
   };
 
+  // 배경 이미지 생성 (Nano Banana 2)
+  const handleGenerateBgImages = async () => {
+    if (cards.length === 0) {
+      alert('카드 문구를 먼저 생성해주세요.');
+      return;
+    }
+
+    setLoadingBgImages(true);
+    try {
+      const res = await fetch('/api/cardnews/generate-images', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          store_name: storeName,
+          category,
+          cards,
+          template: selectedTemplate,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+
+      const imgs = new Array(cards.length).fill(null);
+      for (const img of data.images) {
+        if (img.status === 'success') {
+          imgs[img.card_index] = img.url;
+        }
+      }
+      setBgImages(imgs);
+    } catch (e: any) {
+      alert(`배경 이미지 생성 실패: ${e.message}`);
+    } finally {
+      setLoadingBgImages(false);
+    }
+  };
+
   // 영상 생성
   const handleGenerateVideo = async () => {
     if (cards.length === 0) {
@@ -109,6 +148,7 @@ export default function CardNewsPage() {
           store_name: storeName,
           cards,
           template: selectedTemplate,
+          bg_images: bgImages.filter(Boolean),
         }),
       });
 
@@ -242,6 +282,16 @@ export default function CardNewsPage() {
             <div className="max-h-96 overflow-y-auto divide-y divide-border-subtle">
               {cards.map((card, idx) => (
                 <div key={idx} className="p-4 hover:bg-fill-subtle transition">
+                  <div className="flex items-center gap-3">
+                    {/* 배경 이미지 썸네일 */}
+                    {bgImages[idx] && (
+                      <img
+                        src={bgImages[idx]!}
+                        alt={`카드 ${idx + 1} 배경`}
+                        className="w-14 h-24 object-cover rounded-lg border border-border-subtle shrink-0"
+                      />
+                    )}
+                    <div className="flex-1">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-xs font-semibold text-[#FF6F0F] bg-[#FF6F0F]/10 px-2.5 py-1 rounded">
                       카드 {idx + 1}
@@ -280,8 +330,31 @@ export default function CardNewsPage() {
                       <p className="text-xs text-muted whitespace-pre-wrap">{card.content}</p>
                     </div>
                   )}
+                  </div>{/* flex-1 닫기 */}
+                  </div>{/* flex gap-3 닫기 */}
                 </div>
               ))}
+            </div>
+
+            {/* 배경 이미지 생성 버튼 */}
+            <div className="px-5 py-4 border-t border-border-main">
+              <button
+                onClick={handleGenerateBgImages}
+                disabled={loadingBgImages}
+                className="w-full py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-sm font-bold rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-2">
+                {loadingBgImages ? (
+                  <>
+                    <Loader size={14} className="animate-spin" />
+                    AI 배경 이미지 생성중... (카드당 약 10초)
+                  </>
+                ) : (
+                  <>
+                    <ImagePlus size={14} />
+                    AI 배경 이미지 생성 (Nano Banana 2)
+                  </>
+                )}
+              </button>
+              <p className="text-[10px] text-purple-400/50 text-center font-mono mt-1">Gemini 2.5 Flash Image</p>
             </div>
           </div>
         )}

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { generateImageFromText, uploadToSupabase } from '@/lib/gemini-image';
 
 const CORS = { 'Access-Control-Allow-Origin': '*' };
 
@@ -134,52 +135,16 @@ export async function POST(req: NextRequest) {
     const description = extractDescription(lyrics);
     const prompt = buildPrompt(title, mood_tags || [], artist || '', description, lyrics, store_category, format || 'portrait');
 
-    // 2. 이미지 생성: Pollinations.ai 무료 모델 (Flux) + 재시도
-    const encoded = encodeURIComponent(prompt);
-    const imageUrl = `https://image.pollinations.ai/prompt/${encoded}?width=512&height=512&nologo=true&seed=${Date.now()}&model=flux`;
+    // 2. 이미지 생성: Gemini (Nano Banana 2)
+    const { buffer: imgBuf, mimeType } = await generateImageFromText(prompt, '1:1');
 
-    let imgRes = null;
-    let imgBuf = null;
-    let lastError = '';
+    // 3. Supabase Storage 업로드
+    const ext = mimeType.includes('png') ? 'png' : 'jpg';
+    const filename = `covers/ai_${track_id}_${Date.now()}.${ext}`;
+    const publicUrl = await uploadToSupabase(imgBuf, filename, mimeType);
 
-    // 재시도 로직 (최대 3번, 429 에러 시 대기)
-    for (let attempt = 0; attempt < 3; attempt++) {
-      try {
-        imgRes = await fetch(imageUrl, { signal: AbortSignal.timeout(120000) });
-
-        if (imgRes.ok) {
-          imgBuf = await imgRes.arrayBuffer();
-          break;
-        }
-
-        if (imgRes.status === 429) {
-          // Rate limit: 대기 후 재시도
-          const waitTime = Math.pow(2, attempt) * 2000; // 2s, 4s, 8s
-          lastError = `Rate limit (429) - ${waitTime}ms 대기 후 재시도...`;
-          await new Promise(resolve => setTimeout(resolve, waitTime));
-          continue;
-        }
-
-        lastError = `HTTP ${imgRes.status}`;
-      } catch (e: any) {
-        lastError = e.message;
-      }
-    }
-
-    if (!imgBuf) throw new Error(`이미지 다운로드 실패: ${lastError}`);
-
-    // 4. Supabase Storage 업로드
+    // 4. music_tracks 테이블 업데이트
     const sb = getSupabase();
-    const filename = `covers/ai_${track_id}_${Date.now()}.jpg`;
-    const { error: upErr } = await sb.storage
-      .from('music-tracks')
-      .upload(filename, imgBuf, { contentType: 'image/jpeg', upsert: true });
-    if (upErr) throw new Error(`Storage 업로드 실패: ${upErr.message}`);
-
-    const { data: urlData } = sb.storage.from('music-tracks').getPublicUrl(filename);
-    const publicUrl = urlData.publicUrl;
-
-    // 5. music_tracks 테이블 업데이트
     const { error: dbErr } = await sb
       .from('music_tracks')
       .update({ cover_image_url: publicUrl })
