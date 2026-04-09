@@ -407,6 +407,7 @@ interface LivePreviewFrameProps {
   waveformStyle?: 'bar' | 'mirror' | 'wave' | 'circle' | 'dots';
   coverAnimStyle?: 'none' | 'breathing' | 'beat' | 'vinyl';
   particleStyle?: 'none' | 'sakura' | 'bubbles' | 'hearts' | 'stars' | 'rose' | 'snow';
+  bpm?: number;
   showGuide?: boolean;
   onPlayStart?: () => void;
   stopToken?: number;
@@ -426,6 +427,7 @@ function LivePreviewFrame({
   waveformStyle = 'bar',
   coverAnimStyle = 'none',
   particleStyle = 'none',
+  bpm = 120,
   showGuide = false,
   onPlayStart,
   stopToken = 0,
@@ -667,13 +669,13 @@ function LivePreviewFrame({
             <img src={coverUrl} alt="" style={{
               position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover',
               filter: coverAnimStyle === 'vinyl' ? 'brightness(0.3) blur(6px)' : undefined,
-              animation: coverAnimStyle === 'breathing' ? 'coverBreath 2.5s ease-in-out infinite'
-                       : coverAnimStyle === 'beat'      ? 'coverBeat 0.5s ease-out infinite'
+              animation: coverAnimStyle === 'breathing' ? `coverBreath ${(60 / bpm) * 4}s ease-in-out infinite`
+                       : coverAnimStyle === 'beat'      ? `coverBeat ${60 / bpm}s ease-out infinite`
                        : undefined,
             }} />
           ) : (
             <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:80, background:'#1a1a2e',
-              animation: coverAnimStyle === 'breathing' ? 'coverBreath 2.5s ease-in-out infinite' : undefined,
+              animation: coverAnimStyle === 'breathing' ? `coverBreath ${(60 / bpm) * 4}s ease-in-out infinite` : undefined,
             }}>{coverEmoji}</div>
           )}
 
@@ -1200,6 +1202,7 @@ export default function ShortsPage() {
           bg_video_duration_sec: bgVideoDurationSec,
           cover_anim_style: coverAnimStyle,
           particle_style: particleStyle,
+          bpm: selected.bpm ?? 120,
         }),
       });
       const json = await res.json();
@@ -2127,6 +2130,7 @@ export default function ShortsPage() {
                 waveformStyle={waveformStyle}
                 coverAnimStyle={coverAnimStyle}
                 particleStyle={particleStyle}
+                bpm={selected?.bpm ?? 120}
                 showGuide={showGuide}
                 onPlayStart={() => { if (player.isPlaying) player.pause(); setWaveStopToken(t => t + 1); }}
                 stopToken={liveStopToken}
@@ -2338,6 +2342,7 @@ export default function ShortsPage() {
                 waveformStyle={waveformStyle}
                 coverAnimStyle={coverAnimStyle}
                 particleStyle={particleStyle}
+                bpm={selected?.bpm ?? 120}
                 showGuide={showGuide}
                 onPlayStart={() => { if (player.isPlaying) player.pause(); setWaveStopToken(t => t + 1); }}
                 stopToken={liveStopToken}

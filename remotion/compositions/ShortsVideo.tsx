@@ -44,6 +44,7 @@ interface ShortsVideoProps {
   waveformStyle?: WaveformStyle;
   coverAnimStyle?: CoverAnimStyle;
   particleStyle?: ParticleStyle;
+  bpm?: number;
 }
 
 /* ------------------------------------------------------------------ */
@@ -417,21 +418,26 @@ export const ShortsVideo: React.FC<ShortsVideoProps> = ({
   waveformStyle = 'bar',
   coverAnimStyle = 'none',
   particleStyle  = 'none',
+  bpm = 120,
 }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
 
   const progress = frame / durationInFrames;
 
-  // ── Beat pulse (120 BPM = 2 beats/sec at 30fps = every 15 frames)
-  const beatInterval = fps / 2;
+  // ── BPM 기반 beat / breathing 계산
+  const safeBpm      = Math.max(40, Math.min(240, bpm || 120));
+  const beatInterval = fps * 60 / safeBpm;           // frames per beat
   const beatPhase    = frame % beatInterval;
-  const beatAmp      = Math.max(0, 1 - beatPhase / (fps / 8));
+  // 빠른 어택, 1/4 비트 decay
+  const beatAmp      = Math.max(0, 1 - beatPhase / (beatInterval * 0.25));
+  // 호흡: 4비트마다 1사이클 (느린 sine)
+  const breathPhase  = (frame % (beatInterval * 4)) / (beatInterval * 4) * Math.PI * 2;
 
   // ── Cover background transforms (image only)
   const isImageBg = !bgVideoUrl;
   const coverScale = isImageBg && coverAnimStyle === 'breathing'
-    ? 1 + Math.sin(frame / 22) * 0.024
+    ? 1 + Math.sin(breathPhase) * 0.024
     : isImageBg && coverAnimStyle === 'beat'
     ? 1 + beatAmp * 0.036
     : 1;
