@@ -585,24 +585,24 @@ export default function AIImagesPage() {
                   <span className="text-5xl drop-shadow-lg">{style.emoji}</span>
                 )}
 
-                {/* 이미지 변경 오버레이 */}
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition flex items-center justify-center gap-1.5 opacity-0 group-hover:opacity-100"
+                {/* 이미지 변경 버튼 (호버 시 우하단) */}
+                <div className="absolute bottom-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition"
                   onClick={e => e.stopPropagation()}>
                   <button onClick={() => handlePasteImage(sKey)}
-                    className="p-2 bg-white/90 rounded-lg hover:bg-white transition flex items-center gap-1 text-[10px] font-bold text-gray-800"
+                    className="p-1.5 bg-white/90 rounded-lg hover:bg-white transition shadow"
                     title="클립보드에서 붙여넣기">
-                    <ClipboardPaste size={14} /> PASTE
+                    <ClipboardPaste size={13} className="text-gray-800" />
                   </button>
                   <button onClick={() => sFileRef?.click()}
-                    className="p-2 bg-white/90 rounded-lg hover:bg-white transition"
+                    className="p-1.5 bg-white/90 rounded-lg hover:bg-white transition shadow"
                     title="파일 업로드">
-                    <Upload size={14} className="text-gray-800" />
+                    <Upload size={13} className="text-gray-800" />
                   </button>
                   {sImg && (
                     <button onClick={() => removeCustomImage(sKey)}
-                      className="p-2 bg-red-500/90 rounded-lg hover:bg-red-500 transition"
+                      className="p-1.5 bg-red-500/90 rounded-lg hover:bg-red-500 transition shadow"
                       title="기본으로 복원">
-                      <X size={14} className="text-white" />
+                      <X size={13} className="text-white" />
                     </button>
                   )}
                 </div>
