@@ -114,6 +114,18 @@ function safePath(title: string, id: string) {
 }
 
 export async function POST(req: NextRequest) {
+  try {
+    return await handlePost(req);
+  } catch (e) {
+    console.error('[import/suno] 최상위 오류:', e);
+    return NextResponse.json(
+      { error: `서버 내부 오류: ${(e as Error).message}` },
+      { status: 500, headers: CORS },
+    );
+  }
+}
+
+async function handlePost(req: NextRequest) {
   const supabase = getSupabase();
 
   let songs: {
@@ -175,10 +187,11 @@ export async function POST(req: NextRequest) {
         'audio/mpeg',
         sunoToken,
       );
+      // 오디오 다운로드 실패 시 경고만 남기고 진행 (Suno CDN URL 직접 저장)
+      const audioUrl = audioResult.url || remoteAudioUrl;
       if (!audioResult.url) {
-        throw new Error(audioResult.error || '오디오 다운로드/업로드 실패');
+        console.warn(`[import/suno] 오디오 업로드 실패 (CDN URL 직접 사용): ${audioResult.error}`);
       }
-      const audioUrl = audioResult.url;
 
       // ── 태그 파싱 (tags + prompt 합산, BPM 추출) ──────────────────────
       const { mood, mood_tags, bpm } = parseTags(song.tags || '', song.prompt || '');
