@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase';
-import { Store, Users, Ticket, FileText, AlertCircle, Music, CloudRain, Sun, Thermometer } from 'lucide-react';
+import { Store, Users, Ticket, FileText, AlertCircle, Music, CloudRain, Sun, Thermometer, Database, HardDrive, Table2 } from 'lucide-react';
 
 interface Stats {
   stores:        number;
@@ -25,6 +25,7 @@ export default function DashboardPage() {
   const [stats,   setStats]   = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [weather, setWeather] = useState<WeatherData | null>(null);
+  const [dbStats, setDbStats] = useState<{ tables: { table: string; count: number | null }[]; buckets: { bucket: string; files: number; bytes: number }[] } | null>(null);
 
   useEffect(() => {
     const sb = createClient();
@@ -76,6 +77,14 @@ export default function DashboardPage() {
       .subscribe();
 
     return () => { sb.removeChannel(channel); };
+  }, []);
+
+  // DB 이용현황 로드
+  useEffect(() => {
+    fetch('/api/dev/db-stats')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setDbStats(d); })
+      .catch(() => {});
   }, []);
 
   // 날씨 로드
@@ -208,6 +217,123 @@ export default function DashboardPage() {
             <a href="/dashboard/tracks" className="mt-3 flex items-center gap-1 text-[10px] text-[#FF6F0F] hover:underline">
               <Music size={10} /> 트랙 관리에서 해당 무드 필터링 →
             </a>
+          </div>
+        </div>
+      )}
+
+      {/* DB 이용현황 */}
+      {dbStats && (
+        <div className="mt-8">
+          <h2 className="text-sm font-bold text-tertiary mb-3 flex items-center gap-2">
+            <Database size={14} className="text-[#FF6F0F]" />
+            데이터베이스 이용현황
+          </h2>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+            {/* 테이블 row 수 */}
+            <div className="bg-card border border-border-main rounded-2xl p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <Table2 size={14} className="text-blue-400" />
+                <h3 className="text-xs font-bold text-tertiary">테이블 레코드 수</h3>
+              </div>
+              <div className="space-y-2">
+                {dbStats.tables.map(({ table, count }) => {
+                  const maxCount = Math.max(...dbStats.tables.map(t => t.count ?? 0), 1);
+                  const pct = Math.round(((count ?? 0) / maxCount) * 100);
+                  const LABEL: Record<string, string> = {
+                    stores: '가게', users: '회원', owner_pins: '사장님 PIN',
+                    music_tracks: '트랙', playlists: '플레이리스트',
+                    playlist_tracks: '플레이리스트-트랙', coupons: '쿠폰',
+                    store_posts: '피드 게시물', post_delete_requests: '삭제 요청',
+                    store_announcements: '안내방송', fish_voices: '음성', notices: '공지사항',
+                  };
+                  return (
+                    <div key={table}>
+                      <div className="flex items-center justify-between mb-0.5">
+                        <span className="text-xs text-secondary">{LABEL[table] ?? table}</span>
+                        <span className="text-xs font-bold text-primary tabular-nums">
+                          {count === null ? '—' : count.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="h-1.5 bg-fill-medium rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-blue-400/70 rounded-full transition-all"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Storage 버킷 */}
+            <div className="bg-card border border-border-main rounded-2xl p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <HardDrive size={14} className="text-green-400" />
+                <h3 className="text-xs font-bold text-tertiary">Storage 버킷</h3>
+              </div>
+              <div className="space-y-5">
+                {dbStats.buckets.map(({ bucket, files, bytes }) => {
+                  const mb = bytes / 1024 / 1024;
+                  const gb = mb / 1024;
+                  const sizeStr = gb >= 1
+                    ? `${gb.toFixed(2)} GB`
+                    : mb >= 1
+                    ? `${mb.toFixed(1)} MB`
+                    : `${(bytes / 1024).toFixed(1)} KB`;
+                  // 500MB 기준 바
+                  const maxMb = 500;
+                  const pct = Math.min(100, Math.round((mb / maxMb) * 100));
+                  const barColor = pct > 80 ? 'bg-red-400' : pct > 50 ? 'bg-amber-400' : 'bg-green-400';
+                  const BUCKET_LABEL: Record<string, string> = {
+                    'music-tracks': '🎵 음악 트랙',
+                    'store-images': '🏪 가게 이미지',
+                    'tts-audio':    '🔊 TTS 음성',
+                  };
+                  return (
+                    <div key={bucket}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-semibold text-secondary">{BUCKET_LABEL[bucket] ?? bucket}</span>
+                        <div className="flex items-center gap-2 text-xs text-dim">
+                          <span>{files.toLocaleString()}개 파일</span>
+                          <span className="font-bold text-primary">{sizeStr}</span>
+                        </div>
+                      </div>
+                      <div className="h-2 bg-fill-medium rounded-full overflow-hidden">
+                        <div
+                          className={`h-full ${barColor} rounded-full transition-all`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                      <p className="text-[10px] text-dim mt-0.5">기준 500MB 대비 {pct}%</p>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="mt-5 pt-4 border-t border-border-main/50">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted">총 Storage 사용량</span>
+                  <span className="text-sm font-bold text-primary">
+                    {(() => {
+                      const totalMb = dbStats.buckets.reduce((s, b) => s + b.bytes, 0) / 1024 / 1024;
+                      return totalMb >= 1024
+                        ? `${(totalMb / 1024).toFixed(2)} GB`
+                        : `${totalMb.toFixed(1)} MB`;
+                    })()}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between mt-1">
+                  <span className="text-xs text-muted">총 파일 수</span>
+                  <span className="text-sm font-bold text-primary">
+                    {dbStats.buckets.reduce((s, b) => s + b.files, 0).toLocaleString()}개
+                  </span>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
       )}
