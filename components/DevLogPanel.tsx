@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import {
   Terminal, X, Trash2, ChevronDown, ChevronUp,
-  AlertTriangle, AlertCircle, Info, Bug, Copy, CopyCheck,
+  AlertTriangle, AlertCircle, Info, Bug, Copy, CopyCheck, Pin, PinOff,
 } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
@@ -77,9 +77,13 @@ const MAX_ENTRIES = 300;
 export default function DevLogPanel() {
   const [entries,  setEntries]  = useState<LogEntry[]>([]);
   const [open,     setOpen]     = useState(false);
+  const [pinned,   setPinned]   = useState(false);
   const [filter,   setFilter]   = useState<LogLevel | 'all'>('all');
   const [height,   setHeight]   = useState(260);
   const [copied,   setCopied]   = useState(false);
+
+  // pinned 이면 항상 열린 상태
+  const isVisible = open || pinned;
 
   const idRef       = useRef(0);
   const bodyRef     = useRef<HTMLDivElement>(null);
@@ -191,23 +195,24 @@ export default function DevLogPanel() {
         onClick={() => setOpen(v => !v)}
         title="개발자 로그 (Ctrl+`)"
         className={`fixed bottom-[72px] right-4 z-[9998] flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono font-semibold shadow-lg border transition-all ${
-          open
+          isVisible
             ? 'bg-[#1a1d24] border-[#FF6F0F]/60 text-[#FF6F0F]'
             : 'bg-[#1a1d24] border-white/10 text-[var(--text-muted)] hover:border-white/20 hover:text-[var(--text-primary)]'
         }`}
       >
         <Terminal size={13} />
         <span>DEV LOG</span>
-        {errorCount > 0 && !open && (
+        {errorCount > 0 && !isVisible && (
           <span className="ml-0.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold px-1">
             {errorCount > 99 ? '99+' : errorCount}
           </span>
         )}
-        {open ? <ChevronDown size={12} /> : <ChevronUp size={12} />}
+        {pinned && <Pin size={10} className="text-[#FF6F0F]" />}
+        {isVisible ? <ChevronDown size={12} /> : <ChevronUp size={12} />}
       </button>
 
       {/* ---- panel ---- */}
-      {open && (
+      {isVisible && (
         <div
           style={{ height }}
           className="fixed bottom-[72px] right-0 w-[520px] z-[9997] flex flex-col bg-[#0d1117] border border-white/10 border-b-0 rounded-tl-xl shadow-2xl font-mono text-xs overflow-hidden"
@@ -264,9 +269,17 @@ export default function DevLogPanel() {
             </label>
 
             <button
+              onClick={() => setPinned(v => !v)}
+              title={pinned ? '항상 보기 해제' : '항상 보기'}
+              className={`transition ml-1 ${pinned ? 'text-[#FF6F0F]' : 'text-white/30 hover:text-white/70'}`}
+            >
+              {pinned ? <Pin size={13} /> : <PinOff size={13} />}
+            </button>
+
+            <button
               onClick={handleCopy}
               title={copied ? '복사됨!' : '현재 로그 복사'}
-              className={`transition ml-1 ${copied ? 'text-green-400' : 'text-white/30 hover:text-white/70'}`}
+              className={`transition ${copied ? 'text-green-400' : 'text-white/30 hover:text-white/70'}`}
             >
               {copied ? <CopyCheck size={13} /> : <Copy size={13} />}
             </button>
