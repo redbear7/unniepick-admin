@@ -1158,7 +1158,9 @@ export default function ShortsPage() {
           title="트랙 선택 시 클라이맥스 구간 즉시 재생"
         >
           <span className={`w-2 h-2 rounded-full ${autoPlayOnSelect ? 'bg-white animate-pulse' : 'bg-white/30'}`} />
-          선택 즉시 재생 {autoPlayOnSelect ? 'ON' : 'OFF'}
+          {autoPlayOnSelect
+            ? '음악 트랙선택 시 즉시 재생 기능이 켜져 있습니다.'
+            : '음악 트랙선택 시 즉시 재생 기능이 꺼져 있습니다.'}
         </button>
       </div>
 
