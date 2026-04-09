@@ -85,14 +85,17 @@ function parseTags(tagsStr: string, promptStr: string = '') {
 }
 
 // 제목에서 [핸들] 접두사 분리 → { pureTitle, referenceUrl }
-// 예: "[@backtothemelody] Morning Breeze" → title="Morning Breeze", ref="https://www.youtube.com/@backtothemelody/"
+// 예: "[@maveloop] Morning Breeze" → title="Morning Breeze", ref="https://www.youtube.com/@maveloop"
+// 예: "[@maveloop/영어] Morning Breeze" → 경로 제거 후 동일
 function parseTitle(rawTitle: string) {
   const match = rawTitle.match(/^\[(@?[^\]]+)\]\s*(.+)$/);
   if (match) {
     const raw = match[1].trim();
     const pureTitle = match[2].trim();
-    const handle = raw.startsWith('@') ? raw : `@${raw}`;
-    return { pureTitle, referenceUrl: `https://www.youtube.com/${handle}/` };
+    // /경로 부분 제거 — 핸들(@xxx) 앞부분만 사용
+    const handleOnly = raw.split('/')[0].trim();
+    const handle = handleOnly.startsWith('@') ? handleOnly : `@${handleOnly}`;
+    return { pureTitle, referenceUrl: `https://www.youtube.com/${handle}` };
   }
   return { pureTitle: rawTitle.trim(), referenceUrl: null };
 }
