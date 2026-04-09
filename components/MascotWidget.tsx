@@ -179,7 +179,7 @@ export default function MascotWidget({ userId }: Props) {
 
             <div className="flex-1 pb-1">
               <div className="flex items-center gap-1.5">
-                <p className="text-sm font-bold text-white">유니의 플리 추천</p>
+                <p className="text-sm font-bold text-white">단비의 플리 추천</p>
                 {speaking && <Volume2 size={11} className="text-[#FF9F4F] animate-pulse" />}
               </div>
               <p className="text-[10px] text-white/40">AI 큐레이션 · VRM 3D</p>
@@ -246,7 +246,7 @@ export default function MascotWidget({ userId }: Props) {
         onClick={() => (open ? handleClose() : setOpen(true))}
         className={`fixed bottom-4 right-4 z-50 w-14 h-14 rounded-full shadow-xl flex items-center justify-center transition-transform hover:scale-105 active:scale-95 ${!open ? 'btn-pulse' : ''}`}
         style={{ background: 'linear-gradient(135deg, #FF6F0F, #ff9f4f)' }}
-        title="유니의 플리 추천"
+        title="단비의 플리 추천"
       >
         <span className="text-2xl">🎵</span>
         {!open && (

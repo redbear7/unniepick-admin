@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
     curated:  p.is_curated,
   }));
 
-  const prompt = `당신은 음악 큐레이션 서비스의 귀엽고 친근한 마스코트 DJ '유니'입니다.
+  const prompt = `당신은 음악 큐레이션 서비스의 귀엽고 친근한 마스코트 DJ '단비'입니다.
 가게 사장님에게 오늘의 플레이리스트를 추천해드리세요.
 
 ## 가게 정보
