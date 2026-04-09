@@ -606,7 +606,7 @@ export default function AnnouncementsPage() {
                           }
                           if (e.key === 'Enter') handleCarCall();
                         }}
-                        placeholder={['가', '나', '다', '라'][idx]}
+                        placeholder="*"
                         className="w-14 h-14 text-center text-xl font-bold bg-[#0f0f10] border-2 border-border-main rounded-xl text-primary outline-none focus:border-[#FF6F0F] transition placeholder:text-white/15"
                       />
                     ))}
@@ -621,7 +621,7 @@ export default function AnnouncementsPage() {
                   </div>
                   <p className="text-[10px] text-dim">
                     미리보기: <span className="text-tertiary">
-                      "{greetingPfx()}{carTemplate.replaceAll('{plate}', carPlate.some(Boolean) ? carPlate.map(d => /^\d$/.test(d) ? ['영','일','이','삼','사','오','육','칠','팔','구'][Number(d)] : d).join(' ') : '일 이 삼 사')}"
+                      "{greetingPfx()}{carTemplate.replaceAll('{plate}', carPlate.some(Boolean) ? carPlate.map(d => /^\d$/.test(d) ? ['영','일','이','삼','사','오','육','칠','팔','구'][Number(d)] : d).join(' ') : '1 2 3 4')}"
                     </span>
                   </p>
                 </div>
