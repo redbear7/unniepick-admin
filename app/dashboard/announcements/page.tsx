@@ -91,7 +91,9 @@ export default function AnnouncementsPage() {
   const [announcingId, setAnnouncingId] = useState<string | null>(null);
   const [isSuperadmin, setIsSuperadmin] = useState(false);
   const [fishVoices,   setFishVoices]   = useState<FishVoice[]>(DEFAULT_FISH_VOICES);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioRef    = useRef<HTMLAudioElement | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const annGainRef  = useRef<GainNode | null>(null);
 
   // ── TTS 사용량 조회 ──
   const fetchUsage = async (storeId: string) => {
@@ -175,26 +177,43 @@ export default function AnnouncementsPage() {
     return () => { audioRef.current?.pause(); audioRef.current = null; };
   }, []);
 
-  // BottomPlayer 안내방송 볼륨 슬라이더 → 로컬 재생 오디오에 실시간 반영
-  // (player.track 없을 때 local audioRef로 재생되는 히스토리 오디오 대상)
+  // BottomPlayer 안내방송 볼륨 슬라이더 → 로컬 재생 GainNode에 실시간 반영
   useEffect(() => {
-    if (audioRef.current) {
+    if (annGainRef.current) {
+      annGainRef.current.gain.value = player.annVolume;
+    } else if (audioRef.current) {
       audioRef.current.volume = Math.min(1, player.annVolume);
     }
   }, [player.annVolume]);
 
-  const playAudio = (url: string, id: string, vol = 1, times = 1) => {
+  // 음악 없을 때 안내방송: GainNode로 annVolume 증폭 (음악 재생 시와 동일한 볼륨)
+  const playAudio = (url: string, id: string, _vol = 1, times = 1) => {
     if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+    annGainRef.current = null;
     if (playingId === id && times === 1) { setPlayingId(null); return; }
     let remaining = times;
+    const annVol = player.annVolume;
     const playOnce = () => {
       const a = new Audio(url);
-      a.volume = Math.min(1, vol);
+      a.crossOrigin = 'anonymous';
+      a.volume = 1.0;
       audioRef.current = a;
+      try {
+        if (!audioCtxRef.current) audioCtxRef.current = new AudioContext();
+        const ctx = audioCtxRef.current;
+        const source = ctx.createMediaElementSource(a);
+        const gain = ctx.createGain();
+        gain.gain.value = annVol;
+        source.connect(gain).connect(ctx.destination);
+        annGainRef.current = gain;
+      } catch {
+        a.volume = Math.min(1, annVol);
+      }
       a.play().catch(() => alert('재생 실패'));
       setPlayingId(id);
       a.onended = () => {
         remaining--;
+        annGainRef.current = null;
         if (remaining > 0) playOnce();
         else { audioRef.current = null; setPlayingId(null); }
       };
