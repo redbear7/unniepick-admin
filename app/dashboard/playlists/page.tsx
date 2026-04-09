@@ -52,6 +52,7 @@ export default function PlaylistsPage() {
   const [query,     setQuery]     = useState('');
   const [toggling,  setToggling]  = useState<string | null>(null);
   const [deleting,  setDeleting]  = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
   // 편집/생성 모달
   const [modal,    setModal]    = useState(false);
@@ -159,9 +160,15 @@ export default function PlaylistsPage() {
     setToggling(null);
   };
 
-  const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`"${name}" 플레이리스트를 삭제할까요?`)) return;
+  const handleDelete = (id: string, name: string) => {
+    setDeleteTarget({ id, name });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    const { id } = deleteTarget;
     setDeleting(id);
+    setDeleteTarget(null);
     const sb = createClient();
     await sb.from('playlists').delete().eq('id', id);
     setPlaylists(prev => prev.filter(p => p.id !== id));
