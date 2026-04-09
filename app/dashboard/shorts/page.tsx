@@ -86,6 +86,7 @@ interface ShortsHistoryItem {
   shortsTitle?: string;
   shortsTagline?: string;
   audioFadeInSec?: number;
+  likeCount?: number;
 }
 
 const SHORTS_HISTORY_KEY = 'shorts_render_history';
@@ -995,7 +996,20 @@ export default function ShortsPage() {
   const [history, setHistory] = useState<ShortsHistoryItem[]>([]);
   const [playingHistory, setPlayingHistory] = useState<ShortsHistoryItem | null>(null);
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
-  const toggleLike = (id: string) => setLikedIds(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
+  const toggleLike = (id: string) => {
+    setLikedIds(prev => {
+      const s = new Set(prev);
+      const wasLiked = s.has(id);
+      wasLiked ? s.delete(id) : s.add(id);
+      // likeCount를 히스토리에도 저장
+      const updated = history.map(h =>
+        h.id === id ? { ...h, likeCount: Math.max(0, (h.likeCount ?? 0) + (wasLiked ? -1 : 1)) } : h,
+      );
+      setHistory(updated);
+      saveShortsHistory(updated);
+      return s;
+    });
+  };
   const wasPlayingRef = useRef(false);
   const [previewExpanded, setPreviewExpanded] = useState(false);
   const [autoPlayOnSelect, setAutoPlayOnSelect] = useState(false);
@@ -1406,6 +1420,9 @@ export default function ShortsPage() {
                         {/* 메타 */}
                         <div className="text-right shrink-0 space-y-1">
                           <p className="text-xs text-muted">{fmtSec(track.duration_sec)}</p>
+                          {track.bpm && (
+                            <p className="text-[10px] text-dim">{track.bpm} BPM</p>
+                          )}
                         </div>
                       </button>
                     );
@@ -2252,6 +2269,9 @@ export default function ShortsPage() {
                             onClick={e => { e.stopPropagation(); toggleLike(h.id); }}
                             className="absolute bottom-3 right-3 flex flex-col items-center gap-0.5 transition-transform hover:scale-110 active:scale-95"
                           >
+                            {(h.likeCount ?? 0) > 0 && (
+                              <span className="text-[9px] text-white font-bold leading-none mb-0.5">{h.likeCount}</span>
+                            )}
                             <div className={`w-9 h-9 rounded-full flex items-center justify-center ${likedIds.has(h.id) ? 'bg-red-500/80' : 'bg-black/40 border border-white/20'}`}>
                               <Heart size={16} fill={likedIds.has(h.id) ? '#fff' : 'none'} color="#fff" />
                             </div>
