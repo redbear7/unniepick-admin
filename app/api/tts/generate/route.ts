@@ -3,6 +3,73 @@ import { createClient } from '@supabase/supabase-js';
 
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type' };
 
+// TTS 일별 한도 초과 여부 확인 (실제 기록은 성공 후 recordUsage에서 수행)
+async function checkLimit(
+  supabase: ReturnType<typeof createClient>,
+  store_id: string,
+  charCount: number,
+): Promise<{ allowed: boolean; errorMsg?: string }> {
+  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+
+  // 가게의 정책 조회
+  const { data: storeData } = await supabase
+    .from('stores')
+    .select('tts_policy_id, tts_policies(daily_char_limit)')
+    .eq('id', store_id)
+    .single();
+
+  const policy = storeData?.tts_policies as { daily_char_limit: number } | null;
+  const daily_char_limit: number | null = policy ? policy.daily_char_limit : null;
+
+  // 정책 미할당 또는 무제한(-1) 이면 항상 허용
+  if (daily_char_limit === null || daily_char_limit === -1) {
+    return { allowed: true };
+  }
+
+  // 오늘 사용량 조회
+  const { data: usageData } = await supabase
+    .from('tts_daily_usage')
+    .select('char_count')
+    .eq('store_id', store_id)
+    .eq('usage_date', today)
+    .maybeSingle();
+
+  const currentUsage = usageData?.char_count ?? 0;
+
+  // 한도 초과 여부 확인
+  if (currentUsage + charCount > daily_char_limit) {
+    return {
+      allowed: false,
+      errorMsg: `오늘 TTS 사용 한도(${daily_char_limit.toLocaleString()}자)를 초과했습니다. (사용: ${currentUsage.toLocaleString()}자 / 한도: ${daily_char_limit.toLocaleString()}자)`,
+    };
+  }
+
+  return { allowed: true };
+}
+
+// 성공 후 사용량 upsert (increment)
+async function recordUsage(
+  supabase: ReturnType<typeof createClient>,
+  store_id: string,
+  charCount: number,
+): Promise<void> {
+  const today = new Date().toISOString().slice(0, 10);
+  // Supabase JS v2 does not support increment in upsert directly,
+  // so we use a raw SQL via rpc or handle with select+upsert
+  const { data: existing } = await supabase
+    .from('tts_daily_usage')
+    .select('char_count')
+    .eq('store_id', store_id)
+    .eq('usage_date', today)
+    .maybeSingle();
+
+  const newCount = (existing?.char_count ?? 0) + charCount;
+  await supabase.from('tts_daily_usage').upsert(
+    { store_id, usage_date: today, char_count: newCount, updated_at: new Date().toISOString() },
+    { onConflict: 'store_id,usage_date' },
+  );
+}
+
 export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: CORS });
 }
@@ -29,8 +96,17 @@ export async function POST(req: NextRequest) {
   if (!referenceId) return NextResponse.json({ error: 'Fish Audio reference_id 가 비어있습니다' }, { status: 400, headers: CORS });
 
   const clampedSpeed = Math.min(4.0, Math.max(0.25, speed));
+  const charCount = text.trim().length;
 
   try {
+    // ── TTS 일별 한도 체크 ─────────────────────────────────────────
+    if (store_id) {
+      const { allowed, errorMsg } = await checkLimit(supabase, store_id, charCount);
+      if (!allowed) {
+        return NextResponse.json({ error: errorMsg }, { status: 429, headers: CORS });
+      }
+    }
+
     // ── Fish Audio TTS ─────────────────────────────────────────────
     const fishRes = await fetch('https://api.fish.audio/v1/tts', {
       method: 'POST',
@@ -59,6 +135,11 @@ export async function POST(req: NextRequest) {
 
     const { data: urlData } = supabase.storage.from('announcements').getPublicUrl(filename);
     const audio_url = urlData.publicUrl;
+
+    // ── TTS 사용량 기록 ───────────────────────────────────────────
+    if (store_id) {
+      await recordUsage(supabase, store_id, charCount);
+    }
 
     // 히스토리는 클라이언트 localStorage에서 관리 (DB 저장 없음)
     return NextResponse.json({ audio_url }, { headers: CORS });

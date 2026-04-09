@@ -68,6 +68,10 @@ export default function AnnouncementsPage() {
   // 재생성
   const [regeneratingId, setRegeneratingId] = useState<string | null>(null);
 
+  // TTS 일별 사용량
+  const [usageToday,  setUsageToday]  = useState(0);
+  const [usageLimit,  setUsageLimit]  = useState<number | null>(null);
+
   // 상태
   const [generating,   setGenerating]   = useState(false);
   const [deleting,     setDeleting]     = useState<string | null>(null);
@@ -77,12 +81,25 @@ export default function AnnouncementsPage() {
   const [fishVoices,   setFishVoices]   = useState<FishVoice[]>(DEFAULT_FISH_VOICES);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  // ── TTS 사용량 조회 ──
+  const fetchUsage = async (storeId: string) => {
+    if (!storeId) { setUsageToday(0); setUsageLimit(null); return; }
+    try {
+      const res = await fetch(`/api/tts/usage?store_id=${storeId}`);
+      if (res.ok) {
+        const d = await res.json();
+        setUsageToday(d.char_count ?? 0);
+        setUsageLimit(d.daily_char_limit ?? null);
+      }
+    } catch {}
+  };
+
   // ── init ──
   useEffect(() => {
     Promise.all([loadStores(), checkSuperadmin()]);
     loadTemplates();
   }, []);
-  useEffect(() => { loadAnnouncements(); }, [selectedStore]);
+  useEffect(() => { loadAnnouncements(); fetchUsage(selectedStore); }, [selectedStore]);
 
   const loadTemplates = () => {
     try { const s = localStorage.getItem(TEMPLATES_LS_KEY); if (s) setTemplates(JSON.parse(s)); } catch {}
@@ -247,13 +264,15 @@ export default function AnnouncementsPage() {
       } else {
         const res = await fetch('/api/tts/generate', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: ttsText, voice_type: voice, speed, store_id: null, play_mode: playMode, repeat_count: repeat, duck_volume: duckVolume }),
+          body: JSON.stringify({ text: ttsText, voice_type: voice, speed, store_id: selectedStore || null, play_mode: playMode, repeat_count: repeat, duck_volume: duckVolume }),
         });
         const data = await res.json();
         if (data.error) throw new Error(data.error);
         audioUrl = data.audio_url;
         setCachedAudio(ttsText, voice, speed, audioUrl);
         setCacheHit(true);
+        // 사용량 로컬 반영
+        if (selectedStore) setUsageToday(prev => prev + ttsText.length);
       }
       const sKey = sessionCacheKey(ttsText, voice, speed);
       let playUrl: string;
@@ -656,6 +675,26 @@ export default function AnnouncementsPage() {
               ))}
             </div>
           </div>
+
+          {/* TTS 일별 사용량 바 */}
+          {selectedStore && usageLimit !== null && usageLimit > 0 && (
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-muted font-semibold">오늘 사용량</span>
+                <span className={`text-[10px] font-semibold ${usageToday >= usageLimit ? 'text-red-400' : 'text-tertiary'}`}>
+                  {usageToday.toLocaleString()} / {usageLimit.toLocaleString()}자
+                </span>
+              </div>
+              <div className="w-full h-1.5 bg-fill-subtle rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all ${
+                    usageToday >= usageLimit ? 'bg-red-400' : usageToday / usageLimit > 0.8 ? 'bg-yellow-400' : 'bg-[#FF6F0F]'
+                  }`}
+                  style={{ width: `${Math.min(100, (usageToday / usageLimit) * 100)}%` }}
+                />
+              </div>
+            </div>
+          )}
 
           {/* 생성 버튼 */}
           <button onClick={handleGenerate} disabled={generating || !text.trim()}

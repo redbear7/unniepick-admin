@@ -13,15 +13,24 @@ import {
 /* ------------------------------------------------------------------ */
 
 interface Store {
-  id:         string;
-  name:       string;
-  address:    string | null;
-  phone:      string | null;
-  category:   string | null;
-  is_active:  boolean;
-  created_at: string;
-  owner_id:   string | null;
-  image_url:  string | null;
+  id:            string;
+  name:          string;
+  address:       string | null;
+  phone:         string | null;
+  category:      string | null;
+  is_active:     boolean;
+  created_at:    string;
+  owner_id:      string | null;
+  image_url:     string | null;
+  tts_policy_id: string | null;
+}
+
+interface TtsPolicy {
+  id:               string;
+  name:             string;
+  daily_char_limit: number;
+  description:      string;
+  sort_order:       number;
 }
 
 interface StoreRequest {
@@ -43,7 +52,7 @@ interface StoreForm extends Omit<Store, 'id' | 'created_at'> {
   latitude:  number | null;
   longitude: number | null;
 }
-const EMPTY_FORM: StoreForm = { name: '', address: '', phone: '', category: '', is_active: true, owner_id: null, image_url: null, latitude: null, longitude: null };
+const EMPTY_FORM: StoreForm = { name: '', address: '', phone: '', category: '', is_active: true, owner_id: null, image_url: null, tts_policy_id: null, latitude: null, longitude: null };
 
 /* ------------------------------------------------------------------ */
 /* Component                                                            */
@@ -59,6 +68,10 @@ export default function StoresPage() {
   const [storeFilter, setStoreFilter] = useState<'all' | 'active' | 'inactive' | 'dummy'>('all');
   const [toggling, setToggling] = useState<string | null>(null);
   const [loadingStores, setLoadingStores] = useState(true);
+
+  /* ---- TTS 정책 state ---- */
+  const [ttsPolicies,    setTtsPolicies]    = useState<TtsPolicy[]>([]);
+  const [policyChanging, setPolicyChanging] = useState<string | null>(null);
 
   /* ---- request state ---- */
   const [requests,      setRequests]      = useState<StoreRequest[]>([]);
@@ -88,9 +101,9 @@ export default function StoresPage() {
   const loadStores = async () => {
     const { data } = await sb
       .from('stores')
-      .select('id, name, address, phone, category, is_active, created_at, owner_id, image_url')
+      .select('id, name, address, phone, category, is_active, created_at, owner_id, image_url, tts_policy_id')
       .order('created_at', { ascending: false });
-    const rows = data ?? [];
+    const rows = (data ?? []) as Store[];
     setStores(rows);
     setLoadingStores(false);
 
@@ -144,9 +157,31 @@ export default function StoresPage() {
     }
   };
 
+  const loadTtsPolicies = async () => {
+    try {
+      const res = await fetch('/api/tts/policy');
+      if (res.ok) setTtsPolicies(await res.json());
+    } catch {}
+  };
+
+  const handlePolicyChange = async (store_id: string, policy_id: string | null) => {
+    setPolicyChanging(store_id);
+    try {
+      await fetch('/api/tts/policy', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ store_id, policy_id }),
+      });
+      setStores(prev => prev.map(s => s.id === store_id ? { ...s, tts_policy_id: policy_id } : s));
+    } finally {
+      setPolicyChanging(null);
+    }
+  };
+
   useEffect(() => {
     loadStores();
     loadRequests();
+    loadTtsPolicies();
     const ch = sb.channel('stores-rt')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'stores' }, loadStores)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'store_requests' }, loadRequests)
@@ -169,7 +204,7 @@ export default function StoresPage() {
 
   const openNew = () => { setForm(EMPTY_FORM); setNaverUrl(''); setAutoFillErr(''); setEditModal('new'); };
   const openEdit = (store: Store) => {
-    setForm({ name: store.name, address: store.address ?? '', phone: store.phone ?? '', category: store.category ?? '', is_active: store.is_active, owner_id: store.owner_id, image_url: store.image_url, latitude: null, longitude: null });
+    setForm({ name: store.name, address: store.address ?? '', phone: store.phone ?? '', category: store.category ?? '', is_active: store.is_active, owner_id: store.owner_id, image_url: store.image_url, tts_policy_id: store.tts_policy_id, latitude: null, longitude: null });
     setNaverUrl(''); setAutoFillErr('');
     setEditModal(store);
   };
@@ -475,6 +510,7 @@ export default function StoresPage() {
                   <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">카테고리</th>
                   <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">연락처</th>
                   <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">사장님</th>
+                  <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">TTS 정책</th>
                   <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">등록일</th>
                   <th className="text-center px-4 py-3.5 text-xs font-semibold text-muted">상태</th>
                   <th className="text-center px-4 py-3.5 text-xs font-semibold text-muted">관리</th>
@@ -484,14 +520,14 @@ export default function StoresPage() {
                 {loadingStores ? (
                   [...Array(5)].map((_, i) => (
                     <tr key={i} className="border-b border-border-main">
-                      {[...Array(7)].map((_, j) => (
+                      {[...Array(8)].map((_, j) => (
                         <td key={j} className="px-5 py-4"><div className="h-4 bg-fill-subtle rounded animate-pulse" /></td>
                       ))}
                     </tr>
                   ))
                 ) : filteredStores.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="text-center py-12 text-dim">가게가 없어요</td>
+                    <td colSpan={8} className="text-center py-12 text-dim">가게가 없어요</td>
                   </tr>
                 ) : (
                   filteredStores.map(store => {
@@ -552,6 +588,33 @@ export default function StoresPage() {
                             미연결
                           </div>
                         )}
+                      </td>
+                      {/* TTS 정책 열 */}
+                      <td className="px-4 py-4">
+                        <div className="flex flex-col gap-1.5">
+                          {/* 현재 정책 배지 */}
+                          {store.tts_policy_id ? (
+                            <span className="inline-flex w-fit items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#FF6F0F]/15 text-[#FF6F0F] border border-[#FF6F0F]/25">
+                              {ttsPolicies.find(p => p.id === store.tts_policy_id)?.name ?? '정책'}
+                            </span>
+                          ) : (
+                            <span className="inline-flex w-fit items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-fill-subtle text-dim border border-border-subtle">
+                              미설정
+                            </span>
+                          )}
+                          {/* 정책 변경 드롭다운 */}
+                          <select
+                            value={store.tts_policy_id ?? ''}
+                            disabled={policyChanging === store.id}
+                            onChange={e => handlePolicyChange(store.id, e.target.value || null)}
+                            className="appearance-none bg-sidebar border border-border-subtle rounded-lg px-2 py-1 text-[11px] text-secondary outline-none cursor-pointer hover:border-[#FF6F0F]/40 transition disabled:opacity-50 max-w-[100px]"
+                          >
+                            <option value="">미설정</option>
+                            {ttsPolicies.map(p => (
+                              <option key={p.id} value={p.id}>{p.name}</option>
+                            ))}
+                          </select>
+                        </div>
                       </td>
                       <td className="px-4 py-4 text-muted text-xs">
                         {new Date(store.created_at).toLocaleDateString('ko-KR')}
