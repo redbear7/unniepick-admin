@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { Play, Pause, Trash2, Check, Loader2, Megaphone, Radio, AArrowUp, AArrowDown, GripVertical, Pin, Pencil, RotateCw } from 'lucide-react';
-import { Announcement, Store, FishVoice, MODE_LABEL, fmtTime } from './_shared';
+import { Announcement, Store, FishVoice, MODE_LABEL, fmtTime, voiceLabel } from './_shared';
 
 const FONT_SIZES = [12, 14, 16, 20, 24] as const;
 
@@ -180,6 +180,8 @@ export default function AnnouncementHistory({
                   <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${ann.ann_type === 'call' ? 'bg-blue-500/15 text-blue-400' : 'bg-[#FF6F0F]/15 text-[#FF6F0F]'}`}>
                     {ann.ann_type === 'call' ? '호출음성' : '템플릿음성'}
                   </span>
+                  <span className="text-[10px] text-dim">{voiceLabel(fishVoices, ann.voice_type)}</span>
+                  <span className="text-[10px] text-dim">·</span>
                   <span className="text-[10px] text-dim">{MODE_LABEL[ann.play_mode] ?? ann.play_mode}</span>
                   <span className="text-[10px] text-dim">· {ann.repeat_count}회</span>
                   <span className="text-[10px] text-dim ml-auto">{fmtTime(ann.created_at)}</span>
