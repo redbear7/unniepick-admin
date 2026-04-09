@@ -8,10 +8,14 @@
 ## 에이전트 목록
 | 에이전트 | 담당 |
 |---------|------|
-| 🎵 콘텐츠 에이전트 | tracks, playlists, cardnews, shorts, ai-images, references |
-| 🏪 매장운영 에이전트 | stores, owners, coupons, announcements, notices, posts, users, brands, map, contexts |
-| ⚙️ 인프라 에이전트 | tts, weather, auth, tags, propagation, 공통 컴포넌트 |
-| 🎸 신곡제작 에이전트 | YT Music → Suno 크롬 확장앱 + 트랙 업로드 |
+| 🎵 언니픽 콘텐츠 에이전트 | tracks, playlists, cardnews, shorts, ai-images, references |
+| 언니픽 앱 개발자 | 앱 전반 개발 |
+| 🏪 언니픽 매장운영 에이전트 | stores, owners, coupons, announcements, notices, posts, users, brands, map, contexts |
+| ⚙️ 언니픽 인프라 에이전트 | tts, weather, auth, tags, propagation, 공통 컴포넌트 |
+| 🎸 언니픽 신곡제작 에이전트 | YT Music → Suno 크롬 확장앱 + 트랙 업로드 |
+| da24 프론트엔드 에이전트 | da24 프론트엔드 |
+| da24 백엔드 에이전트 | da24 백엔드 |
+| da24 디자인 에이전트 | da24 디자인 |
 
 ## 자주 쓰는 명령어
 ```bash
