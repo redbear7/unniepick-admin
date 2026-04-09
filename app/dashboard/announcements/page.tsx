@@ -208,8 +208,9 @@ export default function AnnouncementsPage() {
     if (plate.length < 4) { alert('차량 번호 4자리를 모두 입력하세요'); return; }
     if (!voice) { alert('성우를 먼저 선택하세요'); return; }
     setCallingCar(true);
-    // 각 자리를 한글 발음으로 변환 (숫자는 한글로)
-    const plateSpoken = carPlate.map(d => /^\d$/.test(d) ? numToKorean(Number(d)) : d).join(' ');
+    // 각 자리를 한 글자씩 또박또박 발음 (0→영, 1→일, ... 9→구)
+    const DIGIT_KR = ['영','일','이','삼','사','오','육','칠','팔','구'];
+    const plateSpoken = carPlate.map(d => /^\d$/.test(d) ? DIGIT_KR[Number(d)] : d).join(' ');
     const fullText = `${greetingPfx()}${carTemplate.replaceAll('{plate}', plateSpoken)}`;
     const ttsText = replaceNumbersWithKorean(fullText);
     try {
@@ -558,155 +559,6 @@ export default function AnnouncementsPage() {
             onVoicesLoaded={setFishVoices}
           />
 
-          {/* 차량 이동 */}
-          <div className="border border-white/8 rounded-2xl overflow-hidden">
-            <button onClick={() => setCarOpen(v => !v)}
-              className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/[0.03] transition">
-              <span className="text-xs font-bold text-primary flex items-center gap-2">
-                🚗 차량 이동 안내
-              </span>
-              <ChevronDown size={13} className={`text-muted transition-transform ${carOpen ? 'rotate-180' : ''}`} />
-            </button>
-
-            {carOpen && (
-              <div className="px-4 pb-4 space-y-3 border-t border-border-main">
-                {/* 문구 템플릿 */}
-                <div className="pt-3 space-y-1">
-                  <label className="text-[10px] text-muted font-semibold">안내 문구 ({'{plate}'}는 번호로 대체)</label>
-                  <input
-                    value={carTemplate}
-                    onChange={e => setCarTemplate(e.target.value)}
-                    className="w-full px-3 py-2 bg-white/[0.03] border border-border-subtle rounded-xl text-sm text-primary placeholder-gray-600 outline-none focus:border-[#FF6F0F]/40"
-                  />
-                </div>
-
-                {/* 번호판 4칸 입력 */}
-                <div className="space-y-2">
-                  <label className="text-[10px] text-muted font-semibold">차량 번호 (끝 4자리)</label>
-                  <div className="flex items-center gap-2">
-                    {carPlate.map((val, idx) => (
-                      <input
-                        key={idx}
-                        ref={carInputRefs[idx]}
-                        type="text"
-                        inputMode="text"
-                        maxLength={1}
-                        value={val}
-                        onChange={e => {
-                          const v = e.target.value.slice(-1);
-                          const next = [...carPlate];
-                          next[idx] = v;
-                          setCarPlate(next);
-                          if (v && idx < 3) carInputRefs[idx + 1].current?.focus();
-                        }}
-                        onKeyDown={e => {
-                          if (e.key === 'Backspace' && !val && idx > 0) {
-                            carInputRefs[idx - 1].current?.focus();
-                          }
-                          if (e.key === 'Enter') handleCarCall();
-                        }}
-                        placeholder={['가', '나', '다', '라'][idx]}
-                        className="w-14 h-14 text-center text-xl font-bold bg-[#0f0f10] border-2 border-border-main rounded-xl text-primary outline-none focus:border-[#FF6F0F] transition placeholder:text-white/15"
-                      />
-                    ))}
-                    <button
-                      onClick={handleCarCall}
-                      disabled={callingCar || carPlate.join('').trim().length < 4}
-                      className="flex-1 h-14 bg-[#FF6F0F] text-white text-sm font-bold rounded-xl disabled:opacity-40 transition hover:bg-[#FF6F0F]/90 flex items-center justify-center gap-2">
-                      {callingCar
-                        ? <Loader2 size={16} className="animate-spin" />
-                        : <><span>📢</span> 방송</>}
-                    </button>
-                  </div>
-                  <p className="text-[10px] text-dim">
-                    미리보기: <span className="text-tertiary">
-                      "{greetingPfx()}{carTemplate.replaceAll('{plate}', carPlate.some(Boolean) ? carPlate.join(' ') : '1 2 3 4')}"
-                    </span>
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* 고객 호출 */}
-          <div className="border border-white/8 rounded-2xl overflow-hidden">
-            <div className="flex items-center">
-              <button onClick={() => setCallOpen(v => !v)}
-                className="flex-1 flex items-center justify-between px-4 py-3 hover:bg-white/[0.03] transition">
-                <span className="text-xs font-bold text-primary flex items-center gap-2">
-                  <Radio size={13} className="text-[#FF6F0F]" /> 고객 호출
-                </span>
-                <ChevronDown size={13} className={`text-muted transition-transform ${callOpen ? 'rotate-180' : ''}`} />
-              </button>
-              <button onClick={() => { setCallFullscreen(true); setFsStartDraft(callStartNum); }}
-                title="크게보기"
-                className="px-3 py-3 text-muted hover:text-primary transition border-l border-border-main">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
-                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
-                </svg>
-              </button>
-            </div>
-
-            {callOpen && (
-              <div className="px-4 pb-4 space-y-3 border-t border-border-main">
-                <div className="pt-3 space-y-1">
-                  <label className="text-[10px] text-muted font-semibold">호출 문구 ({'{num}'}은 번호로 대체)</label>
-                  <input value={callTemplate}
-                    onChange={e => { setCallTemplate(e.target.value); try { localStorage.setItem(CALL_TEMPLATE_KEY, e.target.value); } catch {} }}
-                    className="w-full px-3 py-2 bg-white/[0.03] border border-border-subtle rounded-xl text-sm text-primary placeholder-gray-600 outline-none focus:border-[#FF6F0F]/40" />
-                  <p className="text-[10px] text-dim">
-                    미리보기: <span className="text-tertiary">"{greetingPfx() + callTemplate.replaceAll('{num}', '101')}"</span>
-                  </p>
-                  <div className="flex items-center gap-2 pt-0.5">
-                    <span className="text-[10px] text-muted font-semibold">반복</span>
-                    {[1, 2].map(n => (
-                      <button key={n} onClick={() => setCallRepeat(n)}
-                        className={`px-3 py-1 rounded-lg text-[11px] font-bold transition ${
-                          callRepeat === n ? 'bg-[#FF6F0F] text-primary' : 'bg-white/[0.04] text-tertiary hover:bg-white/[0.08]'
-                        }`}>{n}회</button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 즉시 호출 */}
-                <div className="space-y-1">
-                  <label className="text-[10px] text-muted font-semibold">⚡ 즉시 호출 (번호 입력 후 Enter)</label>
-                  <div className="flex gap-2">
-                    <input ref={directCallRef} type="number" value={directCallNum}
-                      onChange={e => setDirectCallNum(e.target.value)}
-                      onKeyDown={e => { if (e.key === 'Enter') handleDirectCall(); }}
-                      placeholder="번호 입력"
-                      className="flex-1 px-3 py-2 bg-white/[0.03] border border-border-subtle rounded-xl text-sm text-primary placeholder-gray-600 outline-none focus:border-[#FF6F0F]/40 [appearance:textfield]" />
-                    <button onClick={handleDirectCall} disabled={callingNum !== null || !directCallNum}
-                      className="px-4 py-2 bg-[#FF6F0F] text-primary text-sm font-bold rounded-xl disabled:opacity-40 transition hover:bg-[#FF6F0F]/90">
-                      {callingNum !== null ? <Loader2 size={14} className="animate-spin" /> : '호출'}
-                    </button>
-                  </div>
-                </div>
-
-                {/* 번호 그리드 */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center gap-2">
-                    <label className="text-[10px] text-muted font-semibold">시작 번호</label>
-                    <input type="number" value={callStartNum} onChange={e => setCallStartNum(e.target.value)}
-                      placeholder="예) 100"
-                      className="w-24 px-2 py-1 bg-white/[0.03] border border-border-subtle rounded-lg text-xs text-primary placeholder-gray-600 outline-none focus:border-[#FF6F0F]/40 [appearance:textfield]" />
-                    {callStartNum && <span className="text-[10px] text-dim">{callStartNum} ~ {Number(callStartNum) + CALL_CARD_COUNT - 1}</span>}
-                  </div>
-                  <CallNumberGrid
-                    callStartNum={callStartNum} callingNum={callingNum} lastCalledNum={lastCalledNum}
-                    size="small" onCallNum={handleCallNum}
-                    isCached={n => !!getCachedAudio(`${greetingPfx()}${callTemplate.replaceAll('{num}', String(n))}`, voice, speed)}
-                  />
-                  {!callStartNum && (
-                    <p className="text-[10px] text-dim text-center py-3">시작 번호를 입력하면 번호 카드가 나타납니다</p>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
           {/* 템플릿 */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
@@ -880,6 +732,156 @@ export default function AnnouncementsPage() {
           {/* 안내방송 볼륨 — 하단 플레이어에서 제어 */}
 
           {/* 덕킹 — UI 숨김, 기능 유지 (duckVolume 기본값 사용) */}
+
+          {/* 차량 이동 */}
+          <div className="border border-white/8 rounded-2xl overflow-hidden">
+            <button onClick={() => setCarOpen(v => !v)}
+              className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/[0.03] transition">
+              <span className="text-xs font-bold text-primary flex items-center gap-2">
+                🚗 차량 이동 안내
+              </span>
+              <ChevronDown size={13} className={`text-muted transition-transform ${carOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {carOpen && (
+              <div className="px-4 pb-4 space-y-3 border-t border-border-main">
+                {/* 문구 템플릿 */}
+                <div className="pt-3 space-y-1">
+                  <label className="text-[10px] text-muted font-semibold">안내 문구 ({'{plate}'}는 번호로 대체)</label>
+                  <input
+                    value={carTemplate}
+                    onChange={e => setCarTemplate(e.target.value)}
+                    className="w-full px-3 py-2 bg-white/[0.03] border border-border-subtle rounded-xl text-sm text-primary placeholder-gray-600 outline-none focus:border-[#FF6F0F]/40"
+                  />
+                </div>
+
+                {/* 번호판 4칸 입력 */}
+                <div className="space-y-2">
+                  <label className="text-[10px] text-muted font-semibold">차량 번호 (끝 4자리)</label>
+                  <div className="flex items-center gap-2">
+                    {carPlate.map((val, idx) => (
+                      <input
+                        key={idx}
+                        ref={carInputRefs[idx]}
+                        type="text"
+                        inputMode="text"
+                        maxLength={1}
+                        value={val}
+                        onChange={e => {
+                          const v = e.target.value.slice(-1);
+                          const next = [...carPlate];
+                          next[idx] = v;
+                          setCarPlate(next);
+                          if (v && idx < 3) carInputRefs[idx + 1].current?.focus();
+                        }}
+                        onKeyDown={e => {
+                          if (e.key === 'Backspace' && !val && idx > 0) {
+                            carInputRefs[idx - 1].current?.focus();
+                          }
+                          if (e.key === 'Enter') handleCarCall();
+                        }}
+                        placeholder={['가', '나', '다', '라'][idx]}
+                        className="w-14 h-14 text-center text-xl font-bold bg-[#0f0f10] border-2 border-border-main rounded-xl text-primary outline-none focus:border-[#FF6F0F] transition placeholder:text-white/15"
+                      />
+                    ))}
+                    <button
+                      onClick={handleCarCall}
+                      disabled={callingCar || carPlate.join('').trim().length < 4}
+                      className="flex-1 h-14 bg-[#FF6F0F] text-white text-sm font-bold rounded-xl disabled:opacity-40 transition hover:bg-[#FF6F0F]/90 flex items-center justify-center gap-2">
+                      {callingCar
+                        ? <Loader2 size={16} className="animate-spin" />
+                        : <><span>📢</span> 방송</>}
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-dim">
+                    미리보기: <span className="text-tertiary">
+                      "{greetingPfx()}{carTemplate.replaceAll('{plate}', carPlate.some(Boolean) ? carPlate.map(d => /^\d$/.test(d) ? ['영','일','이','삼','사','오','육','칠','팔','구'][Number(d)] : d).join(' ') : '일 이 삼 사')}"
+                    </span>
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 고객 호출 */}
+          <div className="border border-white/8 rounded-2xl overflow-hidden">
+            <div className="flex items-center">
+              <button onClick={() => setCallOpen(v => !v)}
+                className="flex-1 flex items-center justify-between px-4 py-3 hover:bg-white/[0.03] transition">
+                <span className="text-xs font-bold text-primary flex items-center gap-2">
+                  <Radio size={13} className="text-[#FF6F0F]" /> 고객 호출
+                </span>
+                <ChevronDown size={13} className={`text-muted transition-transform ${callOpen ? 'rotate-180' : ''}`} />
+              </button>
+              <button onClick={() => { setCallFullscreen(true); setFsStartDraft(callStartNum); }}
+                title="크게보기"
+                className="px-3 py-3 text-muted hover:text-primary transition border-l border-border-main">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
+            </div>
+
+            {callOpen && (
+              <div className="px-4 pb-4 space-y-3 border-t border-border-main">
+                <div className="pt-3 space-y-1">
+                  <label className="text-[10px] text-muted font-semibold">호출 문구 ({'{num}'}은 번호로 대체)</label>
+                  <input value={callTemplate}
+                    onChange={e => { setCallTemplate(e.target.value); try { localStorage.setItem(CALL_TEMPLATE_KEY, e.target.value); } catch {} }}
+                    className="w-full px-3 py-2 bg-white/[0.03] border border-border-subtle rounded-xl text-sm text-primary placeholder-gray-600 outline-none focus:border-[#FF6F0F]/40" />
+                  <p className="text-[10px] text-dim">
+                    미리보기: <span className="text-tertiary">"{greetingPfx() + callTemplate.replaceAll('{num}', '101')}"</span>
+                  </p>
+                  <div className="flex items-center gap-2 pt-0.5">
+                    <span className="text-[10px] text-muted font-semibold">반복</span>
+                    {[1, 2].map(n => (
+                      <button key={n} onClick={() => setCallRepeat(n)}
+                        className={`px-3 py-1 rounded-lg text-[11px] font-bold transition ${
+                          callRepeat === n ? 'bg-[#FF6F0F] text-primary' : 'bg-white/[0.04] text-tertiary hover:bg-white/[0.08]'
+                        }`}>{n}회</button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 즉시 호출 */}
+                <div className="space-y-1">
+                  <label className="text-[10px] text-muted font-semibold">⚡ 즉시 호출 (번호 입력 후 Enter)</label>
+                  <div className="flex gap-2">
+                    <input ref={directCallRef} type="number" value={directCallNum}
+                      onChange={e => setDirectCallNum(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') handleDirectCall(); }}
+                      placeholder="번호 입력"
+                      className="flex-1 px-3 py-2 bg-white/[0.03] border border-border-subtle rounded-xl text-sm text-primary placeholder-gray-600 outline-none focus:border-[#FF6F0F]/40 [appearance:textfield]" />
+                    <button onClick={handleDirectCall} disabled={callingNum !== null || !directCallNum}
+                      className="px-4 py-2 bg-[#FF6F0F] text-primary text-sm font-bold rounded-xl disabled:opacity-40 transition hover:bg-[#FF6F0F]/90">
+                      {callingNum !== null ? <Loader2 size={14} className="animate-spin" /> : '호출'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* 번호 그리드 */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <label className="text-[10px] text-muted font-semibold">시작 번호</label>
+                    <input type="number" value={callStartNum} onChange={e => setCallStartNum(e.target.value)}
+                      placeholder="예) 100"
+                      className="w-24 px-2 py-1 bg-white/[0.03] border border-border-subtle rounded-lg text-xs text-primary placeholder-gray-600 outline-none focus:border-[#FF6F0F]/40 [appearance:textfield]" />
+                    {callStartNum && <span className="text-[10px] text-dim">{callStartNum} ~ {Number(callStartNum) + CALL_CARD_COUNT - 1}</span>}
+                  </div>
+                  <CallNumberGrid
+                    callStartNum={callStartNum} callingNum={callingNum} lastCalledNum={lastCalledNum}
+                    size="small" onCallNum={handleCallNum}
+                    isCached={n => !!getCachedAudio(`${greetingPfx()}${callTemplate.replaceAll('{num}', String(n))}`, voice, speed)}
+                  />
+                  {!callStartNum && (
+                    <p className="text-[10px] text-dim text-center py-3">시작 번호를 입력하면 번호 카드가 나타납니다</p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
         </div>
 
         {/* ── 목록 패널 ── */}
