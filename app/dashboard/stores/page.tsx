@@ -99,11 +99,23 @@ export default function StoresPage() {
   /* ---------------------------------------------------------------- */
 
   const loadStores = async () => {
-    const { data } = await sb
+    // tts_policy_id 컬럼이 아직 없는 DB를 위해 fallback 쿼리 지원
+    let rows: Store[] = [];
+    const { data, error } = await sb
       .from('stores')
       .select('id, name, address, phone, category, is_active, created_at, owner_id, image_url, tts_policy_id')
       .order('created_at', { ascending: false });
-    const rows = (data ?? []) as Store[];
+    if (error) {
+      console.warn('[loadStores] tts_policy_id 컬럼 없음, fallback 쿼리 사용:', error.message);
+      const { data: data2, error: err2 } = await sb
+        .from('stores')
+        .select('id, name, address, phone, category, is_active, created_at, owner_id, image_url')
+        .order('created_at', { ascending: false });
+      if (err2) console.error('[loadStores] fallback 쿼리 실패:', err2.message);
+      rows = (data2 ?? []) as Store[];
+    } else {
+      rows = (data ?? []) as Store[];
+    }
     setStores(rows);
     setLoadingStores(false);
 
@@ -239,13 +251,14 @@ export default function StoresPage() {
     setSaving(true);
 
     const payload = {
-      name:      form.name.trim(),
-      address:   form.address   || null,
-      phone:     form.phone     || null,
-      category:  form.category  || null,
-      is_active: form.is_active,
-      owner_id:  form.owner_id,
-      image_url: form.image_url,
+      name:          form.name.trim(),
+      address:       form.address       || null,
+      phone:         form.phone         || null,
+      category:      form.category      || null,
+      is_active:     form.is_active,
+      owner_id:      form.owner_id,
+      image_url:     form.image_url,
+      tts_policy_id: form.tts_policy_id || null,
       ...(form.latitude  != null ? { latitude:  form.latitude  } : {}),
       ...(form.longitude != null ? { longitude: form.longitude } : {}),
     };
