@@ -11,6 +11,7 @@ import {
 import LandingNav from '@/components/LandingNav';
 import LandingFooter from '@/components/LandingFooter';
 import { createClient } from '@/lib/supabase';
+import { trackPlanClick } from '@/lib/gtag';
 
 /* ------------------------------------------------------------------ */
 /* Data                                                                 */
