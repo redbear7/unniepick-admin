@@ -335,7 +335,11 @@ export default function StoresPage() {
   };
 
   const deleteStore = async (id: string) => {
-
+    // tts_daily_usage는 store_id가 text 타입으로 FK 없음 → 명시적 삭제
+    await sb.from('tts_daily_usage').delete().eq('store_id', id);
+    // 나머지 연관 테이블(coupons, store_contexts, music_references,
+    // store_music_profiles, propagation_history, card_news)은
+    // ON DELETE CASCADE 마이그레이션으로 처리됨
     await sb.from('stores').delete().eq('id', id);
     setStores(prev => prev.filter(s => s.id !== id));
     setDeleteId(null);
