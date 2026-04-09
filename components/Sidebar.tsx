@@ -161,8 +161,10 @@ function SortableNavItem({
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-1 rounded-lg transition ${
-        isActive ? 'bg-[#FF6F0F]/15' : 'hover:bg-card'
+      className={`flex items-center gap-1 transition ${
+        isActive
+          ? 'bg-[#FF6F0F]/20 border-l-2 border-[#FF6F0F] rounded-r-lg'
+          : 'rounded-lg hover:bg-card'
       }`}
     >
       {editMode && (
@@ -176,9 +178,9 @@ function SortableNavItem({
       )}
       <Link
         href={item.href}
-        className={`flex items-center gap-3 px-3 py-2.5 text-sm font-medium flex-1 min-w-0 ${
+        className={`flex items-center gap-3 px-3 py-2.5 text-sm flex-1 min-w-0 ${
           editMode ? 'pointer-events-none' : ''
-        } ${isActive ? 'text-[#FF6F0F]' : 'text-tertiary hover:text-primary'}`}
+        } ${isActive ? 'text-[#FF6F0F] font-semibold' : 'font-medium text-tertiary hover:text-primary'}`}
       >
         {Icon && <Icon size={16} className="shrink-0" />}
         <span className="flex-1 truncate">{item.label}</span>
