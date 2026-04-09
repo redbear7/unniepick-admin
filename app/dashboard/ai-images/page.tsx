@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { ImagePlus, Download, Copy, Loader, Sparkles, Check, ChevronLeft, ChevronRight, RotateCcw, Eye, EyeOff, ClipboardPaste, X, Upload } from 'lucide-react';
 
 // ── 에셋 유형 ──────────────────────────────────────────────
@@ -205,6 +205,60 @@ export default function AIImagesPage() {
   const [results, setResults] = useState<GeneratedImage[]>([]);
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
 
+  // 커스텀 썸네일 이미지 (localStorage 저장)
+  // key: "cat_{categoryId}" 또는 "style_{categoryId}_{styleId}"
+  const [customImages, setCustomImages] = useState<Record<string, string>>(() => {
+    if (typeof window === 'undefined') return {};
+    try {
+      return JSON.parse(localStorage.getItem('ai_images_thumbnails') || '{}');
+    } catch { return {}; }
+  });
+
+  const saveCustomImage = (key: string, dataUrl: string) => {
+    const updated = { ...customImages, [key]: dataUrl };
+    setCustomImages(updated);
+    localStorage.setItem('ai_images_thumbnails', JSON.stringify(updated));
+  };
+
+  const removeCustomImage = (key: string) => {
+    const updated = { ...customImages };
+    delete updated[key];
+    setCustomImages(updated);
+    localStorage.setItem('ai_images_thumbnails', JSON.stringify(updated));
+  };
+
+  // 클립보드에서 이미지 붙여넣기
+  const handlePasteImage = useCallback(async (key: string) => {
+    try {
+      const items = await navigator.clipboard.read();
+      for (const item of items) {
+        const imageType = item.types.find(t => t.startsWith('image/'));
+        if (imageType) {
+          const blob = await item.getType(imageType);
+          const reader = new FileReader();
+          reader.onload = () => {
+            saveCustomImage(key, reader.result as string);
+          };
+          reader.readAsDataURL(blob);
+          return;
+        }
+      }
+      alert('클립보드에 이미지가 없습니다. 이미지를 먼저 복사해주세요.');
+    } catch (e: any) {
+      alert('클립보드 읽기 실패: ' + e.message);
+    }
+  }, [customImages]);
+
+  // 파일 업로드로 이미지 설정
+  const handleFileUpload = useCallback((key: string, file: File) => {
+    if (!file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      saveCustomImage(key, reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  }, [customImages]);
+
   // 파생 데이터
   const selectedCategory = WIZARD_CATEGORIES.find(c => c.id === selectedCategoryId);
   const selectedStyle = selectedCategory?.styles.find(s => s.id === selectedStyleId);
@@ -329,32 +383,68 @@ export default function AIImagesPage() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {WIZARD_CATEGORIES.map(cat => (
-          <button
-            key={cat.id}
-            onClick={() => handleSelectCategory(cat.id)}
-            className={`group relative overflow-hidden rounded-xl border-2 transition-all hover:scale-[1.02] ${
+        {WIZARD_CATEGORIES.map(cat => {
+          const imgKey = `cat_${cat.id}`;
+          const customImg = customImages[imgKey];
+          let fileRef: HTMLInputElement | null = null;
+
+          return (
+            <div key={cat.id} className={`group relative overflow-hidden rounded-xl border-2 transition-all hover:scale-[1.02] ${
               selectedCategoryId === cat.id
                 ? 'border-[#FF6F0F] shadow-lg shadow-[#FF6F0F]/20'
                 : 'border-border-subtle hover:border-border-main'
             }`}>
-            <div
-              className="h-24 flex items-center justify-center"
-              style={{ background: cat.gradient }}>
-              <span className="text-4xl drop-shadow-lg">{cat.emoji}</span>
-            </div>
-            <div className="p-3 bg-surface">
-              <p className="text-xs font-bold text-primary">{cat.name}</p>
-              <p className="text-[10px] text-muted mt-0.5">{cat.desc}</p>
-              <p className="text-[10px] text-dim mt-1">{cat.styles.length}개 스타일</p>
-            </div>
-            {selectedCategoryId === cat.id && (
-              <div className="absolute top-2 right-2 w-5 h-5 bg-[#FF6F0F] rounded-full flex items-center justify-center">
-                <Check size={12} className="text-white" />
+              {/* 썸네일 영역 */}
+              <div
+                className="h-28 flex items-center justify-center relative cursor-pointer overflow-hidden"
+                style={customImg ? undefined : { background: cat.gradient }}
+                onClick={() => handleSelectCategory(cat.id)}>
+                {customImg ? (
+                  <img src={customImg} alt={cat.name} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-4xl drop-shadow-lg">{cat.emoji}</span>
+                )}
+
+                {/* 이미지 변경 버튼 (호버 시 표시) */}
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition flex items-center justify-center gap-1.5 opacity-0 group-hover:opacity-100"
+                  onClick={e => e.stopPropagation()}>
+                  <button
+                    onClick={() => handlePasteImage(imgKey)}
+                    className="p-1.5 bg-white/90 rounded-lg hover:bg-white transition" title="클립보드에서 붙여넣기">
+                    <ClipboardPaste size={14} className="text-gray-800" />
+                  </button>
+                  <button
+                    onClick={() => fileRef?.click()}
+                    className="p-1.5 bg-white/90 rounded-lg hover:bg-white transition" title="파일 업로드">
+                    <Upload size={14} className="text-gray-800" />
+                  </button>
+                  {customImg && (
+                    <button
+                      onClick={() => removeCustomImage(imgKey)}
+                      className="p-1.5 bg-red-500/90 rounded-lg hover:bg-red-500 transition" title="기본으로 복원">
+                      <X size={14} className="text-white" />
+                    </button>
+                  )}
+                </div>
+                <input ref={el => { fileRef = el; }} type="file" accept="image/*" className="hidden"
+                  onChange={e => { if (e.target.files?.[0]) handleFileUpload(imgKey, e.target.files[0]); }} />
               </div>
-            )}
-          </button>
-        ))}
+
+              {/* 텍스트 영역 */}
+              <div className="p-3 bg-surface cursor-pointer" onClick={() => handleSelectCategory(cat.id)}>
+                <p className="text-xs font-bold text-primary">{cat.name}</p>
+                <p className="text-[10px] text-muted mt-0.5">{cat.desc}</p>
+                <p className="text-[10px] text-dim mt-1">{cat.styles.length}개 스타일</p>
+              </div>
+
+              {selectedCategoryId === cat.id && (
+                <div className="absolute top-2 right-2 w-5 h-5 bg-[#FF6F0F] rounded-full flex items-center justify-center pointer-events-none">
+                  <Check size={12} className="text-white" />
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {/* 선택된 카테고리의 스타일 미리보기 */}
@@ -364,16 +454,24 @@ export default function AIImagesPage() {
             {selectedCategory.emoji} {selectedCategory.name} — 스타일 미리보기
           </p>
           <div className="flex gap-2 overflow-x-auto pb-2">
-            {selectedCategory.styles.map(style => (
-              <div key={style.id} className="shrink-0 w-28">
-                <div
-                  className="h-16 rounded-lg flex items-center justify-center"
-                  style={{ background: style.gradient }}>
-                  <span className="text-2xl">{style.emoji}</span>
+            {selectedCategory.styles.map(style => {
+              const sImgKey = `style_${selectedCategory.id}_${style.id}`;
+              const sCustomImg = customImages[sImgKey];
+              return (
+                <div key={style.id} className="shrink-0 w-28">
+                  <div
+                    className="h-16 rounded-lg flex items-center justify-center overflow-hidden"
+                    style={sCustomImg ? undefined : { background: style.gradient }}>
+                    {sCustomImg ? (
+                      <img src={sCustomImg} alt={style.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-2xl">{style.emoji}</span>
+                    )}
+                  </div>
+                  <p className="text-[10px] font-semibold text-primary mt-1.5 text-center">{style.name}</p>
                 </div>
-                <p className="text-[10px] font-semibold text-primary mt-1.5 text-center">{style.name}</p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -392,31 +490,66 @@ export default function AIImagesPage() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-        {selectedCategory?.styles.map(style => (
-          <button
-            key={style.id}
-            onClick={() => handleSelectStyle(style.id)}
-            className={`group relative overflow-hidden rounded-xl border-2 transition-all hover:scale-[1.02] text-left ${
-              selectedStyleId === style.id
-                ? 'border-[#FF6F0F] shadow-lg shadow-[#FF6F0F]/20'
-                : 'border-border-subtle hover:border-border-main'
-            }`}>
+        {selectedCategory?.styles.map(style => {
+          const sKey = `style_${selectedCategory.id}_${style.id}`;
+          const sImg = customImages[sKey];
+          let sFileRef: HTMLInputElement | null = null;
+
+          return (
             <div
-              className="h-32 flex items-center justify-center relative"
-              style={{ background: style.gradient }}>
-              <span className="text-5xl drop-shadow-lg">{style.emoji}</span>
-              {selectedStyleId === style.id && (
-                <div className="absolute top-2 right-2 w-5 h-5 bg-[#FF6F0F] rounded-full flex items-center justify-center">
-                  <Check size={12} className="text-white" />
+              key={style.id}
+              className={`group relative overflow-hidden rounded-xl border-2 transition-all hover:scale-[1.02] text-left ${
+                selectedStyleId === style.id
+                  ? 'border-[#FF6F0F] shadow-lg shadow-[#FF6F0F]/20'
+                  : 'border-border-subtle hover:border-border-main'
+              }`}>
+              <div
+                className="h-36 flex items-center justify-center relative cursor-pointer overflow-hidden"
+                style={sImg ? undefined : { background: style.gradient }}
+                onClick={() => handleSelectStyle(style.id)}>
+                {sImg ? (
+                  <img src={sImg} alt={style.name} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-5xl drop-shadow-lg">{style.emoji}</span>
+                )}
+
+                {/* 이미지 변경 오버레이 */}
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition flex items-center justify-center gap-1.5 opacity-0 group-hover:opacity-100"
+                  onClick={e => e.stopPropagation()}>
+                  <button onClick={() => handlePasteImage(sKey)}
+                    className="p-2 bg-white/90 rounded-lg hover:bg-white transition flex items-center gap-1 text-[10px] font-bold text-gray-800"
+                    title="클립보드에서 붙여넣기">
+                    <ClipboardPaste size={14} /> PASTE
+                  </button>
+                  <button onClick={() => sFileRef?.click()}
+                    className="p-2 bg-white/90 rounded-lg hover:bg-white transition"
+                    title="파일 업로드">
+                    <Upload size={14} className="text-gray-800" />
+                  </button>
+                  {sImg && (
+                    <button onClick={() => removeCustomImage(sKey)}
+                      className="p-2 bg-red-500/90 rounded-lg hover:bg-red-500 transition"
+                      title="기본으로 복원">
+                      <X size={14} className="text-white" />
+                    </button>
+                  )}
                 </div>
-              )}
+                <input ref={el => { sFileRef = el; }} type="file" accept="image/*" className="hidden"
+                  onChange={e => { if (e.target.files?.[0]) handleFileUpload(sKey, e.target.files[0]); }} />
+
+                {selectedStyleId === style.id && (
+                  <div className="absolute top-2 right-2 w-5 h-5 bg-[#FF6F0F] rounded-full flex items-center justify-center pointer-events-none">
+                    <Check size={12} className="text-white" />
+                  </div>
+                )}
+              </div>
+              <div className="p-3 bg-surface cursor-pointer" onClick={() => handleSelectStyle(style.id)}>
+                <p className="text-sm font-bold text-primary">{style.name}</p>
+                <p className="text-[10px] text-muted mt-0.5">{style.desc}</p>
+              </div>
             </div>
-            <div className="p-3 bg-surface">
-              <p className="text-sm font-bold text-primary">{style.name}</p>
-              <p className="text-[10px] text-muted mt-0.5">{style.desc}</p>
-            </div>
-          </button>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -434,11 +567,21 @@ export default function AIImagesPage() {
 
       {/* 선택된 스타일 미리보기 */}
       <div className="flex items-center gap-3 bg-surface border border-border-subtle rounded-xl p-3">
-        <div
-          className="w-16 h-16 rounded-lg shrink-0 flex items-center justify-center"
-          style={{ background: selectedStyle?.gradient }}>
-          <span className="text-2xl">{selectedStyle?.emoji}</span>
-        </div>
+        {(() => {
+          const previewKey = `style_${selectedCategoryId}_${selectedStyleId}`;
+          const previewImg = customImages[previewKey];
+          return (
+            <div
+              className="w-16 h-16 rounded-lg shrink-0 flex items-center justify-center overflow-hidden"
+              style={previewImg ? undefined : { background: selectedStyle?.gradient }}>
+              {previewImg ? (
+                <img src={previewImg} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-2xl">{selectedStyle?.emoji}</span>
+              )}
+            </div>
+          );
+        })()}
         <div>
           <p className="text-sm font-bold text-primary">{selectedCategory?.name} → {selectedStyle?.name}</p>
           <p className="text-xs text-muted">{selectedStyle?.desc}</p>
