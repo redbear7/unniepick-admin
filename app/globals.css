@@ -17,19 +17,19 @@
 }
 
 .dark {
-  --bg-surface: #0D0F14;
-  --bg-sidebar: #111318;
-  --bg-card: #1A1D23;
-  --bg-card-hover: #22252E;
-  --border-main: rgba(255, 255, 255, 0.05);
-  --text-primary: #ffffff;
-  --text-secondary: #d1d5db;
-  --text-tertiary: #9ca3af;
-  --text-muted: #6b7280;
-  --text-dim: #4b5563;
-  --fill-subtle: rgba(255, 255, 255, 0.05);
-  --fill-medium: rgba(255, 255, 255, 0.1);
-  --border-subtle: rgba(255, 255, 255, 0.1);
+  --bg-surface: #13161c;
+  --bg-sidebar: #1a1d24;
+  --bg-card: #22262f;
+  --bg-card-hover: #2a2f3a;
+  --border-main: rgba(255, 255, 255, 0.10);
+  --text-primary: #f0f4ff;
+  --text-secondary: #c8d0e0;
+  --text-tertiary: #8fa0b8;
+  --text-muted: #6a7d96;
+  --text-dim: #4a5a6e;
+  --fill-subtle: rgba(255, 255, 255, 0.07);
+  --fill-medium: rgba(255, 255, 255, 0.13);
+  --border-subtle: rgba(255, 255, 255, 0.13);
 }
 
 @theme inline {
