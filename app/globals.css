@@ -1,19 +1,22 @@
 @import "tailwindcss";
 
 :root {
-  --bg-surface: #f0f2f5;
+  /* Spotify-inspired light mode */
+  --bg-surface: #f8f8f8;
   --bg-sidebar: #ffffff;
   --bg-card: #ffffff;
-  --bg-card-hover: #eef0f4;
-  --border-main: rgba(0, 0, 0, 0.13);
-  --text-primary: #0d1117;
-  --text-secondary: #1f2937;
-  --text-tertiary: #4b5563;
-  --text-muted: #6b7280;
-  --text-dim: #9ca3af;
-  --fill-subtle: rgba(0, 0, 0, 0.05);
-  --fill-medium: rgba(0, 0, 0, 0.09);
-  --border-subtle: rgba(0, 0, 0, 0.15);
+  --bg-card-hover: #eeeeee;
+  --border-main: rgba(0, 0, 0, 0.10);
+  --text-primary: #121212;
+  --text-secondary: #535353;
+  --text-tertiary: #6a6a6a;
+  --text-muted: #a7a7a7;
+  --text-dim: #b3b3b3;
+  --fill-subtle: rgba(0, 0, 0, 0.04);
+  --fill-medium: rgba(0, 0, 0, 0.08);
+  --border-subtle: rgba(0, 0, 0, 0.10);
+  --accent: #1ed760;
+  --accent-dark: #1db954;
 }
 
 .dark {

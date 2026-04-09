@@ -163,7 +163,7 @@ function SortableNavItem({
       style={style}
       className={`flex items-center gap-1 transition ${
         isActive
-          ? 'bg-[#FF6F0F]/20 border-l-2 border-[#FF6F0F] rounded-r-lg'
+          ? 'bg-[#1ed760]/15 border-l-2 border-[#1ed760] rounded-r-lg'
           : 'rounded-lg hover:bg-card'
       }`}
     >
@@ -180,7 +180,7 @@ function SortableNavItem({
         href={item.href}
         className={`flex items-center gap-3 px-3 py-2.5 text-sm flex-1 min-w-0 ${
           editMode ? 'pointer-events-none' : ''
-        } ${isActive ? 'text-[#FF6F0F] font-semibold' : 'font-medium text-tertiary hover:text-primary'}`}
+        } ${isActive ? 'text-[#1ed760] font-semibold' : 'font-medium text-tertiary hover:text-primary'}`}
       >
         {Icon && <Icon size={16} className="shrink-0" />}
         <span className="flex-1 truncate">{item.label}</span>
@@ -296,7 +296,7 @@ export default function Sidebar() {
     <aside className="w-56 shrink-0 bg-sidebar border-r border-border-main flex flex-col h-full overflow-y-auto">
       {/* 로고 */}
       <Link href="/dashboard" className="flex items-center gap-3 px-5 py-5 border-b border-border-main hover:bg-card transition">
-        <div className="w-8 h-8 rounded-lg bg-[#FF6F0F] flex items-center justify-center text-base shrink-0">🍖</div>
+        <div className="w-8 h-8 rounded-lg bg-[#1ed760] flex items-center justify-center text-base shrink-0">🍖</div>
         <div className="flex-1 min-w-0">
           <p className="text-[10px] text-muted leading-none">언니픽</p>
           <p className="text-sm font-bold text-primary leading-tight mt-0.5">슈퍼어드민</p>
@@ -327,7 +327,7 @@ export default function Sidebar() {
                         if (e.key === 'Enter') commitRename();
                         if (e.key === 'Escape') setEditingGroupId(null);
                       }}
-                      className="flex-1 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-card border border-[#FF6F0F] rounded outline-none text-primary"
+                      className="flex-1 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-card border border-[#1ed760] rounded outline-none text-primary"
                     />
                     <button onClick={commitRename} className="text-green-500 hover:text-green-400"><Check size={11} /></button>
                     <button onClick={() => setEditingGroupId(null)} className="text-muted hover:text-primary"><X size={11} /></button>
@@ -376,7 +376,7 @@ export default function Sidebar() {
           {/* Drag overlay */}
           <DragOverlay>
             {activeItem ? (
-              <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-card border border-[#FF6F0F]/40 shadow-lg text-sm font-medium text-primary opacity-90">
+              <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-card border border-[#1ed760]/40 shadow-lg text-sm font-medium text-primary opacity-90">
                 {ICON_MAP[activeItem.icon] && (() => {
                   const Icon = ICON_MAP[activeItem.icon];
                   return <Icon size={16} className="shrink-0" />;
@@ -403,7 +403,7 @@ export default function Sidebar() {
             }}
             className={`flex items-center gap-3 flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition ${
               editMode
-                ? 'bg-[#FF6F0F]/15 text-[#FF6F0F]'
+                ? 'bg-[#1ed760]/15 text-[#1ed760]'
                 : 'text-muted hover:bg-card hover:text-primary'
             }`}
           >
