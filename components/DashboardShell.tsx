@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { PlayerProvider } from '@/contexts/PlayerContext';
 import Sidebar from '@/components/Sidebar';
 import BottomPlayer from '@/components/BottomPlayer';
+import DevLogPanel from '@/components/DevLogPanel';
 
 function useServiceWorker() {
   useEffect(() => {
@@ -32,6 +33,9 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         {/* 하단 음악 플레이어 — 항상 화면 최하단 */}
         <BottomPlayer />
       </div>
+
+      {/* 개발자 로그 패널 */}
+      <DevLogPanel />
     </PlayerProvider>
   );
 }
