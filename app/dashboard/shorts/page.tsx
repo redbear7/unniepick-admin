@@ -113,6 +113,7 @@ function WaveformEditor({
   onStartChange,
   onPlayStart,
   autoPlayOnSelect = false,
+  stopToken = 0,
 }: {
   audioUrl: string;
   durationSec: number;
@@ -121,6 +122,7 @@ function WaveformEditor({
   onStartChange: (s: number) => void;
   onPlayStart?: () => void;
   autoPlayOnSelect?: boolean;
+  stopToken?: number;
 }) {
   const canvasRef      = useRef<HTMLCanvasElement>(null);
   const audioRef       = useRef<HTMLAudioElement | null>(null);
@@ -330,6 +332,15 @@ function WaveformEditor({
 
   useEffect(() => () => cancelAnimationFrame(animFrameRef.current), []);
 
+  // 외부에서 stopToken이 바뀌면 재생 중지
+  useEffect(() => {
+    if (stopToken === 0) return;
+    if (audioRef.current) { audioRef.current.pause(); }
+    cancelAnimationFrame(animFrameRef.current);
+    setPlaying(false);
+    setPlayPos(0);
+  }, [stopToken]);
+
   return (
     <div className="flex flex-col gap-2 select-none">
       {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
@@ -396,6 +407,7 @@ interface LivePreviewFrameProps {
   waveformStyle?: 'bar' | 'mirror' | 'wave' | 'circle' | 'dots';
   showGuide?: boolean;
   onPlayStart?: () => void;
+  stopToken?: number;
 }
 
 function LivePreviewFrame({
@@ -408,6 +420,7 @@ function LivePreviewFrame({
   waveformStyle = 'bar',
   showGuide = false,
   onPlayStart,
+  stopToken = 0,
 }: LivePreviewFrameProps) {
   const audioRef      = useRef<HTMLAudioElement | null>(null);
   const animRef       = useRef<number>(0);
@@ -535,6 +548,15 @@ function LivePreviewFrame({
   }, [startSec]);
 
   useEffect(() => () => cancelAnimationFrame(animRef.current), []);
+
+  // 외부에서 stopToken이 바뀌면 재생 중지
+  useEffect(() => {
+    if (stopToken === 0) return;
+    if (audioRef.current) { audioRef.current.pause(); }
+    cancelAnimationFrame(animRef.current);
+    setPlaying(false);
+    setProgress(0);
+  }, [stopToken]);
 
   const togglePlay = () => {
     const el = audioRef.current;
@@ -844,6 +866,8 @@ export default function ShortsPage() {
   const wasPlayingRef = useRef(false);
   const [previewExpanded, setPreviewExpanded] = useState(false);
   const [autoPlayOnSelect, setAutoPlayOnSelect] = useState(false);
+  const [stopToken, setStopToken] = useState(0);
+  const bumpStop = () => setStopToken(t => t + 1);
   const [showGuide, setShowGuide] = useState<boolean>(() => {
     try { return localStorage.getItem('shorts_show_guide') === 'true'; } catch { return false; }
   });
@@ -1628,8 +1652,9 @@ export default function ShortsPage() {
                     startSec={startSec}
                     windowSec={durationSec}
                     onStartChange={(s) => { setStartSec(s); setAnalyzed(false); }}
-                    onPlayStart={() => { if (player.isPlaying) player.pause(); }}
+                    onPlayStart={() => { if (player.isPlaying) player.pause(); bumpStop(); }}
                     autoPlayOnSelect={autoPlayOnSelect}
+                    stopToken={stopToken}
                   />
                 )}
 
@@ -1957,7 +1982,8 @@ export default function ShortsPage() {
                 couponTop={couponTop}
                 waveformStyle={waveformStyle}
                 showGuide={showGuide}
-                onPlayStart={() => { if (player.isPlaying) player.pause(); }}
+                onPlayStart={() => { if (player.isPlaying) player.pause(); bumpStop(); }}
+                stopToken={stopToken}
               />
 
               {/* 구성 정보 */}
@@ -2165,7 +2191,8 @@ export default function ShortsPage() {
                 couponTop={couponTop}
                 waveformStyle={waveformStyle}
                 showGuide={showGuide}
-                onPlayStart={() => { if (player.isPlaying) player.pause(); }}
+                onPlayStart={() => { if (player.isPlaying) player.pause(); bumpStop(); }}
+                stopToken={stopToken}
               />
             </div>
           </div>
