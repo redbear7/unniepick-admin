@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase';
 import { Mail, ShieldCheck, Loader2, Check } from 'lucide-react';
+import { trackCarrierSelect, trackConsultationComplete } from '@/lib/gtag';
 
 export default function ApplyPage() {
   /* ── 이메일 인증 ── */
@@ -29,6 +30,7 @@ export default function ApplyPage() {
   const [storeCategory, setStoreCategory] = useState('');
   const [storeAddress,  setStoreAddress]  = useState('');
   const [storePhone,    setStorePhone]    = useState('');
+  const [carrier,       setCarrier]       = useState('');
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -140,6 +142,7 @@ export default function ApplyPage() {
         status:         'pending',
       });
       if (err) throw err;
+      trackConsultationComplete(carrier || 'none');
       setDone(true);
     } catch {
       setError('제출 중 오류가 발생했습니다. 다시 시도해 주세요.');
@@ -254,6 +257,30 @@ export default function ApplyPage() {
               inputMode="tel"
               className={inputCls}
             />
+          </div>
+        </div>
+
+        {/* ── 통신사 선택 ── */}
+        <div>
+          <label className="text-xs font-semibold text-tertiary mb-1.5 block">통신사 <span className="font-normal text-dim">(선택)</span></label>
+          <div className="flex gap-2 flex-wrap">
+            {(['SKT', 'KT', 'LG U+', '알뜰폰'] as const).map(c => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => {
+                  setCarrier(c);
+                  trackCarrierSelect(c);
+                }}
+                className={`px-4 py-2 rounded-xl text-sm font-semibold border transition ${
+                  carrier === c
+                    ? 'bg-[#FF6F0F] border-[#FF6F0F] text-white'
+                    : 'bg-sidebar border-border-subtle text-tertiary hover:border-[#FF6F0F]'
+                }`}
+              >
+                {c}
+              </button>
+            ))}
           </div>
         </div>
 

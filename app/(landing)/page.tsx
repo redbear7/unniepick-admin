@@ -462,6 +462,7 @@ export default function LandingPage() {
               <Link
                 href="/apply"
                 className={`mt-8 flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm transition ${plan.cta_style}`}
+                onClick={() => trackPlanClick(plan.name)}
               >
                 {plan.cta} <ChevronRight size={14} />
               </Link>
