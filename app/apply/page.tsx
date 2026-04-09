@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase';
 import { Mail, ShieldCheck, Loader2, Check } from 'lucide-react';
+import { trackCarrierSelect, trackConsultationComplete } from '@/lib/gtag';
 
 export default function ApplyPage() {
   /* ── 이메일 인증 ── */
@@ -29,6 +30,7 @@ export default function ApplyPage() {
   const [storeCategory, setStoreCategory] = useState('');
   const [storeAddress,  setStoreAddress]  = useState('');
   const [storePhone,    setStorePhone]    = useState('');
+  const [carrier,       setCarrier]       = useState('');
 
   useEffect(() => {
     if (cooldown <= 0) return;
