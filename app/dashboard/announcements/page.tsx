@@ -607,132 +607,6 @@ export default function AnnouncementsPage() {
             )}
           </div>
 
-          {/* 인사말 */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <label className="text-xs text-muted font-semibold">👋 인사말</label>
-              <button onClick={() => setGreetingOn(v => !v)}
-                className={`text-[10px] font-semibold px-2 py-0.5 rounded-full transition ${
-                  greetingOn ? 'bg-[#FF6F0F]/20 text-[#FF6F0F]' : 'bg-fill-subtle text-muted'
-                }`}>{greetingOn ? 'ON' : 'OFF'}</button>
-            </div>
-            <input value={greeting}
-              onChange={e => { setGreeting(e.target.value); try { localStorage.setItem(GREETING_KEY, e.target.value); } catch {} }}
-              placeholder="예) 안녕하세요, 고객 여러분."
-              className={`w-full px-3 py-2 border rounded-xl text-sm text-primary placeholder-gray-600 outline-none transition ${
-                greetingOn ? 'bg-[#FF6F0F]/5 border-[#FF6F0F]/20 focus:border-[#FF6F0F]/40' : 'bg-white/[0.02] border-border-main opacity-40'
-              }`} disabled={!greetingOn} />
-            {greetingOn && greeting.trim() && (
-              <p className="text-[10px] text-dim px-1">미리보기: <span className="text-tertiary">"{greeting.trim()} (안내 문구...)"</span></p>
-            )}
-          </div>
-
-          {/* 안내 문구 */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <label className="text-xs text-muted font-semibold">🎙 안내 문구 *</label>
-              <div className="flex items-center gap-2">
-                {cacheHit && <span className="flex items-center gap-1 text-[10px] text-green-400"><DatabaseZap size={9} /> 캐시</span>}
-                <span className={`text-[10px] ${text.length > 180 ? 'text-red-400' : 'text-dim'}`}>{text.length}/200</span>
-              </div>
-            </div>
-            <textarea value={text}
-              onChange={e => { const v = e.target.value.slice(0, 200); setText(v); checkCache(v, voice, speed); }}
-              rows={3} placeholder="안내 문구를 입력하세요"
-              className="w-full bg-card border border-border-subtle text-sm text-primary rounded-xl px-3 py-2.5 outline-none placeholder-gray-600 resize-none" />
-            {/* 운율 태그 힌트 */}
-            <div className="flex items-center gap-1 flex-wrap">
-              <span className="text-[9px] text-dim">운율 태그:</span>
-              {[
-                { tag: '[laughs]', label: '😄 웃음' },
-                { tag: '[sighs]', label: '😮‍💨 한숨' },
-                { tag: '[clears throat]', label: '🗣 헛기침' },
-                { tag: '[gasps]', label: '😲 놀람' },
-                { tag: '[pauses]', label: '⏸ 멈춤' },
-              ].map(({ tag, label }) => (
-                <button key={tag}
-                  onClick={() => {
-                    const el = document.querySelector('textarea') as HTMLTextAreaElement | null;
-                    if (!el) return;
-                    const start = el.selectionStart ?? text.length;
-                    const next = text.slice(0, start) + tag + text.slice(start);
-                    if (next.length <= 200) { setText(next); checkCache(next, voice, speed); }
-                  }}
-                  className="text-[9px] px-1.5 py-0.5 rounded bg-fill-subtle text-muted hover:text-[#FF6F0F] hover:bg-[#FF6F0F]/10 border border-border-subtle transition"
-                  title={`"${tag}" 삽입`}>
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* TTS 일별 사용량 바 */}
-          {selectedStore && usageLimit !== null && usageLimit > 0 && (
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] text-muted font-semibold">오늘 사용량</span>
-                <span className={`text-[10px] font-semibold ${usageToday >= usageLimit ? 'text-red-400' : 'text-tertiary'}`}>
-                  {usageToday.toLocaleString()} / {usageLimit.toLocaleString()}자
-                </span>
-              </div>
-              <div className="w-full h-1.5 bg-fill-subtle rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all ${
-                    usageToday >= usageLimit ? 'bg-red-400' : usageToday / usageLimit > 0.8 ? 'bg-yellow-400' : 'bg-[#FF6F0F]'
-                  }`}
-                  style={{ width: `${Math.min(100, (usageToday / usageLimit) * 100)}%` }}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* 생성 버튼 */}
-          <button onClick={handleGenerate} disabled={generating || !text.trim()}
-            className="w-full flex items-center justify-center gap-2 py-3 bg-[#FF6F0F] text-primary text-sm font-bold rounded-xl hover:bg-[#FF6F0F]/90 disabled:opacity-50 disabled:cursor-not-allowed transition">
-            {generating
-              ? <><Loader2 size={16} className="animate-spin" /> {cacheHit ? '재사용 중...' : '생성 중...'}</>
-              : cacheHit
-                ? <><DatabaseZap size={16} /> 캐시 재사용 · 방송하기</>
-                : <><Volume2 size={16} /> 템플릿음성생성</>
-            }
-          </button>
-          <p className="text-[10px] text-dim text-center">
-            {cacheHit ? '동일 문구·목소리 → 캐시 재사용 (API 미호출)' : 'Fish Audio TTS · 생성 후 즉시 미리듣기'}
-          </p>
-          {!cacheHit && (
-            <p className="text-[9px] text-center font-mono text-[#FF6F0F]/40">Fish Audio · s2-pro</p>
-          )}
-
-          {/* 재생 모드 + 반복 */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <label className="text-xs text-muted font-semibold">📡 방송 방식</label>
-              <div className="space-y-1">
-                {PLAY_MODES.map(m => (
-                  <button key={m.value} onClick={() => setPlayMode(m.value as any)}
-                    className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
-                      playMode === m.value ? 'bg-[#FF6F0F]/15 border-[#FF6F0F]/50 text-[#FF6F0F]' : 'bg-white/[0.03] border-border-subtle text-tertiary hover:border-border-main'
-                    }`}>{m.label}</button>
-                ))}
-              </div>
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs text-muted font-semibold">🔁 반복</label>
-              <div className="space-y-1">
-                {[1, 2, 3].map(n => (
-                  <button key={n} onClick={() => setRepeat(n)}
-                    className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
-                      repeat === n ? 'bg-[#FF6F0F]/15 border-[#FF6F0F]/50 text-[#FF6F0F]' : 'bg-white/[0.03] border-border-subtle text-tertiary hover:border-border-main'
-                    }`}>{n}회</button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* 안내방송 볼륨 — 하단 플레이어에서 제어 */}
-
-          {/* 덕킹 — UI 숨김, 기능 유지 (duckVolume 기본값 사용) */}
-
           {/* 차량 이동 */}
           <div className="border border-white/8 rounded-2xl overflow-hidden">
             <button onClick={() => setCarOpen(v => !v)}
@@ -882,6 +756,131 @@ export default function AnnouncementsPage() {
             )}
           </div>
 
+          {/* 인사말 */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs text-muted font-semibold">👋 인사말</label>
+              <button onClick={() => setGreetingOn(v => !v)}
+                className={`text-[10px] font-semibold px-2 py-0.5 rounded-full transition ${
+                  greetingOn ? 'bg-[#FF6F0F]/20 text-[#FF6F0F]' : 'bg-fill-subtle text-muted'
+                }`}>{greetingOn ? 'ON' : 'OFF'}</button>
+            </div>
+            <input value={greeting}
+              onChange={e => { setGreeting(e.target.value); try { localStorage.setItem(GREETING_KEY, e.target.value); } catch {} }}
+              placeholder="예) 안녕하세요, 고객 여러분."
+              className={`w-full px-3 py-2 border rounded-xl text-sm text-primary placeholder-gray-600 outline-none transition ${
+                greetingOn ? 'bg-[#FF6F0F]/5 border-[#FF6F0F]/20 focus:border-[#FF6F0F]/40' : 'bg-white/[0.02] border-border-main opacity-40'
+              }`} disabled={!greetingOn} />
+            {greetingOn && greeting.trim() && (
+              <p className="text-[10px] text-dim px-1">미리보기: <span className="text-tertiary">"{greeting.trim()} (안내 문구...)"</span></p>
+            )}
+          </div>
+
+          {/* 안내 문구 */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs text-muted font-semibold">🎙 안내 문구 *</label>
+              <div className="flex items-center gap-2">
+                {cacheHit && <span className="flex items-center gap-1 text-[10px] text-green-400"><DatabaseZap size={9} /> 캐시</span>}
+                <span className={`text-[10px] ${text.length > 180 ? 'text-red-400' : 'text-dim'}`}>{text.length}/200</span>
+              </div>
+            </div>
+            <textarea value={text}
+              onChange={e => { const v = e.target.value.slice(0, 200); setText(v); checkCache(v, voice, speed); }}
+              rows={3} placeholder="안내 문구를 입력하세요"
+              className="w-full bg-card border border-border-subtle text-sm text-primary rounded-xl px-3 py-2.5 outline-none placeholder-gray-600 resize-none" />
+            {/* 운율 태그 힌트 */}
+            <div className="flex items-center gap-1 flex-wrap">
+              <span className="text-[9px] text-dim">운율 태그:</span>
+              {[
+                { tag: '[laughs]', label: '😄 웃음' },
+                { tag: '[sighs]', label: '😮‍💨 한숨' },
+                { tag: '[clears throat]', label: '🗣 헛기침' },
+                { tag: '[gasps]', label: '😲 놀람' },
+                { tag: '[pauses]', label: '⏸ 멈춤' },
+              ].map(({ tag, label }) => (
+                <button key={tag}
+                  onClick={() => {
+                    const el = document.querySelector('textarea') as HTMLTextAreaElement | null;
+                    if (!el) return;
+                    const start = el.selectionStart ?? text.length;
+                    const next = text.slice(0, start) + tag + text.slice(start);
+                    if (next.length <= 200) { setText(next); checkCache(next, voice, speed); }
+                  }}
+                  className="text-[9px] px-1.5 py-0.5 rounded bg-fill-subtle text-muted hover:text-[#FF6F0F] hover:bg-[#FF6F0F]/10 border border-border-subtle transition"
+                  title={`"${tag}" 삽입`}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* TTS 일별 사용량 바 */}
+          {selectedStore && usageLimit !== null && usageLimit > 0 && (
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-muted font-semibold">오늘 사용량</span>
+                <span className={`text-[10px] font-semibold ${usageToday >= usageLimit ? 'text-red-400' : 'text-tertiary'}`}>
+                  {usageToday.toLocaleString()} / {usageLimit.toLocaleString()}자
+                </span>
+              </div>
+              <div className="w-full h-1.5 bg-fill-subtle rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all ${
+                    usageToday >= usageLimit ? 'bg-red-400' : usageToday / usageLimit > 0.8 ? 'bg-yellow-400' : 'bg-[#FF6F0F]'
+                  }`}
+                  style={{ width: `${Math.min(100, (usageToday / usageLimit) * 100)}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* 생성 버튼 */}
+          <button onClick={handleGenerate} disabled={generating || !text.trim()}
+            className="w-full flex items-center justify-center gap-2 py-3 bg-[#FF6F0F] text-primary text-sm font-bold rounded-xl hover:bg-[#FF6F0F]/90 disabled:opacity-50 disabled:cursor-not-allowed transition">
+            {generating
+              ? <><Loader2 size={16} className="animate-spin" /> {cacheHit ? '재사용 중...' : '생성 중...'}</>
+              : cacheHit
+                ? <><DatabaseZap size={16} /> 캐시 재사용 · 방송하기</>
+                : <><Volume2 size={16} /> 템플릿음성생성</>
+            }
+          </button>
+          <p className="text-[10px] text-dim text-center">
+            {cacheHit ? '동일 문구·목소리 → 캐시 재사용 (API 미호출)' : 'Fish Audio TTS · 생성 후 즉시 미리듣기'}
+          </p>
+          {!cacheHit && (
+            <p className="text-[9px] text-center font-mono text-[#FF6F0F]/40">Fish Audio · s2-pro</p>
+          )}
+
+          {/* 재생 모드 + 반복 */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <label className="text-xs text-muted font-semibold">📡 방송 방식</label>
+              <div className="space-y-1">
+                {PLAY_MODES.map(m => (
+                  <button key={m.value} onClick={() => setPlayMode(m.value as any)}
+                    className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
+                      playMode === m.value ? 'bg-[#FF6F0F]/15 border-[#FF6F0F]/50 text-[#FF6F0F]' : 'bg-white/[0.03] border-border-subtle text-tertiary hover:border-border-main'
+                    }`}>{m.label}</button>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs text-muted font-semibold">🔁 반복</label>
+              <div className="space-y-1">
+                {[1, 2, 3].map(n => (
+                  <button key={n} onClick={() => setRepeat(n)}
+                    className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
+                      repeat === n ? 'bg-[#FF6F0F]/15 border-[#FF6F0F]/50 text-[#FF6F0F]' : 'bg-white/[0.03] border-border-subtle text-tertiary hover:border-border-main'
+                    }`}>{n}회</button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* 안내방송 볼륨 — 하단 플레이어에서 제어 */}
+
+          {/* 덕킹 — UI 숨김, 기능 유지 (duckVolume 기본값 사용) */}
         </div>
 
         {/* ── 목록 패널 ── */}
