@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { Play, Pause, Trash2, Loader2, Megaphone, Radio, ExternalLink, AArrowUp, AArrowDown, GripVertical, Pin, Pencil, RotateCw } from 'lucide-react';
+import { Play, Pause, Trash2, Check, Loader2, Megaphone, Radio, ExternalLink, AArrowUp, AArrowDown, GripVertical, Pin, Pencil, RotateCw } from 'lucide-react';
 import { Announcement, Store, FishVoice, MODE_LABEL, fmtTime, voiceLabel } from './_shared';
 
 const FONT_SIZES = [12, 14, 16, 20, 24] as const;
@@ -36,6 +36,9 @@ export default function AnnouncementHistory({
   const storeName = (id: string) => stores.find(s => s.id === id)?.name ?? id;
   const [fontIdx, setFontIdx] = useState(1);
   const fontSize = FONT_SIZES[fontIdx];
+
+  // 삭제 확인
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   // 인라인 편집
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -223,10 +226,24 @@ export default function AnnouncementHistory({
                 )}
 
                 {/* 삭제 */}
-                <button onClick={() => onDelete(ann.id)} disabled={deleting === ann.id}
-                  className="shrink-0 text-dim hover:text-red-400 transition p-1">
-                  {deleting === ann.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                </button>
+                <div className="relative shrink-0 flex flex-col items-center">
+                  <button
+                    onClick={() => {
+                      if (confirmDeleteId === ann.id) setConfirmDeleteId(null);
+                      else setConfirmDeleteId(ann.id);
+                    }}
+                    disabled={deleting === ann.id}
+                    className={`transition p-1 ${confirmDeleteId === ann.id ? 'text-red-400' : 'text-dim hover:text-red-400'}`}>
+                    {deleting === ann.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                  </button>
+                  {confirmDeleteId === ann.id && (
+                    <button
+                      onClick={() => { setConfirmDeleteId(null); onDelete(ann.id); }}
+                      className="absolute top-full mt-0.5 z-10 flex items-center justify-center w-6 h-6 rounded-md bg-red-500 text-white hover:bg-red-600 transition shadow-lg">
+                      <Check size={12} />
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           ))}

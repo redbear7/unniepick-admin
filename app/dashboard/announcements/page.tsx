@@ -405,7 +405,6 @@ export default function AnnouncementsPage() {
 
   // ── 삭제 ──
   const handleDelete = (id: string) => {
-    if (!confirm('안내방송을 삭제할까요?')) return;
     setDeleting(id);
     removeHistoryFromLS(id);
     setAnnouncements(prev => prev.filter(a => a.id !== id));
