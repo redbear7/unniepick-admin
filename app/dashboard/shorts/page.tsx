@@ -850,7 +850,7 @@ export default function ShortsPage() {
   // 요소 위치 (% from top)
   const [headerTop, setHeaderTop] = useState(11);
   const [infoTop, setInfoTop] = useState(72);
-  const [couponTop, setCouponTop] = useState(50);
+  const [couponTop, setCouponTop] = useState(60);
 
   // 렌더링
   const [rendering, setRendering] = useState(false);
@@ -1768,7 +1768,7 @@ export default function ShortsPage() {
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-semibold text-primary">요소 위치 조정</p>
                   <button
-                    onClick={() => { setHeaderTop(11); setInfoTop(72); setCouponTop(50); }}
+                    onClick={() => { setHeaderTop(11); setInfoTop(72); setCouponTop(60); }}
                     className="text-xs text-dim hover:text-muted transition flex items-center gap-1"
                   >
                     <RotateCcw size={11} /> 초기화
@@ -1776,8 +1776,8 @@ export default function ShortsPage() {
                 </div>
                 {[
                   { label: '제목 / 강조 문구', value: headerTop, set: setHeaderTop, show: !!(shortsTitle || shortsTagline) },
-                  { label: '곡 정보 (제목·아티스트)', value: infoTop, set: setInfoTop, show: true },
                   { label: '쿠폰 카드', value: couponTop, set: setCouponTop, show: !!selectedCoupon },
+                  { label: '곡 정보 (제목·아티스트)', value: infoTop, set: setInfoTop, show: true },
                 ].map(({ label, value, set, show }) => (
                   <div key={label} className={show ? '' : 'opacity-30 pointer-events-none'}>
                     <div className="flex items-center justify-between mb-1.5">
