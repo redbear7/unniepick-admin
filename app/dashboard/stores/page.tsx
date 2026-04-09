@@ -89,10 +89,12 @@ export default function StoresPage() {
   const [tab, setTab] = useState<'requests' | 'stores'>('requests');
 
   /* ---- stores state ---- */
-  const [stores,   setStores]   = useState<Store[]>([]);
-  const [storeQ,   setStoreQ]   = useState('');
+  const [stores,      setStores]      = useState<Store[]>([]);
+  const [storeQ,      setStoreQ]      = useState('');
   const [storeFilter, setStoreFilter] = useState<'all' | 'active' | 'inactive' | 'dummy'>('all');
-  const [toggling, setToggling] = useState<string | null>(null);
+  const [sortCol,     setSortCol]     = useState<string>('created_at');
+  const [sortDir,     setSortDir]     = useState<'asc' | 'desc'>('desc');
+  const [toggling,    setToggling]    = useState<string | null>(null);
   const [loadingStores, setLoadingStores] = useState(true);
 
   /* ---- TTS 정책 state ---- */
@@ -379,16 +381,40 @@ export default function StoresPage() {
   /* Derived lists                                                      */
   /* ---------------------------------------------------------------- */
 
-  const filteredStores = stores.filter(s => {
-    const matchQ = !storeQ || s.name.includes(storeQ) || (s.address ?? '').includes(storeQ);
-    const isDummyStore = s.owner_id ? (ownerMap[s.owner_id]?.isDummy ?? false) : false;
-    const matchF =
-      storeFilter === 'all'      ? true :
-      storeFilter === 'active'   ? s.is_active :
-      storeFilter === 'inactive' ? !s.is_active :
-      storeFilter === 'dummy'    ? isDummyStore : true;
-    return matchQ && matchF;
-  });
+  const filteredStores = (() => {
+    // 1. 필터
+    const filtered = stores.filter(s => {
+      const matchQ = !storeQ || s.name.includes(storeQ) || (s.address ?? '').includes(storeQ);
+      // 더미: 오너가 @test.unnipick.dev 이거나, owner_id 없이 관리자가 직접 등록한 가게
+      const isDummyStore = s.owner_id
+        ? (ownerMap[s.owner_id]?.isDummy ?? false)
+        : true; // owner 없는 가게 = 더미(관리자 테스트)로 분류
+      const matchF =
+        storeFilter === 'all'      ? true :
+        storeFilter === 'active'   ? s.is_active :
+        storeFilter === 'inactive' ? !s.is_active :
+        storeFilter === 'dummy'    ? isDummyStore : true;
+      return matchQ && matchF;
+    });
+
+    // 2. 정렬
+    return [...filtered].sort((a, b) => {
+      let va: string | number | boolean | null = null;
+      let vb: string | number | boolean | null = null;
+      if (sortCol === 'name')       { va = a.name;        vb = b.name; }
+      else if (sortCol === 'category') { va = a.category ?? ''; vb = b.category ?? ''; }
+      else if (sortCol === 'phone')    { va = a.phone ?? '';    vb = b.phone ?? ''; }
+      else if (sortCol === 'owner')    { va = a.owner_id ? (ownerMap[a.owner_id]?.name ?? '') : ''; vb = b.owner_id ? (ownerMap[b.owner_id]?.name ?? '') : ''; }
+      else if (sortCol === 'policy')   { va = a.tts_policy_id ?? ''; vb = b.tts_policy_id ?? ''; }
+      else if (sortCol === 'status')   { va = a.is_active ? 1 : 0;   vb = b.is_active ? 1 : 0; }
+      else /* created_at */            { va = a.created_at; vb = b.created_at; }
+
+      if (va === null || va === undefined) va = '';
+      if (vb === null || vb === undefined) vb = '';
+      const cmp = va < vb ? -1 : va > vb ? 1 : 0;
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+  })();
 
   const filteredReqs = requests.filter(r => r.status === reqFilter);
   const pendingCount = requests.filter(r => r.status === 'pending').length;
@@ -623,13 +649,27 @@ export default function StoresPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border-main">
-                  <th className="text-left px-5 py-3.5 text-xs font-semibold text-muted">가게명</th>
-                  <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">카테고리</th>
-                  <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">연락처</th>
-                  <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">사장님</th>
-                  <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">TTS 정책</th>
-                  <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">등록일</th>
-                  <th className="text-center px-4 py-3.5 text-xs font-semibold text-muted">상태</th>
+                  {([
+                    ['name',       '가게명',   'left',   'px-5'],
+                    ['category',   '카테고리', 'left',   'px-4'],
+                    ['phone',      '연락처',   'left',   'px-4'],
+                    ['owner',      '사장님',   'left',   'px-4'],
+                    ['policy',     'TTS 정책', 'left',   'px-4'],
+                    ['created_at', '등록일',   'left',   'px-4'],
+                    ['status',     '상태',     'center', 'px-4'],
+                  ] as const).map(([col, label, align, px]) => (
+                    <th key={col} className={`text-${align} ${px} py-3.5`}>
+                      <button
+                        onClick={() => { if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc'); else { setSortCol(col); setSortDir('asc'); } }}
+                        className={`inline-flex items-center gap-1 text-xs font-semibold transition hover:text-primary ${sortCol === col ? 'text-[#FF6F0F]' : 'text-muted'}`}
+                      >
+                        {label}
+                        <span className="text-[10px]">
+                          {sortCol === col ? (sortDir === 'asc' ? '↑' : '↓') : '↕'}
+                        </span>
+                      </button>
+                    </th>
+                  ))}
                   <th className="text-center px-4 py-3.5 text-xs font-semibold text-muted">관리</th>
                 </tr>
               </thead>
