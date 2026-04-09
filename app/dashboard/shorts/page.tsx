@@ -866,8 +866,9 @@ export default function ShortsPage() {
   const wasPlayingRef = useRef(false);
   const [previewExpanded, setPreviewExpanded] = useState(false);
   const [autoPlayOnSelect, setAutoPlayOnSelect] = useState(false);
-  const [stopToken, setStopToken] = useState(0);
-  const bumpStop = () => setStopToken(t => t + 1);
+  // 재생 중지 토큰: 각 플레이어는 상대방이 재생 시작할 때 올라가는 토큰만 감시
+  const [waveStopToken, setWaveStopToken] = useState(0); // WaveformEditor가 감시 (LivePreview 재생 시 증가)
+  const [liveStopToken, setLiveStopToken] = useState(0); // LivePreviewFrame이 감시 (Waveform 재생 시 증가)
   const [showGuide, setShowGuide] = useState<boolean>(() => {
     try { return localStorage.getItem('shorts_show_guide') === 'true'; } catch { return false; }
   });
@@ -1652,9 +1653,9 @@ export default function ShortsPage() {
                     startSec={startSec}
                     windowSec={durationSec}
                     onStartChange={(s) => { setStartSec(s); setAnalyzed(false); }}
-                    onPlayStart={() => { if (player.isPlaying) player.pause(); bumpStop(); }}
+                    onPlayStart={() => { if (player.isPlaying) player.pause(); setLiveStopToken(t => t + 1); }}
                     autoPlayOnSelect={autoPlayOnSelect}
-                    stopToken={stopToken}
+                    stopToken={waveStopToken}
                   />
                 )}
 
@@ -1982,8 +1983,8 @@ export default function ShortsPage() {
                 couponTop={couponTop}
                 waveformStyle={waveformStyle}
                 showGuide={showGuide}
-                onPlayStart={() => { if (player.isPlaying) player.pause(); bumpStop(); }}
-                stopToken={stopToken}
+                onPlayStart={() => { if (player.isPlaying) player.pause(); setWaveStopToken(t => t + 1); }}
+                stopToken={liveStopToken}
               />
 
               {/* 구성 정보 */}
@@ -2191,8 +2192,8 @@ export default function ShortsPage() {
                 couponTop={couponTop}
                 waveformStyle={waveformStyle}
                 showGuide={showGuide}
-                onPlayStart={() => { if (player.isPlaying) player.pause(); bumpStop(); }}
-                stopToken={stopToken}
+                onPlayStart={() => { if (player.isPlaying) player.pause(); setWaveStopToken(t => t + 1); }}
+                stopToken={liveStopToken}
               />
             </div>
           </div>
