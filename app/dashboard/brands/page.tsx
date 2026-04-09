@@ -554,7 +554,7 @@ export default function BrandsPage() {
                   <h2 className="text-xl font-bold text-primary">{selected.name}</h2>
                   {selected.handle ? (
                     <p className="text-sm font-mono font-bold mt-0.5 flex items-center gap-1" style={{ color: selected.color }}>
-                      <AtSign size={13} />@{selected.handle}
+                      <AtSign size={13} />{selected.handle}
                     </p>
                   ) : (
                     <p className="text-xs text-dim mt-0.5">@핸들 없음 — 수정에서 추가해주세요</p>
