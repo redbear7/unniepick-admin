@@ -13,6 +13,7 @@
 | 🏪 언니픽 매장운영 에이전트 | stores, owners, coupons, announcements, notices, posts, users, brands, map, contexts |
 | ⚙️ 언니픽 인프라 에이전트 | tts, weather, auth, tags, propagation, 공통 컴포넌트 |
 | 🎸 언니픽 신곡제작 에이전트 | YT Music → Suno 크롬 확장앱 + 트랙 업로드 |
+| 🎨 언니픽 디자인 에이전트 | UI/UX 디자인 |
 | da24 프론트엔드 에이전트 | da24 프론트엔드 |
 | da24 백엔드 에이전트 | da24 백엔드 |
 | da24 디자인 에이전트 | da24 디자인 |
