@@ -1313,7 +1313,7 @@ export default function ShortsPage() {
   };
 
   return (
-    <div className="flex flex-col h-full overflow-hidden bg-[#0f1117]">
+    <div className="flex flex-col h-full overflow-hidden bg-surface">
       {/* ── 헤더 ── */}
       <div className="px-6 py-4 border-b border-white/5 flex items-center gap-3 shrink-0">
         <div className="w-9 h-9 rounded-xl bg-[#FF6F0F]/15 flex items-center justify-center">
@@ -1356,7 +1356,7 @@ export default function ShortsPage() {
                 placeholder="제목, 아티스트, 태그 검색..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                className="w-full bg-[#0f1117] border border-border-main rounded-lg pl-8 pr-3 py-2 text-sm text-primary placeholder:text-muted focus:outline-none focus:border-[#FF6F0F]/50"
+                className="w-full bg-input border border-border-main rounded-lg pl-8 pr-3 py-2 text-sm text-primary placeholder:text-muted focus:outline-none focus:border-[#FF6F0F]/50"
               />
             </div>
 
@@ -1409,7 +1409,7 @@ export default function ShortsPage() {
                                 </span>
                               )}
                               {(track.mood_tags ?? []).slice(0, 3).map(tag => (
-                                <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-white/40 leading-none shrink-0">
+                                <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded bg-fill-subtle text-muted leading-none shrink-0">
                                   {tag}
                                 </span>
                               ))}
@@ -1675,7 +1675,7 @@ export default function ShortsPage() {
                       placeholder="예: 가을 감성 플레이리스트"
                       value={shortsTitle}
                       onChange={(e) => setShortsTitle(e.target.value)}
-                      className="w-full bg-[#0f1117] border border-border-main rounded-lg px-3 py-2 text-sm text-primary placeholder:text-muted focus:outline-none focus:border-[#FF6F0F]/50"
+                      className="w-full bg-input border border-border-main rounded-lg px-3 py-2 text-sm text-primary placeholder:text-muted focus:outline-none focus:border-[#FF6F0F]/50"
                     />
                   </div>
                   <div>
@@ -1685,7 +1685,7 @@ export default function ShortsPage() {
                       placeholder="예: 언니픽이 큐레이션한 매장 BGM"
                       value={shortsTagline}
                       onChange={(e) => setShortsTagline(e.target.value)}
-                      className="w-full bg-[#0f1117] border border-border-main rounded-lg px-3 py-2 text-sm text-primary placeholder:text-muted focus:outline-none focus:border-[#FF6F0F]/50"
+                      className="w-full bg-input border border-border-main rounded-lg px-3 py-2 text-sm text-primary placeholder:text-muted focus:outline-none focus:border-[#FF6F0F]/50"
                     />
                   </div>
                   <p className="text-[10px] text-muted">비워두면 해당 텍스트는 영상에 표시되지 않습니다.</p>

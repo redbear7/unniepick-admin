@@ -80,17 +80,25 @@ body {
 }
 
 /* ── Light mode: hardcoded dark color overrides ──────────────────────────── */
-/* inputs & textareas with forced dark bg */
-html:not(.dark) .bg-\[\#0f0f10\] {
-  background-color: var(--bg-input) !important;
+/* 페이지 래퍼 / 섹션 배경 */
+html:not(.dark) .bg-\[\#0f1117\],
+html:not(.dark) .bg-\[\#0a0c14\],
+html:not(.dark) .bg-\[\#1a1c24\],
+html:not(.dark) .bg-\[\#080A0E\] {
+  background-color: var(--bg-surface) !important;
   color: var(--text-primary) !important;
 }
-html:not(.dark) .bg-\[\#1F2937\] {
-  background-color: var(--bg-input) !important;
-  color: var(--text-primary) !important;
-}
+
+/* 모달 배경 */
 html:not(.dark) .bg-\[\#13161D\] {
   background-color: #ffffff !important;
+  color: var(--text-primary) !important;
+}
+
+/* 인풋 / 텍스트에어리어 */
+html:not(.dark) .bg-\[\#0f0f10\],
+html:not(.dark) .bg-\[\#1F2937\] {
+  background-color: var(--bg-input) !important;
   color: var(--text-primary) !important;
 }
 
@@ -103,6 +111,28 @@ html:not(.dark) .border-border-main {
 html:not(.dark) .placeholder-gray-600::placeholder {
   color: var(--text-muted) !important;
 }
+
+/* ── white/opacity 계열 — 다크 배경 전제 클래스 → 라이트모드 대응 ──── */
+html:not(.dark) .bg-white\/5,
+html:not(.dark) .bg-white\/3  { background-color: var(--fill-subtle) !important; }
+html:not(.dark) .bg-white\/10 { background-color: var(--fill-medium) !important; }
+html:not(.dark) .bg-white\/20 { background-color: rgba(0,0,0,0.07)  !important; }
+
+html:not(.dark) .text-white\/20,
+html:not(.dark) .text-white\/30,
+html:not(.dark) .text-white\/35,
+html:not(.dark) .text-white\/40 { color: var(--text-dim)   !important; }
+html:not(.dark) .text-white\/50,
+html:not(.dark) .text-white\/60 { color: var(--text-muted)  !important; }
+html:not(.dark) .text-white\/70,
+html:not(.dark) .text-white\/80 { color: var(--text-tertiary) !important; }
+
+html:not(.dark) .border-white\/5,
+html:not(.dark) .border-white\/8,
+html:not(.dark) .border-white\/10,
+html:not(.dark) .border-white\/15,
+html:not(.dark) .border-white\/20,
+html:not(.dark) .border-white\/30 { border-color: var(--border-subtle) !important; }
 
 /* ── Light mode: card & section 개선 ─────────────────────────────────────── */
 html:not(.dark) .bg-surface   { background-color: var(--bg-surface) !important; }
