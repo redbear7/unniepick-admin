@@ -11,7 +11,7 @@ import {
   PLAY_MODES, SPEED_OPTIONS, CALL_CARD_COUNT,
   TEMPLATES_LS_KEY, HISTORY_LS_KEY, DEFAULT_VOICE_KEY,
   GREETING_KEY, CALL_TEMPLATE_KEY,
-  numToKorean, sessionAudioCache, sessionCacheKey, fetchBlobUrl,
+  numToKorean, replaceNumbersWithKorean, sessionAudioCache, sessionCacheKey, fetchBlobUrl,
   getCachedAudio, setCachedAudio,
   loadHistoryFromLS, pushHistoryToLS, removeHistoryFromLS, saveHistoryToLS,
   voiceLabel,
@@ -237,24 +237,25 @@ export default function AnnouncementsPage() {
     if (!voice || voice === 'fish_') { alert('성우를 선택하세요'); return; }
     setGenerating(true);
     const fullText = `${greetingPfx()}${text.trim()}`;
+    const ttsText  = replaceNumbersWithKorean(fullText);
     try {
       let audioUrl: string;
-      const cached = getCachedAudio(fullText, voice, speed);
+      const cached = getCachedAudio(ttsText, voice, speed);
       if (cached) {
         audioUrl = cached;
         setCacheHit(true);
       } else {
         const res = await fetch('/api/tts/generate', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: fullText, voice_type: voice, speed, store_id: null, play_mode: playMode, repeat_count: repeat, duck_volume: duckVolume }),
+          body: JSON.stringify({ text: ttsText, voice_type: voice, speed, store_id: null, play_mode: playMode, repeat_count: repeat, duck_volume: duckVolume }),
         });
         const data = await res.json();
         if (data.error) throw new Error(data.error);
         audioUrl = data.audio_url;
-        setCachedAudio(fullText, voice, speed, audioUrl);
+        setCachedAudio(ttsText, voice, speed, audioUrl);
         setCacheHit(true);
       }
-      const sKey = sessionCacheKey(fullText, voice, speed);
+      const sKey = sessionCacheKey(ttsText, voice, speed);
       let playUrl: string;
       try {
         playUrl = await fetchBlobUrl(audioUrl, sKey);
@@ -348,7 +349,7 @@ export default function AnnouncementsPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          text: newText,
+          text: replaceNumbersWithKorean(newText),
           voice_type: ann.voice_type,
           speed,
           store_id: ann.store_id || selectedStore || null,

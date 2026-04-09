@@ -106,6 +106,15 @@ export function numToKorean(n: number): string {
   return result;
 }
 
+/** 텍스트 내 모든 정수(쉼표 포함)를 한글 발음으로 치환 — TTS 전송용 */
+export function replaceNumbersWithKorean(text: string): string {
+  // 쉼표 포함 숫자(1,000 등)부터 단순 정수까지 모두 치환
+  return text.replace(/\d[\d,]*/g, (match) => {
+    const n = parseInt(match.replace(/,/g, ''), 10);
+    return isNaN(n) ? match : numToKorean(n);
+  });
+}
+
 export function fmtTime(iso: string) {
   return new Date(iso).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
