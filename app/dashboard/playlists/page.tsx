@@ -400,6 +400,32 @@ export default function PlaylistsPage() {
         </div>
       )}
 
+      {/* ── 삭제 확인 모달 ── */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-sm bg-card border border-border-subtle rounded-2xl p-6 shadow-2xl">
+            <h2 className="text-base font-bold text-primary mb-2">플레이리스트 삭제</h2>
+            <p className="text-sm text-tertiary mb-6">
+              <span className="text-primary font-semibold">{deleteTarget.name}</span>을(를) 삭제하면 복구할 수 없습니다. 정말 삭제하시겠어요?
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setDeleteTarget(null)}
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-tertiary bg-fill-subtle hover:bg-fill-medium transition"
+              >
+                취소
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-primary bg-red-500 hover:bg-red-600 transition"
+              >
+                삭제
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── 트랙 선택 모달 ── */}
       {trackModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
