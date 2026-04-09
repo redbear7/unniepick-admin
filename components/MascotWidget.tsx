@@ -88,7 +88,7 @@ export default function MascotWidget({ userId }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           text,
-          voice_type: 'fish_18e99f7be5374fa9b5ae52ed2f51e80d',
+          voice_type: 'fish_8c8ebd5ea79f4027be5a2049eec24d86',
           speed: 1.0,
           store_id: null,
         }),
