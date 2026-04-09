@@ -850,7 +850,7 @@ export default function ShortsPage() {
   // 요소 위치 (% from top)
   const [headerTop, setHeaderTop] = useState(11);
   const [infoTop, setInfoTop] = useState(72);
-  const [couponTop, setCouponTop] = useState(60);
+  const [couponTop, setCouponTop] = useState(50);
 
   // 렌더링
   const [rendering, setRendering] = useState(false);
@@ -1767,7 +1767,7 @@ export default function ShortsPage() {
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-semibold text-primary">요소 위치 조정</p>
                   <button
-                    onClick={() => { setHeaderTop(11); setInfoTop(72); setCouponTop(60); }}
+                    onClick={() => { setHeaderTop(11); setInfoTop(72); setCouponTop(50); }}
                     className="text-xs text-dim hover:text-muted transition flex items-center gap-1"
                   >
                     <RotateCcw size={11} /> 초기화
