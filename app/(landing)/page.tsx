@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import LandingNav from '@/components/LandingNav';
 import LandingFooter from '@/components/LandingFooter';
+import { trackPlanClick } from '@/lib/gtag';
 
 /* ------------------------------------------------------------------ */
 /* Data                                                                 */
@@ -493,6 +494,7 @@ export default function LandingPage() {
               <Link
                 href="/apply"
                 className={`mt-8 flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm transition ${plan.ctaStyle}`}
+                onClick={() => trackPlanClick(plan.name)}
               >
                 {plan.cta} <ChevronRight size={14} />
               </Link>
