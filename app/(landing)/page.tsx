@@ -104,66 +104,21 @@ const SAMPLE_SHORTS = [
   },
 ];
 
-const PLANS = [
-  {
-    name: '스타터',
-    price: '₩0',
-    period: '/월',
-    desc: '시작하는 매장을 위한 플랜',
-    badge: '오픈 기념 무료',
-    badgeColor: 'bg-emerald-500/15 text-emerald-400',
-    features: [
-      'BGM 플레이리스트 5개',
-      'AI 음성안내 기본 템플릿',
-      '쿠폰 발행 월 10건',
-      '공지사항 수신',
-      '이메일 지원',
-    ],
-    cta: '무료로 시작하기',
-    ctaStyle: 'bg-fill-subtle text-primary hover:bg-fill-medium border border-border-main',
-    popular: false,
-  },
-  {
-    name: '프로',
-    price: '₩19,900',
-    period: '/월',
-    desc: '성장하는 매장의 필수 플랜',
-    badge: '가장 인기',
-    badgeColor: 'bg-[#FF6F0F] text-white',
-    features: [
-      '무제한 플레이리스트',
-      'AI 음성안내 커스텀 TTS',
-      'AI 자동 큐레이션',
-      '숏폼 영상 월 10개 생성',
-      'AI 카드뉴스 생성',
-      '쿠폰 무제한 발행',
-      '우선 채팅 지원',
-    ],
-    cta: '프로 시작하기',
-    ctaStyle: 'bg-[#FF6F0F] text-white hover:bg-[#e66000]',
-    popular: true,
-  },
-  {
-    name: '프리미엄',
-    price: '₩39,900',
-    period: '/월',
-    desc: '다매장 운영자를 위한 플랜',
-    badge: '',
-    badgeColor: '',
-    features: [
-      '프로의 모든 기능',
-      '숏폼 영상 무제한 생성',
-      '다국어 AI 음성안내',
-      '매장 5개까지 통합 관리',
-      '고급 매출 분석 리포트',
-      '전담 매니저 배정',
-      'API 연동 지원',
-    ],
-    cta: '프리미엄 시작하기',
-    ctaStyle: 'bg-fill-subtle text-primary hover:bg-fill-medium border border-border-main',
-    popular: false,
-  },
-];
+interface Plan {
+  id:          string;
+  plan_type:   string;
+  name:        string;
+  price:       string;
+  period:      string;
+  description: string;
+  badge:       string | null;
+  badge_color: string | null;
+  features:    string[];
+  cta:         string;
+  cta_style:   string;
+  is_popular:  boolean;
+  sort_order:  number;
+}
 
 const TESTIMONIALS = [
   {
@@ -297,6 +252,18 @@ function ShortVideoCard({ item }: { item: typeof SAMPLE_SHORTS[0] }) {
 /* ------------------------------------------------------------------ */
 
 export default function LandingPage() {
+  const [plans, setPlans] = useState<Plan[]>([]);
+
+  useEffect(() => {
+    const sb = createClient();
+    sb.from('plans')
+      .select('id, plan_type, name, price, period, description, badge, badge_color, features, cta, cta_style, is_popular, sort_order')
+      .eq('provider', 'unniepick')
+      .eq('is_active', true)
+      .order('sort_order')
+      .then(({ data }) => { if (data) setPlans(data as Plan[]); });
+  }, []);
+
   return (
     <div className="min-h-screen bg-surface text-primary">
 
@@ -463,22 +430,22 @@ export default function LandingPage() {
         </div>
 
         <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-          {PLANS.map((plan) => (
+          {plans.map((plan) => (
             <div
-              key={plan.name}
+              key={plan.id}
               className={`relative bg-card rounded-2xl p-7 flex flex-col ${
-                plan.popular
+                plan.is_popular
                   ? 'border-2 border-[#FF6F0F] shadow-lg shadow-[#FF6F0F]/10'
                   : 'border border-border-main'
               }`}
             >
               {plan.badge && (
-                <span className={`absolute -top-3 left-6 px-3 py-1 rounded-full text-[11px] font-bold ${plan.badgeColor}`}>
+                <span className={`absolute -top-3 left-6 px-3 py-1 rounded-full text-[11px] font-bold ${plan.badge_color ?? ''}`}>
                   {plan.badge}
                 </span>
               )}
               <h3 className="text-lg font-bold text-primary mt-1">{plan.name}</h3>
-              <p className="text-sm text-muted mt-1">{plan.desc}</p>
+              <p className="text-sm text-muted mt-1">{plan.description}</p>
               <div className="mt-5 mb-6">
                 <span className="text-3xl font-extrabold text-primary">{plan.price}</span>
                 <span className="text-sm text-muted">{plan.period}</span>
@@ -493,7 +460,7 @@ export default function LandingPage() {
               </ul>
               <Link
                 href="/apply"
-                className={`mt-8 flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm transition ${plan.ctaStyle}`}
+                className={`mt-8 flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm transition ${plan.cta_style}`}
               >
                 {plan.cta} <ChevronRight size={14} />
               </Link>
