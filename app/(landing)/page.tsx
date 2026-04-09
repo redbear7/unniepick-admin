@@ -80,7 +80,7 @@ const SAMPLE_SHORTS = [
     tag: 'lo-fi · morning-coffee',
     thumb: '',
     emoji: '☕',
-    videoUrl: '',   // 실제 mp4 URL 입력
+    videoUrl: 'https://zdeuyjdmypfzmxmmxpon.supabase.co/storage/v1/object/public/music-tracks/shorts/5c35eb36-f774-4dd0-bfa3-5491adb234b1_1775544568595.mp4',
     color: '#6366f1',
   },
   {
@@ -89,7 +89,7 @@ const SAMPLE_SHORTS = [
     tag: 'pop · upbeat',
     thumb: '',
     emoji: '🎸',
-    videoUrl: '',
+    videoUrl: 'https://zdeuyjdmypfzmxmmxpon.supabase.co/storage/v1/object/public/music-tracks/shorts/5c35eb36-f774-4dd0-bfa3-5491adb234b1_1775544568595.mp4',
     color: '#f43f5e',
   },
   {
@@ -98,7 +98,7 @@ const SAMPLE_SHORTS = [
     tag: 'jazz · lounge',
     thumb: '',
     emoji: '🎷',
-    videoUrl: '',
+    videoUrl: 'https://zdeuyjdmypfzmxmmxpon.supabase.co/storage/v1/object/public/music-tracks/shorts/5c35eb36-f774-4dd0-bfa3-5491adb234b1_1775544568595.mp4',
     color: '#d97706',
   },
 ];
