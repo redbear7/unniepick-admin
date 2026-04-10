@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { writeFile, mkdir } from 'fs/promises';
+import path from 'path';
 
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type' };
 
@@ -126,15 +128,14 @@ export async function POST(req: NextRequest) {
     if (!fishRes.ok) throw new Error(`Fish Audio TTS 실패: ${await fishRes.text()}`);
     const mp3Buf = await fishRes.arrayBuffer();
 
-    // ── Supabase Storage 업로드 ────────────────────────────────────
-    const filename = `ann_${Date.now()}_${voice_type}.mp3`;
-    const { error: upErr } = await supabase.storage
-      .from('announcements')
-      .upload(filename, mp3Buf, { contentType: 'audio/mpeg', upsert: false });
-    if (upErr) throw new Error(`업로드 실패: ${upErr.message}`);
+    // ── 로컬 파일 저장 ────────────────────────────────────────────
+    const filename   = `ann_${Date.now()}_${voice_type}.mp3`;
+    const saveDir    = path.join(process.cwd(), 'public', 'announcements');
+    const localPath  = path.join(saveDir, filename);
+    await mkdir(saveDir, { recursive: true });
+    await writeFile(localPath, Buffer.from(mp3Buf));
 
-    const { data: urlData } = supabase.storage.from('announcements').getPublicUrl(filename);
-    const audio_url = urlData.publicUrl;
+    const audio_url  = `/announcements/${filename}`;
 
     // ── TTS 사용량 기록 ───────────────────────────────────────────
     if (store_id) {
@@ -142,7 +143,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 히스토리는 클라이언트 localStorage에서 관리 (DB 저장 없음)
-    return NextResponse.json({ audio_url }, { headers: CORS });
+    return NextResponse.json({ audio_url, local_path: localPath }, { headers: CORS });
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 500, headers: CORS });
   }

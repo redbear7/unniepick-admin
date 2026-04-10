@@ -6,6 +6,7 @@ export interface Announcement {
   store_id:     string;
   text:         string;
   audio_url:    string | null;
+  local_path?:  string | null;
   voice_type:   string;
   play_mode:    'immediate' | 'between_tracks';
   repeat_count: number;

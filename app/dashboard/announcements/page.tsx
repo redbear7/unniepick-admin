@@ -153,11 +153,12 @@ export default function AnnouncementsPage() {
   // ── 공통 헬퍼 ──
   const greetingPfx = () => greetingOn && greeting.trim() ? `${greeting.trim()} ` : '';
 
-  const makeAnnouncement = (txt: string, audioUrl: string, annType: 'call' | 'template', overrides?: Partial<Announcement & { duck_volume: number }>): Announcement & { duck_volume?: number } => ({
+  const makeAnnouncement = (txt: string, audioUrl: string, annType: 'call' | 'template', localPath?: string | null, overrides?: Partial<Announcement & { duck_volume: number }>): Announcement & { duck_volume?: number } => ({
     id: `${annType === 'call' ? 'call' : 'loc'}_${Date.now()}`,
     store_id: selectedStore || '',
     text: txt,
     audio_url: audioUrl,
+    local_path: localPath ?? null,
     voice_type: voice,
     play_mode: annType === 'call' ? 'immediate' : playMode,
     repeat_count: annType === 'call' ? callRepeat : repeat,
@@ -234,6 +235,7 @@ export default function AnnouncementsPage() {
     const ttsText = replaceNumbersWithKorean(fullText);
     try {
       let audioUrl: string;
+      let localPath: string | null = null;
       const cached = getCachedAudio(ttsText, voice, speed);
       if (cached) { audioUrl = cached; }
       else {
@@ -244,6 +246,7 @@ export default function AnnouncementsPage() {
         const data = await res.json();
         if (data.error) throw new Error(data.error);
         audioUrl = data.audio_url;
+        localPath = data.local_path ?? null;
         setCachedAudio(ttsText, voice, speed, audioUrl);
       }
       let blobUrl: string;
@@ -254,7 +257,7 @@ export default function AnnouncementsPage() {
       } else {
         playAudio(blobUrl, '__car__', Math.min(1, player.annVolume));
       }
-      const ann = makeAnnouncement(fullText, audioUrl, 'template');
+      const ann = makeAnnouncement(fullText, audioUrl, 'template', localPath);
       pushHistoryToLS(ann);
       setAnnouncements(prev => [ann, ...prev]);
       // 입력 초기화
@@ -275,6 +278,7 @@ export default function AnnouncementsPage() {
     const fullText = `${greetingPfx()}${callTemplate.replaceAll('{num}', numToKorean(num))}`;
     try {
       let audioUrl: string;
+      let localPath: string | null = null;
       const cached = getCachedAudio(fullText, voice, speed);
       if (cached) { audioUrl = cached; }
       else {
@@ -285,6 +289,7 @@ export default function AnnouncementsPage() {
         const data = await res.json();
         if (data.error) throw new Error(data.error);
         audioUrl = data.audio_url;
+        localPath = data.local_path ?? null;
         setCachedAudio(fullText, voice, speed, audioUrl);
       }
       let blobUrl: string;
@@ -298,7 +303,7 @@ export default function AnnouncementsPage() {
       } else {
         playAudio(blobUrl, `call_${num}`, Math.min(1, player.annVolume), callRepeat);
       }
-      const callAnn = makeAnnouncement(fullText, audioUrl, 'call');
+      const callAnn = makeAnnouncement(fullText, audioUrl, 'call', localPath);
       pushHistoryToLS(callAnn);
       setAnnouncements(prev => [callAnn, ...prev]);
     } catch (e: any) {
@@ -334,6 +339,7 @@ export default function AnnouncementsPage() {
     const ttsText  = replaceNumbersWithKorean(fullText);
     try {
       let audioUrl: string;
+      let localPath: string | null = null;
       const cached = getCachedAudio(ttsText, voice, speed);
       if (cached) {
         audioUrl = cached;
@@ -346,6 +352,7 @@ export default function AnnouncementsPage() {
         const data = await res.json();
         if (data.error) throw new Error(data.error);
         audioUrl = data.audio_url;
+        localPath = data.local_path ?? null;
         setCachedAudio(ttsText, voice, speed, audioUrl);
         setCacheHit(true);
         // 사용량 로컬 반영
@@ -359,7 +366,7 @@ export default function AnnouncementsPage() {
         // fetchBlobUrl 실패 시 원본 URL로 직접 재생
         playUrl = audioUrl;
       }
-      const newAnn = makeAnnouncement(fullText, audioUrl, 'template');
+      const newAnn = makeAnnouncement(fullText, audioUrl, 'template', localPath);
       pushHistoryToLS(newAnn);
       setAnnouncements(prev => [newAnn, ...prev]);
       if (player.track) {

@@ -192,11 +192,11 @@ export default function AnnouncementHistory({
                     download
                     target="_blank"
                     rel="noopener noreferrer"
-                    title={ann.audio_url}
+                    title={ann.local_path ?? ann.audio_url}
                     className="block text-[9px] text-dim/50 font-mono mt-1 truncate hover:text-accent hover:underline transition-colors"
                     onClick={e => e.stopPropagation()}
                   >
-                    {ann.audio_url.split('/').pop()}
+                    {ann.local_path ?? ann.audio_url.split('/').pop()}
                   </a>
                 )}
               </div>
