@@ -14,7 +14,7 @@ export async function GET() {
     .from('banners')
     .select('*')
     .eq('is_active', true)
-    .order('position', { ascending: true });
+    .order('sort_order', { ascending: true });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json(data);

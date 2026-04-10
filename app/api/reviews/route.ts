@@ -13,7 +13,6 @@ export async function GET() {
   const { data, error } = await sb()
     .from('reviews')
     .select('*')
-    .eq('is_visible', true)
     .order('created_at', { ascending: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

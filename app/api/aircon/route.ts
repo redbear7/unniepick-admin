@@ -8,59 +8,27 @@ function sb() {
   );
 }
 
-// POST /api/aircon — 에어컨 상담 요청 저장
 export async function POST(req: NextRequest) {
-  let body: unknown;
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: '요청 본문이 올바르지 않습니다' }, { status: 400 });
-  }
+  const body = await req.json();
+  const { type, unit_count, user_name, user_phone, preferred_date, memo } = body;
 
-  const { name, phone, email, address, content } = body as Record<string, unknown>;
-
-  if (!name || typeof name !== 'string' || !name.trim()) {
-    return NextResponse.json({ error: '이름을 입력해 주세요' }, { status: 400 });
-  }
-  if (!phone || typeof phone !== 'string' || !phone.trim()) {
-    return NextResponse.json({ error: '연락처를 입력해 주세요' }, { status: 400 });
-  }
-  const phoneRegex = /^[0-9\-+\s]{7,20}$/;
-  if (!phoneRegex.test(phone.trim())) {
-    return NextResponse.json({ error: '연락처 형식이 올바르지 않습니다' }, { status: 400 });
-  }
-  if (email !== undefined && email !== null && email !== '') {
-    if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      return NextResponse.json({ error: '이메일 형식이 올바르지 않습니다' }, { status: 400 });
-    }
-  }
-  if (!address || typeof address !== 'string' || !address.trim()) {
-    return NextResponse.json({ error: '주소를 입력해 주세요' }, { status: 400 });
+  if (!type || !user_name?.trim() || !user_phone?.trim()) {
+    return NextResponse.json({ error: '필수 항목을 입력해주세요' }, { status: 400 });
   }
 
   const { data, error } = await sb()
     .from('aircon_requests')
     .insert({
-      name: name.trim(),
-      phone: phone.trim(),
-      email: email && typeof email === 'string' && email.trim() ? email.trim() : null,
-      address: address.trim(),
-      content: content && typeof content === 'string' && content.trim() ? content.trim() : null,
+      type,
+      unit_count: unit_count ?? 1,
+      user_name: user_name.trim(),
+      user_phone: user_phone.trim(),
+      preferred_date: preferred_date ?? null,
+      memo: memo ?? null,
     })
     .select()
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json(data, { status: 201 });
-}
-
-// GET /api/aircon — 관리자 전용
-export async function GET() {
-  const { data, error } = await sb()
-    .from('aircon_requests')
-    .select('*')
-    .order('created_at', { ascending: false });
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data);
 }
