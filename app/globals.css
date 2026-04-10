@@ -78,6 +78,33 @@
   --shadow-sm:   none;
 }
 
+.ferrari {
+  /* ── Ferrari — Rosso Corsa & Carbon ────────────────────────── */
+  --bg-surface:    #080808;   /* carbon black */
+  --bg-sidebar:    #0e0e0e;
+  --bg-card:       #161616;
+  --bg-card-hover: #1e1e1e;
+  --bg-input:      #050505;
+
+  --border-main:   rgba(220, 0, 0, 0.28);   /* Rosso Corsa border */
+  --border-subtle: rgba(220, 0, 0, 0.16);
+
+  --text-primary:   #ffffff;
+  --text-secondary: #e0e0e0;
+  --text-tertiary:  #909090;
+  --text-muted:     #5e5e5e;
+  --text-dim:       #3a3a3a;
+
+  --fill-subtle: rgba(220, 0, 0, 0.08);
+  --fill-medium: rgba(220, 0, 0, 0.16);
+
+  --accent:      #DC0000;    /* Rosso Corsa */
+  --accent-dark: #aa0000;
+
+  --shadow-card: 0 0 0 1px rgba(220,0,0,0.12), 0 4px 16px rgba(0,0,0,0.6);
+  --shadow-sm:   0 0 0 1px rgba(220,0,0,0.08);
+}
+
 @theme inline {
   --color-surface: var(--bg-surface);
   --color-sidebar: var(--bg-sidebar);
@@ -108,84 +135,84 @@ body {
 
 /* ── Light mode: hardcoded dark color overrides ──────────────────────────── */
 /* 페이지 래퍼 / 섹션 배경 */
-html:not(.dark):not(.red) .bg-\[\#0f1117\],
-html:not(.dark):not(.red) .bg-\[\#0a0c14\],
-html:not(.dark):not(.red) .bg-\[\#1a1c24\],
-html:not(.dark):not(.red) .bg-\[\#080A0E\] {
+html:not(.dark):not(.red):not(.ferrari) .bg-\[\#0f1117\],
+html:not(.dark):not(.red):not(.ferrari) .bg-\[\#0a0c14\],
+html:not(.dark):not(.red):not(.ferrari) .bg-\[\#1a1c24\],
+html:not(.dark):not(.red):not(.ferrari) .bg-\[\#080A0E\] {
   background-color: var(--bg-surface) !important;
   color: var(--text-primary) !important;
 }
 
 /* 모달 배경 */
-html:not(.dark):not(.red) .bg-\[\#13161D\] {
+html:not(.dark):not(.red):not(.ferrari) .bg-\[\#13161D\] {
   background-color: #ffffff !important;
   color: var(--text-primary) !important;
 }
 
 /* 인풋 / 텍스트에어리어 */
-html:not(.dark):not(.red) .bg-\[\#0f0f10\],
-html:not(.dark):not(.red) .bg-\[\#1F2937\] {
+html:not(.dark):not(.red):not(.ferrari) .bg-\[\#0f0f10\],
+html:not(.dark):not(.red):not(.ferrari) .bg-\[\#1F2937\] {
   background-color: var(--bg-input) !important;
   color: var(--text-primary) !important;
 }
 
 /* border overrides on dark inputs */
-html:not(.dark):not(.red) .border-border-main {
+html:not(.dark):not(.red):not(.ferrari) .border-border-main {
   border-color: var(--border-main) !important;
 }
 
 /* placeholder 색상 */
-html:not(.dark):not(.red) .placeholder-gray-600::placeholder {
+html:not(.dark):not(.red):not(.ferrari) .placeholder-gray-600::placeholder {
   color: var(--text-muted) !important;
 }
 
 /* ── white/opacity 계열 — 다크 배경 전제 클래스 → 라이트모드 대응 ──── */
-html:not(.dark):not(.red) .bg-white\/5,
-html:not(.dark):not(.red) .bg-white\/3  { background-color: var(--fill-subtle) !important; }
-html:not(.dark):not(.red) .bg-white\/10 { background-color: var(--fill-medium) !important; }
-html:not(.dark):not(.red) .bg-white\/20 { background-color: rgba(0,0,0,0.07)  !important; }
+html:not(.dark):not(.red):not(.ferrari) .bg-white\/5,
+html:not(.dark):not(.red):not(.ferrari) .bg-white\/3  { background-color: var(--fill-subtle) !important; }
+html:not(.dark):not(.red):not(.ferrari) .bg-white\/10 { background-color: var(--fill-medium) !important; }
+html:not(.dark):not(.red):not(.ferrari) .bg-white\/20 { background-color: rgba(0,0,0,0.07)  !important; }
 
-html:not(.dark):not(.red) .text-white\/20,
-html:not(.dark):not(.red) .text-white\/30,
-html:not(.dark):not(.red) .text-white\/35,
-html:not(.dark):not(.red) .text-white\/40 { color: var(--text-dim)   !important; }
-html:not(.dark):not(.red) .text-white\/50,
-html:not(.dark):not(.red) .text-white\/60 { color: var(--text-muted)  !important; }
-html:not(.dark):not(.red) .text-white\/70,
-html:not(.dark):not(.red) .text-white\/80 { color: var(--text-tertiary) !important; }
+html:not(.dark):not(.red):not(.ferrari) .text-white\/20,
+html:not(.dark):not(.red):not(.ferrari) .text-white\/30,
+html:not(.dark):not(.red):not(.ferrari) .text-white\/35,
+html:not(.dark):not(.red):not(.ferrari) .text-white\/40 { color: var(--text-dim)   !important; }
+html:not(.dark):not(.red):not(.ferrari) .text-white\/50,
+html:not(.dark):not(.red):not(.ferrari) .text-white\/60 { color: var(--text-muted)  !important; }
+html:not(.dark):not(.red):not(.ferrari) .text-white\/70,
+html:not(.dark):not(.red):not(.ferrari) .text-white\/80 { color: var(--text-tertiary) !important; }
 
-html:not(.dark):not(.red) .border-white\/5,
-html:not(.dark):not(.red) .border-white\/8,
-html:not(.dark):not(.red) .border-white\/10,
-html:not(.dark):not(.red) .border-white\/15,
-html:not(.dark):not(.red) .border-white\/20,
-html:not(.dark):not(.red) .border-white\/30 { border-color: var(--border-subtle) !important; }
+html:not(.dark):not(.red):not(.ferrari) .border-white\/5,
+html:not(.dark):not(.red):not(.ferrari) .border-white\/8,
+html:not(.dark):not(.red):not(.ferrari) .border-white\/10,
+html:not(.dark):not(.red):not(.ferrari) .border-white\/15,
+html:not(.dark):not(.red):not(.ferrari) .border-white\/20,
+html:not(.dark):not(.red):not(.ferrari) .border-white\/30 { border-color: var(--border-subtle) !important; }
 
 /* ── Light mode: card & section 개선 ─────────────────────────────────────── */
-html:not(.dark):not(.red) .bg-surface   { background-color: var(--bg-surface) !important; }
-html:not(.dark):not(.red) .bg-card,
-html:not(.dark):not(.red) [class*="bg-card"] {
+html:not(.dark):not(.red):not(.ferrari) .bg-surface   { background-color: var(--bg-surface) !important; }
+html:not(.dark):not(.red):not(.ferrari) .bg-card,
+html:not(.dark):not(.red):not(.ferrari) [class*="bg-card"] {
   box-shadow: var(--shadow-card);
 }
 
 /* rounded-xl, rounded-2xl 카드에 Apple 그림자 */
-html:not(.dark):not(.red) .rounded-xl,
-html:not(.dark):not(.red) .rounded-2xl {
+html:not(.dark):not(.red):not(.ferrari) .rounded-xl,
+html:not(.dark):not(.red):not(.ferrari) .rounded-2xl {
   box-shadow: var(--shadow-sm);
 }
 
 /* 사이드바 구분선 */
-html:not(.dark):not(.red) .border-border-main {
+html:not(.dark):not(.red):not(.ferrari) .border-border-main {
   border-color: var(--border-main);
 }
 
 /* scrollbar: Apple macOS 스타일 */
-html:not(.dark):not(.red) ::-webkit-scrollbar       { width: 6px; height: 6px; }
-html:not(.dark):not(.red) ::-webkit-scrollbar-track { background: transparent; }
-html:not(.dark):not(.red) ::-webkit-scrollbar-thumb {
+html:not(.dark):not(.red):not(.ferrari) ::-webkit-scrollbar       { width: 6px; height: 6px; }
+html:not(.dark):not(.red):not(.ferrari) ::-webkit-scrollbar-track { background: transparent; }
+html:not(.dark):not(.red):not(.ferrari) ::-webkit-scrollbar-thumb {
   background: rgba(0,0,0,0.18);
   border-radius: 999px;
 }
-html:not(.dark):not(.red) ::-webkit-scrollbar-thumb:hover {
+html:not(.dark):not(.red):not(.ferrari) ::-webkit-scrollbar-thumb:hover {
   background: rgba(0,0,0,0.28);
 }
