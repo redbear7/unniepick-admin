@@ -210,7 +210,7 @@ function Chip({ label, active, onClick }: { label: string; active: boolean; onCl
     <button onClick={onClick}
       className={`px-3 py-1.5 rounded-full text-xs font-semibold transition ${
         active
-          ? 'bg-[#FF6F0F]/20 border border-[#FF6F0F] text-[#FF6F0F]'
+          ? 'bg-accent/20 border border-accent text-accent'
           : 'bg-fill-subtle border border-border-subtle text-tertiary hover:text-primary hover:border-border-main'
       }`}>
       {label}
@@ -228,7 +228,7 @@ function LibChip({ label, active, isNew, onClick, onDelete }: {
       <button onClick={onClick}
         className={`pl-3 pr-6 py-1.5 rounded-full text-xs font-semibold transition ${
           active
-            ? 'bg-[#FF6F0F]/20 border border-[#FF6F0F] text-[#FF6F0F]'
+            ? 'bg-accent/20 border border-accent text-accent'
             : 'bg-fill-subtle border border-border-subtle text-tertiary hover:text-primary hover:border-border-main'
         }`}>
         {label}
@@ -908,7 +908,7 @@ export default function TracksPage() {
 
       {/* 커버 업로드 플로팅 배너 */}
       {coverUploadId && (
-        <div className="fixed top-4 right-4 px-4 py-3 rounded-xl font-semibold text-sm flex items-center gap-2 transition z-50 bg-[#FF6F0F]/90 text-white">
+        <div className="fixed top-4 right-4 px-4 py-3 rounded-xl font-semibold text-sm flex items-center gap-2 transition z-50 bg-accent/90 text-white">
           <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
           <span>📤 커버 업로드 중...</span>
         </div>
@@ -965,7 +965,7 @@ export default function TracksPage() {
           <button
             onClick={() => setTagFilter('')}
             className={`shrink-0 flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold transition ${
-              !tagFilter ? 'bg-[#FF6F0F] text-primary' : 'bg-fill-subtle text-tertiary hover:text-primary'
+              !tagFilter ? 'bg-accent text-primary' : 'bg-fill-subtle text-tertiary hover:text-primary'
             }`}>
             전체 <span className="opacity-60">{tracks.length}</span>
           </button>
@@ -974,7 +974,7 @@ export default function TracksPage() {
               onClick={() => setTagFilter(tagFilter === tag ? '' : tag)}
               className={`shrink-0 flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold transition whitespace-nowrap ${
                 tagFilter === tag
-                  ? 'bg-[#FF6F0F] text-primary'
+                  ? 'bg-accent text-primary'
                   : 'bg-fill-subtle text-tertiary hover:text-primary'
               }`}>
               {tag}
@@ -1024,7 +1024,7 @@ export default function TracksPage() {
           {([['latest','최신순'],['plays','재생순'],['likes','좋아요순'],['playlists','플리순'],['manual','수동']] as const).map(([v,label]) => (
             <button key={v} onClick={() => setSortOrder(v)}
               className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition ${
-                sortOrder === v ? 'bg-[#FF6F0F] text-primary' : 'bg-fill-subtle text-tertiary hover:text-primary'
+                sortOrder === v ? 'bg-accent text-primary' : 'bg-fill-subtle text-tertiary hover:text-primary'
               }`}>
               {label}
             </button>
@@ -1040,7 +1040,7 @@ export default function TracksPage() {
               {['SUB','BASS','MID','HIGH','AIR'].map((label, i) => (
                 <button key={i} onClick={() => player.setBassFreqBand(i)}
                   className={`px-1.5 py-0.5 rounded text-[9px] font-bold transition ${
-                    player.bassFreqBand === i ? 'bg-[#FF6F0F] text-primary' : 'text-dim hover:text-tertiary'
+                    player.bassFreqBand === i ? 'bg-accent text-primary' : 'text-dim hover:text-tertiary'
                   }`}>{label}</button>
               ))}
             </div>
@@ -1048,7 +1048,7 @@ export default function TracksPage() {
               <span className="text-[10px] text-dim">⚡</span>
               <input type="range" min={0.3} max={3} step={0.1} value={player.bassSpeed}
                 onChange={e => player.setBassSpeed(Number(e.target.value))}
-                className="w-12 h-1 cursor-pointer" style={{ accentColor: '#FF6F0F' }} />
+                className="w-12 h-1 cursor-pointer" style={{ accentColor: 'var(--accent)' }} />
               <span className="text-[9px] text-dim w-6">{player.bassSpeed.toFixed(1)}x</span>
             </div>
           </div>
@@ -1059,7 +1059,7 @@ export default function TracksPage() {
       <div className="flex-1 overflow-auto">
         {loading ? (
           <div className="flex items-center justify-center h-40 gap-3">
-            <div className="w-6 h-6 border-2 border-[#FF6F0F]/30 border-t-[#FF6F0F] rounded-full animate-spin" />
+            <div className="w-6 h-6 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
             <span className="text-muted text-sm">불러오는 중...</span>
           </div>
         ) : filtered.length === 0 ? (
@@ -1086,7 +1086,7 @@ export default function TracksPage() {
                       onDragOver={e => handleTrackDragOver(e, track.id)}
                       onDrop={() => handleTrackDrop(track.id)}
                       onDragEnd={() => setDragOverTrack(null)}
-                      className={`rounded-xl transition-all ${dragOverTrack === track.id ? 'ring-1 ring-[#FF6F0F]/50 scale-[1.02]' : ''}`}
+                      className={`rounded-xl transition-all ${dragOverTrack === track.id ? 'ring-1 ring-accent/50 scale-[1.02]' : ''}`}
                     >
                       {renderCard(track)}
                     </div>
@@ -1099,8 +1099,8 @@ export default function TracksPage() {
                 {sortOrder === 'latest' && todayTracks.length > 0 && (
                   <>
                     <div className="flex items-center gap-2">
-                      <span className="text-[11px] font-bold text-[#FF6F0F] uppercase tracking-wide">오늘 등록 · {todayTracks.length}개</span>
-                      <div className="flex-1 h-px bg-[#FF6F0F]/20" />
+                      <span className="text-[11px] font-bold text-accent uppercase tracking-wide">오늘 등록 · {todayTracks.length}개</span>
+                      <div className="flex-1 h-px bg-accent/20" />
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
                       {todayTracks.map(track => renderCard(track))}
@@ -1150,7 +1150,7 @@ export default function TracksPage() {
                   {/* 원본 비율 유지 미리보기 */}
                   <div
                     onClick={() => form.cover_image_url ? setPreviewUrl(form.cover_image_url) : imageInputRef.current?.click()}
-                    className="relative rounded-xl overflow-hidden bg-[#1F2937] border-2 border-dashed border-border-main flex items-center justify-center cursor-pointer hover:border-[#FF6F0F]/50 transition group w-28">
+                    className="relative rounded-xl overflow-hidden bg-[#1F2937] border-2 border-dashed border-border-main flex items-center justify-center cursor-pointer hover:border-accent/50 transition group w-28">
                     {form.cover_image_url ? (
                       <img src={form.cover_image_url} alt="cover" className="w-full h-auto object-contain" />
                     ) : (
@@ -1161,7 +1161,7 @@ export default function TracksPage() {
                     )}
                     {imageUploading && (
                       <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
-                        <div className="w-6 h-6 border-2 border-[#FF6F0F]/30 border-t-[#FF6F0F] rounded-full animate-spin" />
+                        <div className="w-6 h-6 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
                       </div>
                     )}
                     {/* 비율 배지 */}
@@ -1197,7 +1197,7 @@ export default function TracksPage() {
                         {EMOJI_OPTIONS.map(e => (
                           <button key={e} onClick={() => setF('cover_emoji', e)}
                             className={`w-6 h-6 rounded-md text-sm flex items-center justify-center transition ${
-                              form.cover_emoji === e ? 'bg-[#FF6F0F]/20 border border-[#FF6F0F]' : 'bg-fill-subtle border border-border-subtle hover:border-border-main'
+                              form.cover_emoji === e ? 'bg-accent/20 border border-accent' : 'bg-fill-subtle border border-border-subtle hover:border-border-main'
                             }`}>
                             {e}
                           </button>
@@ -1224,7 +1224,7 @@ export default function TracksPage() {
                       />
                       {form.reference_url && (
                         <a href={form.reference_url} target="_blank" rel="noopener noreferrer"
-                          className="text-[10px] text-[#FF6F0F] hover:underline whitespace-nowrap shrink-0">
+                          className="text-[10px] text-accent hover:underline whitespace-nowrap shrink-0">
                           🔗 열기
                         </a>
                       )}
@@ -1281,11 +1281,11 @@ export default function TracksPage() {
                   <button onClick={() => audioInputRef.current?.click()} disabled={audioUploading}
                     className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition whitespace-nowrap shrink-0 ${
                       audioUploading
-                        ? 'bg-[#FF6F0F]/20 border border-[#FF6F0F]/40 text-[#FF6F0F]/60 cursor-not-allowed'
-                        : 'bg-[#FF6F0F]/15 border border-[#FF6F0F]/40 text-[#FF6F0F] hover:bg-[#FF6F0F]/25'
+                        ? 'bg-accent/20 border border-accent/40 text-accent/60 cursor-not-allowed'
+                        : 'bg-accent/15 border border-accent/40 text-accent hover:bg-accent/25'
                     }`}>
                     {audioUploading
-                      ? <><div className="w-4 h-4 border-2 border-[#FF6F0F]/30 border-t-[#FF6F0F] rounded-full animate-spin" /> 업로드 중...</>
+                      ? <><div className="w-4 h-4 border-2 border-accent/30 border-t-accent rounded-full animate-spin" /> 업로드 중...</>
                       : <><Upload size={14} /> MP3 재업로드</>
                     }
                   </button>
@@ -1294,9 +1294,9 @@ export default function TracksPage() {
                 {/* 업로드 완료 / URL 표시 */}
                 {form.audio_url && (
                   <div className="mt-2 flex items-center gap-2 bg-fill-subtle border border-border-subtle rounded-xl px-3 py-2">
-                    <Link size={12} className="text-[#FF6F0F] shrink-0" />
+                    <Link size={12} className="text-accent shrink-0" />
                     <a href={form.audio_url} target="_blank" rel="noopener noreferrer"
-                      className="flex-1 text-[11px] text-[#FF6F0F]/80 hover:text-[#FF6F0F] font-mono truncate hover:underline"
+                      className="flex-1 text-[11px] text-accent/80 hover:text-accent font-mono truncate hover:underline"
                       title={form.audio_url}>
                       {audioFileName ? `✅ ${audioFileName}` : form.audio_url}
                     </a>
@@ -1315,7 +1315,7 @@ export default function TracksPage() {
                     }}
                       className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg transition whitespace-nowrap shrink-0 ${
                         testPlaying
-                          ? 'text-[#FF6F0F] bg-[#FF6F0F]/10 hover:bg-[#FF6F0F]/20'
+                          ? 'text-accent bg-accent/10 hover:bg-accent/20'
                           : 'text-tertiary hover:text-primary bg-fill-subtle'
                       }`}>
                       {testPlaying ? <><Pause size={9} /> 테스트 정지</> : <><Play size={9} /> 테스트 재생</>}
@@ -1349,7 +1349,7 @@ export default function TracksPage() {
                     {form.mood_tags.filter((t: string) =>
                       ALL_SUNO_TAGS.includes(t) || customLibTags.some(c => c.tag === t)
                     ).length > 0 && (
-                      <span className="px-1.5 py-0.5 rounded-full bg-[#FF6F0F]/20 text-[#FF6F0F] text-[10px]">
+                      <span className="px-1.5 py-0.5 rounded-full bg-accent/20 text-accent text-[10px]">
                         {form.mood_tags.filter((t: string) =>
                           ALL_SUNO_TAGS.includes(t) || customLibTags.some(c => c.tag === t)
                         ).length}개 선택
@@ -1555,7 +1555,7 @@ export default function TracksPage() {
                 취소
               </button>
               <button onClick={handleSave} disabled={saving || audioUploading || imageUploading}
-                className="flex-1 py-2.5 bg-[#FF6F0F] text-primary text-sm font-bold rounded-xl hover:bg-[#FF6F0F]/90 disabled:opacity-50 transition flex items-center justify-center gap-2">
+                className="flex-1 py-2.5 bg-accent text-primary text-sm font-bold rounded-xl hover:bg-accent/90 disabled:opacity-50 transition flex items-center justify-center gap-2">
                 {saving
                   ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> 저장 중...</>
                   : <><Check size={14} /> {editId ? '수정 완료' : '등록하기'}</>
@@ -1667,7 +1667,7 @@ export default function TracksPage() {
                       } disabled:cursor-not-allowed`}>
                       <span className={`w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition ${
                         isActive
-                          ? 'bg-[#FF6F0F] opacity-100'
+                          ? 'bg-accent opacity-100'
                           : 'bg-white opacity-0 group-hover:opacity-100'
                       }`}>
                         {isPlaying
@@ -1713,7 +1713,7 @@ export default function TracksPage() {
                           {tags.slice(0, 3).map((t, i) => (
                             <span key={t} className={`text-[9px] px-1.5 py-0.5 rounded leading-none ${
                               i === 0
-                                ? 'bg-[#FF6F0F]/15 border border-[#FF6F0F]/40 text-[#FF6F0F] font-semibold'
+                                ? 'bg-accent/15 border border-accent/40 text-accent font-semibold'
                                 : 'bg-fill-subtle border border-border-subtle text-muted'
                             }`}>{t}</span>
                           ))}
@@ -1775,7 +1775,7 @@ export default function TracksPage() {
                       <div className="flex gap-1">
                         <button
                           onClick={() => router.push(`/dashboard/shorts?trackId=${track.id}`)}
-                          className="flex items-center gap-1 h-6 px-2 rounded bg-[#FF6F0F]/15 text-[#FF9F4F] text-[10px] font-semibold hover:bg-[#FF6F0F]/25 transition"
+                          className="flex items-center gap-1 h-6 px-2 rounded bg-accent/15 text-accent/70 text-[10px] font-semibold hover:bg-accent/25 transition"
                           title="숏폼 만들기"
                         >
                           <Film size={10} /> 숏폼
