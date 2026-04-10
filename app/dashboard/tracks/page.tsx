@@ -901,7 +901,7 @@ export default function TracksPage() {
           <p className="text-xs text-muted mt-0.5">music_tracks 테이블 · 총 {tracks.length}개 · 서버파일 {tracks.filter(t => isPlayable(t.audio_url)).length}개</p>
         </div>
         <button onClick={openCreate}
-          className="flex items-center gap-2 px-4 py-2 bg-[#FF6F0F] text-primary text-sm font-bold rounded-xl hover:bg-[#FF6F0F]/90 transition">
+          className="flex items-center gap-2 px-4 py-2 bg-accent text-primary text-sm font-bold rounded-xl hover:opacity-90 transition">
           <Plus size={15} /> 새 트랙 등록
         </button>
       </div>
