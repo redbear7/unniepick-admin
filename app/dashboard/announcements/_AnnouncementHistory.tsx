@@ -186,6 +186,11 @@ export default function AnnouncementHistory({
                   <span className="text-[10px] text-dim">· {ann.repeat_count}회</span>
                   <span className="text-[10px] text-dim ml-auto">{fmtTime(ann.created_at)}</span>
                 </div>
+                {ann.audio_url && (
+                  <p className="text-[9px] text-dim/50 font-mono mt-1 truncate" title={ann.audio_url}>
+                    {ann.audio_url}
+                  </p>
+                )}
               </div>
 
               {/* 액션 버튼 */}
