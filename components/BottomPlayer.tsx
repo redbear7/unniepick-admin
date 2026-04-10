@@ -182,8 +182,8 @@ export default function BottomPlayer() {
             } : {}}
             className={`w-9 h-9 rounded-full flex items-center justify-center transition shadow-lg ${mc ? '' : 'bg-accent hover:bg-accent/90'}`}>
             {isPlaying
-              ? <Pause size={15} className="text-white" />
-              : <Play  size={15} className="text-white ml-0.5" />
+              ? <Pause size={15} className={mc ? 'text-white' : 'text-accent-fg'} />
+              : <Play  size={15} className={`${mc ? 'text-white' : 'text-accent-fg'} ml-0.5`} />
             }
           </button>
 
