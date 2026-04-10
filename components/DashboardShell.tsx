@@ -48,9 +48,9 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         className="fixed top-5 z-50 flex flex-col items-center gap-1.5"
         style={{ left: 'calc(14rem + (100vw - 14rem) / 2)', transform: 'translateX(-50%)' }}
       >
-        <div className="flex items-center gap-0.5 bg-card border border-border-main rounded-xl px-1 py-0.5 shadow-sm">
+        <div className="flex items-center gap-0.5 bg-card border border-border-main rounded-xl px-1 py-1 shadow-sm">
           <ThemeToggle />
-          <div className="w-px h-4 bg-border-main" />
+          <div className="w-px h-5 bg-border-main" />
           <FontSelector />
         </div>
         <NowPlayingChip />
