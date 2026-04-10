@@ -61,24 +61,31 @@ export default function BottomPlayer() {
     crossfadeSec, setCrossfadeSec,
   } = usePlayer();
 
-  // ── 스페이스바 단축키 ──────────────────────────────────────────
+  // ── 재생 단축키 ────────────────────────────────────────────────
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      // MediaPlayPause 키 (키보드 미디어 버튼) — 항상 허용
-      if (e.code === 'MediaPlayPause') { e.preventDefault(); togglePlay(); return; }
+    const displayTrackInHandler = track ?? lastTrack;
 
-      if (!track) return;
+    const triggerPlay = () => {
+      if (track) togglePlay();
+      else if (displayTrackInHandler) play(displayTrackInHandler); // 비활성 → 즉시 재생
+    };
+
+    const handler = (e: KeyboardEvent) => {
+      // MediaPlayPause 키 — 입력 필드 무관하게 항상 허용
+      if (e.code === 'MediaPlayPause') { e.preventDefault(); triggerPlay(); return; }
+
+      if (!displayTrackInHandler) return;
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.isContentEditable) return;
 
       // A — Audio 재생/일시정지
       if (e.code === 'KeyA' && !e.metaKey && !e.ctrlKey && !e.altKey) {
-        e.preventDefault(); togglePlay();
+        e.preventDefault(); triggerPlay();
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [track, togglePlay]);
+  }, [track, lastTrack, togglePlay, play]);
 
   // 표시할 트랙: 현재 재생 중 or 마지막 재생 트랙
   const displayTrack = track ?? lastTrack;
