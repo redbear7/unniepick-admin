@@ -55,7 +55,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
 
       {/* 현재 재생 트랙 제목 */}
       <div
-        className="fixed top-11 z-50"
+        className="fixed top-16 z-50"
         style={{ left: 'calc(14rem + (100vw - 14rem) / 2)', transform: 'translateX(-50%)' }}
       >
         <NowPlayingChip />

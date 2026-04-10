@@ -14,7 +14,7 @@ export default function NowPlayingChip() {
         <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse shrink-0" />
       )}
       {/* 제목 */}
-      <span className="text-primary text-sm font-bold whitespace-nowrap tracking-tight">
+      <span className="text-primary text-xl font-bold whitespace-nowrap tracking-tight drop-shadow-sm">
         {t.title}
       </span>
     </div>
