@@ -5,8 +5,6 @@ import { PlayerProvider } from '@/contexts/PlayerContext';
 import Sidebar from '@/components/Sidebar';
 import BottomPlayer from '@/components/BottomPlayer';
 import DevLogPanel from '@/components/DevLogPanel';
-import ThemeToggle from '@/components/ThemeToggle';
-import FontSelector from '@/components/FontSelector';
 import AudioBars from '@/components/AudioBars';
 import NowPlayingChip from '@/components/NowPlayingChip';
 
@@ -42,17 +40,11 @@ export default function DashboardShell({ children }: { children: React.ReactNode
       {/* 개발자 로그 패널 */}
       <DevLogPanel />
 
-      {/* 테마 토글 + 폰트 선택 — 메인 영역 상단 중앙 고정 */}
-      {/* 테마 토글 + 폰트 선택 + 트랙 제목 */}
+      {/* 현재 재생 트랙 제목 — 메인 영역 상단 중앙 고정 */}
       <div
-        className="fixed top-5 z-50 flex flex-col items-center gap-1.5"
+        className="fixed top-5 z-50"
         style={{ left: 'calc(14rem + (100vw - 14rem) / 2)', transform: 'translateX(-50%)' }}
       >
-        <div className="flex items-center gap-0.5 bg-card border border-border-main rounded-xl px-1 py-1 shadow-sm">
-          <ThemeToggle />
-          <div className="w-px h-5 bg-border-main" />
-          <FontSelector />
-        </div>
         <NowPlayingChip />
       </div>
     </PlayerProvider>

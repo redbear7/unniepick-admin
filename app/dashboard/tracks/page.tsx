@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase';
 import { Search, Plus, Pencil, Trash2, ToggleLeft, ToggleRight, X, Check, Play, Pause, Upload, ImagePlus, Link, Heart, ListMusic as ListMusicIcon, ArrowDownUp, Headphones, GripVertical, Copy, ClipboardCheck, Film } from 'lucide-react';
 import { usePlayer } from '@/contexts/PlayerContext';
 import { useRouter, useSearchParams } from 'next/navigation';
+import ThemeToggle from '@/components/ThemeToggle';
+import FontSelector from '@/components/FontSelector';
 
 // ─── 타입 ──────────────────────────────────────────────────────
 interface MusicTrack {
@@ -924,10 +926,17 @@ export default function TracksPage() {
           <h1 className="text-lg font-bold text-primary">🎵 트랙 관리</h1>
           <p className="text-xs text-muted mt-0.5">music_tracks 테이블 · 총 {tracks.length}개 · 서버파일 {tracks.filter(t => isPlayable(t.audio_url)).length}개</p>
         </div>
-        <button onClick={openCreate}
-          className="flex items-center gap-2 px-4 py-2 bg-accent text-accent-fg text-sm font-bold rounded-xl hover:opacity-90 transition">
-          <Plus size={15} /> 새 트랙 등록
-        </button>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-0.5 bg-card border border-border-main rounded-xl px-1 py-1 shadow-sm">
+            <ThemeToggle />
+            <div className="w-px h-5 bg-border-main" />
+            <FontSelector />
+          </div>
+          <button onClick={openCreate}
+            className="flex items-center gap-2 px-4 py-2 bg-accent text-accent-fg text-sm font-bold rounded-xl hover:opacity-90 transition">
+            <Plus size={15} /> 새 트랙 등록
+          </button>
+        </div>
       </div>
 
       {/* 커버 업로드 플로팅 배너 */}
