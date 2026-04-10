@@ -35,9 +35,9 @@ export interface FishVoice { id: string; label: string; refId: string; emoji: st
 
 // ─── 상수 ──────────────────────────────────────────────────────
 export const DAYS_KR = ['월', '화', '수', '목', '금', '토', '일'];
-export const DEFAULT_FISH_VOICE = 'fish_18e99f7be5374fa9b5ae52ed2f51e80d';
+export const DEFAULT_FISH_VOICE = 'fish_8c8ebd5ea79f4027be5a2049eec24d86';
 export const DEFAULT_FISH_VOICES: FishVoice[] = [
-  { id: 'default_ko_male', label: '한국어 남성', refId: '18e99f7be5374fa9b5ae52ed2f51e80d', emoji: '🐟' },
+  { id: 'default_ko_male', label: '한국어 남성', refId: '8c8ebd5ea79f4027be5a2049eec24d86', emoji: '🐟' },
 ];
 
 export const PLAY_MODES = [

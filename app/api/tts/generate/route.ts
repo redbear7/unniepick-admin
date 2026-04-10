@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
     process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
   );
 
-  const { text, voice_type = 'fish_18e99f7be5374fa9b5ae52ed2f51e80d', speed = 1.0, store_id, play_mode = 'immediate', repeat_count = 1, duck_volume = 20 } = await req.json();
+  const { text, voice_type = 'fish_8c8ebd5ea79f4027be5a2049eec24d86', speed = 1.0, store_id, play_mode = 'immediate', repeat_count = 1, duck_volume = 20 } = await req.json();
   if (!text?.trim()) return NextResponse.json({ error: '안내 문구가 없습니다' }, { status: 400, headers: CORS });
 
   if (!voice_type.startsWith('fish_')) {
