@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { usePlayer } from '@/contexts/PlayerContext';
+import { useRouter } from 'next/navigation';
 import {
   Play, Pause, SkipBack, SkipForward,
   Volume2, VolumeX, Shuffle, Repeat, Repeat1, X, Megaphone,
@@ -49,6 +50,7 @@ function getMoodColor(track: { mood_tags?: string[]; energy_score?: number | nul
 }
 
 export default function BottomPlayer() {
+  const router = useRouter();
   const {
     track, lastTrack, queue, queueIndex,
     isPlaying, currentTime, duration,
@@ -106,10 +108,14 @@ export default function BottomPlayer() {
       {/* 플레이어 내용 */}
       <div className="flex-1 flex items-center gap-4 pr-4 min-w-0">
 
-      {/* ── 왼쪽: 커버 + 곡 정보 ── */}
-      <div className={`flex items-center gap-3 w-[260px] shrink-0 ${inactive ? 'opacity-50' : ''}`}>
+      {/* ── 왼쪽: 커버 + 곡 정보 (클릭 → 트랙 페이지) ── */}
+      <div
+        className={`flex items-center gap-3 w-[260px] shrink-0 cursor-pointer group/info ${inactive ? 'opacity-50' : ''}`}
+        onClick={() => router.push(`/dashboard/tracks?hl=${displayTrack.id}`)}
+        title="트랙 관리로 이동"
+      >
         {/* 커버 */}
-        <div className="w-11 h-11 rounded-lg overflow-hidden bg-fill-subtle border border-border-subtle flex items-center justify-center shrink-0">
+        <div className="w-11 h-11 rounded-lg overflow-hidden bg-fill-subtle border border-border-subtle group-hover/info:border-accent flex items-center justify-center shrink-0 transition">
           {displayTrack.cover_image_url
             ? <img src={displayTrack.cover_image_url} alt={displayTrack.title} className="w-full h-full object-cover" />
             : <span className="text-xl">{displayTrack.cover_emoji ?? '🎵'}</span>
@@ -117,7 +123,7 @@ export default function BottomPlayer() {
         </div>
         {/* 제목/아티스트 */}
         <div className="min-w-0 flex-1">
-          <p className="text-primary text-sm font-semibold truncate">{displayTrack.title}</p>
+          <p className="text-primary text-sm font-semibold truncate group-hover/info:text-accent transition">{displayTrack.title}</p>
           <p className="text-muted text-xs truncate">{displayTrack.artist}</p>
           {displayTrack.mood && (
             <p className="text-[#FF6F0F] text-[10px] font-semibold truncate">{displayTrack.mood}</p>

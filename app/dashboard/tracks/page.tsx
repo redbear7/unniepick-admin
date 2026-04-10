@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase';
 import { Search, Plus, Pencil, Trash2, ToggleLeft, ToggleRight, X, Check, Play, Pause, Upload, ImagePlus, Link, Heart, ListMusic as ListMusicIcon, ArrowDownUp, Headphones, GripVertical, Copy, ClipboardCheck, Film } from 'lucide-react';
 import { usePlayer } from '@/contexts/PlayerContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 // ─── 타입 ──────────────────────────────────────────────────────
 interface MusicTrack {
@@ -311,9 +311,10 @@ function fmtBytes(n: number) {
 }
 
 export default function TracksPage() {
-  const sb       = createClient();
-  const player   = usePlayer();
-  const router   = useRouter();
+  const sb           = createClient();
+  const player       = usePlayer();
+  const router       = useRouter();
+  const searchParams = useSearchParams();
   const audioInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
@@ -826,6 +827,26 @@ export default function TracksPage() {
     } finally {
       setCoverUploadId(null);
     }
+  };
+
+  // ── hl 쿼리파람 → 해당 트랙으로 스크롤 ──
+  useEffect(() => {
+    const hl = searchParams.get('hl');
+    if (!hl) return;
+    // DOM이 그려질 때까지 약간 대기
+    const timer = setTimeout(() => {
+      const el = document.getElementById(`track-${hl}`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchParams]);
+
+  // ── 좋아요 ──
+  const handleLike = async (t: MusicTrack, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const next = (t.like_count ?? 0) + 1;
+    await sb.from('music_tracks').update({ like_count: next }).eq('id', t.id);
+    setTracks(prev => prev.map(tr => tr.id === t.id ? { ...tr, like_count: next } : tr));
   };
 
   const handleDelete = async (t: MusicTrack) => {
@@ -1557,20 +1578,24 @@ export default function TracksPage() {
     const genre = (track.mood_tags ?? [])[0] || '';
     const [mc1] = MOOD_COLORS[genre] || DEFAULT_MOOD_COLOR;
     const [r, g, b] = hexToRgb(mc1);
-    // 테두리: 베이스에 반응하는 글로우 + 색상 강도
+    // 테두리: 재생 중이면 항상 진하게 + 베이스 글로우
     const borderColor = isPlaying
-      ? `rgba(${r},${g},${b},${(0.4 + bass * 0.6).toFixed(2)})`
-      : '';
-    const borderGlow = isPlaying && bass > 0.2
-      ? `0 0 ${Math.round(bass * 16)}px rgba(${r},${g},${b},${(bass * 0.5).toFixed(2)}), inset 0 0 ${Math.round(bass * 8)}px rgba(${r},${g},${b},${(bass * 0.15).toFixed(2)})`
-      : 'none';
+      ? `rgba(${r},${g},${b},${(0.85 + bass * 0.15).toFixed(2)})`
+      : isActive
+        ? `rgba(${r},${g},${b},0.4)`
+        : '';
+    const borderGlow = isPlaying
+      ? `0 0 ${Math.round(8 + bass * 18)}px rgba(${r},${g},${b},${(0.45 + bass * 0.4).toFixed(2)}), inset 0 0 ${Math.round(4 + bass * 8)}px rgba(${r},${g},${b},${(0.1 + bass * 0.15).toFixed(2)})`
+      : isActive
+        ? `0 0 6px rgba(${r},${g},${b},0.25)`
+        : 'none';
     return (
-      <div key={track.id}
+      <div key={track.id} id={`track-${track.id}`}
         style={{
           backgroundImage: moodBg,
           borderColor: borderColor || undefined,
           boxShadow: borderGlow,
-          borderWidth: isPlaying ? 2 : 1,
+          borderWidth: isPlaying ? 3 : 1,
           transition: 'border-color 80ms, box-shadow 80ms',
         }}
         className={`group relative flex flex-col rounded-xl overflow-hidden ${
@@ -1725,6 +1750,12 @@ export default function TracksPage() {
                           title="숏폼 만들기"
                         >
                           <Film size={10} /> 숏폼
+                        </button>
+                        <button
+                          onClick={(e) => handleLike(track, e)}
+                          title="좋아요"
+                          className="w-6 h-6 flex items-center justify-center rounded bg-red-500/10 text-red-400 hover:text-red-300 hover:bg-red-500/20 transition">
+                          <Heart size={11} />
                         </button>
                         <button onClick={() => openEdit(track)}
                           className="w-6 h-6 flex items-center justify-center rounded bg-fill-subtle text-muted hover:text-primary transition">
