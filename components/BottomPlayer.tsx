@@ -64,10 +64,17 @@ export default function BottomPlayer() {
   // ── 스페이스바 단축키 ──────────────────────────────────────────
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      // MediaPlayPause 키 (키보드 미디어 버튼) — 항상 허용
+      if (e.code === 'MediaPlayPause') { e.preventDefault(); togglePlay(); return; }
+
       if (!track) return;
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.isContentEditable) return;
-      if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
+
+      // K — YouTube 스타일 재생/일시정지
+      if (e.code === 'KeyK' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        e.preventDefault(); togglePlay();
+      }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
