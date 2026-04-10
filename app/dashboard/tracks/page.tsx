@@ -873,6 +873,30 @@ export default function TracksPage() {
     setDeleting(null);
   };
 
+  // ── 단축키: 현재 정렬된 첫 번째 트랙 즉시 재생 ──
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const first = displayList.find(t => isPlayable(t.audio_url));
+      if (!first) return;
+      e.preventDefault(); // BottomPlayer에 "처리됨" 신호
+      const toPlayable = (t: MusicTrack) => ({
+        id: t.id, title: t.title, artist: t.artist,
+        audio_url: t.audio_url, cover_image_url: t.cover_image_url,
+        cover_emoji: t.cover_emoji, duration_sec: t.duration_sec, mood: t.mood,
+        mood_tags: t.mood_tags, energy_score: t.energy_score,
+        valence_score: t.valence_score, danceability_score: t.danceability_score,
+      });
+      if (player.track?.id === first.id) {
+        player.togglePlay();
+      } else {
+        const queue = displayList.filter(t => isPlayable(t.audio_url)).map(toPlayable);
+        player.play(toPlayable(first), queue);
+      }
+    };
+    window.addEventListener('audio-shortcut-play', handler);
+    return () => window.removeEventListener('audio-shortcut-play', handler);
+  }, [displayList, player]);
+
   // ── 재생 (하단 플레이어로 연결, Supabase Storage URL만 허용) ──
   const togglePlay = (track: MusicTrack) => {
     if (!isPlayable(track.audio_url)) return;

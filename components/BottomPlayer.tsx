@@ -66,8 +66,14 @@ export default function BottomPlayer() {
     const displayTrackInHandler = track ?? lastTrack;
 
     const triggerPlay = () => {
-      if (track) togglePlay();
-      else if (displayTrackInHandler) play(displayTrackInHandler); // 비활성 → 즉시 재생
+      // 페이지에서 첫 번째 트랙 재생 이벤트 발생 (cancelable)
+      const ev = new CustomEvent('audio-shortcut-play', { cancelable: true });
+      const unhandled = window.dispatchEvent(ev); // preventDefault() 호출 시 false 반환
+      if (unhandled) {
+        // 트랙 페이지가 없을 때 폴백: 현재 트랙 토글 or 마지막 트랙 재생
+        if (track) togglePlay();
+        else if (displayTrackInHandler) play(displayTrackInHandler);
+      }
     };
 
     const handler = (e: KeyboardEvent) => {
