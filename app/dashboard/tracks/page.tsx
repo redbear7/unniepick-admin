@@ -542,7 +542,9 @@ export default function TracksPage() {
     if (genre) acc[genre] = (acc[genre] || 0) + 1;
     return acc;
   }, {});
-  const sortedTags = Object.entries(tagCounts).sort((a, b) => b[1] - a[1]);
+  const sortedTags = Object.entries(tagCounts)
+    .filter(([tag]) => !tag.startsWith('@'))
+    .sort((a, b) => b[1] - a[1]);
 
   // ── 언어 집계 ──
   const langCounts = tracks.reduce<Record<string, number>>((acc, t) => {
