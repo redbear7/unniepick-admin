@@ -4,6 +4,7 @@ import {
   createContext, useContext, useRef, useState, useCallback,
   useEffect, ReactNode,
 } from 'react';
+import { Howl } from 'howler';
 
 // ─── 공유 트랙 타입 ────────────────────────────────────────────
 export interface PlayableTrack {
@@ -36,9 +37,9 @@ interface PlayerCtx {
   announcementPlaying: boolean;
   lastTrack:          PlayableTrack | null;
   error:              string | null;
-  bassLevel:          number;  // 0~1 베이스 주파수 강도
-  bassSpeed:          number;  // 펄스 속도 배율 0.3~3
-  bassFreqBand:       number;  // 주파수 대역 0=서브베이스 ~ 4=고음
+  bassLevel:          number;
+  bassSpeed:          number;
+  bassFreqBand:       number;
   setBassSpeed:       (v: number) => void;
   setBassFreqBand:    (v: number) => void;
 
@@ -70,16 +71,15 @@ export function usePlayer() {
 
 // ─── Provider ─────────────────────────────────────────────────
 export function PlayerProvider({ children }: { children: ReactNode }) {
-  const audioRef         = useRef<HTMLAudioElement | null>(null);
+  const howlRef          = useRef<Howl | null>(null);
+  const nextHowlRef      = useRef<Howl | null>(null); // crossfade 다음 트랙
+  const crossfadeActive  = useRef(false);
   const annAudioRef      = useRef<HTMLAudioElement | null>(null);
-  const pendingAnnRef    = useRef<{ url: string; duck_volume: number } | null>(null); // 곡간 삽입 대기
-  const origVolRef       = useRef<number | null>(null); // 안내방송 전 원본 트랙 볼륨
-  const crossfadeAudioRef   = useRef<HTMLAudioElement | null>(null);
-  const crossfadeActiveRef  = useRef(false);
-  const onAudioErrorRef     = useRef<(() => void) | null>(null);
-
-  // ── 베이스 분석 (시뮬레이션 — Web Audio 연결 없이 재생에 영향 없음) ──
+  const pendingAnnRef    = useRef<{ url: string; duck_volume: number } | null>(null);
+  const origVolRef       = useRef<number | null>(null);
   const rafRef           = useRef<number>(0);
+  const seekRafRef       = useRef<number>(0);
+  const onAudioErrorRef  = useRef<(() => void) | null>(null);
 
   const [track,               setTrack]              = useState<PlayableTrack | null>(null);
   const [queue,               setQueue]              = useState<PlayableTrack[]>([]);
@@ -88,23 +88,34 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [currentTime,         setCurrentTime]        = useState(0);
   const [duration,            setDuration]           = useState(0);
   const [volume,              setVolume_]            = useState(0.8);
-  const [annVolume,           setAnnVolume_]         = useState(2.0); // 내부 0~2 (GainNode 증폭), UI에는 0~100%로 표시
+  const [annVolume,           setAnnVolume_]         = useState(2.0);
   const [shuffle,             setShuffle]            = useState(false);
   const [repeat,              setRepeat]             = useState<'none' | 'one' | 'all'>('none');
   const [announcementPlaying, setAnnouncementPlaying] = useState(false);
-  const [lastTrack, setLastTrack] = useState<PlayableTrack | null>(null);
-  const [bassLevel, setBassLevel] = useState(0);
-  const [bassSpeed, setBassSpeed] = useState(1.0);
-  const [bassFreqBand, setBassFreqBand] = useState(0); // 0~4
-  const bassSpeedRef = useRef(1.0);
-  const bassFreqRef  = useRef(0);
-  const [crossfadeSec, setCrossfadeSec] = useState<3 | 4 | 5>(4);
+  const [lastTrack,           setLastTrack]          = useState<PlayableTrack | null>(null);
+  const [bassLevel,           setBassLevel]          = useState(0);
+  const [bassSpeed,           setBassSpeed]          = useState(1.0);
+  const [bassFreqBand,        setBassFreqBand]       = useState(0);
+  const [error,               setError]              = useState<string | null>(null);
+  const [crossfadeSec,        setCrossfadeSec]       = useState<3 | 4 | 5>(4);
+
+  const bassSpeedRef    = useRef(1.0);
+  const bassFreqRef     = useRef(0);
   const crossfadeSecRef = useRef<number>(4);
+  const volumeRef       = useRef(0.8);
+  const queueRef        = useRef<PlayableTrack[]>([]);
+  const queueIdxRef     = useRef(0);
+  const shuffleRef      = useRef(false);
+  const repeatRef       = useRef<'none' | 'one' | 'all'>('none');
 
-  // crossfadeSecRef sync
   useEffect(() => { crossfadeSecRef.current = crossfadeSec; }, [crossfadeSec]);
+  useEffect(() => { volumeRef.current = volume; }, [volume]);
+  useEffect(() => { queueRef.current = queue; }, [queue]);
+  useEffect(() => { queueIdxRef.current = queueIndex; }, [queueIndex]);
+  useEffect(() => { shuffleRef.current = shuffle; }, [shuffle]);
+  useEffect(() => { repeatRef.current = repeat; }, [repeat]);
 
-  // localStorage → lastTrack 복원 (클라이언트 마운트 후)
+  // lastTrack 복원
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem('player_last_track') ?? 'null');
@@ -112,22 +123,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     } catch {}
   }, []);
 
-  const [error, setError] = useState<string | null>(null);
-
-  // Audio 이벤트 바인딩 (onended는 useEffect에서 처리)
-  const bindAudio = useCallback((audio: HTMLAudioElement, trackTitle: string) => {
-    audio.ontimeupdate = () => setCurrentTime(audio.currentTime);
-    audio.ondurationchange = () => setDuration(audio.duration || 0);
-    audio.onerror = () => {
-      console.error('[Player] audio load error:', audio.src);
-      setError(`재생 불가: "${trackTitle}" — 스토리지에 파일 없음`);
-      setIsPlaying(false);
-      // 2초 후 자동으로 다음 트랙으로 이동
-      setTimeout(() => { onAudioErrorRef.current?.(); }, 2000);
-    };
-  }, []);
-
-  // 에러 자동 소거 (5초)
+  // 에러 자동 소거
   useEffect(() => {
     if (!error) return;
     const t = setTimeout(() => setError(null), 5000);
@@ -135,29 +131,25 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   }, [error]);
 
   const setBassSpeedWrap = useCallback((v: number) => {
-    setBassSpeed(v);
-    bassSpeedRef.current = v;
+    setBassSpeed(v); bassSpeedRef.current = v;
   }, []);
   const setBassFreqWrap = useCallback((v: number) => {
-    setBassFreqBand(v);
-    bassFreqRef.current = v;
+    setBassFreqBand(v); bassFreqRef.current = v;
   }, []);
 
-  // 주파수 대역별 사인파 프리셋 [진동수, 가중치][]
-  // 0=서브베이스(느리고 무거움) → 4=고음(빠르고 날카로움)
+  // 베이스 시뮬레이션
   const FREQ_PRESETS: [number, number][][] = [
-    /* 0: Sub Bass   */ [[0.8, 0.4], [1.3, 0.3], [0.5, 0.2], [2.0, 0.1]],
-    /* 1: Bass       */ [[1.5, 0.35], [2.5, 0.25], [1.0, 0.2], [3.5, 0.15], [4.5, 0.05]],
-    /* 2: Low-Mid    */ [[2.2, 0.3], [3.7, 0.25], [1.1, 0.2], [5.3, 0.15], [7.0, 0.1]],
-    /* 3: Mid        */ [[4.0, 0.3], [6.5, 0.25], [3.0, 0.2], [8.0, 0.15], [10.0, 0.1]],
-    /* 4: High       */ [[7.0, 0.25], [11.0, 0.25], [5.5, 0.2], [14.0, 0.15], [18.0, 0.15]],
+    [[0.8,0.4],[1.3,0.3],[0.5,0.2],[2.0,0.1]],
+    [[1.5,0.35],[2.5,0.25],[1.0,0.2],[3.5,0.15],[4.5,0.05]],
+    [[2.2,0.3],[3.7,0.25],[1.1,0.2],[5.3,0.15],[7.0,0.1]],
+    [[4.0,0.3],[6.5,0.25],[3.0,0.2],[8.0,0.15],[10.0,0.1]],
+    [[7.0,0.25],[11.0,0.25],[5.5,0.2],[14.0,0.15],[18.0,0.15]],
   ];
 
-  // 베이스 시뮬레이션: 대역별 사인파 합성
-  const startBassAnalysis = useCallback((_audio: HTMLAudioElement) => {
+  const startBassAnalysis = useCallback(() => {
     cancelAnimationFrame(rafRef.current);
     const loop = () => {
-      const s = bassSpeedRef.current;
+      const s    = bassSpeedRef.current;
       const band = Math.round(bassFreqRef.current);
       const preset = FREQ_PRESETS[band] || FREQ_PRESETS[2];
       const t = performance.now() / 1000 * s;
@@ -175,137 +167,209 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setBassLevel(0);
   }, []);
 
-  // 특정 트랙 로드+재생
-  const loadAndPlay = useCallback((t: PlayableTrack) => {
-    // 진행 중인 crossfade 취소
-    crossfadeAudioRef.current?.pause();
-    crossfadeAudioRef.current = null;
-    crossfadeActiveRef.current = false;
-    audioRef.current?.pause();
+  // currentTime polling (Howler는 ontimeupdate 없음)
+  const startSeekPoll = useCallback((howl: Howl) => {
+    cancelAnimationFrame(seekRafRef.current);
+    const poll = () => {
+      if (howl.playing()) {
+        setCurrentTime(howl.seek() as number);
+        seekRafRef.current = requestAnimationFrame(poll);
+      }
+    };
+    seekRafRef.current = requestAnimationFrame(poll);
+  }, []);
+
+  const stopSeekPoll = useCallback(() => {
+    cancelAnimationFrame(seekRafRef.current);
+  }, []);
+
+  // 다음 트랙 인덱스 결정
+  const getNextIndex = useCallback((curIdx: number, q: PlayableTrack[], sh: boolean, rep: 'none' | 'one' | 'all'): number | null => {
+    if (rep === 'one' && !sh) return curIdx;
+    let next = sh ? Math.floor(Math.random() * q.length) : curIdx + 1;
+    if (next >= q.length) {
+      if (rep === 'all') next = 0;
+      else return null;
+    }
+    return next;
+  }, []);
+
+  // Howl 생성 + 재생
+  const loadAndPlay = useCallback((t: PlayableTrack, startVol?: number) => {
+    crossfadeActive.current = false;
+    nextHowlRef.current?.unload();
+    nextHowlRef.current = null;
+    howlRef.current?.unload();
     stopBassAnalysis();
+    stopSeekPoll();
     setError(null);
 
-    const audio = new Audio(t.audio_url);
-    audio.volume = volume;
-    bindAudio(audio, t.title);
-    audioRef.current = audio;
+    const vol = startVol ?? volumeRef.current;
+
+    const howl = new Howl({
+      src: [t.audio_url],
+      html5: true,
+      volume: vol,
+      onload: () => {
+        setDuration(howl.duration());
+      },
+      onplay: () => {
+        setIsPlaying(true);
+        startBassAnalysis();
+        startSeekPoll(howl);
+      },
+      onpause: () => {
+        setIsPlaying(false);
+        stopBassAnalysis();
+        stopSeekPoll();
+      },
+      onstop: () => {
+        setIsPlaying(false);
+        stopBassAnalysis();
+        stopSeekPoll();
+      },
+      onend: () => {
+        if (crossfadeActive.current) return;
+
+        // 곡간 안내방송
+        const pending = pendingAnnRef.current;
+        if (pending) {
+          pendingAnnRef.current = null;
+          setAnnouncementPlaying(true);
+          const ann = new Audio(pending.url);
+          annAudioRef.current = ann;
+          ann.play().catch(() => {});
+          ann.onended = () => {
+            annAudioRef.current = null;
+            setAnnouncementPlaying(false);
+            const nextIdx = getNextIndex(queueIdxRef.current, queueRef.current, shuffleRef.current, repeatRef.current);
+            if (nextIdx !== null && queueRef.current[nextIdx]) {
+              setQueueIndex(nextIdx);
+              loadAndPlay(queueRef.current[nextIdx]);
+            } else {
+              setIsPlaying(false);
+            }
+          };
+          return;
+        }
+
+        const nextIdx = getNextIndex(queueIdxRef.current, queueRef.current, shuffleRef.current, repeatRef.current);
+        if (nextIdx === null) { setIsPlaying(false); return; }
+        setQueueIndex(nextIdx);
+        loadAndPlay(queueRef.current[nextIdx]);
+      },
+      onerror: () => {
+        console.error('[Howler] load error:', t.audio_url);
+        setError(`재생 불가: "${t.title}" — 파일 없음`);
+        setIsPlaying(false);
+        setTimeout(() => { onAudioErrorRef.current?.(); }, 2000);
+      },
+    });
+
+    howlRef.current = howl;
     setTrack(t);
     setLastTrack(t);
-    try { localStorage.setItem('player_last_track', JSON.stringify(t)); } catch {}
     setCurrentTime(0);
     setDuration(t.duration_sec ?? 0);
-    // 오디오 에러 시 자동 다음 트랙으로 넘기는 콜백 등록
+    try { localStorage.setItem('player_last_track', JSON.stringify(t)); } catch {}
+
     onAudioErrorRef.current = () => {
-      setQueueIndex(prev => {
-        const q = queue;
-        let next = shuffle ? Math.floor(Math.random() * q.length) : prev + 1;
-        if (next >= q.length) {
-          if (repeat === 'all') next = 0;
-          else return prev;
-        }
-        if (q[next]) loadAndPlay(q[next]);
-        return next;
-      });
-    };
-
-    audio.play()
-      .then(() => {
-        console.log('[Player] ▶', t.title);
-        setIsPlaying(true);
-        startBassAnalysis(audio);
-      })
-      .catch((e) => { console.error('[Player] play failed:', e.message); setIsPlaying(false); });
-  }, [volume, bindAudio, startBassAnalysis, stopBassAnalysis, queue, shuffle, repeat]);
-
-  // ended → 자동 다음 트랙
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    const handleEnded = () => {
-      // crossfade가 이미 다음 트랙을 처리 중이면 무시
-      if (crossfadeActiveRef.current) return;
-      const pending = pendingAnnRef.current;
-      if (pending) {
-        pendingAnnRef.current = null;
-        // 안내방송 재생 후 다음 트랙
-        setAnnouncementPlaying(true);
-        const ann = new Audio(pending.url);
-        annAudioRef.current = ann;
-        ann.play().catch(() => {});
-        ann.onended = () => {
-          annAudioRef.current = null;
-          setAnnouncementPlaying(false);
-          setQueueIndex(prev => {
-            let next = prev + 1;
-            if (shuffle) next = Math.floor(Math.random() * queue.length);
-            if (next >= queue.length) {
-              if (repeat === 'all') next = 0;
-              else { setIsPlaying(false); return prev; }
-            }
-            loadAndPlay(queue[next]);
-            return next;
-          });
-        };
-        return;
+      const nextIdx = getNextIndex(queueIdxRef.current, queueRef.current, shuffleRef.current, repeatRef.current);
+      if (nextIdx !== null && queueRef.current[nextIdx]) {
+        setQueueIndex(nextIdx);
+        loadAndPlay(queueRef.current[nextIdx]);
       }
-      setQueueIndex(prev => {
-        // 셔플 ON 이면 1곡 반복 무시 → 랜덤 다음 트랙
-        if (repeat === 'one' && !shuffle) {
-          audio.currentTime = 0;
-          audio.play().then(() => setIsPlaying(true));
-          return prev;
-        }
-        let next = prev + 1;
-        if (shuffle) next = Math.floor(Math.random() * queue.length);
-        if (next >= queue.length) {
-          if (repeat === 'all') next = 0;
-          else { setIsPlaying(false); return prev; }
-        }
-        loadAndPlay(queue[next]);
-        return next;
-      });
     };
-    audio.addEventListener('ended', handleEnded);
-    return () => audio.removeEventListener('ended', handleEnded);
-  }, [queue, repeat, shuffle, loadAndPlay]);
+
+    howl.play();
+  }, [startBassAnalysis, stopBassAnalysis, startSeekPoll, stopSeekPoll, getNextIndex]);
+
+  // Crossfade: currentTime이 종료 N초 전이면 다음 트랙 페이드인
+  useEffect(() => {
+    const cf = crossfadeSecRef.current;
+    if (!isPlaying || !duration || duration < cf + 2) return;
+    if (currentTime < duration - cf) return;
+    if (crossfadeActive.current) return;
+    if (repeat === 'one' && !shuffle) return;
+
+    const nextIdx = getNextIndex(queueIndex, queue, shuffle, repeat);
+    if (nextIdx === null) return;
+    const nextTrack = queue[nextIdx];
+    if (!nextTrack) return;
+
+    crossfadeActive.current = true;
+    const fadeMs = cf * 1000;
+
+    // 현재 트랙 페이드아웃
+    howlRef.current?.fade(volumeRef.current, 0, fadeMs);
+
+    // 다음 트랙 페이드인
+    const nextHowl = new Howl({
+      src: [nextTrack.audio_url],
+      html5: true,
+      volume: 0,
+      onplay: () => {
+        nextHowl.fade(0, volumeRef.current, fadeMs);
+      },
+    });
+    nextHowlRef.current = nextHowl;
+    nextHowl.play();
+
+    setTimeout(() => {
+      if (!crossfadeActive.current) return;
+      howlRef.current?.unload();
+      howlRef.current = nextHowlRef.current;
+      nextHowlRef.current = null;
+      crossfadeActive.current = false;
+      setTrack(nextTrack);
+      setLastTrack(nextTrack);
+      setQueueIndex(nextIdx);
+      setCurrentTime(0);
+      setDuration(nextTrack.duration_sec ?? 0);
+      try { localStorage.setItem('player_last_track', JSON.stringify(nextTrack)); } catch {}
+      startBassAnalysis();
+      startSeekPoll(howlRef.current!);
+
+      // onend 재등록
+      howlRef.current?.on('end', () => {
+        const ni = getNextIndex(nextIdx, queueRef.current, shuffleRef.current, repeatRef.current);
+        if (ni === null) { setIsPlaying(false); return; }
+        setQueueIndex(ni);
+        loadAndPlay(queueRef.current[ni]);
+      });
+    }, fadeMs);
+  }, [currentTime, duration, isPlaying, queue, queueIndex, repeat, shuffle, getNextIndex, startBassAnalysis, startSeekPoll, loadAndPlay]);
 
   const play = useCallback((t: PlayableTrack, q?: PlayableTrack[]) => {
     const newQueue = q ?? [t];
-    const idx      = newQueue.findIndex(x => x.id === t.id);
+    const idx = newQueue.findIndex(x => x.id === t.id);
     setQueue(newQueue);
     setQueueIndex(idx >= 0 ? idx : 0);
     loadAndPlay(t);
   }, [loadAndPlay]);
 
   const pause = useCallback(() => {
-    audioRef.current?.pause();
-    setIsPlaying(false);
-    stopBassAnalysis();
-  }, [stopBassAnalysis]);
+    howlRef.current?.pause();
+  }, []);
 
   const resume = useCallback(() => {
-    audioRef.current?.play().then(() => {
-      setIsPlaying(true);
-      if (audioRef.current) startBassAnalysis(audioRef.current);
-    }).catch(() => {});
-  }, [startBassAnalysis]);
+    howlRef.current?.play();
+  }, []);
 
   const togglePlay = useCallback(() => {
     if (isPlaying) pause(); else resume();
   }, [isPlaying, pause, resume]);
 
   const next = useCallback(() => {
-    let idx = shuffle
-      ? Math.floor(Math.random() * queue.length)
-      : queueIndex + 1;
-    if (idx >= queue.length) idx = repeat === 'all' ? 0 : queue.length - 1;
+    const idx = getNextIndex(queueIndex, queue, shuffle, repeat) ?? queue.length - 1;
     setQueueIndex(idx);
     loadAndPlay(queue[idx]);
-  }, [queue, queueIndex, shuffle, repeat, loadAndPlay]);
+  }, [queue, queueIndex, shuffle, repeat, getNextIndex, loadAndPlay]);
 
   const prev = useCallback(() => {
-    if (audioRef.current && audioRef.current.currentTime > 3) {
-      audioRef.current.currentTime = 0;
+    if (howlRef.current && (howlRef.current.seek() as number) > 3) {
+      howlRef.current.seek(0);
+      setCurrentTime(0);
       return;
     }
     const idx = Math.max(0, queueIndex - 1);
@@ -314,39 +378,34 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   }, [queue, queueIndex, loadAndPlay]);
 
   const seek = useCallback((sec: number) => {
-    if (audioRef.current) {
-      audioRef.current.currentTime = sec;
-      setCurrentTime(sec);
-    }
+    howlRef.current?.seek(sec);
+    setCurrentTime(sec);
   }, []);
 
   const setVolume = useCallback((v: number) => {
     setVolume_(v);
-    if (audioRef.current) audioRef.current.volume = v;
+    volumeRef.current = v;
+    if (howlRef.current) howlRef.current.volume(v);
   }, []);
+
+  // ── Web Audio (안내방송 GainNode 증폭) ──────────────────────────
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const annGainRef  = useRef<GainNode | null>(null);
+  function getAudioCtx() {
+    if (!audioCtxRef.current) audioCtxRef.current = new AudioContext();
+    return audioCtxRef.current;
+  }
 
   const setAnnVolume = useCallback((v: number) => {
     setAnnVolume_(v);
-    if (annGainRef.current) {
-      // GainNode로 증폭 — audio.volume은 1.0 고정
-      annGainRef.current.gain.value = v;
-    } else if (annAudioRef.current) {
-      // GainNode 없으면 audio.volume fallback (최대 1.0)
-      annAudioRef.current.volume = Math.min(1, v);
-    }
+    if (annGainRef.current) annGainRef.current.gain.value = v;
+    else if (annAudioRef.current) annAudioRef.current.volume = Math.min(1, v);
   }, []);
 
-  const toggleShuffle = useCallback(() => setShuffle(s => !s), []);
-  const toggleRepeat  = useCallback(() => setRepeat(r =>
-    r === 'none' ? 'all' : r === 'all' ? 'one' : 'none'
-  ), []);
-
-  // ── 볼륨 페이드 헬퍼 ─────────────────────────────────────────
+  // 볼륨 페이드 (안내방송용 HTMLAudioElement)
   const fadeVolume = useCallback((audio: HTMLAudioElement, from: number, to: number, ms: number): Promise<void> =>
     new Promise(resolve => {
-      const steps    = 30;
-      const stepTime = ms / steps;
-      const diff     = (to - from) / steps;
+      const steps = 30, stepTime = ms / steps, diff = (to - from) / steps;
       let step = 0;
       const id = setInterval(() => {
         step++;
@@ -355,149 +414,81 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       }, stepTime);
     }), []);
 
-  // ── Crossfade: 트랙 종료 N초 전에 다음 트랙 페이드인 ────────────
-  useEffect(() => {
-    const cf = crossfadeSecRef.current;
-    if (!isPlaying || !duration || duration < cf + 2) return;
-    if (currentTime < duration - cf) return;
-    if (crossfadeActiveRef.current) return;
-    if (repeat === 'one' && !shuffle) return; // 1곡 반복은 crossfade 불필요
-
-    // 다음 트랙 인덱스 결정
-    let nextIdx = queueIndex + 1;
-    if (shuffle) nextIdx = Math.floor(Math.random() * queue.length);
-    if (nextIdx >= queue.length) {
-      if (repeat === 'all') nextIdx = 0;
-      else return; // 마지막 트랙 — 자연 종료
-    }
-    const nextTrack = queue[nextIdx];
-    if (!nextTrack) return;
-
-    crossfadeActiveRef.current = true;
-    const fadeMs = cf * 1000;
-    const currentAudio = audioRef.current;
-    const startVol = currentAudio?.volume ?? volume;
-
-    // 다음 트랙 오디오 준비
-    const nextAudio = new Audio(nextTrack.audio_url);
-    nextAudio.volume = 0;
-    crossfadeAudioRef.current = nextAudio;
-    nextAudio.play().catch(() => {});
-
-    // 동시 페이드: 현재 → 0, 다음 → volume
-    if (currentAudio) fadeVolume(currentAudio, startVol, 0, fadeMs);
-    fadeVolume(nextAudio, 0, volume, fadeMs).then(() => {
-      if (!crossfadeActiveRef.current) return; // 도중에 취소됨
-      currentAudio?.pause();
-      bindAudio(nextAudio, nextTrack.title);
-      audioRef.current = nextAudio;
-      crossfadeAudioRef.current = null;
-      crossfadeActiveRef.current = false;
-      setTrack(nextTrack);
-      setLastTrack(nextTrack);
-      try { localStorage.setItem('player_last_track', JSON.stringify(nextTrack)); } catch {}
-      setQueueIndex(nextIdx);
-      setCurrentTime(0);
-      setDuration(nextTrack.duration_sec ?? 0);
-      setIsPlaying(true);
-      startBassAnalysis(nextAudio);
-    });
-  }, [currentTime, duration, isPlaying, queue, queueIndex, repeat, shuffle, volume, fadeVolume, bindAudio, startBassAnalysis]);
-
-  // ── Web Audio Context (안내방송 볼륨 1.0 초과 증폭용) ──────────
-  const audioCtxRef = useRef<AudioContext | null>(null);
-  const annGainRef  = useRef<GainNode | null>(null);
-
-  function getAudioCtx() {
-    if (!audioCtxRef.current) audioCtxRef.current = new AudioContext();
-    return audioCtxRef.current;
-  }
-
-  // ── 안내방송 실행 ─────────────────────────────────────────────
   const playAnnouncement = useCallback((url: string, opts: { duck_volume?: number; play_mode?: 'immediate' | 'between_tracks'; ann_volume?: number }) => {
-    const duckVol   = (opts.duck_volume ?? 20) / 100;
-    const play_mode = opts.play_mode ?? 'immediate';
-    const annVolRatio = annVolume; // GainNode 증폭값 (1.2 = 120%)
+    const duckVol  = (opts.duck_volume ?? 20) / 100;
+    const playMode = opts.play_mode ?? 'immediate';
+    const annVol   = annVolume;
 
-    if (play_mode === 'between_tracks') {
+    if (playMode === 'between_tracks') {
       pendingAnnRef.current = { url, duck_volume: duckVol };
       return;
     }
 
-    // 즉시 방송: 페이드 아웃 → 안내 → 페이드 인
-    const trackAudio = audioRef.current;
-
-    // 이미 안내방송 중이면 origVol 보존, 아니면 현재 트랙 볼륨을 기록
-    if (origVolRef.current === null) {
-      origVolRef.current = trackAudio ? trackAudio.volume : volume;
-    }
+    if (origVolRef.current === null) origVolRef.current = volumeRef.current;
     const origVol = origVolRef.current;
 
-    // 이전 안내방송 즉시 중단
     annAudioRef.current?.pause();
-
     const ann = new Audio(url);
     ann.crossOrigin = 'anonymous';
-    ann.volume = 1.0; // GainNode에서 증폭 제어, audio.volume은 1.0 고정
+    ann.volume = 1.0;
     annAudioRef.current = ann;
     setAnnouncementPlaying(true);
 
-    // Web Audio GainNode로 1.0 초과 증폭
     try {
       const ctx = getAudioCtx();
       const source = ctx.createMediaElementSource(ann);
       const gain = ctx.createGain();
-      gain.gain.value = annVolRatio; // 1.2 = 120% 증폭
+      gain.gain.value = annVol;
       source.connect(gain).connect(ctx.destination);
       annGainRef.current = gain;
-    } catch {
-      // Web Audio 미지원 시 fallback: HTML volume만 사용
-    }
+    } catch {}
 
     (async () => {
       try {
-        if (trackAudio) await fadeVolume(trackAudio, trackAudio.volume, duckVol, 800);
+        if (howlRef.current) howlRef.current.fade(volumeRef.current, duckVol, 800);
         await new Promise<void>(resolve => {
           ann.onended = () => resolve();
           ann.onerror = () => resolve();
           ann.play().catch(() => resolve());
         });
-        const target = audioRef.current ?? trackAudio;
-        if (target) await fadeVolume(target, target.volume, origVol, 800);
+        if (howlRef.current) howlRef.current.fade(howlRef.current.volume() as number, origVol, 800);
       } finally {
-        const target = audioRef.current ?? trackAudio;
-        if (target) target.volume = origVol;
+        if (howlRef.current) howlRef.current.volume(origVol);
         origVolRef.current = null;
         annAudioRef.current = null;
         annGainRef.current = null;
         setAnnouncementPlaying(false);
       }
     })();
-  }, [volume, annVolume]);
+  }, [annVolume, fadeVolume]);
 
   const stopAnnouncement = useCallback(() => {
     if (!annAudioRef.current) return;
     annAudioRef.current.pause();
     annAudioRef.current = null;
     annGainRef.current = null;
-    // 원본 트랙 볼륨 복원
-    const target = audioRef.current;
-    if (target && origVolRef.current !== null) {
-      target.volume = origVolRef.current;
+    if (howlRef.current && origVolRef.current !== null) {
+      howlRef.current.volume(origVolRef.current);
     }
     origVolRef.current = null;
     setAnnouncementPlaying(false);
   }, []);
 
   const close = useCallback(() => {
-    audioRef.current?.pause();
-    audioRef.current = null;
+    howlRef.current?.unload();
+    howlRef.current = null;
     stopBassAnalysis();
+    stopSeekPoll();
     setTrack(null);
     setIsPlaying(false);
     setCurrentTime(0);
     setDuration(0);
-  }, [stopBassAnalysis]);
+  }, [stopBassAnalysis, stopSeekPoll]);
+
+  const toggleShuffle = useCallback(() => setShuffle(s => !s), []);
+  const toggleRepeat  = useCallback(() => setRepeat(r =>
+    r === 'none' ? 'all' : r === 'all' ? 'one' : 'none'
+  ), []);
 
   return (
     <Ctx.Provider value={{
