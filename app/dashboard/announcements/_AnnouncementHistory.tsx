@@ -186,10 +186,18 @@ export default function AnnouncementHistory({
                   <span className="text-[10px] text-dim">· {ann.repeat_count}회</span>
                   <span className="text-[10px] text-dim ml-auto">{fmtTime(ann.created_at)}</span>
                 </div>
-                {ann.audio_url && (
-                  <p className="text-[9px] text-dim/50 font-mono mt-1 truncate" title={ann.audio_url}>
-                    {ann.audio_url}
-                  </p>
+                {ann.audio_url && !ann.audio_url.startsWith('blob:') && (
+                  <a
+                    href={ann.audio_url}
+                    download
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={ann.audio_url}
+                    className="block text-[9px] text-dim/50 font-mono mt-1 truncate hover:text-accent hover:underline transition-colors"
+                    onClick={e => e.stopPropagation()}
+                  >
+                    {ann.audio_url.split('/').pop()}
+                  </a>
                 )}
               </div>
 
