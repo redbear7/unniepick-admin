@@ -13,7 +13,7 @@ export default function NowPlayingChip() {
     <div className="relative inline-flex items-center justify-center py-0.5">
       {/* 장르 태그 — 왼쪽 외부 */}
       {tag && (
-        <span className={`absolute right-full mr-2 text-[10px] px-1.5 py-0.5 rounded leading-none font-semibold whitespace-nowrap bg-accent/15 border border-accent/35 text-accent ${isPlaying ? 'animate-[nowplaying_1.8s_ease-in-out_infinite]' : ''}`}>
+        <span className={`absolute right-full top-1/2 -translate-y-1/2 mr-2 text-[10px] px-1.5 py-0.5 rounded leading-none font-semibold whitespace-nowrap bg-accent/15 border border-accent/35 text-accent ${isPlaying ? 'animate-[nowplaying_1.8s_ease-in-out_infinite]' : ''}`}>
           {tag}
         </span>
       )}
