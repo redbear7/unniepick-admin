@@ -76,6 +76,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const origVolRef       = useRef<number | null>(null); // 안내방송 전 원본 트랙 볼륨
   const crossfadeAudioRef   = useRef<HTMLAudioElement | null>(null);
   const crossfadeActiveRef  = useRef(false);
+  const onAudioErrorRef     = useRef<(() => void) | null>(null);
 
   // ── 베이스 분석 (시뮬레이션 — Web Audio 연결 없이 재생에 영향 없음) ──
   const rafRef           = useRef<number>(0);
@@ -119,8 +120,10 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     audio.ondurationchange = () => setDuration(audio.duration || 0);
     audio.onerror = () => {
       console.error('[Player] audio load error:', audio.src);
-      setError(`재생 불가: "${trackTitle}" — 서버에 오디오 파일이 없습니다`);
+      setError(`재생 불가: "${trackTitle}" — 스토리지에 파일 없음`);
       setIsPlaying(false);
+      // 2초 후 자동으로 다음 트랙으로 이동
+      setTimeout(() => { onAudioErrorRef.current?.(); }, 2000);
     };
   }, []);
 
@@ -191,6 +194,20 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     try { localStorage.setItem('player_last_track', JSON.stringify(t)); } catch {}
     setCurrentTime(0);
     setDuration(t.duration_sec ?? 0);
+    // 오디오 에러 시 자동 다음 트랙으로 넘기는 콜백 등록
+    onAudioErrorRef.current = () => {
+      setQueueIndex(prev => {
+        const q = queue;
+        let next = shuffle ? Math.floor(Math.random() * q.length) : prev + 1;
+        if (next >= q.length) {
+          if (repeat === 'all') next = 0;
+          else return prev;
+        }
+        if (q[next]) loadAndPlay(q[next]);
+        return next;
+      });
+    };
+
     audio.play()
       .then(() => {
         console.log('[Player] ▶', t.title);
@@ -198,7 +215,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         startBassAnalysis(audio);
       })
       .catch((e) => { console.error('[Player] play failed:', e.message); setIsPlaying(false); });
-  }, [volume, bindAudio, startBassAnalysis, stopBassAnalysis]);
+  }, [volume, bindAudio, startBassAnalysis, stopBassAnalysis, queue, shuffle, repeat]);
 
   // ended → 자동 다음 트랙
   useEffect(() => {
