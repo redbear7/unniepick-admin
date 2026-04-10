@@ -919,6 +919,8 @@ export default function TracksPage() {
   // ─── RENDER ──────────────────────────────────────────────────
   return (
     <div className="flex flex-col h-full">
+      {/* ── 상단 고정 영역 ── */}
+      <div className="sticky top-0 z-30 bg-surface">
       {/* 헤더 */}
       <div className="relative flex items-center px-6 py-4 border-b border-border-main">
         <div className="flex-1">
@@ -1085,6 +1087,7 @@ export default function TracksPage() {
           </div>
         )}
       </div>
+      </div>{/* end sticky */}
 
       {/* 트랙 목록 */}
       <div className="flex-1 overflow-auto">
