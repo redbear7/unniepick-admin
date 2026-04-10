@@ -305,10 +305,11 @@ export default function Sidebar() {
             <p className="text-[10px] text-muted mt-1">v0.2.0</p>
           </div>
         </Link>
-        <div className="flex items-center gap-0.5 px-3 pb-2">
-          <div className="flex items-center gap-0.5 bg-card border border-border-main rounded-xl px-1 py-0.5 shadow-sm w-full">
+        <div className="flex flex-col gap-0.5 px-3 pb-2">
+          <div className="flex items-center bg-card border border-border-main rounded-xl px-1 py-0.5 shadow-sm">
             <ThemeToggle />
-            <div className="w-px h-4 bg-border-main" />
+          </div>
+          <div className="flex items-center bg-card border border-border-main rounded-xl px-1 py-0.5 shadow-sm">
             <FontSelector />
           </div>
         </div>
