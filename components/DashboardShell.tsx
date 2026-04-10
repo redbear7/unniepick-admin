@@ -6,6 +6,7 @@ import Sidebar from '@/components/Sidebar';
 import BottomPlayer from '@/components/BottomPlayer';
 import DevLogPanel from '@/components/DevLogPanel';
 import ThemeToggle from '@/components/ThemeToggle';
+import FontSelector from '@/components/FontSelector';
 
 function useServiceWorker() {
   useEffect(() => {
@@ -38,9 +39,14 @@ export default function DashboardShell({ children }: { children: React.ReactNode
       {/* 개발자 로그 패널 */}
       <DevLogPanel />
 
-      {/* 테마 토글 — 메인 영역 상단 중앙 고정 */}
-      <div className="fixed top-3 z-50" style={{ left: 'calc(14rem + (100vw - 14rem) / 2)', transform: 'translateX(-50%)' }}>
+      {/* 테마 토글 + 폰트 선택 — 메인 영역 상단 중앙 고정 */}
+      <div
+        className="fixed top-3 z-50 flex items-center gap-0.5 bg-card/80 backdrop-blur border border-border-main rounded-xl px-1 shadow-sm"
+        style={{ left: 'calc(14rem + (100vw - 14rem) / 2)', transform: 'translateX(-50%)' }}
+      >
         <ThemeToggle />
+        <div className="w-px h-4 bg-border-main" />
+        <FontSelector />
       </div>
     </PlayerProvider>
   );
