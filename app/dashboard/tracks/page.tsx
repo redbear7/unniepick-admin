@@ -7,6 +7,7 @@ import { usePlayer } from '@/contexts/PlayerContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import ThemeToggle from '@/components/ThemeToggle';
 import FontSelector from '@/components/FontSelector';
+import NowPlayingChip from '@/components/NowPlayingChip';
 
 // ─── 타입 ──────────────────────────────────────────────────────
 interface MusicTrack {
@@ -932,6 +933,7 @@ export default function TracksPage() {
             <div className="w-px h-5 bg-border-main" />
             <FontSelector />
           </div>
+          <NowPlayingChip />
           <button onClick={openCreate}
             className="flex items-center gap-2 px-4 py-2 bg-accent text-accent-fg text-sm font-bold rounded-xl hover:opacity-90 transition">
             <Plus size={15} /> 새 트랙 등록

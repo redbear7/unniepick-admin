@@ -6,7 +6,6 @@ import Sidebar from '@/components/Sidebar';
 import BottomPlayer from '@/components/BottomPlayer';
 import DevLogPanel from '@/components/DevLogPanel';
 import AudioBars from '@/components/AudioBars';
-import NowPlayingChip from '@/components/NowPlayingChip';
 
 function useServiceWorker() {
   useEffect(() => {
@@ -40,13 +39,6 @@ export default function DashboardShell({ children }: { children: React.ReactNode
       {/* 개발자 로그 패널 */}
       <DevLogPanel />
 
-      {/* 현재 재생 트랙 제목 — 메인 영역 상단 중앙 고정 */}
-      <div
-        className="fixed top-5 z-50"
-        style={{ left: 'calc(14rem + (100vw - 14rem) / 2)', transform: 'translateX(-50%)' }}
-      >
-        <NowPlayingChip />
-      </div>
     </PlayerProvider>
   );
 }
