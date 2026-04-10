@@ -6,6 +6,8 @@ import { Search, Plus, Pencil, Trash2, ToggleLeft, ToggleRight, X, Check, Play, 
 import { usePlayer } from '@/contexts/PlayerContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import NowPlayingChip from '@/components/NowPlayingChip';
+import ThemeToggle from '@/components/ThemeToggle';
+import FontSelector from '@/components/FontSelector';
 
 // ─── 타입 ──────────────────────────────────────────────────────
 interface MusicTrack {
@@ -930,6 +932,11 @@ export default function TracksPage() {
           <NowPlayingChip onTagClick={(tag) => setTagFilter(tag)} />
         </div>
         <div className="flex-1 flex items-center justify-end gap-2">
+          <div className="flex items-center gap-0.5 bg-card border border-border-main rounded-xl px-1 py-1 shadow-sm">
+            <ThemeToggle />
+            <div className="w-px h-5 bg-border-main" />
+            <FontSelector />
+          </div>
           <button onClick={openCreate}
             className="flex items-center gap-2 px-4 py-2 bg-accent text-accent-fg text-sm font-bold rounded-xl hover:opacity-90 transition">
             <Plus size={15} /> 새 트랙 등록
