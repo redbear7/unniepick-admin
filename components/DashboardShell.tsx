@@ -45,7 +45,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
       {/* 테마 토글 + 폰트 선택 — 메인 영역 상단 중앙 고정 */}
       {/* 테마 토글 + 폰트 선택 + 트랙 제목 */}
       <div
-        className="fixed top-3 z-50 flex flex-col items-center gap-2.5"
+        className="fixed top-5 z-50 flex flex-col items-center gap-2.5"
         style={{ left: 'calc(14rem + (100vw - 14rem) / 2)', transform: 'translateX(-50%)' }}
       >
         <div className="flex items-center gap-0.5 bg-card border border-border-main rounded-xl px-1 py-0.5 shadow-sm">
