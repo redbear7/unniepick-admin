@@ -929,7 +929,7 @@ export default function TracksPage() {
         </div>
         {/* 중앙 — NowPlayingChip */}
         <div className="absolute left-1/2 -translate-x-1/2">
-          <NowPlayingChip />
+          <NowPlayingChip onTagClick={(tag) => setTagFilter(tag)} />
         </div>
         <div className="flex-1 flex items-center justify-end gap-2">
           <div className="flex items-center gap-0.5 bg-card border border-border-main rounded-xl px-1 py-1 shadow-sm">
