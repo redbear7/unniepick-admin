@@ -393,6 +393,7 @@ export default function TracksPage() {
   const [manualOrder,    setManualOrder]    = useState<string[]>([]);
   const dragTrackId       = useRef<string | null>(null);
   const [dragOverTrack, setDragOverTrack]  = useState<string | null>(null);
+  const [likedTracks,   setLikedTracks]   = useState<Set<string>>(new Set());
 
   // ── 재생수 카운팅 ─────────────────────────────────────────────
   const playCountTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -829,6 +830,14 @@ export default function TracksPage() {
     }
   };
 
+  // ── 좋아요 목록 localStorage 복원 ──
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('liked_tracks') ?? '[]') as string[];
+      setLikedTracks(new Set(saved));
+    } catch {}
+  }, []);
+
   // ── hl 쿼리파람 → 해당 트랙으로 스크롤 ──
   useEffect(() => {
     const hl = searchParams.get('hl');
@@ -841,12 +850,17 @@ export default function TracksPage() {
     return () => clearTimeout(timer);
   }, [searchParams]);
 
-  // ── 좋아요 ──
+  // ── 좋아요 토글 ──
   const handleLike = async (t: MusicTrack, e: React.MouseEvent) => {
     e.stopPropagation();
-    const next = (t.like_count ?? 0) + 1;
-    await sb.from('music_tracks').update({ like_count: next }).eq('id', t.id);
-    setTracks(prev => prev.map(tr => tr.id === t.id ? { ...tr, like_count: next } : tr));
+    const isLiked = likedTracks.has(t.id);
+    const nextCount = (t.like_count ?? 0) + (isLiked ? -1 : 1);
+    const nextSet   = new Set(likedTracks);
+    isLiked ? nextSet.delete(t.id) : nextSet.add(t.id);
+    setLikedTracks(nextSet);
+    try { localStorage.setItem('liked_tracks', JSON.stringify([...nextSet])); } catch {}
+    await sb.from('music_tracks').update({ like_count: Math.max(0, nextCount) }).eq('id', t.id);
+    setTracks(prev => prev.map(tr => tr.id === t.id ? { ...tr, like_count: Math.max(0, nextCount) } : tr));
   };
 
   const handleDelete = async (t: MusicTrack) => {
@@ -1615,6 +1629,19 @@ export default function TracksPage() {
                       </div>
                     )}
 
+                    {/* 좋아요 버튼 — 썸네일 좌측 상단 */}
+                    <button
+                      onClick={(e) => handleLike(track, e)}
+                      title="좋아요"
+                      className={`absolute top-1.5 left-1.5 w-6 h-6 flex items-center justify-center rounded-full backdrop-blur-sm transition-all z-10 ${
+                        likedTracks.has(track.id)
+                          ? 'bg-red-500/80 text-white scale-110'
+                          : 'bg-black/40 text-white/50 opacity-0 group-hover:opacity-100 hover:text-red-400'
+                      }`}
+                    >
+                      <Heart size={11} fill={likedTracks.has(track.id) ? 'currentColor' : 'none'} />
+                    </button>
+
                     {/* AI 커버 생성 완료 점 */}
                     {track.cover_image_url?.includes('ai_') && (
                       <span className="absolute top-1.5 right-1.5 w-3 h-3 rounded-full bg-red-500 shadow-lg"></span>
@@ -1750,12 +1777,6 @@ export default function TracksPage() {
                           title="숏폼 만들기"
                         >
                           <Film size={10} /> 숏폼
-                        </button>
-                        <button
-                          onClick={(e) => handleLike(track, e)}
-                          title="좋아요"
-                          className="w-6 h-6 flex items-center justify-center rounded bg-red-500/10 text-red-400 hover:text-red-300 hover:bg-red-500/20 transition">
-                          <Heart size={11} />
                         </button>
                         <button onClick={() => openEdit(track)}
                           className="w-6 h-6 flex items-center justify-center rounded bg-fill-subtle text-muted hover:text-primary transition">
