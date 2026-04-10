@@ -294,6 +294,330 @@
   --shadow-sm:   0 1px 2px rgba(249,115,22,0.08);
 }
 
+.catppuccin {
+  /* ── Catppuccin Mocha ───────────────────────────────────────── */
+  --bg-surface:    #1e1e2e;
+  --bg-sidebar:    #181825;
+  --bg-card:       #313244;
+  --bg-card-hover: #45475a;
+  --bg-input:      #11111b;
+
+  --border-main:   rgba(203, 166, 247, 0.22);
+  --border-subtle: rgba(203, 166, 247, 0.14);
+
+  --text-primary:   #cdd6f4;
+  --text-secondary: #bac2de;
+  --text-tertiary:  #a6adc8;
+  --text-muted:     #6c7086;
+  --text-dim:       #45475a;
+
+  --fill-subtle: rgba(203, 166, 247, 0.08);
+  --fill-medium: rgba(203, 166, 247, 0.16);
+
+  --accent:      #cba6f7;
+  --accent-dark: #b4befe;
+
+  --shadow-card: none;
+  --shadow-sm:   none;
+}
+
+.gruvbox {
+  /* ── Gruvbox Dark ───────────────────────────────────────────── */
+  --bg-surface:    #1d2021;
+  --bg-sidebar:    #181818;
+  --bg-card:       #282828;
+  --bg-card-hover: #3c3836;
+  --bg-input:      #161616;
+
+  --border-main:   rgba(215, 153, 33, 0.22);
+  --border-subtle: rgba(215, 153, 33, 0.14);
+
+  --text-primary:   #ebdbb2;
+  --text-secondary: #d5c4a1;
+  --text-tertiary:  #bdae93;
+  --text-muted:     #928374;
+  --text-dim:       #665c54;
+
+  --fill-subtle: rgba(215, 153, 33, 0.08);
+  --fill-medium: rgba(215, 153, 33, 0.16);
+
+  --accent:      #d79921;
+  --accent-dark: #b57614;
+
+  --shadow-card: none;
+  --shadow-sm:   none;
+}
+
+.matrix {
+  /* ── Matrix — Terminal Green ─────────────────────────────────── */
+  --bg-surface:    #000000;
+  --bg-sidebar:    #050505;
+  --bg-card:       #0a0a0a;
+  --bg-card-hover: #111111;
+  --bg-input:      #030303;
+
+  --border-main:   rgba(0, 255, 65, 0.22);
+  --border-subtle: rgba(0, 255, 65, 0.12);
+
+  --text-primary:   #00ff41;
+  --text-secondary: #00cc33;
+  --text-tertiary:  #009922;
+  --text-muted:     #006614;
+  --text-dim:       #003308;
+
+  --fill-subtle: rgba(0, 255, 65, 0.06);
+  --fill-medium: rgba(0, 255, 65, 0.12);
+
+  --accent:      #00ff41;
+  --accent-dark: #00cc33;
+
+  --shadow-card: none;
+  --shadow-sm:   none;
+}
+
+.cyberpunk {
+  /* ── Cyberpunk — Neon Pink & Yellow ─────────────────────────── */
+  --bg-surface:    #0d0d0d;
+  --bg-sidebar:    #080808;
+  --bg-card:       #141414;
+  --bg-card-hover: #1a1a1a;
+  --bg-input:      #060606;
+
+  --border-main:   rgba(255, 45, 120, 0.30);
+  --border-subtle: rgba(255, 45, 120, 0.18);
+
+  --text-primary:   #ffffff;
+  --text-secondary: #e0e0e0;
+  --text-tertiary:  #909090;
+  --text-muted:     #5e5e5e;
+  --text-dim:       #3a3a3a;
+
+  --fill-subtle: rgba(255, 45, 120, 0.08);
+  --fill-medium: rgba(255, 45, 120, 0.18);
+
+  --accent:      #ff2d78;
+  --accent-dark: #ffee00;
+
+  --shadow-card: 0 0 0 1px rgba(255,45,120,0.20), 0 4px 20px rgba(255,45,120,0.15);
+  --shadow-sm:   0 0 8px rgba(255,45,120,0.12);
+}
+
+.onedark {
+  /* ── One Dark — VS Code Classic ─────────────────────────────── */
+  --bg-surface:    #282c34;
+  --bg-sidebar:    #21252b;
+  --bg-card:       #2c313a;
+  --bg-card-hover: #3a3f4b;
+  --bg-input:      #1d2026;
+
+  --border-main:   rgba(97, 175, 239, 0.20);
+  --border-subtle: rgba(97, 175, 239, 0.12);
+
+  --text-primary:   #abb2bf;
+  --text-secondary: #9da5b4;
+  --text-tertiary:  #7f848e;
+  --text-muted:     #5c6370;
+  --text-dim:       #4b5263;
+
+  --fill-subtle: rgba(97, 175, 239, 0.08);
+  --fill-medium: rgba(97, 175, 239, 0.16);
+
+  --accent:      #61afef;
+  --accent-dark: #528bff;
+
+  --shadow-card: none;
+  --shadow-sm:   none;
+}
+
+.solarized {
+  /* ── Solarized Dark ─────────────────────────────────────────── */
+  --bg-surface:    #002b36;
+  --bg-sidebar:    #001e26;
+  --bg-card:       #073642;
+  --bg-card-hover: #094454;
+  --bg-input:      #00161d;
+
+  --border-main:   rgba(38, 139, 210, 0.22);
+  --border-subtle: rgba(38, 139, 210, 0.14);
+
+  --text-primary:   #839496;
+  --text-secondary: #657b83;
+  --text-tertiary:  #586e75;
+  --text-muted:     #475b62;
+  --text-dim:       #2e4a53;
+
+  --fill-subtle: rgba(38, 139, 210, 0.08);
+  --fill-medium: rgba(38, 139, 210, 0.16);
+
+  --accent:      #268bd2;
+  --accent-dark: #2aa198;
+
+  --shadow-card: none;
+  --shadow-sm:   none;
+}
+
+.paper {
+  /* ── Paper — Ivory Classic ───────────────────────────────────── */
+  --bg-surface:    #fafaf2;
+  --bg-sidebar:    #f5f5e8;
+  --bg-card:       #ffffff;
+  --bg-card-hover: #f0f0e8;
+  --bg-input:      #efefe4;
+
+  --border-main:   rgba(100, 100, 80, 0.15);
+  --border-subtle: rgba(100, 100, 80, 0.10);
+
+  --text-primary:   #1a1a14;
+  --text-secondary: #3a3a2e;
+  --text-tertiary:  #6a6a5a;
+  --text-muted:     #8a8a78;
+  --text-dim:       #b0b09e;
+
+  --fill-subtle: rgba(100, 100, 80, 0.06);
+  --fill-medium: rgba(100, 100, 80, 0.12);
+
+  --accent:      #6b7280;
+  --accent-dark: #4b5563;
+
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-sm:   0 1px 2px rgba(0,0,0,0.06);
+}
+
+.rose {
+  /* ── Rose — Warm Pink Light ─────────────────────────────────── */
+  --bg-surface:    #fff0f3;
+  --bg-sidebar:    #ffffff;
+  --bg-card:       #ffffff;
+  --bg-card-hover: #ffe4ea;
+  --bg-input:      #ffeaee;
+
+  --border-main:   rgba(225, 29, 72, 0.18);
+  --border-subtle: rgba(225, 29, 72, 0.12);
+
+  --text-primary:   #4a0018;
+  --text-secondary: #7f1d3d;
+  --text-tertiary:  #9f2d50;
+  --text-muted:     #c05070;
+  --text-dim:       #e090a8;
+
+  --fill-subtle: rgba(225, 29, 72, 0.07);
+  --fill-medium: rgba(225, 29, 72, 0.13);
+
+  --accent:      #e11d48;
+  --accent-dark: #be123c;
+
+  --shadow-card: 0 1px 3px rgba(225,29,72,0.10), 0 1px 2px rgba(225,29,72,0.06);
+  --shadow-sm:   0 1px 2px rgba(225,29,72,0.08);
+}
+
+.lemon {
+  /* ── Lemon — Bright Yellow Light ────────────────────────────── */
+  --bg-surface:    #fefce8;
+  --bg-sidebar:    #ffffff;
+  --bg-card:       #ffffff;
+  --bg-card-hover: #fef9c3;
+  --bg-input:      #fefae0;
+
+  --border-main:   rgba(202, 138, 4, 0.18);
+  --border-subtle: rgba(202, 138, 4, 0.12);
+
+  --text-primary:   #3a2000;
+  --text-secondary: #5c3a00;
+  --text-tertiary:  #7c5200;
+  --text-muted:     #a07010;
+  --text-dim:       #c8a040;
+
+  --fill-subtle: rgba(202, 138, 4, 0.07);
+  --fill-medium: rgba(202, 138, 4, 0.13);
+
+  --accent:      #ca8a04;
+  --accent-dark: #a16207;
+
+  --shadow-card: 0 1px 3px rgba(202,138,4,0.10), 0 1px 2px rgba(202,138,4,0.06);
+  --shadow-sm:   0 1px 2px rgba(202,138,4,0.08);
+}
+
+.lamborghini {
+  /* ── Lamborghini — Carbon & Arancio ─────────────────────────── */
+  --bg-surface:    #080808;
+  --bg-sidebar:    #0d0d0d;
+  --bg-card:       #151515;
+  --bg-card-hover: #1d1d1d;
+  --bg-input:      #050505;
+
+  --border-main:   rgba(232, 105, 0, 0.28);
+  --border-subtle: rgba(232, 105, 0, 0.18);
+
+  --text-primary:   #ffffff;
+  --text-secondary: #e0e0e0;
+  --text-tertiary:  #909090;
+  --text-muted:     #5e5e5e;
+  --text-dim:       #3a3a3a;
+
+  --fill-subtle: rgba(232, 105, 0, 0.08);
+  --fill-medium: rgba(232, 105, 0, 0.16);
+
+  --accent:      #e86900;
+  --accent-dark: #c05000;
+
+  --shadow-card: 0 0 0 1px rgba(232,105,0,0.15), 0 4px 16px rgba(0,0,0,0.6);
+  --shadow-sm:   0 0 0 1px rgba(232,105,0,0.08);
+}
+
+.porsche {
+  /* ── Porsche — Charcoal & Racing Red ────────────────────────── */
+  --bg-surface:    #1c1c1e;
+  --bg-sidebar:    #161618;
+  --bg-card:       #242426;
+  --bg-card-hover: #2c2c2e;
+  --bg-input:      #111113;
+
+  --border-main:   rgba(227, 7, 19, 0.25);
+  --border-subtle: rgba(227, 7, 19, 0.15);
+
+  --text-primary:   #f5f5f7;
+  --text-secondary: #c8c8cc;
+  --text-tertiary:  #8a8a8e;
+  --text-muted:     #5a5a5e;
+  --text-dim:       #3a3a3e;
+
+  --fill-subtle: rgba(227, 7, 19, 0.08);
+  --fill-medium: rgba(227, 7, 19, 0.16);
+
+  --accent:      #e30713;
+  --accent-dark: #b8000e;
+
+  --shadow-card: 0 0 0 1px rgba(227,7,19,0.12), 0 4px 16px rgba(0,0,0,0.5);
+  --shadow-sm:   0 0 0 1px rgba(227,7,19,0.08);
+}
+
+.oled {
+  /* ── OLED — Pure Black ──────────────────────────────────────── */
+  --bg-surface:    #000000;
+  --bg-sidebar:    #000000;
+  --bg-card:       #0a0a0a;
+  --bg-card-hover: #111111;
+  --bg-input:      #000000;
+
+  --border-main:   rgba(255, 111, 15, 0.20);
+  --border-subtle: rgba(255, 111, 15, 0.12);
+
+  --text-primary:   #ffffff;
+  --text-secondary: #e0e0e0;
+  --text-tertiary:  #909090;
+  --text-muted:     #5e5e5e;
+  --text-dim:       #3a3a3a;
+
+  --fill-subtle: rgba(255, 255, 255, 0.05);
+  --fill-medium: rgba(255, 255, 255, 0.10);
+
+  --accent:      #FF6F0F;
+  --accent-dark: #e05a00;
+
+  --shadow-card: none;
+  --shadow-sm:   none;
+}
+
 .ferrari {
   /* ── Ferrari — Rosso Corsa & Carbon ────────────────────────── */
   --bg-surface:    #080808;   /* carbon black */
@@ -353,84 +677,84 @@ body {
 
 /* ── Light mode: hardcoded dark color overrides ──────────────────────────── */
 /* 페이지 래퍼 / 섹션 배경 */
-html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .bg-\[\#0f1117\],
-html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .bg-\[\#0a0c14\],
-html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .bg-\[\#1a1c24\],
-html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .bg-\[\#080A0E\] {
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula):not(.catppuccin):not(.gruvbox):not(.matrix):not(.cyberpunk):not(.onedark):not(.solarized):not(.lamborghini):not(.porsche):not(.oled) .bg-\[\#0f1117\],
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula):not(.catppuccin):not(.gruvbox):not(.matrix):not(.cyberpunk):not(.onedark):not(.solarized):not(.lamborghini):not(.porsche):not(.oled) .bg-\[\#0a0c14\],
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula):not(.catppuccin):not(.gruvbox):not(.matrix):not(.cyberpunk):not(.onedark):not(.solarized):not(.lamborghini):not(.porsche):not(.oled) .bg-\[\#1a1c24\],
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula):not(.catppuccin):not(.gruvbox):not(.matrix):not(.cyberpunk):not(.onedark):not(.solarized):not(.lamborghini):not(.porsche):not(.oled) .bg-\[\#080A0E\] {
   background-color: var(--bg-surface) !important;
   color: var(--text-primary) !important;
 }
 
 /* 모달 배경 */
-html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .bg-\[\#13161D\] {
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula):not(.catppuccin):not(.gruvbox):not(.matrix):not(.cyberpunk):not(.onedark):not(.solarized):not(.lamborghini):not(.porsche):not(.oled) .bg-\[\#13161D\] {
   background-color: #ffffff !important;
   color: var(--text-primary) !important;
 }
 
 /* 인풋 / 텍스트에어리어 */
-html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .bg-\[\#0f0f10\],
-html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .bg-\[\#1F2937\] {
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula):not(.catppuccin):not(.gruvbox):not(.matrix):not(.cyberpunk):not(.onedark):not(.solarized):not(.lamborghini):not(.porsche):not(.oled) .bg-\[\#0f0f10\],
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula):not(.catppuccin):not(.gruvbox):not(.matrix):not(.cyberpunk):not(.onedark):not(.solarized):not(.lamborghini):not(.porsche):not(.oled) .bg-\[\#1F2937\] {
   background-color: var(--bg-input) !important;
   color: var(--text-primary) !important;
 }
 
 /* border overrides on dark inputs */
-html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .border-border-main {
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula):not(.catppuccin):not(.gruvbox):not(.matrix):not(.cyberpunk):not(.onedark):not(.solarized):not(.lamborghini):not(.porsche):not(.oled) .border-border-main {
   border-color: var(--border-main) !important;
 }
 
 /* placeholder 색상 */
-html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .placeholder-gray-600::placeholder {
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula):not(.catppuccin):not(.gruvbox):not(.matrix):not(.cyberpunk):not(.onedark):not(.solarized):not(.lamborghini):not(.porsche):not(.oled) .placeholder-gray-600::placeholder {
   color: var(--text-muted) !important;
 }
 
 /* ── white/opacity 계열 — 다크 배경 전제 클래스 → 라이트모드 대응 ──── */
-html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .bg-white\/5,
-html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .bg-white\/3  { background-color: var(--fill-subtle) !important; }
-html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .bg-white\/10 { background-color: var(--fill-medium) !important; }
-html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .bg-white\/20 { background-color: rgba(0,0,0,0.07)  !important; }
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula):not(.catppuccin):not(.gruvbox):not(.matrix):not(.cyberpunk):not(.onedark):not(.solarized):not(.lamborghini):not(.porsche):not(.oled) .bg-white\/5,
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula):not(.catppuccin):not(.gruvbox):not(.matrix):not(.cyberpunk):not(.onedark):not(.solarized):not(.lamborghini):not(.porsche):not(.oled) .bg-white\/3  { background-color: var(--fill-subtle) !important; }
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula):not(.catppuccin):not(.gruvbox):not(.matrix):not(.cyberpunk):not(.onedark):not(.solarized):not(.lamborghini):not(.porsche):not(.oled) .bg-white\/10 { background-color: var(--fill-medium) !important; }
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula):not(.catppuccin):not(.gruvbox):not(.matrix):not(.cyberpunk):not(.onedark):not(.solarized):not(.lamborghini):not(.porsche):not(.oled) .bg-white\/20 { background-color: rgba(0,0,0,0.07)  !important; }
 
-html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .text-white\/20,
-html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .text-white\/30,
-html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .text-white\/35,
-html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .text-white\/40 { color: var(--text-dim)   !important; }
-html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .text-white\/50,
-html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .text-white\/60 { color: var(--text-muted)  !important; }
-html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .text-white\/70,
-html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .text-white\/80 { color: var(--text-tertiary) !important; }
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula):not(.catppuccin):not(.gruvbox):not(.matrix):not(.cyberpunk):not(.onedark):not(.solarized):not(.lamborghini):not(.porsche):not(.oled) .text-white\/20,
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula):not(.catppuccin):not(.gruvbox):not(.matrix):not(.cyberpunk):not(.onedark):not(.solarized):not(.lamborghini):not(.porsche):not(.oled) .text-white\/30,
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula):not(.catppuccin):not(.gruvbox):not(.matrix):not(.cyberpunk):not(.onedark):not(.solarized):not(.lamborghini):not(.porsche):not(.oled) .text-white\/35,
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula):not(.catppuccin):not(.gruvbox):not(.matrix):not(.cyberpunk):not(.onedark):not(.solarized):not(.lamborghini):not(.porsche):not(.oled) .text-white\/40 { color: var(--text-dim)   !important; }
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula):not(.catppuccin):not(.gruvbox):not(.matrix):not(.cyberpunk):not(.onedark):not(.solarized):not(.lamborghini):not(.porsche):not(.oled) .text-white\/50,
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula):not(.catppuccin):not(.gruvbox):not(.matrix):not(.cyberpunk):not(.onedark):not(.solarized):not(.lamborghini):not(.porsche):not(.oled) .text-white\/60 { color: var(--text-muted)  !important; }
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula):not(.catppuccin):not(.gruvbox):not(.matrix):not(.cyberpunk):not(.onedark):not(.solarized):not(.lamborghini):not(.porsche):not(.oled) .text-white\/70,
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula):not(.catppuccin):not(.gruvbox):not(.matrix):not(.cyberpunk):not(.onedark):not(.solarized):not(.lamborghini):not(.porsche):not(.oled) .text-white\/80 { color: var(--text-tertiary) !important; }
 
-html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .border-white\/5,
-html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .border-white\/8,
-html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .border-white\/10,
-html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .border-white\/15,
-html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .border-white\/20,
-html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .border-white\/30 { border-color: var(--border-subtle) !important; }
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula):not(.catppuccin):not(.gruvbox):not(.matrix):not(.cyberpunk):not(.onedark):not(.solarized):not(.lamborghini):not(.porsche):not(.oled) .border-white\/5,
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula):not(.catppuccin):not(.gruvbox):not(.matrix):not(.cyberpunk):not(.onedark):not(.solarized):not(.lamborghini):not(.porsche):not(.oled) .border-white\/8,
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula):not(.catppuccin):not(.gruvbox):not(.matrix):not(.cyberpunk):not(.onedark):not(.solarized):not(.lamborghini):not(.porsche):not(.oled) .border-white\/10,
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula):not(.catppuccin):not(.gruvbox):not(.matrix):not(.cyberpunk):not(.onedark):not(.solarized):not(.lamborghini):not(.porsche):not(.oled) .border-white\/15,
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula):not(.catppuccin):not(.gruvbox):not(.matrix):not(.cyberpunk):not(.onedark):not(.solarized):not(.lamborghini):not(.porsche):not(.oled) .border-white\/20,
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula):not(.catppuccin):not(.gruvbox):not(.matrix):not(.cyberpunk):not(.onedark):not(.solarized):not(.lamborghini):not(.porsche):not(.oled) .border-white\/30 { border-color: var(--border-subtle) !important; }
 
 /* ── Light mode: card & section 개선 ─────────────────────────────────────── */
-html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .bg-surface   { background-color: var(--bg-surface) !important; }
-html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .bg-card,
-html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) [class*="bg-card"] {
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula):not(.catppuccin):not(.gruvbox):not(.matrix):not(.cyberpunk):not(.onedark):not(.solarized):not(.lamborghini):not(.porsche):not(.oled) .bg-surface   { background-color: var(--bg-surface) !important; }
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula):not(.catppuccin):not(.gruvbox):not(.matrix):not(.cyberpunk):not(.onedark):not(.solarized):not(.lamborghini):not(.porsche):not(.oled) .bg-card,
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula):not(.catppuccin):not(.gruvbox):not(.matrix):not(.cyberpunk):not(.onedark):not(.solarized):not(.lamborghini):not(.porsche):not(.oled) [class*="bg-card"] {
   box-shadow: var(--shadow-card);
 }
 
 /* rounded-xl, rounded-2xl 카드에 Apple 그림자 */
-html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .rounded-xl,
-html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .rounded-2xl {
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula):not(.catppuccin):not(.gruvbox):not(.matrix):not(.cyberpunk):not(.onedark):not(.solarized):not(.lamborghini):not(.porsche):not(.oled) .rounded-xl,
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula):not(.catppuccin):not(.gruvbox):not(.matrix):not(.cyberpunk):not(.onedark):not(.solarized):not(.lamborghini):not(.porsche):not(.oled) .rounded-2xl {
   box-shadow: var(--shadow-sm);
 }
 
 /* 사이드바 구분선 */
-html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .border-border-main {
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula):not(.catppuccin):not(.gruvbox):not(.matrix):not(.cyberpunk):not(.onedark):not(.solarized):not(.lamborghini):not(.porsche):not(.oled) .border-border-main {
   border-color: var(--border-main);
 }
 
 /* scrollbar: Apple macOS 스타일 */
-html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) ::-webkit-scrollbar       { width: 6px; height: 6px; }
-html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) ::-webkit-scrollbar-track { background: transparent; }
-html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) ::-webkit-scrollbar-thumb {
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula):not(.catppuccin):not(.gruvbox):not(.matrix):not(.cyberpunk):not(.onedark):not(.solarized):not(.lamborghini):not(.porsche):not(.oled) ::-webkit-scrollbar       { width: 6px; height: 6px; }
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula):not(.catppuccin):not(.gruvbox):not(.matrix):not(.cyberpunk):not(.onedark):not(.solarized):not(.lamborghini):not(.porsche):not(.oled) ::-webkit-scrollbar-track { background: transparent; }
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula):not(.catppuccin):not(.gruvbox):not(.matrix):not(.cyberpunk):not(.onedark):not(.solarized):not(.lamborghini):not(.porsche):not(.oled) ::-webkit-scrollbar-thumb {
   background: rgba(0,0,0,0.18);
   border-radius: 999px;
 }
-html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) ::-webkit-scrollbar-thumb:hover {
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula):not(.catppuccin):not(.gruvbox):not(.matrix):not(.cyberpunk):not(.onedark):not(.solarized):not(.lamborghini):not(.porsche):not(.oled) ::-webkit-scrollbar-thumb:hover {
   background: rgba(0,0,0,0.28);
 }
