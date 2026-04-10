@@ -116,7 +116,7 @@ export default function FontSelector() {
       </button>
 
       {open && (
-        <div className="absolute top-full mt-1.5 left-1/2 -translate-x-1/2 w-44 bg-card border border-border-main rounded-xl shadow-xl z-50 py-1.5 overflow-hidden">
+        <div className="absolute top-full mt-1.5 left-1/2 -translate-x-1/2 w-44 bg-card border border-border-main rounded-xl shadow-xl z-[200] py-1.5 overflow-hidden">
           {FONTS.map(font => (
             <button
               key={font.id}
