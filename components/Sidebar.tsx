@@ -296,16 +296,16 @@ export default function Sidebar() {
   return (
     <aside className="w-56 shrink-0 bg-sidebar border-r border-border-main flex flex-col h-full overflow-y-auto">
       {/* 로고 */}
-      <div className="border-b border-border-main">
-        <Link href="/dashboard" className="flex items-center gap-3 px-5 pt-5 pb-3 hover:bg-card transition">
+      <div className="border-b border-border-main flex items-center gap-2 px-4 py-4">
+        <Link href="/dashboard" className="flex items-center gap-3 flex-1 min-w-0 hover:opacity-80 transition">
           <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center text-base shrink-0">🍖</div>
-          <div className="flex-1 min-w-0">
+          <div className="min-w-0">
             <p className="text-[10px] text-muted leading-none">언니픽</p>
             <p className="text-sm font-bold text-primary leading-tight mt-0.5">슈퍼어드민</p>
             <p className="text-[10px] text-muted mt-1">v0.2.0</p>
           </div>
         </Link>
-        <div className="flex flex-col px-3 pb-2">
+        <div className="flex flex-col items-start shrink-0">
           <ThemeToggle />
           <FontSelector />
         </div>
