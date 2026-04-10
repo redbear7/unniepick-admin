@@ -213,21 +213,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       onload: () => {
         setDuration(howl.duration());
       },
-      onplay: () => {
-        setIsPlaying(true);
-        startBassAnalysis();
-        startSeekPoll(howl);
-      },
-      onpause: () => {
-        setIsPlaying(false);
-        stopBassAnalysis();
-        stopSeekPoll();
-      },
-      onstop: () => {
-        setIsPlaying(false);
-        stopBassAnalysis();
-        stopSeekPoll();
-      },
+      onplay:  () => { setIsPlaying(true); },
+      onpause: () => { setIsPlaying(false); },
+      onstop:  () => { setIsPlaying(false); },
       onend: () => {
         if (crossfadeActive.current) return;
 
@@ -327,8 +315,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       setCurrentTime(0);
       setDuration(nextTrack.duration_sec ?? 0);
       try { localStorage.setItem('player_last_track', JSON.stringify(nextTrack)); } catch {}
-      startBassAnalysis();
-      startSeekPoll(howlRef.current!);
+      setIsPlaying(true); // useEffect가 bass + seekPoll 시작
 
       // onend 재등록
       howlRef.current?.on('end', () => {
@@ -338,7 +325,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         loadAndPlay(queueRef.current[ni]);
       });
     }, fadeMs);
-  }, [currentTime, duration, isPlaying, queue, queueIndex, repeat, shuffle, getNextIndex, startBassAnalysis, startSeekPoll, loadAndPlay]);
+  }, [currentTime, duration, isPlaying, queue, queueIndex, repeat, shuffle, getNextIndex, loadAndPlay]);
 
   const play = useCallback((t: PlayableTrack, q?: PlayableTrack[]) => {
     const newQueue = q ?? [t];
@@ -484,6 +471,18 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setCurrentTime(0);
     setDuration(0);
   }, [stopBassAnalysis, stopSeekPoll]);
+
+  // isPlaying 변화에 따라 베이스 분석 + seek poll 동기화
+  useEffect(() => {
+    if (isPlaying) {
+      startBassAnalysis();
+      if (howlRef.current) startSeekPoll(howlRef.current);
+    } else {
+      stopBassAnalysis();
+      stopSeekPoll();
+    }
+    return () => { stopBassAnalysis(); stopSeekPoll(); };
+  }, [isPlaying, startBassAnalysis, stopBassAnalysis, startSeekPoll, stopSeekPoll]);
 
   const toggleShuffle = useCallback(() => setShuffle(s => !s), []);
   const toggleRepeat  = useCallback(() => setRepeat(r =>
