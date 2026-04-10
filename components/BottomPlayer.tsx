@@ -71,8 +71,8 @@ export default function BottomPlayer() {
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.isContentEditable) return;
 
-      // K — YouTube 스타일 재생/일시정지
-      if (e.code === 'KeyK' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      // A — Audio 재생/일시정지
+      if (e.code === 'KeyA' && !e.metaKey && !e.ctrlKey && !e.altKey) {
         e.preventDefault(); togglePlay();
       }
     };
