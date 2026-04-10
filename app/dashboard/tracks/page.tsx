@@ -1709,8 +1709,8 @@ export default function TracksPage() {
                           : 'bg-white opacity-0 group-hover:opacity-100'
                       }`}>
                         {isPlaying
-                          ? <Pause size={14} className={isActive ? 'text-primary' : 'text-[#0D0F14]'} />
-                          : <Play  size={14} className={isActive ? 'text-primary' : 'text-[#0D0F14] ml-0.5'} />
+                          ? <Pause size={14} className={isActive ? 'text-accent-fg' : 'text-[#0D0F14]'} />
+                          : <Play  size={14} className={isActive ? 'text-accent-fg' : 'text-[#0D0F14] ml-0.5'} />
                         }
                       </span>
                     </button>
