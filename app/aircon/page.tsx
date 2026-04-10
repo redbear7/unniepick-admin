@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Check, Loader2, Wind, Calendar, ChevronRight, Minus, Plus } from 'lucide-react';
+import { Check, Loader2, Wind, Calendar, ChevronRight, Minus, Plus, MapPin } from 'lucide-react';
 
 const ACCENT = '#0EA5E9';
 
@@ -13,11 +13,21 @@ const SERVICE_TYPES = [
 
 type ServiceType = typeof SERVICE_TYPES[number]['key'];
 
+const PRICE_GUIDE: Record<string, { wall: string; stand: string }> = {
+  설치: { wall: '50,000원~', stand: '80,000원~' },
+  이전: { wall: '80,000원~', stand: '120,000원~' },
+  철거: { wall: '30,000원~', stand: '50,000원~' },
+};
+
+const LOCATION_OPTIONS = ['거실', '안방', '작은방', '주방', '사무실', '기타'];
+
 export default function AirconPage() {
   const [serviceType, setServiceType] = useState<ServiceType | ''>('');
   const [unitCount, setUnitCount] = useState(1);
+  const [location, setLocation] = useState('');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
   const [preferredDate, setPreferredDate] = useState('');
   const [memo, setMemo] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -37,8 +47,10 @@ export default function AirconPage() {
         body: JSON.stringify({
           type: serviceType,
           unit_count: unitCount,
+          location: location || null,
           user_name: name.trim(),
           user_phone: phone.trim(),
+          address: address.trim() || null,
           preferred_date: preferredDate || null,
           memo: memo.trim() || null,
         }),
@@ -70,6 +82,8 @@ export default function AirconPage() {
       </div>
     );
   }
+
+  const priceInfo = serviceType ? PRICE_GUIDE[serviceType] : null;
 
   return (
     <div className="flex-1 flex flex-col items-center px-5 py-12">
@@ -149,6 +163,37 @@ export default function AirconPage() {
           <p className="text-xs text-dim">최대 10대까지 신청 가능합니다</p>
         </div>
 
+        {/* 설치 장소 */}
+        <div className="bg-card border border-border-main rounded-2xl p-5 space-y-3">
+          <p className="text-xs font-semibold text-tertiary flex items-center gap-1.5">
+            <MapPin size={13} className="text-dim" /> 설치 장소 <span className="font-normal text-dim">(선택)</span>
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {LOCATION_OPTIONS.map(opt => {
+              const active = location === opt;
+              return (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => setLocation(active ? '' : opt)}
+                  className="px-4 py-2 rounded-xl border text-sm font-medium transition"
+                  style={
+                    active
+                      ? { backgroundColor: `${ACCENT}18`, borderColor: ACCENT, color: ACCENT }
+                      : {
+                          backgroundColor: 'var(--bg-sidebar)',
+                          borderColor: 'var(--border-subtle)',
+                          color: 'var(--text-tertiary)',
+                        }
+                  }
+                >
+                  {opt}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* 연락처 */}
         <div className="grid grid-cols-2 gap-3">
           <div>
@@ -170,6 +215,19 @@ export default function AirconPage() {
               className={inputCls}
             />
           </div>
+        </div>
+
+        {/* 주소 */}
+        <div>
+          <label className="text-xs font-semibold text-tertiary mb-1.5 block">
+            주소 <span className="font-normal text-dim">(선택)</span>
+          </label>
+          <input
+            value={address}
+            onChange={e => setAddress(e.target.value)}
+            placeholder="서울시 강남구 테헤란로 123"
+            className={inputCls}
+          />
         </div>
 
         {/* 방문 희망일 */}
@@ -222,6 +280,46 @@ export default function AirconPage() {
         <p className="text-xs text-dim text-center">
           입력하신 정보는 상담 안내 목적으로만 사용됩니다
         </p>
+
+        {/* 가격 안내 섹션 */}
+        <div className="bg-card border border-border-main rounded-2xl p-5 space-y-4">
+          <p className="text-sm font-bold text-primary">💰 가격 안내</p>
+          <p className="text-xs text-muted">기본 작업비 기준이며 현장 상황에 따라 달라질 수 있습니다.</p>
+          <div className="space-y-3">
+            {(Object.entries(PRICE_GUIDE) as [ServiceType, { wall: string; stand: string }][]).map(([type, { wall, stand }]) => {
+              const isSelected = serviceType === type;
+              return (
+                <div
+                  key={type}
+                  className="rounded-xl p-3 border transition"
+                  style={
+                    isSelected
+                      ? { backgroundColor: `${ACCENT}10`, borderColor: `${ACCENT}40` }
+                      : { backgroundColor: 'var(--bg-sidebar)', borderColor: 'var(--border-subtle)' }
+                  }
+                >
+                  <p
+                    className="text-xs font-bold mb-2"
+                    style={{ color: isSelected ? ACCENT : 'var(--text-secondary)' }}
+                  >
+                    {type === '설치' ? '🔧' : type === '이전' ? '📦' : '🗑️'} 에어컨 {type}
+                  </p>
+                  <div className="flex justify-between text-xs text-tertiary">
+                    <span>벽걸이형</span>
+                    <span className="font-semibold text-primary">{wall}</span>
+                  </div>
+                  <div className="flex justify-between text-xs text-tertiary mt-1">
+                    <span>스탠드형</span>
+                    <span className="font-semibold text-primary">{stand}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <p className="text-xs text-dim">
+            ✅ 출장비 무료 &nbsp;·&nbsp; ✅ 당일 상담 가능 &nbsp;·&nbsp; ✅ 전국 서비스
+          </p>
+        </div>
 
       </div>
     </div>

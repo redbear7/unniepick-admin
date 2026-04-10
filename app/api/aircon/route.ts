@@ -10,7 +10,7 @@ function sb() {
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { type, unit_count, user_name, user_phone, preferred_date, memo } = body;
+  const { type, unit_count, location, user_name, user_phone, address, preferred_date, memo } = body;
 
   if (!type || !user_name?.trim() || !user_phone?.trim()) {
     return NextResponse.json({ error: '필수 항목을 입력해주세요' }, { status: 400 });
@@ -21,8 +21,10 @@ export async function POST(req: NextRequest) {
     .insert({
       type,
       unit_count: unit_count ?? 1,
+      location: location ?? null,
       user_name: user_name.trim(),
       user_phone: user_phone.trim(),
+      address: address ?? null,
       preferred_date: preferred_date ?? null,
       memo: memo ?? null,
     })
