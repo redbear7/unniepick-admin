@@ -136,7 +136,7 @@ export default function ThemeToggle() {
   return (
     <button
       onClick={() => setTheme(CYCLE[current] ?? 'dark')}
-      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition hover:bg-card hover:opacity-90 ${colorCls}`}
+      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition hover:bg-card hover:opacity-90 ${colorCls}`}
       title={`${NAME[CYCLE[current] ?? 'dark']} 모드로 전환`}
     >
       {ICON[current]}
