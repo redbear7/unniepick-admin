@@ -43,14 +43,22 @@ export default function DashboardShell({ children }: { children: React.ReactNode
       <DevLogPanel />
 
       {/* 테마 토글 + 폰트 선택 — 메인 영역 상단 중앙 고정 */}
+      {/* 테마 토글 + 폰트 선택 */}
       <div
         className="fixed top-3 z-50 flex items-center gap-0.5 bg-card/80 backdrop-blur border border-border-main rounded-xl px-1 shadow-sm"
         style={{ left: 'calc(14rem + (100vw - 14rem) / 2)', transform: 'translateX(-50%)' }}
       >
-        <NowPlayingChip />
         <ThemeToggle />
         <div className="w-px h-4 bg-border-main" />
         <FontSelector />
+      </div>
+
+      {/* 현재 재생 트랙 제목 */}
+      <div
+        className="fixed top-11 z-50"
+        style={{ left: 'calc(14rem + (100vw - 14rem) / 2)', transform: 'translateX(-50%)' }}
+      >
+        <NowPlayingChip />
       </div>
     </PlayerProvider>
   );
