@@ -50,7 +50,7 @@ export default function AudioBars() {
             animation: isPlaying
               ? `audioBar ${b.dur}s ${b.delay}s ease-in-out infinite alternate`
               : 'none',
-            opacity: isPlaying ? 0.6 : 0.12,
+            opacity: isPlaying ? 0.3 : 0.06,
             transition: isPlaying ? 'opacity 0.4s' : 'transform 0.4s ease, opacity 0.4s',
           }}
         />
