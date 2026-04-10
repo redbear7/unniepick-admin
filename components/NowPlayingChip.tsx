@@ -11,19 +11,21 @@ export default function NowPlayingChip() {
 
   return (
     <div className="relative flex items-center justify-center gap-1.5 py-0.5 px-2">
-      {/* 장르 태그 — 중앙 영역 왼쪽 외부 */}
-      {tag && (
-        <span className="absolute right-full mr-2 text-[10px] px-1.5 py-0.5 rounded leading-none font-semibold whitespace-nowrap bg-accent/15 border border-accent/35 text-accent">
-          {tag}
+      {/* NOW PLAYING — 중앙 영역 왼쪽 외부 */}
+      {isPlaying && (
+        <span className="absolute right-full mr-2 text-[10px] font-bold tracking-widest whitespace-nowrap text-accent animate-[nowplaying_1.8s_ease-in-out_infinite]">
+          NOW PLAYING
         </span>
       )}
       {/* 제목 — 단독 중앙 */}
       <span className="text-primary text-2xl font-bold whitespace-nowrap tracking-tight drop-shadow-sm">
         {t.title}
       </span>
-      {/* 재생 중 표시 — 중앙 영역 오른쪽 외부 */}
-      {isPlaying && (
-        <span className="absolute left-full ml-2 w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+      {/* 장르 태그 — 중앙 영역 오른쪽 외부 */}
+      {tag && (
+        <span className="absolute left-full ml-2 text-[10px] px-1.5 py-0.5 rounded leading-none font-semibold whitespace-nowrap bg-accent/15 border border-accent/35 text-accent">
+          {tag}
+        </span>
       )}
     </div>
   );

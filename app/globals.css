@@ -765,3 +765,9 @@ html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dr
 html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula):not(.catppuccin):not(.gruvbox):not(.matrix):not(.cyberpunk):not(.onedark):not(.solarized):not(.lamborghini):not(.porsche):not(.oled) ::-webkit-scrollbar-thumb:hover {
   background: rgba(0,0,0,0.28);
 }
+
+
+@keyframes nowplaying {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.25; }
+}
