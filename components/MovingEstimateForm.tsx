@@ -105,19 +105,21 @@ export default function MovingEstimateForm({ type }: Props) {
     setSubmitting(true);
     setError('');
     try {
+      const itemsText = checked.size > 0 ? `[짐 목록] ${[...checked].join(', ')}` : '';
+      const memoText = memo.trim() ? `[특이사항] ${memo.trim()}` : '';
+      const flexText = flexible ? '[날짜 미정 - 협의 가능]' : '';
+      const contentParts = [`[이사 유형] ${label}`, itemsText, memoText, flexText].filter(Boolean);
+
       const res = await fetch('/api/moving', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          type,
+          name: name.trim(),
+          phone: phone.trim(),
           from_address: from.trim(),
           to_address: to.trim(),
           moving_date: flexible ? null : date,
-          date_flexible: flexible,
-          items: [...checked],
-          memo: memo.trim() || null,
-          contact_name: name.trim(),
-          contact_phone: phone.trim(),
+          content: contentParts.join('\n'),
         }),
       });
       const data = await res.json();
