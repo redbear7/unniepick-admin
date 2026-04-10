@@ -159,6 +159,60 @@
   --shadow-sm:   0 0 0 1px rgba(201,162,39,0.10);
 }
 
+.sand {
+  /* ── Sand — Warm Desert Light ───────────────────────────────── */
+  --bg-surface:    #f5f0e8;
+  --bg-sidebar:    #fdf9f2;
+  --bg-card:       #ffffff;
+  --bg-card-hover: #ede8de;
+  --bg-input:      #e8e0d4;
+
+  --border-main:   rgba(139, 90, 30, 0.15);
+  --border-subtle: rgba(139, 90, 30, 0.10);
+
+  --text-primary:   #2c1f0e;
+  --text-secondary: #5a3d1e;
+  --text-tertiary:  #8a6040;
+  --text-muted:     #a88060;
+  --text-dim:       #c8a880;
+
+  --fill-subtle: rgba(180, 120, 40, 0.07);
+  --fill-medium: rgba(180, 120, 40, 0.13);
+
+  --accent:      #c2832a;
+  --accent-dark: #9a6018;
+
+  --shadow-card: 0 1px 3px rgba(120,80,20,0.10), 0 1px 2px rgba(120,80,20,0.06);
+  --shadow-sm:   0 1px 2px rgba(120,80,20,0.08);
+}
+
+.sky {
+  /* ── Sky — Clear Blue Light ─────────────────────────────────── */
+  --bg-surface:    #edf6ff;
+  --bg-sidebar:    #ffffff;
+  --bg-card:       #ffffff;
+  --bg-card-hover: #dceeff;
+  --bg-input:      #e0eefc;
+
+  --border-main:   rgba(14, 165, 233, 0.18);
+  --border-subtle: rgba(14, 165, 233, 0.12);
+
+  --text-primary:   #0a2540;
+  --text-secondary: #1a4060;
+  --text-tertiary:  #3a6888;
+  --text-muted:     #5a88a8;
+  --text-dim:       #8ab0c8;
+
+  --fill-subtle: rgba(14, 165, 233, 0.07);
+  --fill-medium: rgba(14, 165, 233, 0.13);
+
+  --accent:      #0ea5e9;
+  --accent-dark: #0880c0;
+
+  --shadow-card: 0 1px 3px rgba(14,100,200,0.10), 0 1px 2px rgba(14,100,200,0.06);
+  --shadow-sm:   0 1px 2px rgba(14,100,200,0.08);
+}
+
 .ferrari {
   /* ── Ferrari — Rosso Corsa & Carbon ────────────────────────── */
   --bg-surface:    #080808;   /* carbon black */
@@ -201,6 +255,8 @@
   --color-fill-subtle: var(--fill-subtle);
   --color-fill-medium: var(--fill-medium);
   --color-border-subtle: var(--border-subtle);
+  --color-accent: var(--accent);
+  --color-accent-dark: var(--accent-dark);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
