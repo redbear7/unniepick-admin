@@ -333,8 +333,8 @@ function drawVinyl(
 const LS_KEY = 'particle_effect';
 
 export default function MusicParticles() {
-  const { theme }            = useTheme();
-  const { isPlaying, bassLevel } = usePlayer();
+  const { theme }                         = useTheme();
+  const { isPlaying, bassLevel, bassSpeed } = usePlayer();
   const [effect, setEffect]  = useState<Effect>('spark');
   const [mounted, setMounted] = useState(false);
 
@@ -345,6 +345,7 @@ export default function MusicParticles() {
   const vinylAngleRef = useRef(0);
   const rafRef        = useRef<number>(0);
   const bassRef       = useRef(0);
+  const bassSpeedRef  = useRef(1.0);
   const playingRef    = useRef(false);
   const effectRef     = useRef<Effect>('spark');
   const paletteRef    = useRef<string[]>(THEME_PALETTES.dark);
@@ -366,8 +367,9 @@ export default function MusicParticles() {
     flashRef.current     = 0;
   };
 
-  useEffect(() => { bassRef.current    = bassLevel; }, [bassLevel]);
-  useEffect(() => { playingRef.current = isPlaying; }, [isPlaying]);
+  useEffect(() => { bassRef.current      = bassLevel; }, [bassLevel]);
+  useEffect(() => { bassSpeedRef.current = bassSpeed; }, [bassSpeed]);
+  useEffect(() => { playingRef.current   = isPlaying; }, [isPlaying]);
   useEffect(() => { effectRef.current  = effect;    }, [effect]);
   useEffect(() => {
     const t = theme ?? 'dark';
@@ -382,7 +384,8 @@ export default function MusicParticles() {
     const ctx    = canvas?.getContext('2d');
     if (!canvas || !ctx) return;
 
-    frameRef.current++;
+    const speed = bassSpeedRef.current; // 펄스 속도 배율 (0.3~3)
+    frameRef.current += speed;          // 시간 기반 애니메이션도 속도 연동
     const bass    = bassRef.current;
     const playing = playingRef.current;
     const ef      = effectRef.current;
@@ -393,7 +396,7 @@ export default function MusicParticles() {
     // ── Aurora ──────────────────────────────────────────────────────
     if (ef === 'aurora') {
       ctx.clearRect(0, 0, W, H);
-      const t     = frameRef.current * 0.018;
+      const t     = frameRef.current * 0.018; // frameRef이 speed배 증가하므로 자동 연동
       const bands = 4;
       for (let b = 0; b < bands; b++) {
         const hue  = ((t * 25) + b * 70) % 360;
@@ -439,8 +442,8 @@ export default function MusicParticles() {
       ctx.fillRect(0, 0, W, H);
 
       for (const b of lasersRef.current) {
-        b.x     += b.vx * (1 + bass * 1.8);
-        b.phase += 0.035;
+        b.x     += b.vx * (1 + bass * 1.8) * speed;
+        b.phase += 0.035 * speed;
 
         if (b.x < 0)  { b.x = 0;  b.vx =  Math.abs(b.vx); }
         if (b.x > W)  { b.x = W;  b.vx = -Math.abs(b.vx); }
@@ -486,7 +489,7 @@ export default function MusicParticles() {
 
     // ── 바이닐 ─────────────────────────────────────────────────────────
     if (ef === 'vinyl') {
-      if (playing) vinylAngleRef.current += 0.013 + bass * 0.045;
+      if (playing) vinylAngleRef.current += (0.013 + bass * 0.045) * speed;
       drawVinyl(ctx, W, H, bass, vinylAngleRef.current, palette, playing, frameRef.current);
       prevBassRef.current = bass;
       rafRef.current = requestAnimationFrame(animate);
@@ -537,26 +540,27 @@ export default function MusicParticles() {
 
     for (const p of particlesRef.current) {
       if (ef === 'spark') {
-        p.vy -= 0.035;
-        p.vx += (rnd() - 0.5) * 0.06;
-        p.life -= playing ? p.decay : p.decay * 2.5;
+        p.vy -= 0.035 * speed;
+        p.vx += (rnd() - 0.5) * 0.06 * speed;
+        p.life -= playing ? p.decay * speed : p.decay * 2.5;
       } else if (ef === 'fireworks') {
-        p.vx *= 0.97; p.vy *= 0.97;
-        p.vy += 0.04;
-        p.life -= playing ? p.decay : p.decay * 2;
+        const drag = Math.pow(0.97, speed);
+        p.vx *= drag; p.vy *= drag;
+        p.vy += 0.04 * speed;
+        p.life -= playing ? p.decay * speed : p.decay * 2;
       } else if (ef === 'snow') {
-        p.vx += (rnd() - 0.5) * 0.04 + (bass > 0.6 ? (rnd() - 0.5) * 0.3 : 0);
-        p.vy += 0.008;
+        p.vx += ((rnd() - 0.5) * 0.04 + (bass > 0.6 ? (rnd() - 0.5) * 0.3 : 0)) * speed;
+        p.vy += 0.008 * speed;
       } else if (ef === 'bubble') {
-        p.vx += Math.sin(frameRef.current * 0.05 + p.twinklePhase) * 0.04;
-        p.vy -= 0.005;
+        p.vx += Math.sin(frameRef.current * 0.05 + p.twinklePhase) * 0.04 * speed;
+        p.vy -= 0.005 * speed;
       } else if (ef === 'confetti') {
-        p.rotation += p.rotSpeed;
-        p.vx *= 0.995;
-        p.vy += 0.012;
+        p.rotation += p.rotSpeed * speed;
+        p.vx *= Math.pow(0.995, speed);
+        p.vy += 0.012 * speed;
       }
-      p.x += p.vx;
-      p.y += p.vy;
+      p.x += p.vx * speed;
+      p.y += p.vy * speed;
 
       const a = ef === 'spark'
         ? p.alpha * p.life * (0.6 + 0.4 * Math.sin(frameRef.current * 0.1 * p.twinkle + p.twinklePhase))
