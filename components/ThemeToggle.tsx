@@ -22,6 +22,7 @@ const ICON: Record<string, React.ReactNode> = {
   aurora:   <Gem       size={16} />,
   obsidian: <Sun       size={16} />,
 };
+const ORDER = ['light', 'dark', 'red', 'ferrari', 'midnight', 'aurora', 'obsidian'];
 const NAME: Record<string, string> = {
   light:    'Light',
   dark:     'Dark',
@@ -66,7 +67,9 @@ export default function ThemeToggle() {
       title={LABEL[current]}
     >
       {ICON[current]}
-      <span className="text-[11px] font-semibold tracking-wide">{NAME[current]}</span>
+      <span className="text-[11px] font-semibold tracking-wide">
+        {ORDER.indexOf(current) + 1}. {NAME[current]}
+      </span>
     </button>
   );
 }
