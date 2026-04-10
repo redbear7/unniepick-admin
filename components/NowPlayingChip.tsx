@@ -10,7 +10,7 @@ export default function NowPlayingChip() {
   const tag = t.mood_tags?.[0];
 
   return (
-    <div className="relative flex items-center justify-center py-1 px-3 bg-card rounded-xl border border-border-main shadow-sm">
+    <div className="relative flex items-center justify-center py-0.5 px-3 bg-card rounded-xl border border-border-main shadow-sm">
       {/* 장르 태그 — 중앙 영역 왼쪽 외부 */}
       {tag && (
         <span className="absolute right-full mr-2 text-[10px] px-1.5 py-0.5 rounded leading-none font-semibold whitespace-nowrap bg-accent/15 border border-accent/35 text-accent">
