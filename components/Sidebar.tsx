@@ -299,7 +299,7 @@ export default function Sidebar() {
         <div className="flex-1 min-w-0">
           <p className="text-[10px] text-muted leading-none">언니픽</p>
           <p className="text-sm font-bold text-primary leading-tight mt-0.5">슈퍼어드민</p>
-          <p className="text-[10px] text-muted mt-1">v0.1.1</p>
+          <p className="text-[10px] text-muted mt-1">v0.2.0</p>
         </div>
       </Link>
 
