@@ -8,6 +8,7 @@ import DevLogPanel from '@/components/DevLogPanel';
 import ThemeToggle from '@/components/ThemeToggle';
 import FontSelector from '@/components/FontSelector';
 import AudioBars from '@/components/AudioBars';
+import NowPlayingChip from '@/components/NowPlayingChip';
 
 function useServiceWorker() {
   useEffect(() => {
@@ -46,6 +47,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         className="fixed top-3 z-50 flex items-center gap-0.5 bg-card/80 backdrop-blur border border-border-main rounded-xl px-1 shadow-sm"
         style={{ left: 'calc(14rem + (100vw - 14rem) / 2)', transform: 'translateX(-50%)' }}
       >
+        <NowPlayingChip />
         <ThemeToggle />
         <div className="w-px h-4 bg-border-main" />
         <FontSelector />
