@@ -33,7 +33,7 @@ function hexToRgb(hex: string): [number, number, number] {
 
 function getMoodColor(track: { mood_tags?: string[]; energy_score?: number | null; valence_score?: number | null; danceability_score?: number | null }, bass: number) {
   const genre = (track.mood_tags ?? [])[0] || '';
-  const base = MOOD_COLORS[genre] || '#FF6F0F';
+  const base = MOOD_COLORS[genre] || 'var(--accent)';
   const [r, g, b] = hexToRgb(base);
   const energy = (track.energy_score ?? 50) / 100;
   const valence = (track.valence_score ?? 50) / 100;
@@ -146,7 +146,7 @@ export default function BottomPlayer() {
           <p className="text-primary text-sm font-semibold truncate group-hover/info:text-accent transition">{displayTrack.title}</p>
           <p className="text-muted text-xs truncate">{displayTrack.artist}</p>
           {displayTrack.mood && (
-            <p className="text-[#FF6F0F] text-[10px] font-semibold truncate">{displayTrack.mood}</p>
+            <p className="text-accent text-[10px] font-semibold truncate">{displayTrack.mood}</p>
           )}
         </div>
       </div>
@@ -159,7 +159,7 @@ export default function BottomPlayer() {
           <button
             onClick={toggleShuffle}
             title={shuffle ? '셔플 켜짐' : '셔플 꺼짐'}
-            className={`shrink-0 transition flex flex-col items-center gap-0.5 ${shuffle ? 'text-[#FF6F0F]' : 'text-dim hover:text-tertiary'}`}>
+            className={`shrink-0 transition flex flex-col items-center gap-0.5 ${shuffle ? 'text-accent' : 'text-dim hover:text-tertiary'}`}>
             <Shuffle size={14} />
             <span className="text-[8px] font-semibold leading-none">
               {shuffle ? '랜덤 On' : '랜덤 Off'}
@@ -180,7 +180,7 @@ export default function BottomPlayer() {
               backgroundColor: `rgb(${mc.r},${mc.g},${mc.b})`,
               boxShadow: bass > 0.3 ? `0 0 ${Math.round(bass * 14)}px rgba(${mc.r},${mc.g},${mc.b},0.5)` : undefined,
             } : {}}
-            className={`w-9 h-9 rounded-full flex items-center justify-center transition shadow-lg ${mc ? '' : 'bg-[#FF6F0F] hover:bg-[#FF6F0F]/90'}`}>
+            className={`w-9 h-9 rounded-full flex items-center justify-center transition shadow-lg ${mc ? '' : 'bg-accent hover:bg-accent/90'}`}>
             {isPlaying
               ? <Pause size={15} className="text-white" />
               : <Play  size={15} className="text-white ml-0.5" />
@@ -198,7 +198,7 @@ export default function BottomPlayer() {
           <button
             onClick={toggleRepeat}
             title={repeat === 'none' ? '반복 없음' : repeat === 'all' ? '전체 반복' : '1곡 반복'}
-            className={`shrink-0 transition flex flex-col items-center gap-0.5 ${repeat !== 'none' ? 'text-[#FF6F0F]' : 'text-dim hover:text-tertiary'}`}>
+            className={`shrink-0 transition flex flex-col items-center gap-0.5 ${repeat !== 'none' ? 'text-accent' : 'text-dim hover:text-tertiary'}`}>
             {repeat === 'one' ? <Repeat1 size={14} /> : <Repeat size={14} />}
             <span className="text-[8px] font-semibold leading-none">
               {repeat === 'none' ? '반복 Off' : repeat === 'all' ? '전체반복' : '1곡반복'}
@@ -222,14 +222,14 @@ export default function BottomPlayer() {
               className="absolute top-0 left-0 h-full rounded-full"
               style={{
                 width: `${progress * 100}%`,
-                backgroundColor: mc ? `rgb(${mc.r},${mc.g},${mc.b})` : '#FF6F0F',
+                backgroundColor: mc ? `rgb(${mc.r},${mc.g},${mc.b})` : 'var(--accent)',
                 boxShadow: mc && bass > 0.3 ? `0 0 ${Math.round(bass * 8)}px rgba(${mc.r},${mc.g},${mc.b},0.6)` : 'none',
                 transition: 'background-color 150ms, box-shadow 80ms',
               }}
             />
             {/* 핸들 */}
             <div
-              className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-[#FF6F0F] rounded-full shadow opacity-0 group-hover:opacity-100 transition-opacity"
+              className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full shadow opacity-0 group-hover:opacity-100 transition-opacity bg-accent"
               style={{ left: `calc(${progress * 100}% - 6px)` }}
             />
             {/* 클릭 감지 */}
@@ -261,7 +261,7 @@ export default function BottomPlayer() {
               onClick={() => setCrossfadeSec(s)}
               className={`text-[9px] font-semibold px-1.5 py-0.5 rounded transition ${
                 crossfadeSec === s
-                  ? 'bg-[#FF6F0F]/80 text-white'
+                  ? 'bg-accent text-accent-fg'
                   : 'text-dim hover:text-primary hover:bg-white/5'
               }`}
             >
@@ -295,10 +295,10 @@ export default function BottomPlayer() {
 
         {/* 안내방송 볼륨 */}
         <div className="flex items-center gap-1 group" title="안내방송 볼륨">
-          <Megaphone size={12} className={`shrink-0 ${announcementPlaying ? 'text-[#FF6F0F] animate-pulse' : 'text-dim'}`} />
+          <Megaphone size={12} className={`shrink-0 ${announcementPlaying ? 'text-accent animate-pulse' : 'text-dim'}`} />
           <div className="relative w-14 h-1">
             <div className="absolute inset-0 bg-fill-medium rounded-full" />
-            <div className="absolute top-0 left-0 h-full rounded-full bg-[#FF6F0F]"
+            <div className="absolute top-0 left-0 h-full rounded-full bg-accent"
               style={{ width: `${(annVolume / 2) * 100}%` }} />
             <input type="range" min={0} max={2} step={0.05} value={annVolume}
               onChange={e => setAnnVolume(Number(e.target.value))}
