@@ -108,7 +108,7 @@ export default function FontSelector() {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(o => !o)}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition hover:bg-card text-tertiary hover:text-primary"
+        className="flex items-center gap-1.5 px-2.5 py-1.5 transition text-tertiary hover:opacity-70"
         title="폰트 변경"
       >
         <Type size={14} />
