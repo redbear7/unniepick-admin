@@ -9,6 +9,8 @@ import {
   Users, LogOut, ChevronRight, ScrollText, MapPin, PlaySquare, Zap, Map, ListMusic, Tag, Building2, Megaphone, Film, Video, KeyRound, Bell,
   GripVertical, Pencil, Check, X, Settings, ImagePlus,
 } from 'lucide-react';
+import ThemeToggle from '@/components/ThemeToggle';
+import FontSelector from '@/components/FontSelector';
 import {
   DndContext,
   closestCenter,
@@ -294,14 +296,23 @@ export default function Sidebar() {
   return (
     <aside className="w-56 shrink-0 bg-sidebar border-r border-border-main flex flex-col h-full overflow-y-auto">
       {/* 로고 */}
-      <Link href="/dashboard" className="flex items-center gap-3 px-5 py-5 border-b border-border-main hover:bg-card transition">
-        <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center text-base shrink-0">🍖</div>
-        <div className="flex-1 min-w-0">
-          <p className="text-[10px] text-muted leading-none">언니픽</p>
-          <p className="text-sm font-bold text-primary leading-tight mt-0.5">슈퍼어드민</p>
-          <p className="text-[10px] text-muted mt-1">v0.2.0</p>
+      <div className="border-b border-border-main">
+        <Link href="/dashboard" className="flex items-center gap-3 px-5 pt-5 pb-3 hover:bg-card transition">
+          <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center text-base shrink-0">🍖</div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] text-muted leading-none">언니픽</p>
+            <p className="text-sm font-bold text-primary leading-tight mt-0.5">슈퍼어드민</p>
+            <p className="text-[10px] text-muted mt-1">v0.2.0</p>
+          </div>
+        </Link>
+        <div className="flex items-center gap-0.5 px-3 pb-2">
+          <div className="flex items-center gap-0.5 bg-card border border-border-main rounded-xl px-1 py-0.5 shadow-sm w-full">
+            <ThemeToggle />
+            <div className="w-px h-4 bg-border-main" />
+            <FontSelector />
+          </div>
         </div>
-      </Link>
+      </div>
 
       {/* 네비게이션 */}
       <nav className="flex-1 px-3 py-4 space-y-5">

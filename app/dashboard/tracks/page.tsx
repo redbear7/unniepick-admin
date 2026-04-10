@@ -5,8 +5,6 @@ import { createClient } from '@/lib/supabase';
 import { Search, Plus, Pencil, Trash2, ToggleLeft, ToggleRight, X, Check, Play, Pause, Upload, ImagePlus, Link, Heart, ListMusic as ListMusicIcon, ArrowDownUp, Headphones, GripVertical, Copy, ClipboardCheck, Film } from 'lucide-react';
 import { usePlayer } from '@/contexts/PlayerContext';
 import { useRouter, useSearchParams } from 'next/navigation';
-import ThemeToggle from '@/components/ThemeToggle';
-import FontSelector from '@/components/FontSelector';
 import NowPlayingChip from '@/components/NowPlayingChip';
 
 // ─── 타입 ──────────────────────────────────────────────────────
@@ -923,16 +921,9 @@ export default function TracksPage() {
     <div className="flex flex-col h-full">
       {/* 헤더 */}
       <div className="relative flex items-center px-6 py-4 border-b border-border-main">
-        <div className="flex-1 flex items-center gap-3">
-          <div>
-            <h1 className="text-lg font-bold text-primary">🎵 트랙 관리</h1>
-            <p className="text-xs text-muted mt-0.5">music_tracks 테이블 · 총 {tracks.length}개 · 서버파일 {tracks.filter(t => isPlayable(t.audio_url)).length}개</p>
-          </div>
-          <div className="flex items-center gap-0.5 bg-card border border-border-main rounded-xl px-1 py-1 shadow-sm">
-            <ThemeToggle />
-            <div className="w-px h-5 bg-border-main" />
-            <FontSelector />
-          </div>
+        <div className="flex-1">
+          <h1 className="text-lg font-bold text-primary">🎵 트랙 관리</h1>
+          <p className="text-xs text-muted mt-0.5">music_tracks 테이블 · 총 {tracks.length}개 · 서버파일 {tracks.filter(t => isPlayable(t.audio_url)).length}개</p>
         </div>
         {/* 중앙 — NowPlayingChip */}
         <div className="absolute left-1/2 -translate-x-1/2">
