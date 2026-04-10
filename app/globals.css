@@ -22,6 +22,7 @@
 
   --accent:      #FF6F0F;
   --accent-dark: #e05a00;
+  --accent-fg:   #ffffff;
 
   /* Apple card shadow */
   --shadow-card: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
@@ -73,6 +74,7 @@
 
   --accent:      #88c0d0;
   --accent-dark: #5e81ac;
+  --accent-fg:   #2e3440;
 
   --shadow-card: none;
   --shadow-sm:   none;
@@ -127,6 +129,7 @@
 
   --accent:      #bd93f9;
   --accent-dark: #ff79c6;
+  --accent-fg:   #282a36;
 
   --shadow-card: none;
   --shadow-sm:   none;
@@ -316,6 +319,7 @@
 
   --accent:      #cba6f7;
   --accent-dark: #b4befe;
+  --accent-fg:   #1e1e2e;
 
   --shadow-card: none;
   --shadow-sm:   none;
@@ -343,6 +347,7 @@
 
   --accent:      #d79921;
   --accent-dark: #b57614;
+  --accent-fg:   #1d2021;
 
   --shadow-card: none;
   --shadow-sm:   none;
@@ -370,6 +375,7 @@
 
   --accent:      #00ff41;
   --accent-dark: #00cc33;
+  --accent-fg:   #000000;
 
   --shadow-card: none;
   --shadow-sm:   none;
@@ -662,6 +668,7 @@
   --color-border-subtle: var(--border-subtle);
   --color-accent: var(--accent);
   --color-accent-dark: var(--accent-dark);
+  --color-accent-fg: var(--accent-fg);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }

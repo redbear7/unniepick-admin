@@ -901,7 +901,7 @@ export default function TracksPage() {
           <p className="text-xs text-muted mt-0.5">music_tracks 테이블 · 총 {tracks.length}개 · 서버파일 {tracks.filter(t => isPlayable(t.audio_url)).length}개</p>
         </div>
         <button onClick={openCreate}
-          className="flex items-center gap-2 px-4 py-2 bg-accent text-primary text-sm font-bold rounded-xl hover:opacity-90 transition">
+          className="flex items-center gap-2 px-4 py-2 bg-accent text-accent-fg text-sm font-bold rounded-xl hover:opacity-90 transition">
           <Plus size={15} /> 새 트랙 등록
         </button>
       </div>
@@ -965,7 +965,7 @@ export default function TracksPage() {
           <button
             onClick={() => setTagFilter('')}
             className={`shrink-0 flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold transition ${
-              !tagFilter ? 'bg-accent text-primary' : 'bg-fill-subtle text-tertiary hover:text-primary'
+              !tagFilter ? 'bg-accent text-accent-fg' : 'bg-fill-subtle text-tertiary hover:text-primary'
             }`}>
             전체 <span className="opacity-60">{tracks.length}</span>
           </button>
@@ -974,7 +974,7 @@ export default function TracksPage() {
               onClick={() => setTagFilter(tagFilter === tag ? '' : tag)}
               className={`shrink-0 flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold transition whitespace-nowrap ${
                 tagFilter === tag
-                  ? 'bg-accent text-primary'
+                  ? 'bg-accent text-accent-fg'
                   : 'bg-fill-subtle text-tertiary hover:text-primary'
               }`}>
               {tag}
@@ -1024,7 +1024,7 @@ export default function TracksPage() {
           {([['latest','최신순'],['plays','재생순'],['likes','좋아요순'],['playlists','플리순'],['manual','수동']] as const).map(([v,label]) => (
             <button key={v} onClick={() => setSortOrder(v)}
               className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition ${
-                sortOrder === v ? 'bg-accent text-primary' : 'bg-fill-subtle text-tertiary hover:text-primary'
+                sortOrder === v ? 'bg-accent text-accent-fg' : 'bg-fill-subtle text-tertiary hover:text-primary'
               }`}>
               {label}
             </button>
@@ -1040,7 +1040,7 @@ export default function TracksPage() {
               {['SUB','BASS','MID','HIGH','AIR'].map((label, i) => (
                 <button key={i} onClick={() => player.setBassFreqBand(i)}
                   className={`px-1.5 py-0.5 rounded text-[9px] font-bold transition ${
-                    player.bassFreqBand === i ? 'bg-accent text-primary' : 'text-dim hover:text-tertiary'
+                    player.bassFreqBand === i ? 'bg-accent text-accent-fg' : 'text-dim hover:text-tertiary'
                   }`}>{label}</button>
               ))}
             </div>
@@ -1555,7 +1555,7 @@ export default function TracksPage() {
                 취소
               </button>
               <button onClick={handleSave} disabled={saving || audioUploading || imageUploading}
-                className="flex-1 py-2.5 bg-accent text-primary text-sm font-bold rounded-xl hover:bg-accent/90 disabled:opacity-50 transition flex items-center justify-center gap-2">
+                className="flex-1 py-2.5 bg-accent text-accent-fg text-sm font-bold rounded-xl hover:bg-accent/90 disabled:opacity-50 transition flex items-center justify-center gap-2">
                 {saving
                   ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> 저장 중...</>
                   : <><Check size={14} /> {editId ? '수정 완료' : '등록하기'}</>
