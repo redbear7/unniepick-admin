@@ -38,8 +38,8 @@ export default function DashboardShell({ children }: { children: React.ReactNode
       {/* 개발자 로그 패널 */}
       <DevLogPanel />
 
-      {/* 테마 토글 — 우상단 고정 */}
-      <div className="fixed top-3 right-4 z-50">
+      {/* 테마 토글 — 메인 영역 상단 중앙 고정 */}
+      <div className="fixed top-3 z-50" style={{ left: 'calc(14rem + (100vw - 14rem) / 2)', transform: 'translateX(-50%)' }}>
         <ThemeToggle />
       </div>
     </PlayerProvider>
