@@ -7,6 +7,7 @@ import BottomPlayer from '@/components/BottomPlayer';
 import DevLogPanel from '@/components/DevLogPanel';
 import ThemeToggle from '@/components/ThemeToggle';
 import FontSelector from '@/components/FontSelector';
+import MusicParticles from '@/components/MusicParticles';
 
 function useServiceWorker() {
   useEffect(() => {
@@ -27,8 +28,11 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         {/* 사이드바 + 메인 */}
         <div className="flex flex-1 min-h-0 overflow-hidden">
           <Sidebar />
-          <main className="flex-1 overflow-auto">
-            {children}
+          <main className="flex-1 overflow-auto flex flex-col">
+            <MusicParticles />
+            <div className="flex-1">
+              {children}
+            </div>
           </main>
         </div>
 
