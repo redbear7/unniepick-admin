@@ -51,85 +51,85 @@
   --shadow-sm:   none;
 }
 
-.red {
-  /* ── Deep Crimson Red Mode ─────────────────────────────────── */
-  --bg-surface:    #0e0608;
-  --bg-sidebar:    #150a0c;
-  --bg-card:       #1d0d10;
-  --bg-card-hover: #270f14;
-  --bg-input:      #0a0405;
+.nord {
+  /* ── Nord — Arctic Blue ─────────────────────────────────────── */
+  --bg-surface:    #2e3440;
+  --bg-sidebar:    #272c37;
+  --bg-card:       #3b4252;
+  --bg-card-hover: #434c5e;
+  --bg-input:      #242933;
 
-  --border-main:   rgba(220, 50, 60, 0.22);
-  --border-subtle: rgba(220, 50, 60, 0.14);
+  --border-main:   rgba(136, 192, 208, 0.22);
+  --border-subtle: rgba(136, 192, 208, 0.14);
 
-  --text-primary:   #fff0f2;
-  --text-secondary: #f2c8cc;
-  --text-tertiary:  #c08088;
-  --text-muted:     #8a5560;
-  --text-dim:       #5c3540;
+  --text-primary:   #eceff4;
+  --text-secondary: #e5e9f0;
+  --text-tertiary:  #d8dee9;
+  --text-muted:     #88c0d0;
+  --text-dim:       #5e81ac;
 
-  --fill-subtle: rgba(220, 50, 60, 0.09);
-  --fill-medium: rgba(220, 50, 60, 0.18);
+  --fill-subtle: rgba(136, 192, 208, 0.08);
+  --fill-medium: rgba(136, 192, 208, 0.16);
 
-  --accent:      #e0303e;
-  --accent-dark: #b82030;
+  --accent:      #88c0d0;
+  --accent-dark: #5e81ac;
 
   --shadow-card: none;
   --shadow-sm:   none;
 }
 
-.midnight {
-  /* ── Midnight — Deep Navy Professional ─────────────────────── */
-  --bg-surface:    #080c14;
-  --bg-sidebar:    #0d1220;
-  --bg-card:       #121a2e;
-  --bg-card-hover: #1a2440;
-  --bg-input:      #060910;
+.tokyonight {
+  /* ── Tokyo Night — City Glow ────────────────────────────────── */
+  --bg-surface:    #1a1b2e;
+  --bg-sidebar:    #16161e;
+  --bg-card:       #1f2335;
+  --bg-card-hover: #292e42;
+  --bg-input:      #13131e;
 
-  --border-main:   rgba(79, 142, 255, 0.20);
-  --border-subtle: rgba(79, 142, 255, 0.12);
+  --border-main:   rgba(122, 162, 247, 0.20);
+  --border-subtle: rgba(122, 162, 247, 0.12);
 
-  --text-primary:   #e8f0ff;
-  --text-secondary: #b0c4e8;
-  --text-tertiary:  #6a88bb;
-  --text-muted:     #445577;
-  --text-dim:       #2a3a55;
+  --text-primary:   #c0caf5;
+  --text-secondary: #a9b1d6;
+  --text-tertiary:  #787c99;
+  --text-muted:     #565f89;
+  --text-dim:       #414868;
 
-  --fill-subtle: rgba(79, 142, 255, 0.08);
-  --fill-medium: rgba(79, 142, 255, 0.16);
+  --fill-subtle: rgba(122, 162, 247, 0.08);
+  --fill-medium: rgba(122, 162, 247, 0.16);
 
-  --accent:      #4f8eff;
-  --accent-dark: #2d6ee0;
+  --accent:      #7aa2f7;
+  --accent-dark: #3d59a1;
 
-  --shadow-card: 0 0 0 1px rgba(79,142,255,0.12), 0 4px 20px rgba(0,0,0,0.5);
-  --shadow-sm:   0 0 0 1px rgba(79,142,255,0.08);
+  --shadow-card: none;
+  --shadow-sm:   none;
 }
 
-.aurora {
-  /* ── Aurora — Violet Creative ───────────────────────────────── */
-  --bg-surface:    #0d0814;
-  --bg-sidebar:    #130c1e;
-  --bg-card:       #1a1028;
-  --bg-card-hover: #221436;
-  --bg-input:      #09060e;
+.dracula {
+  /* ── Dracula — Classic Editor Theme ─────────────────────────── */
+  --bg-surface:    #282a36;
+  --bg-sidebar:    #21222c;
+  --bg-card:       #343746;
+  --bg-card-hover: #44475a;
+  --bg-input:      #1e1f29;
 
-  --border-main:   rgba(168, 85, 247, 0.22);
-  --border-subtle: rgba(168, 85, 247, 0.14);
+  --border-main:   rgba(189, 147, 249, 0.22);
+  --border-subtle: rgba(189, 147, 249, 0.14);
 
-  --text-primary:   #f0e8ff;
-  --text-secondary: #d0b8f0;
-  --text-tertiary:  #9870c8;
-  --text-muted:     #6a4a90;
-  --text-dim:       #3e2860;
+  --text-primary:   #f8f8f2;
+  --text-secondary: #e2d9f3;
+  --text-tertiary:  #bd93f9;
+  --text-muted:     #6272a4;
+  --text-dim:       #44475a;
 
-  --fill-subtle: rgba(168, 85, 247, 0.09);
-  --fill-medium: rgba(168, 85, 247, 0.18);
+  --fill-subtle: rgba(189, 147, 249, 0.08);
+  --fill-medium: rgba(189, 147, 249, 0.16);
 
-  --accent:      #a855f7;
-  --accent-dark: #8b32e8;
+  --accent:      #bd93f9;
+  --accent-dark: #ff79c6;
 
-  --shadow-card: 0 0 0 1px rgba(168,85,247,0.14), 0 4px 20px rgba(0,0,0,0.5);
-  --shadow-sm:   0 0 0 1px rgba(168,85,247,0.08);
+  --shadow-card: none;
+  --shadow-sm:   none;
 }
 
 .obsidian {
@@ -213,6 +213,87 @@
   --shadow-sm:   0 1px 2px rgba(14,100,200,0.08);
 }
 
+.mint {
+  /* ── Mint — Fresh Green Light ───────────────────────────────── */
+  --bg-surface:    #edfdf6;
+  --bg-sidebar:    #ffffff;
+  --bg-card:       #ffffff;
+  --bg-card-hover: #d8faee;
+  --bg-input:      #e0faf0;
+
+  --border-main:   rgba(16, 185, 129, 0.18);
+  --border-subtle: rgba(16, 185, 129, 0.12);
+
+  --text-primary:   #064e3b;
+  --text-secondary: #065f46;
+  --text-tertiary:  #047857;
+  --text-muted:     #6b9e8a;
+  --text-dim:       #a7d4c4;
+
+  --fill-subtle: rgba(16, 185, 129, 0.07);
+  --fill-medium: rgba(16, 185, 129, 0.13);
+
+  --accent:      #10b981;
+  --accent-dark: #059669;
+
+  --shadow-card: 0 1px 3px rgba(16,185,129,0.10), 0 1px 2px rgba(16,185,129,0.06);
+  --shadow-sm:   0 1px 2px rgba(16,185,129,0.08);
+}
+
+.lavender {
+  /* ── Lavender — Soft Purple Light ───────────────────────────── */
+  --bg-surface:    #f3eeff;
+  --bg-sidebar:    #ffffff;
+  --bg-card:       #ffffff;
+  --bg-card-hover: #e8dcff;
+  --bg-input:      #ede4ff;
+
+  --border-main:   rgba(139, 92, 246, 0.18);
+  --border-subtle: rgba(139, 92, 246, 0.12);
+
+  --text-primary:   #2e1065;
+  --text-secondary: #4c1d95;
+  --text-tertiary:  #6d28d9;
+  --text-muted:     #8b5cf6;
+  --text-dim:       #c4b5fd;
+
+  --fill-subtle: rgba(139, 92, 246, 0.07);
+  --fill-medium: rgba(139, 92, 246, 0.13);
+
+  --accent:      #8b5cf6;
+  --accent-dark: #7c3aed;
+
+  --shadow-card: 0 1px 3px rgba(139,92,246,0.10), 0 1px 2px rgba(139,92,246,0.06);
+  --shadow-sm:   0 1px 2px rgba(139,92,246,0.08);
+}
+
+.peach {
+  /* ── Peach — Warm Peach Light ───────────────────────────────── */
+  --bg-surface:    #fff4ef;
+  --bg-sidebar:    #ffffff;
+  --bg-card:       #ffffff;
+  --bg-card-hover: #ffe8dc;
+  --bg-input:      #ffeee6;
+
+  --border-main:   rgba(249, 115, 22, 0.18);
+  --border-subtle: rgba(249, 115, 22, 0.12);
+
+  --text-primary:   #431407;
+  --text-secondary: #7c2d12;
+  --text-tertiary:  #9a3412;
+  --text-muted:     #c2672a;
+  --text-dim:       #f0b89a;
+
+  --fill-subtle: rgba(249, 115, 22, 0.07);
+  --fill-medium: rgba(249, 115, 22, 0.13);
+
+  --accent:      #f97316;
+  --accent-dark: #ea580c;
+
+  --shadow-card: 0 1px 3px rgba(249,115,22,0.10), 0 1px 2px rgba(249,115,22,0.06);
+  --shadow-sm:   0 1px 2px rgba(249,115,22,0.08);
+}
+
 .ferrari {
   /* ── Ferrari — Rosso Corsa & Carbon ────────────────────────── */
   --bg-surface:    #080808;   /* carbon black */
@@ -272,84 +353,84 @@ body {
 
 /* ── Light mode: hardcoded dark color overrides ──────────────────────────── */
 /* 페이지 래퍼 / 섹션 배경 */
-html:not(.dark):not(.red):not(.ferrari):not(.midnight):not(.aurora):not(.obsidian) .bg-\[\#0f1117\],
-html:not(.dark):not(.red):not(.ferrari):not(.midnight):not(.aurora):not(.obsidian) .bg-\[\#0a0c14\],
-html:not(.dark):not(.red):not(.ferrari):not(.midnight):not(.aurora):not(.obsidian) .bg-\[\#1a1c24\],
-html:not(.dark):not(.red):not(.ferrari):not(.midnight):not(.aurora):not(.obsidian) .bg-\[\#080A0E\] {
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .bg-\[\#0f1117\],
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .bg-\[\#0a0c14\],
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .bg-\[\#1a1c24\],
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .bg-\[\#080A0E\] {
   background-color: var(--bg-surface) !important;
   color: var(--text-primary) !important;
 }
 
 /* 모달 배경 */
-html:not(.dark):not(.red):not(.ferrari):not(.midnight):not(.aurora):not(.obsidian) .bg-\[\#13161D\] {
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .bg-\[\#13161D\] {
   background-color: #ffffff !important;
   color: var(--text-primary) !important;
 }
 
 /* 인풋 / 텍스트에어리어 */
-html:not(.dark):not(.red):not(.ferrari):not(.midnight):not(.aurora):not(.obsidian) .bg-\[\#0f0f10\],
-html:not(.dark):not(.red):not(.ferrari):not(.midnight):not(.aurora):not(.obsidian) .bg-\[\#1F2937\] {
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .bg-\[\#0f0f10\],
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .bg-\[\#1F2937\] {
   background-color: var(--bg-input) !important;
   color: var(--text-primary) !important;
 }
 
 /* border overrides on dark inputs */
-html:not(.dark):not(.red):not(.ferrari):not(.midnight):not(.aurora):not(.obsidian) .border-border-main {
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .border-border-main {
   border-color: var(--border-main) !important;
 }
 
 /* placeholder 색상 */
-html:not(.dark):not(.red):not(.ferrari):not(.midnight):not(.aurora):not(.obsidian) .placeholder-gray-600::placeholder {
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .placeholder-gray-600::placeholder {
   color: var(--text-muted) !important;
 }
 
 /* ── white/opacity 계열 — 다크 배경 전제 클래스 → 라이트모드 대응 ──── */
-html:not(.dark):not(.red):not(.ferrari):not(.midnight):not(.aurora):not(.obsidian) .bg-white\/5,
-html:not(.dark):not(.red):not(.ferrari):not(.midnight):not(.aurora):not(.obsidian) .bg-white\/3  { background-color: var(--fill-subtle) !important; }
-html:not(.dark):not(.red):not(.ferrari):not(.midnight):not(.aurora):not(.obsidian) .bg-white\/10 { background-color: var(--fill-medium) !important; }
-html:not(.dark):not(.red):not(.ferrari):not(.midnight):not(.aurora):not(.obsidian) .bg-white\/20 { background-color: rgba(0,0,0,0.07)  !important; }
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .bg-white\/5,
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .bg-white\/3  { background-color: var(--fill-subtle) !important; }
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .bg-white\/10 { background-color: var(--fill-medium) !important; }
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .bg-white\/20 { background-color: rgba(0,0,0,0.07)  !important; }
 
-html:not(.dark):not(.red):not(.ferrari):not(.midnight):not(.aurora):not(.obsidian) .text-white\/20,
-html:not(.dark):not(.red):not(.ferrari):not(.midnight):not(.aurora):not(.obsidian) .text-white\/30,
-html:not(.dark):not(.red):not(.ferrari):not(.midnight):not(.aurora):not(.obsidian) .text-white\/35,
-html:not(.dark):not(.red):not(.ferrari):not(.midnight):not(.aurora):not(.obsidian) .text-white\/40 { color: var(--text-dim)   !important; }
-html:not(.dark):not(.red):not(.ferrari):not(.midnight):not(.aurora):not(.obsidian) .text-white\/50,
-html:not(.dark):not(.red):not(.ferrari):not(.midnight):not(.aurora):not(.obsidian) .text-white\/60 { color: var(--text-muted)  !important; }
-html:not(.dark):not(.red):not(.ferrari):not(.midnight):not(.aurora):not(.obsidian) .text-white\/70,
-html:not(.dark):not(.red):not(.ferrari):not(.midnight):not(.aurora):not(.obsidian) .text-white\/80 { color: var(--text-tertiary) !important; }
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .text-white\/20,
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .text-white\/30,
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .text-white\/35,
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .text-white\/40 { color: var(--text-dim)   !important; }
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .text-white\/50,
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .text-white\/60 { color: var(--text-muted)  !important; }
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .text-white\/70,
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .text-white\/80 { color: var(--text-tertiary) !important; }
 
-html:not(.dark):not(.red):not(.ferrari):not(.midnight):not(.aurora):not(.obsidian) .border-white\/5,
-html:not(.dark):not(.red):not(.ferrari):not(.midnight):not(.aurora):not(.obsidian) .border-white\/8,
-html:not(.dark):not(.red):not(.ferrari):not(.midnight):not(.aurora):not(.obsidian) .border-white\/10,
-html:not(.dark):not(.red):not(.ferrari):not(.midnight):not(.aurora):not(.obsidian) .border-white\/15,
-html:not(.dark):not(.red):not(.ferrari):not(.midnight):not(.aurora):not(.obsidian) .border-white\/20,
-html:not(.dark):not(.red):not(.ferrari):not(.midnight):not(.aurora):not(.obsidian) .border-white\/30 { border-color: var(--border-subtle) !important; }
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .border-white\/5,
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .border-white\/8,
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .border-white\/10,
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .border-white\/15,
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .border-white\/20,
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .border-white\/30 { border-color: var(--border-subtle) !important; }
 
 /* ── Light mode: card & section 개선 ─────────────────────────────────────── */
-html:not(.dark):not(.red):not(.ferrari):not(.midnight):not(.aurora):not(.obsidian) .bg-surface   { background-color: var(--bg-surface) !important; }
-html:not(.dark):not(.red):not(.ferrari):not(.midnight):not(.aurora):not(.obsidian) .bg-card,
-html:not(.dark):not(.red):not(.ferrari):not(.midnight):not(.aurora):not(.obsidian) [class*="bg-card"] {
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .bg-surface   { background-color: var(--bg-surface) !important; }
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .bg-card,
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) [class*="bg-card"] {
   box-shadow: var(--shadow-card);
 }
 
 /* rounded-xl, rounded-2xl 카드에 Apple 그림자 */
-html:not(.dark):not(.red):not(.ferrari):not(.midnight):not(.aurora):not(.obsidian) .rounded-xl,
-html:not(.dark):not(.red):not(.ferrari):not(.midnight):not(.aurora):not(.obsidian) .rounded-2xl {
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .rounded-xl,
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .rounded-2xl {
   box-shadow: var(--shadow-sm);
 }
 
 /* 사이드바 구분선 */
-html:not(.dark):not(.red):not(.ferrari):not(.midnight):not(.aurora):not(.obsidian) .border-border-main {
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) .border-border-main {
   border-color: var(--border-main);
 }
 
 /* scrollbar: Apple macOS 스타일 */
-html:not(.dark):not(.red):not(.ferrari):not(.midnight):not(.aurora):not(.obsidian) ::-webkit-scrollbar       { width: 6px; height: 6px; }
-html:not(.dark):not(.red):not(.ferrari):not(.midnight):not(.aurora):not(.obsidian) ::-webkit-scrollbar-track { background: transparent; }
-html:not(.dark):not(.red):not(.ferrari):not(.midnight):not(.aurora):not(.obsidian) ::-webkit-scrollbar-thumb {
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) ::-webkit-scrollbar       { width: 6px; height: 6px; }
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) ::-webkit-scrollbar-track { background: transparent; }
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) ::-webkit-scrollbar-thumb {
   background: rgba(0,0,0,0.18);
   border-radius: 999px;
 }
-html:not(.dark):not(.red):not(.ferrari):not(.midnight):not(.aurora):not(.obsidian) ::-webkit-scrollbar-thumb:hover {
+html:not(.dark):not(.ferrari):not(.obsidian):not(.nord):not(.tokyonight):not(.dracula) ::-webkit-scrollbar-thumb:hover {
   background: rgba(0,0,0,0.28);
 }
