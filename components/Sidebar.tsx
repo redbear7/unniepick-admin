@@ -9,7 +9,6 @@ import {
   Users, LogOut, ChevronRight, ScrollText, MapPin, PlaySquare, Zap, Map, ListMusic, Tag, Building2, Megaphone, Film, Video, KeyRound, Bell,
   GripVertical, Pencil, Check, X, Settings, ImagePlus,
 } from 'lucide-react';
-import ThemeToggle from '@/components/ThemeToggle';
 import {
   DndContext,
   closestCenter,
@@ -302,7 +301,6 @@ export default function Sidebar() {
           <p className="text-sm font-bold text-primary leading-tight mt-0.5">슈퍼어드민</p>
           <p className="text-[10px] text-muted mt-1">v0.1.1</p>
         </div>
-        <ThemeToggle />
       </Link>
 
       {/* 네비게이션 */}
