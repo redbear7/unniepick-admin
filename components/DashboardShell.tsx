@@ -43,21 +43,16 @@ export default function DashboardShell({ children }: { children: React.ReactNode
       <DevLogPanel />
 
       {/* 테마 토글 + 폰트 선택 — 메인 영역 상단 중앙 고정 */}
-      {/* 테마 토글 + 폰트 선택 */}
+      {/* 테마 토글 + 폰트 선택 + 트랙 제목 */}
       <div
-        className="fixed top-3 z-50 flex items-center gap-0.5 bg-card/80 backdrop-blur border border-border-main rounded-xl px-1 shadow-sm"
+        className="fixed top-3 z-50 flex flex-col items-center gap-1.5"
         style={{ left: 'calc(14rem + (100vw - 14rem) / 2)', transform: 'translateX(-50%)' }}
       >
-        <ThemeToggle />
-        <div className="w-px h-4 bg-border-main" />
-        <FontSelector />
-      </div>
-
-      {/* 현재 재생 트랙 제목 */}
-      <div
-        className="fixed top-12 z-40 flex items-center"
-        style={{ left: 'calc(14rem + (100vw - 14rem) / 2)', transform: 'translateX(-50%)' }}
-      >
+        <div className="flex items-center gap-0.5 bg-card/80 backdrop-blur border border-border-main rounded-xl px-1 shadow-sm">
+          <ThemeToggle />
+          <div className="w-px h-4 bg-border-main" />
+          <FontSelector />
+        </div>
         <NowPlayingChip />
       </div>
     </PlayerProvider>
