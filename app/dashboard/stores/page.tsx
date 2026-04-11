@@ -1034,10 +1034,10 @@ export default function StoresPage() {
                       <span className="text-[10px] text-dim">{new Date(entry.changed_at).toLocaleString('ko-KR')}</span>
                     </div>
                     <div className="text-[10px] text-muted space-y-0.5">
-                      {entry.snapshot.name && <p>가게명: {String(entry.snapshot.name)}</p>}
-                      {entry.snapshot.phone && <p>연락처: {String(entry.snapshot.phone)}</p>}
-                      {entry.snapshot.address && <p>주소: {String(entry.snapshot.address)}</p>}
-                      {entry.snapshot.category && <p>카테고리: {String(entry.snapshot.category)}</p>}
+                      {Boolean(entry.snapshot.name) && <p>가게명: {String(entry.snapshot.name)}</p>}
+                      {Boolean(entry.snapshot.phone) && <p>연락처: {String(entry.snapshot.phone)}</p>}
+                      {Boolean(entry.snapshot.address) && <p>주소: {String(entry.snapshot.address)}</p>}
+                      {Boolean(entry.snapshot.category) && <p>카테고리: {String(entry.snapshot.category)}</p>}
                     </div>
                   </div>
                 ))

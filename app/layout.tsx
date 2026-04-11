@@ -67,10 +67,9 @@ export default function RootLayout({
             src="//wcs.naver.net/wcslog.js"
             strategy="afterInteractive"
             onLoad={() => {
-              if (typeof window !== 'undefined' && window.wcs_add) {
-                window.wcs?.inflow();
-                // @ts-ignore
-                window.wcs_do?.(window.wcs_add);
+              if (typeof window !== 'undefined' && (window as any).wcs_add) {
+                (window as any).wcs?.inflow();
+                (window as any).wcs_do?.((window as any).wcs_add);
               }
             }}
           />

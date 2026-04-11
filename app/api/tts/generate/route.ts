@@ -4,8 +4,9 @@ import { createClient } from '@supabase/supabase-js';
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type' };
 
 // TTS 일별 한도 초과 여부 확인 (실제 기록은 성공 후 recordUsage에서 수행)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function checkLimit(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   store_id: string,
   charCount: number,
 ): Promise<{ allowed: boolean; errorMsg?: string }> {
@@ -18,7 +19,8 @@ async function checkLimit(
     .eq('id', store_id)
     .single();
 
-  const policy = storeData?.tts_policies as { daily_char_limit: number } | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const policy = (storeData as any)?.tts_policies as { daily_char_limit: number } | null;
   const daily_char_limit: number | null = policy ? policy.daily_char_limit : null;
 
   // 정책 미할당 또는 무제한(-1) 이면 항상 허용
@@ -34,7 +36,8 @@ async function checkLimit(
     .eq('usage_date', today)
     .maybeSingle();
 
-  const currentUsage = usageData?.char_count ?? 0;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const currentUsage = (usageData as any)?.char_count ?? 0;
 
   // 한도 초과 여부 확인
   if (currentUsage + charCount > daily_char_limit) {
@@ -48,8 +51,9 @@ async function checkLimit(
 }
 
 // 성공 후 사용량 upsert (increment)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function recordUsage(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   store_id: string,
   charCount: number,
 ): Promise<void> {
@@ -63,8 +67,10 @@ async function recordUsage(
     .eq('usage_date', today)
     .maybeSingle();
 
-  const newCount = (existing?.char_count ?? 0) + charCount;
-  await supabase.from('tts_daily_usage').upsert(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const newCount = ((existing as any)?.char_count ?? 0) + charCount;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any).from('tts_daily_usage').upsert(
     { store_id, usage_date: today, char_count: newCount, updated_at: new Date().toISOString() },
     { onConflict: 'store_id,usage_date' },
   );

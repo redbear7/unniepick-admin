@@ -44,18 +44,21 @@ export async function GET(req: NextRequest) {
   }
 
   // 정책이 없으면 한도 없음 (관리자용)
-  const policy = storeData?.tts_policies as { daily_char_limit: number } | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const policy = (storeData as any)?.tts_policies as { daily_char_limit: number } | null;
   const daily_char_limit: number | null = policy ? policy.daily_char_limit : null;
 
   // 오늘 사용량 조회
-  const { data: usageData } = await client
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: usageData } = await (client as any)
     .from('tts_daily_usage')
     .select('char_count')
     .eq('store_id', store_id)
     .eq('usage_date', today)
     .maybeSingle();
 
-  const char_count = usageData?.char_count ?? 0;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const char_count = (usageData as any)?.char_count ?? 0;
 
   return NextResponse.json({ char_count, daily_char_limit, date: today }, { headers: CORS });
 }
