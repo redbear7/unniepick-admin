@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, Suspense } from 'react';
 import { createClient } from '@/lib/supabase';
 import { usePlayer } from '@/contexts/PlayerContext';
 import { useSearchParams } from 'next/navigation';
@@ -926,7 +926,7 @@ function LivePreviewFrame({
 }
 
 // ─── 메인 페이지 ───────────────────────────────────────────────
-export default function ShortsPage() {
+function ShortsPageInner() {
   const sb           = createClient();
   const player       = usePlayer();
   const searchParams = useSearchParams();
@@ -2493,5 +2493,14 @@ export default function ShortsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+
+export default function ShortsPage() {
+  return (
+    <Suspense>
+      <ShortsPageInner />
+    </Suspense>
   );
 }
