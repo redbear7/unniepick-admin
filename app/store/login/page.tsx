@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
 
-export default function StoreLoginPage() {
+function StoreLoginPageInner() {
   const searchParams = useSearchParams();
   const errorParam   = searchParams.get('error');
 
@@ -67,6 +67,14 @@ export default function StoreLoginPage() {
 
       </div>
     </div>
+  );
+}
+
+export default function StoreLoginPage() {
+  return (
+    <Suspense>
+      <StoreLoginPageInner />
+    </Suspense>
   );
 }
 

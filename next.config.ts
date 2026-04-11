@@ -32,12 +32,14 @@ const nextConfig: NextConfig = {
   },
 
   async rewrites() {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    if (!supabaseUrl) return [];
     return [
       {
         // /api/audio/music-tracks/audio/xxx.mp3
         // → Supabase Storage 직접 프록시 (브라우저 캐시 활용)
         source: '/api/audio/:path*',
-        destination: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/:path*`,
+        destination: `${supabaseUrl}/storage/v1/object/public/:path*`,
       },
     ];
   },

@@ -5,11 +5,11 @@
   "functions": {
     "app/api/shorts/render/route.ts": {
       "maxDuration": 300,
-      "memory": 3009
+      "memory": 2048
     },
     "app/api/cardnews/render/route.ts": {
       "maxDuration": 300,
-      "memory": 3009
+      "memory": 2048
     }
   }
 }
