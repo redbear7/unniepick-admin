@@ -539,6 +539,13 @@ export default function LandingPage() {
       </section>
 
       <LandingFooter />
+
+      {/* 어드민 바로가기 */}
+      <div className="text-center py-4 border-t border-border">
+        <Link href="/dashboard" className="text-xs text-tertiary hover:text-primary transition">
+          관리자 대시보드 →
+        </Link>
+      </div>
     </div>
   );
 }
