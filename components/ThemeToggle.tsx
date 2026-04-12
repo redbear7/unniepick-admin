@@ -1,15 +1,14 @@
 'use client';
 
 import { useTheme } from 'next-themes';
-import { useEffect, useRef, useState } from 'react';
-import { Palette } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 const THEMES = [
   { id: 'dark',     label: 'Dark',     accent: '#FF6F0F', bg: '#1a1d24' },
   { id: 'light',    label: 'Light',    accent: '#FF6F0F', bg: '#f0f2f5' },
   { id: 'supabase', label: 'Supabase', accent: '#3ecf8e', bg: '#171717' },
   { id: 'linear',   label: 'Linear',   accent: '#7170ff', bg: '#08090a' },
-  { id: 'vercel',   label: 'Vercel',   accent: '#0a72ef', bg: '#ffffff' },
+  { id: 'vercel',   label: 'Vercel',   accent: '#0a72ef', bg: '#ffffff'  },
   { id: 'stripe',   label: 'Stripe',   accent: '#533afd', bg: '#1c1e54' },
   { id: 'notion',   label: 'Notion',   accent: '#0075de', bg: '#f6f5f4' },
   { id: 'posthog',  label: 'PostHog',  accent: '#F54E00', bg: '#fdfdf8' },
@@ -17,62 +16,40 @@ const THEMES = [
 
 export default function ThemeToggle() {
   const { theme, setTheme } = useTheme();
-  const [mounted, setMounted]   = useState(false);
-  const [open, setOpen]         = useState(false);
-  const ref                     = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => setMounted(true), []);
 
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
+  if (!mounted) return <div className="h-5 w-16" />;
 
-  if (!mounted) return <div className="w-8 h-8" />;
+  const idx     = THEMES.findIndex(t => t.id === theme);
+  const current = THEMES[idx] ?? THEMES[0];
+  const nextIdx = (idx + 1) % THEMES.length;
+
+  const cycleNext = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setTheme(THEMES[nextIdx].id);
+  };
 
   return (
-    <div ref={ref} className="relative">
-      <button
-        onClick={() => setOpen(o => !o)}
-        className="p-2 rounded-lg text-tertiary hover:bg-card hover:text-primary transition"
-        title="테마 변경"
-      >
-        <Palette size={16} />
-      </button>
-
-      {open && (
-        <div className="absolute right-0 top-full mt-2 z-50 w-44 rounded-xl border border-border-main bg-card shadow-xl p-2">
-          <p className="text-[10px] font-semibold text-muted uppercase tracking-wider px-2 pb-1.5">
-            디자인 테마
-          </p>
-          <div className="space-y-0.5">
-            {THEMES.map(t => (
-              <button
-                key={t.id}
-                onClick={() => { setTheme(t.id); setOpen(false); }}
-                className={`w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-sm transition ${
-                  theme === t.id
-                    ? 'bg-fill-medium text-primary'
-                    : 'text-tertiary hover:bg-fill-subtle hover:text-primary'
-                }`}
-              >
-                {/* swatch */}
-                <span
-                  className="w-5 h-5 rounded-md shrink-0 border border-border-subtle"
-                  style={{ background: `linear-gradient(135deg, ${t.bg} 50%, ${t.accent} 50%)` }}
-                />
-                <span className="flex-1 text-left">{t.label}</span>
-                {theme === t.id && (
-                  <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: t.accent }} />
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
+    <button
+      onClick={cycleNext}
+      title={`다음 테마: ${THEMES[nextIdx].label}`}
+      className="flex items-center gap-1 px-1.5 py-0.5 rounded-md border border-border-subtle bg-fill-subtle hover:bg-fill-medium transition shrink-0"
+    >
+      {/* accent dot */}
+      <span
+        className="w-2 h-2 rounded-full shrink-0"
+        style={{ background: current.accent }}
+      />
+      {/* label + index */}
+      <span className="text-[10px] font-medium text-muted leading-none whitespace-nowrap">
+        {current.label}
+      </span>
+      <span className="text-[9px] text-dim leading-none">
+        {idx + 1}/{THEMES.length}
+      </span>
+    </button>
   );
 }
