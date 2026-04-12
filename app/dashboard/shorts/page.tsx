@@ -926,7 +926,9 @@ function LivePreviewFrame({
 }
 
 // ─── 메인 페이지 ───────────────────────────────────────────────
-export default function ShortsPage() {
+import { Suspense } from 'react';
+
+function ShortsPageInner() {
   const sb           = createClient();
   const player       = usePlayer();
   const searchParams = useSearchParams();
@@ -2493,5 +2495,13 @@ export default function ShortsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function ShortsPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-full"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}>
+      <ShortsPageInner />
+    </Suspense>
   );
 }

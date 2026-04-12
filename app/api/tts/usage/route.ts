@@ -44,11 +44,11 @@ export async function GET(req: NextRequest) {
   }
 
   // 정책이 없으면 한도 없음 (관리자용)
-  const policy = storeData?.tts_policies as { daily_char_limit: number } | null;
+  const policy = (storeData as any)?.tts_policies as unknown as { daily_char_limit: number } | null;
   const daily_char_limit: number | null = policy ? policy.daily_char_limit : null;
 
   // 오늘 사용량 조회
-  const { data: usageData } = await client
+  const { data: usageData } = await (client as any)
     .from('tts_daily_usage')
     .select('char_count')
     .eq('store_id', store_id)

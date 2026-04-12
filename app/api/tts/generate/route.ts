@@ -5,7 +5,7 @@ const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods
 
 // TTS 일별 한도 초과 여부 확인 (실제 기록은 성공 후 recordUsage에서 수행)
 async function checkLimit(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   store_id: string,
   charCount: number,
 ): Promise<{ allowed: boolean; errorMsg?: string }> {
@@ -18,7 +18,7 @@ async function checkLimit(
     .eq('id', store_id)
     .single();
 
-  const policy = storeData?.tts_policies as { daily_char_limit: number } | null;
+  const policy = (storeData as any)?.tts_policies as unknown as { daily_char_limit: number } | null;
   const daily_char_limit: number | null = policy ? policy.daily_char_limit : null;
 
   // 정책 미할당 또는 무제한(-1) 이면 항상 허용
@@ -27,14 +27,14 @@ async function checkLimit(
   }
 
   // 오늘 사용량 조회
-  const { data: usageData } = await supabase
+  const { data: usageData } = await (supabase as any)
     .from('tts_daily_usage')
     .select('char_count')
     .eq('store_id', store_id)
     .eq('usage_date', today)
     .maybeSingle();
 
-  const currentUsage = usageData?.char_count ?? 0;
+  const currentUsage = (usageData as any)?.char_count ?? 0;
 
   // 한도 초과 여부 확인
   if (currentUsage + charCount > daily_char_limit) {
@@ -49,14 +49,14 @@ async function checkLimit(
 
 // 성공 후 사용량 upsert (increment)
 async function recordUsage(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   store_id: string,
   charCount: number,
 ): Promise<void> {
   const today = new Date().toISOString().slice(0, 10);
   // Supabase JS v2 does not support increment in upsert directly,
   // so we use a raw SQL via rpc or handle with select+upsert
-  const { data: existing } = await supabase
+  const { data: existing } = await (supabase as any)
     .from('tts_daily_usage')
     .select('char_count')
     .eq('store_id', store_id)
@@ -64,7 +64,7 @@ async function recordUsage(
     .maybeSingle();
 
   const newCount = (existing?.char_count ?? 0) + charCount;
-  await supabase.from('tts_daily_usage').upsert(
+  await (supabase as any).from('tts_daily_usage').upsert(
     { store_id, usage_date: today, char_count: newCount, updated_at: new Date().toISOString() },
     { onConflict: 'store_id,usage_date' },
   );

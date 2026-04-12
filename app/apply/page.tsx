@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase';
 import { Mail, ShieldCheck, Loader2, Check } from 'lucide-react';
-import { trackCarrierSelect, trackConsultationComplete } from '@/lib/gtag';
 
 export default function ApplyPage() {
   /* ── 이메일 인증 ── */

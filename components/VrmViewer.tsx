@@ -28,7 +28,7 @@ const VrmViewer = forwardRef<VrmViewerHandle, Props>(
     const canvasRef   = useRef<HTMLCanvasElement>(null);
     const vrmRef      = useRef<any>(null);
     const analyserRef = useRef<AnalyserNode | null>(null);
-    const freqDataRef = useRef<Uint8Array | null>(null);
+    const freqDataRef = useRef<Uint8Array<ArrayBuffer> | null>(null);
     const rafRef      = useRef<number>(0);
 
     useImperativeHandle(ref, () => ({

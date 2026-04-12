@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
 
-export default function StoreLoginPage() {
+function StoreLoginInner() {
   const searchParams = useSearchParams();
   const errorParam   = searchParams.get('error');
 
@@ -14,7 +14,6 @@ export default function StoreLoginPage() {
     setLoading(true);
     const supabase = createClient();
     await supabase.auth.signInWithOAuth({
-      // TypeScript는 custom provider를 모르므로 타입 단언 사용
       provider: 'custom:naver' as 'google',
       options: {
         redirectTo: `${window.location.origin}/store/auth/callback`,
@@ -67,6 +66,16 @@ export default function StoreLoginPage() {
 
       </div>
     </div>
+  );
+}
+
+export default function StoreLoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-surface flex items-center justify-center" />
+    }>
+      <StoreLoginInner />
+    </Suspense>
   );
 }
 

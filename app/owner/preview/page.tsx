@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 
-export default function OwnerPreviewPage() {
+function OwnerPreviewInner() {
   const router = useRouter();
   const params = useSearchParams();
 
@@ -25,5 +25,17 @@ export default function OwnerPreviewPage() {
     <div className="min-h-screen bg-[#0f1117] flex items-center justify-center">
       <Loader2 size={28} className="animate-spin text-[#FF6F0F]" />
     </div>
+  );
+}
+
+export default function OwnerPreviewPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#0f1117] flex items-center justify-center">
+        <Loader2 size={28} className="animate-spin text-[#FF6F0F]" />
+      </div>
+    }>
+      <OwnerPreviewInner />
+    </Suspense>
   );
 }

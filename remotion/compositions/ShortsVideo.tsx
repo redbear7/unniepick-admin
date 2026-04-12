@@ -395,6 +395,7 @@ function VinylOverlay({ frame, fps, coverUrl, coverEmoji, posX = 50, posY = 28 }
           zIndex: 11,
         }} />
       </div>
+      </div>
     </AbsoluteFill>
   );
 }
