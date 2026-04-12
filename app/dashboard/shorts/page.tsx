@@ -532,7 +532,7 @@ function LivePreviewFrame({
     if (!canvas) return;
     const dpr = window.devicePixelRatio || 1;
     const W = canvas.offsetWidth  || BASE_W;
-    const H = canvas.offsetHeight || 36;
+    const H = canvas.offsetHeight || 56;
     canvas.width  = W * dpr;
     canvas.height = H * dpr;
     const ctx = canvas.getContext('2d')!;
@@ -593,14 +593,33 @@ function LivePreviewFrame({
       }
 
     } else if (waveformStyle === 'dots') {
-      const dots = 32; const bw = W / dots;
-      for (let i = 0; i < dots; i++) {
-        const amp = getAmp(i);
-        const r = Math.max(1.5, amp * H * 0.22);
+      const baseY = H * 0.82;           // 기준선 (캔버스 하단 82%)
+
+      // ① 촘촘한 점 기준선
+      const DOT_N = 110;
+      for (let i = 0; i < DOT_N; i++) {
+        const x    = (i / (DOT_N - 1)) * W;
+        const ny   = Math.sin(i * 2.3 + wavePhase * 0.12) * H * 0.055;  // 미세 노이즈
+        const amp  = playing
+          ? 0.28 + 0.72 * Math.abs(Math.sin(i * 0.9 + wavePhase * 0.28))
+          : 0.22 + 0.14 * Math.abs(Math.sin(i * 0.9));
+        const r = 0.9 + amp * 0.7;
         ctx.beginPath();
-        ctx.arc(i * bw + bw / 2, mid, r, 0, Math.PI * 2);
-        ctx.fillStyle = color(0.4 + amp * 0.6);
+        ctx.arc(x, baseY + ny, r, 0, Math.PI * 2);
+        ctx.fillStyle = color(0.22 + amp * 0.32);
         ctx.fill();
+      }
+
+      // ② 수직 바 (기준선에서 위로 상승)
+      const BARS = 24;
+      const bw   = W / BARS;
+      for (let i = 0; i < BARS; i++) {
+        const amp  = getAmp(i);
+        const bh   = amp * baseY * 0.96;
+        const bw2  = Math.max(bw * 0.26, 1.5);
+        const bx   = i * bw + bw / 2;
+        ctx.fillStyle = color(0.42 + amp * 0.58);
+        ctx.fillRect(bx - bw2 / 2, baseY - bh, bw2, bh + 1);
       }
     }
   }, [playing, wavePhase, waveformStyle]);
@@ -891,7 +910,7 @@ function LivePreviewFrame({
 
           {/* 파형 */}
           <div style={{ position:'absolute', bottom:44, left:16, right:16 }}>
-            <canvas ref={canvasRef} style={{ width:'100%', display:'block', height:36 }} />
+            <canvas ref={canvasRef} style={{ width:'100%', display:'block', height: waveformStyle === 'dots' ? 56 : 36 }} />
           </div>
 
           {/* 진행 바 */}
