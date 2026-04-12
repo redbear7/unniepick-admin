@@ -138,13 +138,15 @@ export async function POST(req: NextRequest) {
 
         for (const r of results) {
           if (r.status === 'success' && r.url) {
-            await sb.from('ai_generated_images').insert({
-              store_id,
-              asset_type: r.type,
-              aspect_ratio: r.aspect_ratio,
-              image_url: r.url,
-              created_at: new Date().toISOString(),
-            }).catch(() => {}); // 테이블 없으면 무시
+            try {
+              await sb.from('ai_generated_images').insert({
+                store_id,
+                asset_type: r.type,
+                aspect_ratio: r.aspect_ratio,
+                image_url: r.url,
+                created_at: new Date().toISOString(),
+              });
+            } catch {} // 테이블 없으면 무시
           }
         }
       } catch {}
