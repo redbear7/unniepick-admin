@@ -349,8 +349,8 @@ function WaveformEditor({
 
       <div className="relative">
         {loading && (
-          <div className="absolute inset-0 flex items-center justify-center gap-2 z-10 bg-[#0a0c14]/70 rounded-xl">
-            <Loader2 size={13} className="animate-spin text-[#FF6F0F]" />
+          <div className="absolute inset-0 flex items-center justify-center gap-2 z-10 bg-surface/70 rounded-xl">
+            <Loader2 size={13} className="animate-spin text-accent" />
             <span className="text-xs text-muted">파형 분석 중...</span>
           </div>
         )}
@@ -368,7 +368,7 @@ function WaveformEditor({
       <div className="flex items-center gap-3">
         <button
           onClick={togglePlay}
-          className="w-8 h-8 rounded-full bg-[#FF6F0F] flex items-center justify-center hover:bg-[#e86200] transition shrink-0"
+          className="w-8 h-8 rounded-full bg-accent flex items-center justify-center hover:opacity-90 transition shrink-0"
         >
           {playing
             ? <Pause size={11} className="text-white" />
@@ -376,7 +376,7 @@ function WaveformEditor({
         </button>
         <div className="flex-1 flex justify-between text-[10px] font-mono text-muted">
           <span>0:00</span>
-          <span className="text-[#FF9F4F]">
+          <span className="text-accent">
             {fmtSec(startSec)} → {fmtSec(Math.min(startSec + windowSec, durationSec))} ({windowSec}초)
           </span>
           <span>{fmtSec(durationSec)}</span>
@@ -919,7 +919,7 @@ function LivePreviewFrame({
       {/* 구간 표시 */}
       <p className="text-[10px] font-mono text-dim self-start">
         {fmtSec(startSec)} ~ {fmtSec(startSec + durationSec)}
-        <span className="text-[#FF6F0F]/60 ml-1">({durationSec}초)</span>
+        <span className="text-accent/60 ml-1">({durationSec}초)</span>
       </p>
     </div>
   );
@@ -1315,11 +1315,11 @@ function ShortsPageInner() {
   };
 
   return (
-    <div className="flex flex-col h-full overflow-hidden bg-[#0f1117]">
+    <div className="flex flex-col h-full overflow-hidden bg-surface">
       {/* ── 헤더 ── */}
-      <div className="px-6 py-4 border-b border-white/5 flex items-center gap-3 shrink-0">
-        <div className="w-9 h-9 rounded-xl bg-[#FF6F0F]/15 flex items-center justify-center">
-          <Film size={18} className="text-[#FF6F0F]" />
+      <div className="px-6 py-4 border-b border-border-subtle flex items-center gap-3 shrink-0">
+        <div className="w-9 h-9 rounded-xl bg-accent/15 flex items-center justify-center">
+          <Film size={18} className="text-accent" />
         </div>
         <div className="flex-1">
           <h1 className="text-lg font-bold text-primary">숏폼 영상 생성</h1>
@@ -1332,8 +1332,8 @@ function ShortsPageInner() {
           onClick={() => setAutoPlayOnSelect(v => !v)}
           className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-bold transition ${
             autoPlayOnSelect
-              ? 'bg-[#FF6F0F] border-[#FF6F0F] text-white shadow-lg shadow-[#FF6F0F]/30'
-              : 'bg-white/5 border-white/10 text-muted hover:border-white/20 hover:text-primary'
+              ? 'bg-accent border-accent text-white shadow-lg shadow-accent/30'
+              : 'bg-fill-subtle border-border-subtle text-muted hover:border-border-main hover:text-primary'
           }`}
           title="트랙 선택 시 클라이맥스 구간 즉시 재생"
         >
@@ -1346,7 +1346,7 @@ function ShortsPageInner() {
 
       <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* ── 왼쪽: 트랙 선택 패널 ── */}
-        <div className="w-[360px] shrink-0 border-r border-white/5 overflow-y-auto p-4 flex flex-col gap-3">
+        <div className="w-[360px] shrink-0 border-r border-border-subtle overflow-y-auto p-4 flex flex-col gap-3">
           <div className="flex flex-col gap-3">
             <p className="text-sm font-semibold text-primary">트랙 선택</p>
 
@@ -1358,7 +1358,7 @@ function ShortsPageInner() {
                 placeholder="제목, 아티스트, 태그 검색..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                className="w-full bg-[#0f1117] border border-border-main rounded-lg pl-8 pr-3 py-2 text-sm text-primary placeholder:text-muted focus:outline-none focus:border-[#FF6F0F]/50"
+                className="w-full bg-surface border border-border-main rounded-lg pl-8 pr-3 py-2 text-sm text-primary placeholder:text-muted focus:outline-none focus:border-accent/50"
               />
             </div>
 
@@ -1380,12 +1380,12 @@ function ShortsPageInner() {
                         onClick={() => handleSelect(track)}
                         className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition w-full ${
                           isSelected
-                            ? 'bg-[#FF6F0F]/15 border border-[#FF6F0F]/40'
-                            : 'hover:bg-white/5 border border-transparent'
+                            ? 'bg-accent/15 border border-accent/40'
+                            : 'hover:bg-fill-subtle border border-transparent'
                         }`}
                       >
                         {/* 커버 */}
-                        <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 bg-white/5 flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 bg-fill-subtle flex items-center justify-center">
                           {track.cover_image_url ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
@@ -1406,12 +1406,12 @@ function ShortsPageInner() {
                           {(track.mood || (track.mood_tags ?? []).length > 0) && (
                             <div className="flex items-center gap-1 mt-1 flex-wrap">
                               {track.mood && (
-                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#FF6F0F]/15 text-[#FF9F4F] font-semibold leading-none shrink-0">
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent/15 text-accent font-semibold leading-none shrink-0">
                                   {track.mood}
                                 </span>
                               )}
                               {(track.mood_tags ?? []).slice(0, 3).map(tag => (
-                                <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-white/40 leading-none shrink-0">
+                                <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded bg-fill-subtle text-white/40 leading-none shrink-0">
                                   {tag}
                                 </span>
                               ))}
@@ -1439,7 +1439,7 @@ function ShortsPageInner() {
                 <button
                   onClick={() => setPage((p) => Math.max(0, p - 1))}
                   disabled={page === 0}
-                  className="p-1.5 rounded-lg hover:bg-white/5 disabled:opacity-30 text-muted transition"
+                  className="p-1.5 rounded-lg hover:bg-fill-subtle disabled:opacity-30 text-muted transition"
                 >
                   <ChevronLeft size={14} />
                 </button>
@@ -1449,7 +1449,7 @@ function ShortsPageInner() {
                 <button
                   onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                   disabled={page >= totalPages - 1}
-                  className="p-1.5 rounded-lg hover:bg-white/5 disabled:opacity-30 text-muted transition"
+                  className="p-1.5 rounded-lg hover:bg-fill-subtle disabled:opacity-30 text-muted transition"
                 >
                   <ChevronRight size={14} />
                 </button>
@@ -1459,12 +1459,12 @@ function ShortsPageInner() {
         </div>
 
         {/* ── 2단: 기본 설정 패널 ── */}
-        <div className="w-[300px] shrink-0 border-r border-white/5 overflow-y-auto p-4 flex flex-col gap-4">
+        <div className="w-[300px] shrink-0 border-r border-border-subtle overflow-y-auto p-4 flex flex-col gap-4">
           {selected && (
             <>
               {/* ── 선택 트랙 정보 ── */}
               <div className="bg-card border border-border-main rounded-xl p-5 flex gap-4 items-start">
-                <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 bg-white/5 flex items-center justify-center">
+                <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 bg-fill-subtle flex items-center justify-center">
                   {selected.cover_image_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -1483,7 +1483,7 @@ function ShortsPageInner() {
                     {(selected.mood_tags ?? []).slice(0, 3).map((tag) => (
                       <span
                         key={tag}
-                        className="text-[10px] px-2 py-0.5 rounded-full bg-[#FF6F0F]/15 text-[#FF9F4F] border border-[#FF6F0F]/20"
+                        className="text-[10px] px-2 py-0.5 rounded-full bg-accent/15 text-accent border border-accent/20"
                       >
                         #{tag}
                       </span>
@@ -1503,10 +1503,10 @@ function ShortsPageInner() {
 
               {/* ── 이 트랙의 기존 숏폼 ── */}
               {trackHistory.length > 0 && (
-                <div className="bg-card border border-[#FF6F0F]/30 rounded-xl p-4 flex flex-col gap-3">
+                <div className="bg-card border border-accent/30 rounded-xl p-4 flex flex-col gap-3">
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-semibold text-primary flex items-center gap-2">
-                      <Film size={14} className="text-[#FF6F0F]" />
+                      <Film size={14} className="text-accent" />
                       이 트랙의 숏폼 영상
                       <span className="text-xs font-normal text-muted">{trackHistory.length}개</span>
                     </p>
@@ -1540,20 +1540,20 @@ function ShortsPageInner() {
                         <div className="flex gap-1.5">
                           <button
                             onClick={() => loadFromHistory(h)}
-                            className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg bg-[#FF6F0F]/15 text-[#FF9F4F] text-xs font-semibold hover:bg-[#FF6F0F]/25 transition"
+                            className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg bg-accent/15 text-accent text-xs font-semibold hover:bg-accent/25 transition"
                           >
                             <RotateCcw size={11} /> 설정 불러오기
                           </button>
                           <a
                             href={h.videoUrl}
                             download={`shorts_${h.trackTitle}.mp4`}
-                            className="flex items-center justify-center px-3 rounded-lg bg-white/5 text-muted hover:bg-white/10 transition"
+                            className="flex items-center justify-center px-3 rounded-lg bg-fill-subtle text-muted hover:bg-fill-medium transition"
                           >
                             <Download size={13} />
                           </a>
                           <button
                             onClick={() => { removeShortsHistory(h.id); setHistory(loadShortsHistory()); }}
-                            className="flex items-center justify-center px-3 rounded-lg bg-white/5 text-muted hover:text-red-400 hover:bg-red-500/10 transition"
+                            className="flex items-center justify-center px-3 rounded-lg bg-fill-subtle text-muted hover:text-red-400 hover:bg-red-500/10 transition"
                           >
                             <Trash2 size={13} />
                           </button>
@@ -1569,7 +1569,7 @@ function ShortsPageInner() {
                 <p className="text-sm font-semibold text-primary">커버 이미지</p>
                 <div className="flex items-center gap-4">
                   {/* 미리보기 */}
-                  <div className="relative w-20 h-20 rounded-xl overflow-hidden shrink-0 bg-white/5 flex items-center justify-center">
+                  <div className="relative w-20 h-20 rounded-xl overflow-hidden shrink-0 bg-fill-subtle flex items-center justify-center">
                     {(coverPreviewUrl || selected.cover_image_url) ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
@@ -1586,7 +1586,7 @@ function ShortsPageInner() {
                       </div>
                     )}
                     {coverPreviewUrl && (
-                      <div className="absolute top-1 right-1 w-3 h-3 rounded-full bg-[#FF6F0F]" />
+                      <div className="absolute top-1 right-1 w-3 h-3 rounded-full bg-accent" />
                     )}
                   </div>
 
@@ -1595,7 +1595,7 @@ function ShortsPageInner() {
                       기본값은 트랙 커버입니다. 9:16 비율 이미지를 권장합니다.
                     </p>
                     <div className="flex items-center gap-2">
-                      <label className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-border-main text-xs text-muted hover:text-primary hover:bg-white/10 transition">
+                      <label className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-fill-subtle border border-border-main text-xs text-muted hover:text-primary hover:bg-fill-medium transition">
                         <ImageIcon size={12} />
                         이미지 변경
                         <input
@@ -1608,7 +1608,7 @@ function ShortsPageInner() {
                       {coverPreviewUrl && (
                         <button
                           onClick={handleCoverReset}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-border-main text-xs text-muted hover:text-red-400 hover:border-red-500/30 transition"
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-fill-subtle border border-border-main text-xs text-muted hover:text-red-400 hover:border-red-500/30 transition"
                         >
                           <RotateCcw size={12} />
                           원본 복원
@@ -1653,7 +1653,7 @@ function ShortsPageInner() {
                     </div>
                   </div>
                 ) : (
-                  <label className="cursor-pointer flex flex-col items-center justify-center gap-2 border-2 border-dashed border-border-main rounded-xl py-6 hover:border-[#FF6F0F]/50 hover:bg-[#FF6F0F]/5 transition">
+                  <label className="cursor-pointer flex flex-col items-center justify-center gap-2 border-2 border-dashed border-border-main rounded-xl py-6 hover:border-accent/50 hover:bg-accent/5 transition">
                     <Film size={20} className="text-muted" />
                     <span className="text-xs text-muted">동영상 파일 선택 (MP4, MOV)</span>
                     <input
@@ -1677,7 +1677,7 @@ function ShortsPageInner() {
                       placeholder="예: 가을 감성 플레이리스트"
                       value={shortsTitle}
                       onChange={(e) => setShortsTitle(e.target.value)}
-                      className="w-full bg-[#0f1117] border border-border-main rounded-lg px-3 py-2 text-sm text-primary placeholder:text-muted focus:outline-none focus:border-[#FF6F0F]/50"
+                      className="w-full bg-surface border border-border-main rounded-lg px-3 py-2 text-sm text-primary placeholder:text-muted focus:outline-none focus:border-accent/50"
                     />
                   </div>
                   <div>
@@ -1687,7 +1687,7 @@ function ShortsPageInner() {
                       placeholder="예: 언니픽이 큐레이션한 매장 BGM"
                       value={shortsTagline}
                       onChange={(e) => setShortsTagline(e.target.value)}
-                      className="w-full bg-[#0f1117] border border-border-main rounded-lg px-3 py-2 text-sm text-primary placeholder:text-muted focus:outline-none focus:border-[#FF6F0F]/50"
+                      className="w-full bg-surface border border-border-main rounded-lg px-3 py-2 text-sm text-primary placeholder:text-muted focus:outline-none focus:border-accent/50"
                     />
                   </div>
                   <p className="text-[10px] text-muted">비워두면 해당 텍스트는 영상에 표시되지 않습니다.</p>
@@ -1698,7 +1698,7 @@ function ShortsPageInner() {
         </div>
 
         {/* ── 3단: 구간 설정 & 생성 패널 ── */}
-        <div className="flex-1 border-r border-white/5 overflow-y-auto p-4 flex flex-col gap-4">
+        <div className="flex-1 border-r border-border-subtle overflow-y-auto p-4 flex flex-col gap-4">
           {selected && (
             <>
               {/* ── 음원 설정 ── */}
@@ -1736,7 +1736,7 @@ function ShortsPageInner() {
                         onClick={() => setDurationSec(sec)}
                         className={`py-2 rounded-lg border-2 text-xs font-bold transition ${
                           durationSec === sec
-                            ? 'bg-[#FF6F0F]/15 border-[#FF6F0F] text-primary'
+                            ? 'bg-accent/15 border-accent text-primary'
                             : 'bg-fill-subtle border-border-subtle text-muted hover:border-border-main'
                         }`}
                       >
@@ -1763,7 +1763,7 @@ function ShortsPageInner() {
                         onClick={() => setWaveformStyle(id)}
                         className={`flex flex-col items-center gap-1 py-2 px-1 rounded-lg border-2 transition text-center ${
                           waveformStyle === id
-                            ? 'bg-[#FF6F0F]/15 border-[#FF6F0F] text-primary'
+                            ? 'bg-accent/15 border-accent text-primary'
                             : 'bg-fill-subtle border-border-subtle text-muted hover:border-border-main'
                         }`}
                       >
@@ -1788,7 +1788,7 @@ function ShortsPageInner() {
                         <button key={id} onClick={() => setCoverAnimStyle(id)}
                           className={`flex flex-col items-center gap-1 py-2 px-1 rounded-lg border-2 transition text-center ${
                             coverAnimStyle === id
-                              ? 'bg-[#FF6F0F]/15 border-[#FF6F0F] text-primary'
+                              ? 'bg-accent/15 border-accent text-primary'
                               : 'bg-fill-subtle border-border-subtle text-muted hover:border-border-main'
                           }`}>
                           <span className="text-sm leading-none">{icon}</span>
@@ -1834,7 +1834,7 @@ function ShortsPageInner() {
                       <button key={id} onClick={() => setParticleStyle(id)}
                         className={`flex flex-col items-center gap-1 py-2 px-1 rounded-lg border-2 transition text-center ${
                           particleStyle === id
-                            ? 'bg-[#FF6F0F]/15 border-[#FF6F0F] text-primary'
+                            ? 'bg-accent/15 border-accent text-primary'
                             : 'bg-fill-subtle border-border-subtle text-muted hover:border-border-main'
                         }`}>
                         <span className="text-sm leading-none">{icon}</span>
@@ -1852,7 +1852,7 @@ function ShortsPageInner() {
                   <button
                     onClick={handleAnalyze}
                     disabled={analyzing}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#FF6F0F]/15 text-[#FF6F0F] text-xs font-semibold hover:bg-[#FF6F0F]/25 transition disabled:opacity-50"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent/15 text-accent text-xs font-semibold hover:bg-accent/25 transition disabled:opacity-50"
                   >
                     {analyzing ? (
                       <Loader2 size={12} className="animate-spin" />
@@ -1862,7 +1862,7 @@ function ShortsPageInner() {
                     자동 감지
                   </button>
                 </div>
-                <p className="text-[9px] text-[#FF6F0F]/40 font-mono text-right -mt-1">에너지 분석 알고리즘</p>
+                <p className="text-[9px] text-accent/40 font-mono text-right -mt-1">에너지 분석 알고리즘</p>
 
                 {analyzed && (
                   <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-500/10 border border-green-500/20">
@@ -1919,17 +1919,17 @@ function ShortsPageInner() {
                           onClick={() => setSelectedCoupon(isSelected ? null : c)}
                           className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition border ${
                             isSelected
-                              ? 'bg-[#FF6F0F]/15 border-[#FF6F0F]/40'
+                              ? 'bg-accent/15 border-accent/40'
                               : 'bg-fill-subtle border-border-subtle hover:border-border-main'
                           }`}
                         >
                           <span className="text-lg shrink-0">🎟</span>
                           <div className="flex-1 min-w-0">
                             <p className="text-xs font-semibold text-primary truncate">{c.title}</p>
-                            <p className="text-[10px] text-[#FF9F4F]">{label}</p>
+                            <p className="text-[10px] text-accent">{label}</p>
                           </div>
                           {isSelected && (
-                            <div className="w-4 h-4 rounded-full bg-[#FF6F0F] flex items-center justify-center shrink-0">
+                            <div className="w-4 h-4 rounded-full bg-accent flex items-center justify-center shrink-0">
                               <Check size={9} className="text-white" />
                             </div>
                           )}
@@ -1966,7 +1966,7 @@ function ShortsPageInner() {
                           onClick={() => handleSelectAnn(isSelected ? null : ann)}
                           className={`flex items-start gap-3 px-3 py-2.5 rounded-lg text-left transition border ${
                             isSelected
-                              ? 'bg-[#FF6F0F]/15 border-[#FF6F0F]/40'
+                              ? 'bg-accent/15 border-accent/40'
                               : 'bg-fill-subtle border-border-subtle hover:border-border-main'
                           }`}
                         >
@@ -1979,7 +1979,7 @@ function ShortsPageInner() {
                             </p>
                           </div>
                           {isSelected && (
-                            <div className="w-4 h-4 rounded-full bg-[#FF6F0F] flex items-center justify-center shrink-0 mt-0.5">
+                            <div className="w-4 h-4 rounded-full bg-accent flex items-center justify-center shrink-0 mt-0.5">
                               <Check size={9} className="text-white" />
                             </div>
                           )}
@@ -2042,7 +2042,7 @@ function ShortsPageInner() {
                   <button
                     onClick={handleRender}
                     disabled={rendering}
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#FF6F0F] text-white text-sm font-bold hover:bg-[#e86200] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent text-white text-sm font-bold hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {rendering ? (
                       <>
@@ -2060,10 +2060,10 @@ function ShortsPageInner() {
 
                 {/* 렌더링 중 안내 */}
                 {rendering && (
-                  <div className="rounded-lg bg-[#FF6F0F]/10 border border-[#FF6F0F]/20 px-4 py-3 flex gap-3 items-start">
-                    <Loader2 size={15} className="animate-spin text-[#FF6F0F] mt-0.5 shrink-0" />
+                  <div className="rounded-lg bg-accent/10 border border-accent/20 px-4 py-3 flex gap-3 items-start">
+                    <Loader2 size={15} className="animate-spin text-accent mt-0.5 shrink-0" />
                     <div>
-                      <p className="text-sm text-[#FF9F4F] font-medium">렌더링 진행 중</p>
+                      <p className="text-sm text-accent font-medium">렌더링 진행 중</p>
                       <p className="text-xs text-muted mt-0.5">
                         Remotion이 {durationSec * 30} 프레임을 렌더링하고 있습니다. 창을 닫지 마세요.
                       </p>
@@ -2097,7 +2097,7 @@ function ShortsPageInner() {
                       <a
                         href={videoUrl}
                         download={`shorts_${selected.title}.mp4`}
-                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-[#FF6F0F] text-white text-sm font-semibold hover:bg-[#e86200] transition"
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-accent text-white text-sm font-semibold hover:opacity-90 transition"
                       >
                         <Download size={14} />
                         다운로드
@@ -2106,7 +2106,7 @@ function ShortsPageInner() {
                         href={videoUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-white/5 text-muted text-sm hover:bg-white/10 transition border border-border-main"
+                        className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-fill-subtle text-muted text-sm hover:bg-fill-medium transition border border-border-main"
                       >
                         <ExternalLink size={14} />
                         새 탭
@@ -2135,7 +2135,7 @@ function ShortsPageInner() {
                         className={`w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition border ${
                           captionCopied
                             ? 'bg-green-500/15 border-green-500/30 text-green-400'
-                            : 'bg-white/5 border-border-main text-muted hover:text-primary hover:bg-white/10'
+                            : 'bg-fill-subtle border-border-main text-muted hover:text-primary hover:bg-fill-medium'
                         }`}>
                         {captionCopied ? <><Check size={12} /> 캡션 복사됨!</> : <><Copy size={12} /> 릴스 캡션 복사</>}
                       </button>
@@ -2173,19 +2173,19 @@ function ShortsPageInner() {
               {/* 제목 + 가이드/크게 보기 버튼 */}
               <div className="flex items-center justify-between">
                 <p className="text-sm font-semibold text-primary flex items-center gap-2">
-                  <Film size={14} className="text-[#FF6F0F]" /> 미리보기
+                  <Film size={14} className="text-accent" /> 미리보기
                 </p>
                 <div className="flex items-center gap-1">
                   <button
                     onClick={toggleGuide}
-                    className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold transition ${showGuide ? 'bg-white/10 text-primary' : 'text-muted hover:text-primary hover:bg-white/5'}`}
+                    className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold transition ${showGuide ? 'bg-fill-medium text-primary' : 'text-muted hover:text-primary hover:bg-fill-subtle'}`}
                     title="안전 영역 가이드"
                   >
                     <span className="text-[10px]">⊞</span> 가이드
                   </button>
                   <button
                     onClick={() => setPreviewExpanded(true)}
-                    className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-muted hover:text-primary hover:bg-white/5 transition"
+                    className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-muted hover:text-primary hover:bg-fill-subtle transition"
                     title="크게 보기"
                   >
                     <Maximize2 size={13} /> 크게 보기
@@ -2274,7 +2274,7 @@ function ShortsPageInner() {
                             {(h.likeCount ?? 0) > 0 && (
                               <span className="text-[9px] text-white font-bold leading-none mb-0.5">{h.likeCount}</span>
                             )}
-                            <div className={`w-9 h-9 rounded-full flex items-center justify-center ${likedIds.has(h.id) ? 'bg-red-500/80' : 'bg-black/40 border border-white/20'}`}>
+                            <div className={`w-9 h-9 rounded-full flex items-center justify-center ${likedIds.has(h.id) ? 'bg-red-500/80' : 'bg-black/40 border border-border-main'}`}>
                               <Heart size={16} fill={likedIds.has(h.id) ? '#fff' : 'none'} color="#fff" />
                             </div>
                             <span className="text-[8px] text-white/70 font-semibold leading-none">좋아요</span>
@@ -2283,7 +2283,7 @@ function ShortsPageInner() {
                         <div className="flex gap-1.5 px-0.5">
                           <button
                             onClick={() => loadFromHistory(h)}
-                            className="flex-1 py-1 rounded text-[10px] font-semibold border border-[#FF6F0F]/40 text-[#FF9F4F] hover:bg-[#FF6F0F]/10 transition">
+                            className="flex-1 py-1 rounded text-[10px] font-semibold border border-accent/40 text-accent hover:bg-accent/10 transition">
                             <RotateCcw size={9} className="inline mr-0.5" /> 설정
                           </button>
                           <a
@@ -2316,7 +2316,7 @@ function ShortsPageInner() {
             <div className="bg-card border border-border-main rounded-xl p-4 flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-bold text-tertiary flex items-center gap-2">
-                  <Film size={14} className="text-[#FF6F0F]" /> 생성 히스토리
+                  <Film size={14} className="text-accent" /> 생성 히스토리
                   <span className="text-dim font-normal">· {history.length}건</span>
                 </h2>
                 <button
@@ -2352,7 +2352,7 @@ function ShortsPageInner() {
                         onClick={e => { e.stopPropagation(); toggleLike(h.id); }}
                         className="absolute bottom-3 right-3 flex flex-col items-center gap-0.5 transition-transform hover:scale-110 active:scale-95"
                       >
-                        <div className={`w-9 h-9 rounded-full flex items-center justify-center ${likedIds.has(h.id) ? 'bg-red-500/80' : 'bg-black/40 border border-white/20'}`}>
+                        <div className={`w-9 h-9 rounded-full flex items-center justify-center ${likedIds.has(h.id) ? 'bg-red-500/80' : 'bg-black/40 border border-border-main'}`}>
                           <Heart size={16} fill={likedIds.has(h.id) ? '#fff' : 'none'} color="#fff" />
                         </div>
                         <span className="text-[8px] text-white/70 font-semibold leading-none">좋아요</span>
@@ -2363,17 +2363,17 @@ function ShortsPageInner() {
                       <p className="text-[10px] text-dim truncate">{h.artist}</p>
                       <div className="flex gap-1">
                         {h.durationSec && (
-                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/5 text-dim">{h.durationSec}초</span>
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-fill-subtle text-dim">{h.durationSec}초</span>
                         )}
                         {h.waveformStyle && (
-                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/5 text-dim capitalize">{h.waveformStyle}</span>
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-fill-subtle text-dim capitalize">{h.waveformStyle}</span>
                         )}
                       </div>
                       <div className="flex gap-1.5">
                         <button
                           onClick={() => { if (selected?.id === h.trackId) loadFromHistory(h); }}
                           title="설정 불러오기"
-                          className={`flex-1 py-1 rounded text-[10px] font-semibold transition border ${selected?.id === h.trackId ? 'border-[#FF6F0F]/40 text-[#FF9F4F] hover:bg-[#FF6F0F]/10' : 'border-border-subtle text-dim opacity-40 cursor-not-allowed'}`}>
+                          className={`flex-1 py-1 rounded text-[10px] font-semibold transition border ${selected?.id === h.trackId ? 'border-accent/40 text-accent hover:bg-accent/10' : 'border-border-subtle text-dim opacity-40 cursor-not-allowed'}`}>
                           <RotateCcw size={9} className="inline mr-0.5" /> 설정
                         </button>
                         <button
@@ -2478,7 +2478,7 @@ function ShortsPageInner() {
               <a
                 href={playingHistory.videoUrl}
                 download={`shorts_${playingHistory.trackTitle}.mp4`}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#FF6F0F] text-white text-xs font-bold hover:bg-[#e86200] transition"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-accent text-white text-xs font-bold hover:opacity-90 transition"
               >
                 <Download size={13} /> 다운로드
               </a>
@@ -2486,7 +2486,7 @@ function ShortsPageInner() {
                 href={playingHistory.videoUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white/10 text-white text-xs font-bold hover:bg-white/20 transition border border-white/20"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-fill-medium text-white text-xs font-bold hover:bg-white/20 transition border border-border-main"
               >
                 <ExternalLink size={13} /> 새 탭
               </a>
