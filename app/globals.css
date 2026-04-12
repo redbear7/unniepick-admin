@@ -158,12 +158,13 @@
   --color-fill-subtle: var(--fill-subtle);
   --color-fill-medium: var(--fill-medium);
   --color-border-subtle: var(--border-subtle);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-pretendard), var(--font-geist-sans), sans-serif;
   --font-mono: var(--font-geist-mono);
 }
 
 body {
   background: var(--bg-surface);
   color: var(--text-primary);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-pretendard), var(--font-geist-sans), -apple-system, sans-serif;
+  word-break: keep-all;
 }
