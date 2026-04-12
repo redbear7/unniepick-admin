@@ -1,5 +1,6 @@
 @import "tailwindcss";
 
+/* ── Default (light) ── */
 :root {
   --bg-surface: #f0f2f5;
   --bg-sidebar: #ffffff;
@@ -14,8 +15,10 @@
   --fill-subtle: rgba(0, 0, 0, 0.05);
   --fill-medium: rgba(0, 0, 0, 0.09);
   --border-subtle: rgba(0, 0, 0, 0.15);
+  --accent: #FF6F0F;
 }
 
+/* ── Dark ── */
 .dark {
   --bg-surface: #13161c;
   --bg-sidebar: #1a1d24;
@@ -30,6 +33,115 @@
   --fill-subtle: rgba(255, 255, 255, 0.07);
   --fill-medium: rgba(255, 255, 255, 0.13);
   --border-subtle: rgba(255, 255, 255, 0.13);
+  --accent: #FF6F0F;
+}
+
+/* ── Supabase (dark emerald) ── */
+.supabase {
+  --bg-surface: #171717;
+  --bg-sidebar: #0f0f0f;
+  --bg-card: #292929;
+  --bg-card-hover: #373737;
+  --border-main: #2e2e2e;
+  --text-primary: #fafafa;
+  --text-secondary: #efefef;
+  --text-tertiary: #b4b4b4;
+  --text-muted: #898989;
+  --text-dim: #4d4d4d;
+  --fill-subtle: rgba(255, 255, 255, 0.04);
+  --fill-medium: rgba(255, 255, 255, 0.08);
+  --border-subtle: #1a1a1a;
+  --accent: #3ecf8e;
+}
+
+/* ── Linear (void black + violet) ── */
+.linear {
+  --bg-surface: #08090a;
+  --bg-sidebar: #0f1011;
+  --bg-card: #131415;
+  --bg-card-hover: #1a1b1d;
+  --border-main: #23252a;
+  --text-primary: #f7f8f8;
+  --text-secondary: #d0d6e0;
+  --text-tertiary: #a0a6b0;
+  --text-muted: #8a8f98;
+  --text-dim: #62666d;
+  --fill-subtle: rgba(255, 255, 255, 0.02);
+  --fill-medium: rgba(255, 255, 255, 0.05);
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --accent: #7170ff;
+}
+
+/* ── Vercel (pure white precision) ── */
+.vercel {
+  --bg-surface: #f5f5f5;
+  --bg-sidebar: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-hover: #fafafa;
+  --border-main: rgba(0, 0, 0, 0.08);
+  --text-primary: #171717;
+  --text-secondary: #4d4d4d;
+  --text-tertiary: #595959;
+  --text-muted: #666666;
+  --text-dim: #808080;
+  --fill-subtle: #fafafa;
+  --fill-medium: #ebebeb;
+  --border-subtle: rgba(0, 0, 0, 0.04);
+  --accent: #0a72ef;
+}
+
+/* ── Stripe (navy sidebar + white content) ── */
+.stripe {
+  --bg-surface: #f6f9fc;
+  --bg-sidebar: #1c1e54;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f0f4f8;
+  --border-main: #e5edf5;
+  --text-primary: #061b31;
+  --text-secondary: #4a5568;
+  --text-tertiary: #d0d4e8;   /* light for sidebar nav */
+  --text-muted: #9ba4c0;      /* light for sidebar labels */
+  --text-dim: #6b75a0;
+  --fill-subtle: rgba(83, 58, 253, 0.04);
+  --fill-medium: rgba(255, 255, 255, 0.08);
+  --border-subtle: rgba(255, 255, 255, 0.12);
+  --accent: #533afd;
+}
+
+/* ── Notion (warm minimal) ── */
+.notion {
+  --bg-surface: #ffffff;
+  --bg-sidebar: #f6f5f4;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f1f0ef;
+  --border-main: rgba(0, 0, 0, 0.09);
+  --text-primary: #0d0d0c;
+  --text-secondary: #615d59;
+  --text-tertiary: #7a756f;
+  --text-muted: #a39e98;
+  --text-dim: #c4bfba;
+  --fill-subtle: #f6f5f4;
+  --fill-medium: rgba(0, 0, 0, 0.05);
+  --border-subtle: rgba(0, 0, 0, 0.04);
+  --accent: #0075de;
+}
+
+/* ── PostHog (earthy olive + orange) ── */
+.posthog {
+  --bg-surface: #fdfdf8;
+  --bg-sidebar: #eeefe9;
+  --bg-card: #fdfdf8;
+  --bg-card-hover: #f4f4ee;
+  --border-main: #bfc1b7;
+  --text-primary: #4d4f46;
+  --text-secondary: #65675e;
+  --text-tertiary: #7a7c73;
+  --text-muted: #9ea096;
+  --text-dim: #b8b9b2;
+  --fill-subtle: #eeefe9;
+  --fill-medium: #e5e7e0;
+  --border-subtle: #d4d5ce;
+  --accent: #F54E00;
 }
 
 @theme inline {
