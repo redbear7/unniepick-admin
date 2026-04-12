@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import ThemeProvider from "@/components/ThemeProvider";
-import { GA_ID } from "@/lib/gtag";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -34,24 +33,6 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        {/* ── Google Analytics 4 ── */}
-        {GA_ID && (
-          <>
-            <Script
-              src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
-              strategy="afterInteractive"
-            />
-            <Script id="ga4-init" strategy="afterInteractive">
-              {`
-                window.dataLayer = window.dataLayer || [];
-                function gtag(){dataLayer.push(arguments);}
-                gtag('js', new Date());
-                gtag('config', '${GA_ID}', { page_path: window.location.pathname });
-              `}
-            </Script>
-          </>
-        )}
-
         {/* ── 네이버 애널리틱스 ── */}
         {NAVER_ANALYTICS_ID && (
           <Script id="naver-analytics-init" strategy="afterInteractive">
