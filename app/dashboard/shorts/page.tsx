@@ -182,6 +182,7 @@ function WaveformEditor({
   }, [audioUrl]);
 
   // ── Web Audio Analyser 연결 (첫 재생 시 1회) ──
+  // captureStream() 사용: CORS 우회 + 오디오 엘리먼트 출력 그대로 유지
   const ensureAnalyser = useCallback(() => {
     if (analyserRef.current) {
       audioCtxRef.current?.resume();
@@ -189,17 +190,41 @@ function WaveformEditor({
     }
     const el = audioRef.current;
     if (!el) return;
-    const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    const ctx = new AC();
-    const analyser = ctx.createAnalyser();
-    analyser.fftSize = 128;           // 64 bins (충분한 해상도)
-    analyser.smoothingTimeConstant = 0.8;
-    freqDataRef.current = new Uint8Array(analyser.frequencyBinCount) as Uint8Array<ArrayBuffer>;
-    const src = ctx.createMediaElementSource(el);
-    src.connect(analyser);
-    analyser.connect(ctx.destination);
-    audioCtxRef.current = ctx;
-    analyserRef.current = analyser;
+
+    try {
+      const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const ctx = new AC();
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 128;
+      analyser.smoothingTimeConstant = 0.8;
+      freqDataRef.current = new Uint8Array(analyser.frequencyBinCount) as Uint8Array<ArrayBuffer>;
+
+      // captureStream: 재생 중인 오디오에서 스트림 캡처 (CORS 불필요)
+      // 오디오 출력은 el 자체가 담당 → analyser를 destination에 연결 안 해도 됨
+      const stream = (el as HTMLAudioElement & {
+        captureStream?(): MediaStream;
+        mozCaptureStream?(): MediaStream;
+      }).captureStream?.() ?? (el as HTMLAudioElement & {
+        mozCaptureStream?(): MediaStream;
+      }).mozCaptureStream?.();
+
+      if (stream) {
+        const src = ctx.createMediaStreamSource(stream);
+        src.connect(analyser);
+        // destination 연결 불필요 — el이 직접 출력
+      } else {
+        // fallback: createMediaElementSource (CORS 헤더 필요)
+        const src = ctx.createMediaElementSource(el);
+        src.connect(analyser);
+        analyser.connect(ctx.destination);
+      }
+
+      audioCtxRef.current = ctx;
+      analyserRef.current = analyser;
+      ctx.resume();
+    } catch (e) {
+      console.warn('[WaveformEditor] analyser init failed:', e);
+    }
   }, []);
 
   // ── Canvas draw (RAF tick에서 직접 호출) ──
