@@ -126,42 +126,50 @@ function WaveformEditor({
   stopToken?: number;
 }) {
   const canvasRef      = useRef<HTMLCanvasElement>(null);
-  const audioRef       = useRef<HTMLAudioElement | null>(null);
   const animFrameRef   = useRef<number>(0);
   const dragging       = useRef(false);
   const lastSec        = useRef(0);
   const userDraggedRef = useRef(false);
 
-  // Web Audio API refs (재생 중 실시간 주파수 분석)
+  // Web Audio API — AudioBufferSource 방식 (CORS 완전 우회)
+  const audioBufRef    = useRef<AudioBuffer | null>(null);
   const audioCtxRef    = useRef<AudioContext | null>(null);
   const analyserRef    = useRef<AnalyserNode | null>(null);
+  const srcNodeRef     = useRef<AudioBufferSourceNode | null>(null);
   const freqDataRef    = useRef<Uint8Array<ArrayBuffer>>(new Uint8Array(0) as Uint8Array<ArrayBuffer>);
-  const peaksRef       = useRef<number[]>([]); // draw 함수에서 ref로 접근
+  const playStartCtxT  = useRef<number>(0);
+  const peaksRef       = useRef<number[]>([]);
 
   const [peaks,   setPeaks]   = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
   const [playing, setPlaying] = useState(false);
 
-  // peaks state → ref 동기화
   useEffect(() => { peaksRef.current = peaks; }, [peaks]);
 
-  // ── Decode audio → peaks ──
+  // ── Decode audio → AudioBuffer + peaks ──
   useEffect(() => {
     if (!audioUrl) return;
     let cancelled = false;
     setLoading(true);
     setPeaks([]);
+    audioBufRef.current = null;
+    // 기존 재생 중지
+    try { srcNodeRef.current?.stop(); } catch {}
+    cancelAnimationFrame(animFrameRef.current);
+    setPlaying(false);
 
     (async () => {
       try {
-        const res  = await fetch(audioUrl);
-        const buf  = await res.arrayBuffer();
+        const res     = await fetch(audioUrl);
+        const arrBuf  = await res.arrayBuffer();
         if (cancelled) return;
-        const AC   = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-        const ac   = new AC();
-        const decoded = await ac.decodeAudioData(buf);
+        const AC      = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        const ac      = new AC();
+        const decoded = await ac.decodeAudioData(arrBuf);
         await ac.close();
         if (cancelled) return;
+
+        audioBufRef.current = decoded;           // 재생용 버퍼 저장
 
         const raw = decoded.getChannelData(0);
         const N   = 600;
@@ -175,59 +183,13 @@ function WaveformEditor({
         }
         if (!cancelled) setPeaks(out);
       } catch { /* silent */ }
-      finally   { if (!cancelled) setLoading(false); }
+      finally { if (!cancelled) setLoading(false); }
     })();
 
     return () => { cancelled = true; };
   }, [audioUrl]);
 
-  // ── Web Audio Analyser 연결 (첫 재생 시 1회) ──
-  // captureStream() 사용: CORS 우회 + 오디오 엘리먼트 출력 그대로 유지
-  const ensureAnalyser = useCallback(() => {
-    if (analyserRef.current) {
-      audioCtxRef.current?.resume();
-      return;
-    }
-    const el = audioRef.current;
-    if (!el) return;
-
-    try {
-      const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      const ctx = new AC();
-      const analyser = ctx.createAnalyser();
-      analyser.fftSize = 128;
-      analyser.smoothingTimeConstant = 0.8;
-      freqDataRef.current = new Uint8Array(analyser.frequencyBinCount) as Uint8Array<ArrayBuffer>;
-
-      // captureStream: 재생 중인 오디오에서 스트림 캡처 (CORS 불필요)
-      // 오디오 출력은 el 자체가 담당 → analyser를 destination에 연결 안 해도 됨
-      const stream = (el as HTMLAudioElement & {
-        captureStream?(): MediaStream;
-        mozCaptureStream?(): MediaStream;
-      }).captureStream?.() ?? (el as HTMLAudioElement & {
-        mozCaptureStream?(): MediaStream;
-      }).mozCaptureStream?.();
-
-      if (stream) {
-        const src = ctx.createMediaStreamSource(stream);
-        src.connect(analyser);
-        // destination 연결 불필요 — el이 직접 출력
-      } else {
-        // fallback: createMediaElementSource (CORS 헤더 필요)
-        const src = ctx.createMediaElementSource(el);
-        src.connect(analyser);
-        analyser.connect(ctx.destination);
-      }
-
-      audioCtxRef.current = ctx;
-      analyserRef.current = analyser;
-      ctx.resume();
-    } catch (e) {
-      console.warn('[WaveformEditor] analyser init failed:', e);
-    }
-  }, []);
-
-  // ── Canvas draw (RAF tick에서 직접 호출) ──
+  // ── Canvas draw ──
   const drawCanvas = useCallback((playPos: number, freqData: Uint8Array<ArrayBuffer> | null) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -240,25 +202,19 @@ function WaveformEditor({
     ctx.scale(dpr, dpr);
     const midY = H / 2;
 
-    // 테마에서 accent 색상 읽기
-    const accentRaw = getComputedStyle(document.documentElement)
-      .getPropertyValue('--accent').trim() || '#FF6F0F';
-    const accent = accentRaw;
+    const accent  = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()     || '#FF6F0F';
+    const surface = getComputedStyle(document.documentElement).getPropertyValue('--bg-surface').trim() || '#13161c';
 
-    // 배경: 현재 테마 surface 색상 기반
-    const surfaceRaw = getComputedStyle(document.documentElement)
-      .getPropertyValue('--bg-surface').trim() || '#13161c';
-    ctx.fillStyle = surfaceRaw;
+    ctx.fillStyle = surface;
     ctx.fillRect(0, 0, W, H);
 
     const selX  = (startSec / durationSec) * W;
     const selWx = (Math.min(windowSec, durationSec - startSec) / durationSec) * W;
 
-    // 선택 구간 배경
     ctx.fillStyle = `${accent}1a`;
     ctx.fillRect(selX, 0, selWx, H);
 
-    // 정적 파형 바
+    // 정적 파형
     const curPeaks = peaksRef.current;
     if (curPeaks.length > 0) {
       const bw = W / curPeaks.length;
@@ -266,9 +222,9 @@ function WaveformEditor({
         const x     = i * bw;
         const h     = Math.max(p * H * 0.82, 1);
         const inSel = x + bw > selX && x < selX + selWx;
-        ctx.fillStyle = inSel ? `${accent}cc` : '#25283880';
+        ctx.fillStyle = inSel ? `${accent}bb` : '#25283870';
         ctx.fillRect(x + 0.5, midY - h / 2, Math.max(bw - 0.8, 0.5), h);
-        ctx.fillStyle = inSel ? `${accent}4d` : '#2528385a';
+        ctx.fillStyle = inSel ? `${accent}40` : '#2528384a';
         ctx.fillRect(x + 0.5, midY + h / 2, Math.max(bw - 0.8, 0.5), h * 0.35);
       });
     } else {
@@ -279,30 +235,25 @@ function WaveformEditor({
       }
     }
 
-    // ── 실시간 주파수 바 오버레이 (재생 중) ──
+    // 실시간 주파수 바 오버레이
     if (freqData && freqData.length > 0 && selWx > 0) {
-      const BARS   = Math.min(freqData.length, 48);
-      const barW   = selWx / BARS;
-      const usable = Math.floor(freqData.length * 0.6); // 저~중음역 집중
+      const BARS  = Math.min(freqData.length, 48);
+      const barW  = selWx / BARS;
+      const limit = Math.floor(freqData.length * 0.65);
       for (let i = 0; i < BARS; i++) {
-        const fi   = Math.floor((i / BARS) * usable);
-        const val  = freqData[fi] / 255;           // 0~1
-        const bh   = Math.max(val * H * 0.9, 2);   // 최대 90% 높이
-        const bx   = selX + i * barW;
-        const alpha = 0.3 + val * 0.6;             // 음량에 따라 불투명도 변화
-
-        // 그라데이션: 중심에서 위아래로
-        const grad = ctx.createLinearGradient(bx, midY - bh / 2, bx, midY + bh / 2);
-        grad.addColorStop(0,   `${accent}${Math.round(alpha * 255).toString(16).padStart(2,'0')}`);
+        const val   = freqData[Math.floor((i / BARS) * limit)] / 255;
+        const bh    = Math.max(val * H * 0.92, 2);
+        const bx    = selX + i * barW;
+        const alpha = Math.round((0.35 + val * 0.65) * 255).toString(16).padStart(2, '0');
+        const low   = Math.round((0.15 + val * 0.35) * 255).toString(16).padStart(2, '0');
+        const grad  = ctx.createLinearGradient(bx, midY - bh / 2, bx, midY + bh / 2);
+        grad.addColorStop(0,   `${accent}${alpha}`);
         grad.addColorStop(0.5, `${accent}ff`);
-        grad.addColorStop(1,   `${accent}${Math.round(alpha * 100).toString(16).padStart(2,'0')}`);
-
+        grad.addColorStop(1,   `${accent}${low}`);
         ctx.fillStyle = grad;
         ctx.fillRect(bx + 0.5, midY - bh / 2, Math.max(barW - 1.5, 1), bh);
-
-        // 상단 반사
-        ctx.fillStyle = `${accent}22`;
-        ctx.fillRect(bx + 0.5, midY + bh / 2, Math.max(barW - 1.5, 1), bh * 0.3);
+        ctx.fillStyle = `${accent}20`;
+        ctx.fillRect(bx + 0.5, midY + bh / 2, Math.max(barW - 1.5, 1), bh * 0.28);
       }
     }
 
@@ -315,7 +266,6 @@ function WaveformEditor({
       ctx.beginPath(); ctx.arc(lx, midY, 5, 0, Math.PI * 2); ctx.fill();
     });
 
-    // 재생 커서
     if (playPos > 0) {
       const px = selX + playPos * selWx;
       ctx.strokeStyle = 'rgba(255,255,255,0.9)';
@@ -323,17 +273,13 @@ function WaveformEditor({
       ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, H); ctx.stroke();
     }
 
-    // 시간 레이블
     const label = `${fmtSec(startSec)} – ${fmtSec(Math.min(startSec + windowSec, durationSec))}`;
     ctx.font      = '10px monospace';
     ctx.fillStyle = 'rgba(255,255,255,0.6)';
     ctx.fillText(label, Math.min(selX + 5, W - 90), H - 5);
   }, [startSec, durationSec, windowSec]);
 
-  // 정적 상태 드로우 (peaks 변경 / 구간 이동 시)
-  useEffect(() => {
-    drawCanvas(0, null);
-  }, [drawCanvas, peaks]);
+  useEffect(() => { drawCanvas(0, null); }, [drawCanvas, peaks]);
 
   // ── Pointer interaction ──
   const secFromX = useCallback((clientX: number) => {
@@ -359,88 +305,104 @@ function WaveformEditor({
   };
   const onMouseUp = () => { dragging.current = false; };
 
-  // ── RAF tick (실시간 주파수 + 커서) ──
-  const startTick = useCallback((fromSec: number) => {
+  // ── AudioBufferSource 재생 시작 ──
+  const startPlayback = useCallback((fromSec: number, dur: number) => {
+    const buffer = audioBufRef.current;
+    if (!buffer) return;
+
+    // 기존 재생 종료
+    try { srcNodeRef.current?.stop(); } catch {}
+    srcNodeRef.current?.disconnect();
+    cancelAnimationFrame(animFrameRef.current);
+
+    // AudioContext 생성/재사용
+    let actx = audioCtxRef.current;
+    if (!actx || actx.state === 'closed') {
+      const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      actx = new AC();
+      const analyser = actx.createAnalyser();
+      analyser.fftSize = 128;
+      analyser.smoothingTimeConstant = 0.8;
+      freqDataRef.current = new Uint8Array(analyser.frequencyBinCount) as Uint8Array<ArrayBuffer>;
+      analyser.connect(actx.destination);
+      audioCtxRef.current = actx;
+      analyserRef.current = analyser;
+    }
+    actx.resume();
+
+    // BufferSource → Analyser → Destination (신호 경로 완전 제어)
+    const src = actx.createBufferSource();
+    src.buffer = buffer;
+    src.connect(analyserRef.current!);
+    src.start(0, fromSec, dur);
+    srcNodeRef.current  = src;
+    playStartCtxT.current = actx.currentTime;
+
+    setPlaying(true);
+    onPlayStart?.();
+
     const tick = () => {
-      const el = audioRef.current;
-      if (!el) return;
-      const elapsed  = el.currentTime - fromSec;
-      const progress = Math.min(elapsed / windowSec, 1);
-
-      if (analyserRef.current) {
-        analyserRef.current.getByteFrequencyData(freqDataRef.current);
-        drawCanvas(progress, freqDataRef.current);
-      } else {
-        drawCanvas(progress, null);
-      }
-
-      if (progress < 1 && !el.paused) {
+      const elapsed  = (audioCtxRef.current?.currentTime ?? 0) - playStartCtxT.current;
+      const progress = Math.min(elapsed / dur, 1);
+      analyserRef.current!.getByteFrequencyData(freqDataRef.current);
+      drawCanvas(progress, freqDataRef.current);
+      if (progress < 1) {
         animFrameRef.current = requestAnimationFrame(tick);
       } else {
-        el.pause();
         setPlaying(false);
         drawCanvas(0, null);
       }
     };
     animFrameRef.current = requestAnimationFrame(tick);
-  }, [windowSec, drawCanvas]);
 
-  // ── Playback toggle ──
-  const togglePlay = useCallback(() => {
-    const el = audioRef.current;
-    if (!el) return;
-    if (playing) {
-      el.pause();
+    src.onended = () => {
       cancelAnimationFrame(animFrameRef.current);
       setPlaying(false);
       drawCanvas(0, null);
+    };
+  }, [onPlayStart, drawCanvas]);
+
+  const stopPlayback = useCallback(() => {
+    try { srcNodeRef.current?.stop(); } catch {}
+    cancelAnimationFrame(animFrameRef.current);
+    setPlaying(false);
+    drawCanvas(0, null);
+  }, [drawCanvas]);
+
+  // ── 재생 토글 ──
+  const togglePlay = useCallback(() => {
+    if (playing) {
+      stopPlayback();
     } else {
-      ensureAnalyser();
-      onPlayStart?.();
-      el.currentTime = startSec;
-      el.play().then(() => {
-        setPlaying(true);
-        startTick(startSec);
-      }).catch(err => console.error('[WaveformEditor] play() 실패:', err));
+      const dur = Math.min(windowSec, durationSec - startSec);
+      startPlayback(startSec, dur);
     }
-  }, [playing, startSec, onPlayStart, ensureAnalyser, startTick, drawCanvas]);
+  }, [playing, startSec, windowSec, durationSec, startPlayback, stopPlayback]);
 
   // 구간 변경 시 자동재생
   useEffect(() => {
     const shouldPlay = userDraggedRef.current || autoPlayOnSelect;
     userDraggedRef.current = false;
-    const el = audioRef.current;
-    if (!el || !shouldPlay) return;
-    cancelAnimationFrame(animFrameRef.current);
-    ensureAnalyser();
-    el.currentTime = startSec;
-    onPlayStart?.();
-    el.play().then(() => {
-      setPlaying(true);
-      startTick(startSec);
-    }).catch(() => {});
+    if (!shouldPlay || !audioBufRef.current) return;
+    const dur = Math.min(windowSec, durationSec - startSec);
+    startPlayback(startSec, dur);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startSec]);
 
   useEffect(() => () => {
     cancelAnimationFrame(animFrameRef.current);
+    try { srcNodeRef.current?.stop(); } catch {}
     audioCtxRef.current?.close();
   }, []);
 
   // 외부 stopToken
   useEffect(() => {
     if (stopToken === 0) return;
-    audioRef.current?.pause();
-    cancelAnimationFrame(animFrameRef.current);
-    setPlaying(false);
-    drawCanvas(0, null);
-  }, [stopToken, drawCanvas]);
+    stopPlayback();
+  }, [stopToken, stopPlayback]);
 
   return (
     <div className="flex flex-col gap-2 select-none">
-      {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-      <audio ref={audioRef} src={audioUrl} preload="auto" />
-
       <div className="relative">
         {loading && (
           <div className="absolute inset-0 flex items-center justify-center gap-2 z-10 bg-surface/70 rounded-xl">
@@ -462,7 +424,8 @@ function WaveformEditor({
       <div className="flex items-center gap-3">
         <button
           onClick={togglePlay}
-          className="w-8 h-8 rounded-full bg-accent flex items-center justify-center hover:opacity-90 transition shrink-0"
+          disabled={!audioBufRef.current && !loading}
+          className="w-8 h-8 rounded-full bg-accent flex items-center justify-center hover:opacity-90 transition shrink-0 disabled:opacity-40"
         >
           {playing
             ? <Pause size={11} className="text-white" />
