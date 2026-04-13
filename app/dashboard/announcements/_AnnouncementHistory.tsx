@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { Play, Pause, Trash2, Check, Loader2, Megaphone, Radio, AArrowUp, AArrowDown, GripVertical, Pin, Pencil, RotateCw } from 'lucide-react';
+import { Play, Pause, Trash2, Check, Loader2, Megaphone, Radio, AArrowUp, AArrowDown, GripVertical, Pin, Pencil, RotateCw, Download } from 'lucide-react';
 import { Announcement, Store, FishVoice, MODE_LABEL, fmtTime, voiceLabel } from './_shared';
 
 const FONT_SIZES = [12, 14, 16, 20, 24] as const;
@@ -25,13 +25,14 @@ interface Props {
   onRegenerate:      (ann: Announcement, newText: string) => void;
   regeneratingId:    string | null;
   hasTrack:          boolean;
+  isSuperadmin?:     boolean;
 }
 
 export default function AnnouncementHistory({
   announcements, stores, fishVoices, selectedStore,
   playingId, announcingId, announcementPlaying,
   deleting, loading,
-  onPlay, onBroadcast, onDelete, onClearAll, onReorder, onTogglePin, onRegenerate, regeneratingId, hasTrack,
+  onPlay, onBroadcast, onDelete, onClearAll, onReorder, onTogglePin, onRegenerate, regeneratingId, hasTrack, isSuperadmin,
 }: Props) {
   const storeName = (id: string) => stores.find(s => s.id === id)?.name ?? id;
   const [fontIdx, setFontIdx] = useState(1);
@@ -215,6 +216,17 @@ export default function AnnouncementHistory({
                     <Radio size={10} />
                     {ann.play_mode === 'immediate' ? '즉시' : '곡간'}
                   </button>
+                )}
+
+                {/* 다운로드 (시샵 어드민 전용) */}
+                {isSuperadmin && ann.audio_url && (
+                  <a
+                    href={ann.audio_url}
+                    download
+                    title="오디오 다운로드"
+                    className="p-1 text-dim/40 hover:text-blue-400 transition">
+                    <Download size={13} />
+                  </a>
                 )}
 
                 {/* 삭제 */}

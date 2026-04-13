@@ -915,6 +915,7 @@ export default function AnnouncementsPage() {
           onTogglePin={handleTogglePin}
           onRegenerate={handleRegenerate}
           regeneratingId={regeneratingId}
+          isSuperadmin={isSuperadmin}
         />
       </div>
     </div>
