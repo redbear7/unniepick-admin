@@ -5,6 +5,7 @@ import { PlayerProvider } from '@/contexts/PlayerContext';
 import Sidebar from '@/components/Sidebar';
 import BottomPlayer from '@/components/BottomPlayer';
 import DevLogPanel from '@/components/DevLogPanel';
+import ChatWidget from '@/components/ChatWidget';
 
 function useServiceWorker() {
   useEffect(() => {
@@ -36,6 +37,9 @@ export default function DashboardShell({ children }: { children: React.ReactNode
 
       {/* 개발자 로그 패널 */}
       <DevLogPanel />
+
+      {/* AI 어시스턴트 (시샵 전용) */}
+      <ChatWidget />
     </PlayerProvider>
   );
 }
