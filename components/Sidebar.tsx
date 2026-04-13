@@ -300,9 +300,11 @@ export default function Sidebar() {
         <div className="flex-1 min-w-0">
           <p className="text-[10px] text-muted leading-none">언니픽</p>
           <p className="text-sm font-bold text-primary leading-tight mt-0.5">슈퍼어드민</p>
-          <p className="text-[10px] text-muted mt-1">v0.1.1</p>
+          <div className="flex items-center justify-between mt-1">
+            <p className="text-[10px] text-muted">v0.1.1</p>
+            <ThemeToggle />
+          </div>
         </div>
-        <ThemeToggle />
       </Link>
 
       {/* 네비게이션 */}
