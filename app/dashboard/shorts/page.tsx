@@ -1478,19 +1478,12 @@ function ShortsPageInner() {
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-primary truncate">{track.title}</p>
                           <p className="text-xs text-muted truncate">{track.artist}</p>
-                          {/* 장르 + 무드태그 */}
-                          {(track.mood || (track.mood_tags ?? []).length > 0) && (
-                            <div className="flex items-center gap-1 mt-1 flex-wrap">
-                              {track.mood && (
-                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent/15 text-accent font-semibold leading-none shrink-0">
-                                  {track.mood}
-                                </span>
-                              )}
-                              {(track.mood_tags ?? []).slice(0, 3).map(tag => (
-                                <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded bg-fill-subtle text-white/40 leading-none shrink-0">
-                                  {tag}
-                                </span>
-                              ))}
+                          {/* 장르 태그 1개 */}
+                          {track.mood && (
+                            <div className="mt-1">
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent/15 text-accent font-semibold leading-none">
+                                {track.mood}
+                              </span>
                             </div>
                           )}
                         </div>
@@ -1555,16 +1548,13 @@ function ShortsPageInner() {
                 <div className="flex-1 min-w-0">
                   <h2 className="text-base font-bold text-primary truncate">{selected.title}</h2>
                   <p className="text-sm text-muted mt-0.5">{selected.artist}</p>
-                  <div className="flex flex-wrap gap-1.5 mt-2">
-                    {(selected.mood_tags ?? []).slice(0, 3).map((tag) => (
-                      <span
-                        key={tag}
-                        className="text-[10px] px-2 py-0.5 rounded-full bg-accent/15 text-accent border border-accent/20"
-                      >
-                        #{tag}
+                  {selected.mood && (
+                    <div className="mt-2">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-accent/15 text-accent border border-accent/20">
+                        #{selected.mood}
                       </span>
-                    ))}
-                  </div>
+                    </div>
+                  )}
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-xs text-muted">전체 길이</p>
