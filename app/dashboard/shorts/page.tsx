@@ -389,6 +389,15 @@ function WaveformEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startSec]);
 
+  // 트랙 선택 시 decode 완료 후 즉시 재생 (autoPlayOnSelect가 true일 때)
+  useEffect(() => {
+    if (peaks.length === 0) return;
+    if (!autoPlayOnSelect) return;
+    const dur = Math.min(windowSec, durationSec - startSec);
+    startPlayback(startSec, dur);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [peaks]);
+
   useEffect(() => () => {
     cancelAnimationFrame(animFrameRef.current);
     try { srcNodeRef.current?.stop(); } catch {}
