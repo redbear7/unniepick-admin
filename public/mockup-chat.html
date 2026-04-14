@@ -396,6 +396,57 @@ body{
 .ro-bar{padding:10px 14px 26px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;background:var(--bg);flex-shrink:0}
 .ro-field{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:22px;padding:10px 15px;font-size:13px;color:var(--t3);display:flex;align-items:center;gap:7px}
 .mb-pill{background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:8px 10px;font-size:11px;color:var(--t3);display:flex;align-items:center;gap:4px;white-space:nowrap}
+
+/* 라이브 뷰어 */
+.live-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:#FF4D4D;background:rgba(255,77,77,0.12);border:1px solid rgba(255,77,77,0.25);padding:2px 7px;border-radius:10px}
+.live-dot{width:6px;height:6px;border-radius:50%;background:#FF4D4D;animation:livepulse 1.2s infinite}
+@keyframes livepulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* 고정 쿠폰 영역 */
+.pinned-coupon{flex-shrink:0;padding:10px 12px;background:var(--bg2);border-bottom:1px solid var(--border)}
+.pc-lbl{font-size:10px;font-weight:800;color:var(--t3);letter-spacing:.8px;margin-bottom:6px;display:flex;align-items:center;gap:5px}
+
+/* 쿠폰 액션 버튼 */
+.cp-actions{display:flex;gap:6px;padding:8px 14px 12px;border-top:1px solid rgba(255,255,255,0.06)}
+.cp-act{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:8px 4px;cursor:pointer;transition:all .15s}
+.cp-act:active{transform:scale(.95)}
+.cp-act.primary{background:rgba(254,229,0,0.12);border-color:rgba(254,229,0,0.3)}
+.cp-act-ic{font-size:18px;line-height:1}
+.cp-act-lbl{font-size:10px;font-weight:700;color:var(--t2)}
+.cp-act.primary .cp-act-lbl{color:var(--y)}
+.cp-like-cnt{font-size:9px;color:var(--t3);margin-top:1px}
+
+/* 사장님 댓글 */
+.cp-comment{background:rgba(255,255,255,0.03);border-top:1px solid rgba(255,255,255,0.05);padding:9px 13px;display:flex;gap:8px;align-items:flex-start}
+.cp-cm-av{width:24px;height:24px;border-radius:8px;background:linear-gradient(135deg,#FF6F0F,#FF3C00);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+.cp-cm-body{flex:1}
+.cp-cm-name{font-size:10px;font-weight:800;color:var(--t2);display:flex;align-items:center;gap:4px;margin-bottom:2px}
+.cp-cm-pill{font-size:8px;font-weight:800;background:var(--y);color:#1A1200;padding:1px 5px;border-radius:4px}
+.cp-cm-txt{font-size:12px;color:var(--t1);line-height:1.5}
+.cp-cm-ts{font-size:9px;color:var(--t3);margin-top:2px}
+
+/* 타임세일 쿠폰 */
+.coupon.timesale{border-color:rgba(255,77,77,0.35);background:linear-gradient(135deg,rgba(255,77,77,0.08) 0%,rgba(255,111,15,0.06) 100%)}
+.coupon.timesale .cp-val{color:#FF6B6B}
+.coupon.timesale .cp-tv{color:#FF6B6B}
+.coupon.timesale .cp-fill{background:linear-gradient(90deg,#FF6B6B,var(--brand))}
+.coupon.timesale .cp-btn{background:#FF6B6B;color:#fff;box-shadow:0 4px 12px rgba(255,77,77,0.3)}
+.ts-badge{display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:800;color:#FF6B6B;background:rgba(255,77,77,0.12);border:1px solid rgba(255,77,77,0.25);padding:2px 7px;border-radius:8px;margin-bottom:4px}
+
+/* 마감 쿠폰 */
+.coupon.expired{border-color:rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);filter:saturate(0);opacity:.55;position:relative}
+.cp-expired-overlay{position:absolute;top:10px;right:10px;background:rgba(80,80,80,0.7);color:rgba(255,255,255,0.6);font-size:10px;font-weight:800;padding:3px 9px;border-radius:8px;letter-spacing:.5px}
+.cp-delete{position:absolute;top:10px;left:10px;background:rgba(255,60,60,0.15);border:1px solid rgba(255,60,60,0.3);color:rgba(255,100,100,0.8);font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:3px}
+
+/* 채팅 말풍선 (사장님 메시지) */
+.chat-msg{display:flex;gap:8px;align-items:flex-start}
+.chat-av{width:32px;height:32px;border-radius:11px;background:linear-gradient(135deg,#FF6F0F,#FF3C00);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.chat-body{flex:1}
+.chat-name{font-size:11px;font-weight:700;color:var(--t2);margin-bottom:4px;display:flex;align-items:center;gap:4px}
+.chat-pill{font-size:8px;font-weight:800;background:var(--bg4);color:var(--t3);padding:1px 5px;border-radius:4px}
+.chat-bubble{background:var(--bg3);border:1px solid var(--border);border-radius:4px 14px 14px 14px;padding:9px 12px;font-size:13px;color:var(--t1);line-height:1.55;display:inline-block;max-width:100%}
+.chat-bubble strong{color:var(--y)}
+.chat-ts{font-size:10px;color:var(--t3);margin-top:3px}
 </style>
 </head>
 <body>
@@ -687,7 +738,10 @@ body{
       <div class="room-meta">
         <div class="room-name">라멘 홋카이도</div>
         <div class="room-addr">강남구 역삼동 테헤란로 123, 1층</div>
-        <div class="room-sub">👥 1,284명 · 🟢 온라인</div>
+        <div class="room-sub" style="display:flex;align-items:center;gap:6px">
+          <span>👥 1,284명</span>
+          <span class="live-badge"><span class="live-dot"></span>지금 247명</span>
+        </div>
       </div>
       <div class="room-btns"><div class="rb">🔔</div><div class="rb">⋯</div></div>
     </div>
@@ -722,104 +776,139 @@ body{
       <span class="pinned-lbl">공지</span>
     </div>
 
+    <!-- ── 상단 고정 쿠폰 (1개) ── -->
+    <div class="pinned-coupon">
+      <div class="pc-lbl">📌 진행중 쿠폰 <span style="color:var(--green);margin-left:2px">● 활성</span></div>
+      <div class="coupon timesale" style="margin:0;position:relative">
+        <div style="padding:10px 14px 0">
+          <span class="ts-badge"><span class="live-dot" style="background:#FF6B6B"></span> 타임세일</span>
+        </div>
+        <div class="cp-top" style="padding-top:4px">
+          <div class="cp-em">⚡</div>
+          <div class="cp-info">
+            <div class="cp-val">런치 특가 30%</div>
+            <div class="cp-desc">돈코츠 라멘 세트 · 12시~14시 한정</div>
+          </div>
+          <div class="cp-timer">
+            <div class="cp-tl">마감까지</div>
+            <div class="cp-tv" id="t2">00:48:22</div>
+          </div>
+        </div>
+        <div class="cp-prog">
+          <div class="cp-bar"><div class="cp-fill" style="width:78%"></div></div>
+          <div class="cp-stock"><span>남은 수량 <strong>11</strong>장 / 50장</span><span>78% 소진</span></div>
+        </div>
+        <div class="cp-notch"></div>
+        <div class="cp-btm">
+          <div class="cp-cond">📍 역삼동 280m</div>
+          <button class="cp-btn" id="cpbtn2" onclick="getCoupon2()">쿠폰발급</button>
+        </div>
+        <!-- 액션 버튼 -->
+        <div class="cp-actions">
+          <div class="cp-act primary" onclick="toggleCpLike(this)">
+            <span class="cp-act-ic">🤍</span>
+            <span class="cp-act-lbl">좋아요픽</span>
+            <span class="cp-like-cnt" id="ts-like">142</span>
+          </div>
+          <div class="cp-act" onclick="shareCoupon()">
+            <span class="cp-act-ic">↗</span>
+            <span class="cp-act-lbl">공유</span>
+          </div>
+        </div>
+        <!-- 사장님 댓글 -->
+        <div class="cp-comment">
+          <div class="cp-cm-av">🍜</div>
+          <div class="cp-cm-body">
+            <div class="cp-cm-name">라멘 홋카이도 <span class="cp-cm-pill">사장님</span></div>
+            <div class="cp-cm-txt">오늘 12시~2시 딱 2시간만! 재고 얼마 안 남았어요 😊🔥</div>
+            <div class="cp-cm-ts">오전 11:52</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 피드 (스크롤) ── -->
     <div class="feed">
       <div class="dt-sep">2024년 4월 15일 화요일</div>
       <div class="sys-msg">채팅방에 참여했습니다 👋</div>
 
-      <!-- 포스트 1 -->
-      <div class="post">
-        <div class="post-hd">
-          <div class="post-av" style="background:linear-gradient(135deg,#FF6F0F,#FF3C00)">🍜</div>
-          <div class="post-info">
-            <div class="post-sender">라멘 홋카이도 <span class="dong-pill">역삼동</span></div>
-            <div class="post-ts">오전 9:12</div>
+      <!-- 마감된 쿠폰 (회색) -->
+      <div class="coupon expired" style="margin:0;position:relative">
+        <div class="cp-expired-overlay">🚫 마감</div>
+        <div class="cp-delete" onclick="deleteCoupon(this)">🗑 삭제 <span style="font-size:8px;opacity:.7">(시샵)</span></div>
+        <div class="cp-top">
+          <div class="cp-em">🎟</div>
+          <div class="cp-info">
+            <div class="cp-val">1,000원 할인</div>
+            <div class="cp-desc">라멘 전메뉴 · 1만원 이상</div>
           </div>
-          <div style="font-size:16px;color:var(--t3);cursor:pointer">⋯</div>
+          <div class="cp-timer"><div class="cp-tl">종료됨</div><div class="cp-tv">00:00:00</div></div>
         </div>
-        <div class="post-body">
-          <div class="post-txt">오늘 점심 특선입니다! 🍜<br>돈코츠 라멘 + 군만두 세트<br>특별 가격 <strong>8,900원</strong> · 12시~2시 한정!</div>
-          <div class="post-img">
-            🍜
-            <div class="post-img-g"><span class="img-tag">📷 오늘의 특선</span></div>
+        <div class="cp-prog">
+          <div class="cp-bar"><div class="cp-fill" style="width:100%"></div></div>
+          <div class="cp-stock"><span>남은 수량 <strong>0</strong>장 / 50장</span><span>100% 소진</span></div>
+        </div>
+        <div class="cp-notch"></div>
+        <div class="cp-btm">
+          <div class="cp-cond">📍 역삼동 280m</div>
+          <button class="cp-btn done" disabled>마감됨</button>
+        </div>
+        <div class="cp-actions">
+          <div class="cp-act primary">
+            <span class="cp-act-ic">❤️</span>
+            <span class="cp-act-lbl">좋아요픽</span>
+            <span class="cp-like-cnt">89</span>
           </div>
+          <div class="cp-act"><span class="cp-act-ic">↗</span><span class="cp-act-lbl">공유</span></div>
         </div>
-        <div class="pact">
-          <button class="ab liked" onclick="toggleLike(this)"><span class="ic">❤️</span><span>127</span></button>
-          <button class="ab"><span class="ic">↗</span><span>공유</span></button>
-          <div class="pv">👁 342</div>
+        <div class="cp-comment">
+          <div class="cp-cm-av">🍜</div>
+          <div class="cp-cm-body">
+            <div class="cp-cm-name">라멘 홋카이도 <span class="cp-cm-pill">사장님</span></div>
+            <div class="cp-cm-txt">이번 쿠폰 너무 빨리 소진됐네요! 다음엔 더 많이 준비할게요 😅</div>
+            <div class="cp-cm-ts">오전 10:18</div>
+          </div>
         </div>
       </div>
 
-      <!-- 포스트 2: 쿠폰 -->
-      <div class="post">
-        <div class="post-hd">
-          <div class="post-av" style="background:linear-gradient(135deg,#FF6F0F,#FF3C00)">🍜</div>
-          <div class="post-info">
-            <div class="post-sender">라멘 홋카이도 <span class="dong-pill">역삼동</span></div>
-            <div class="post-ts">오전 10:30</div>
-          </div>
-        </div>
-        <div class="post-body">
-          <div class="post-txt">🔥 선착순 50명 한정 쿠폰!<br>좋아요 누르고 바로 받아가세요 👇</div>
-          <div class="coupon">
-            <div class="cp-top">
-              <div class="cp-em">🎟</div>
-              <div class="cp-info">
-                <div class="cp-val">1,000원 할인</div>
-                <div class="cp-desc">라멘 전메뉴 · 1만원 이상</div>
-              </div>
-              <div class="cp-timer"><div class="cp-tl">마감까지</div><div class="cp-tv" id="t1">02:47:05</div></div>
-            </div>
-            <div class="cp-prog">
-              <div class="cp-bar"><div class="cp-fill" id="fillbar" style="width:64%"></div></div>
-              <div class="cp-stock"><span>남은 수량 <strong id="stock">18</strong>장 / 50장</span><span id="spct">64% 소진</span></div>
-            </div>
-            <div class="cp-notch"></div>
-            <div class="cp-btm">
-              <div class="cp-cond">📍 역삼동 280m</div>
-              <button class="cp-btn" id="cpbtn" onclick="getCoupon()">쿠폰 받기</button>
-            </div>
-          </div>
-        </div>
-        <div class="pact">
-          <button class="ab" onclick="toggleLike(this)"><span class="ic">🤍</span><span>89</span></button>
-          <button class="ab"><span class="ic">↗</span><span>공유</span></button>
-          <div class="pv">👁 218</div>
+      <div class="sys-cp">🎟 타임세일 쿠폰이 새로 발행되었어요</div>
+
+      <!-- 사장님 채팅 1 -->
+      <div class="chat-msg">
+        <div class="chat-av">🍜</div>
+        <div class="chat-body">
+          <div class="chat-name">라멘 홋카이도 <span class="chat-pill">역삼동</span></div>
+          <div class="chat-bubble">오늘 점심 특선입니다! 🍜<br>돈코츠 라멘 + 군만두 세트<br>특별 가격 <strong>8,900원</strong> · 12시~2시 한정!</div>
+          <div class="chat-ts">오전 9:12</div>
         </div>
       </div>
 
-      <!-- 포스트 3: 좋아요 목표 -->
-      <div class="post">
-        <div class="post-hd">
-          <div class="post-av" style="background:linear-gradient(135deg,#FF6F0F,#FF3C00)">🍜</div>
-          <div class="post-info">
-            <div class="post-sender">라멘 홋카이도 <span class="dong-pill">역삼동</span></div>
-            <div class="post-ts">오전 11:05</div>
-          </div>
-        </div>
-        <div class="post-body">
-          <div class="post-txt">❤️ 좋아요 <strong>100개</strong> 달성하면<br>추가 쿠폰 오픈! 지금 <strong id="goal-now">89</strong>/100 💪</div>
-          <div class="goal-bar">
-            <div class="goal-prog">
-              <div class="goal-lbl">달성까지 <strong id="goal-left">11</strong>개 남았어요!</div>
-              <div class="goal-track"><div class="goal-fill" id="goalfill" style="width:89%"></div></div>
-            </div>
-            <div class="goal-pct" id="goalpct">89%</div>
-          </div>
-        </div>
-        <div class="pact">
-          <button class="ab" id="gbtn" onclick="goalLike(this)"><span class="ic">🤍</span><span id="gcnt">89</span></button>
-          <button class="ab"><span class="ic">↗</span><span>공유</span></button>
-          <div class="pv">👁 156</div>
+      <!-- 사장님 채팅 2 -->
+      <div class="chat-msg">
+        <div class="chat-av">🍜</div>
+        <div class="chat-body">
+          <div class="chat-name">라멘 홋카이도 <span class="chat-pill">역삼동</span></div>
+          <div class="chat-bubble">❤️ 좋아요 <strong>100개</strong> 달성하면<br>추가 쿠폰 오픈합니다! 지금 <strong>89</strong>/100 💪</div>
+          <div class="chat-ts">오전 11:05</div>
         </div>
       </div>
 
-      <div class="sys-cp">🎟 방금 쿠폰 2장이 새로 발행되었어요</div>
+      <!-- 사장님 채팅 3 -->
+      <div class="chat-msg">
+        <div class="chat-av">🍜</div>
+        <div class="chat-body">
+          <div class="chat-name">라멘 홋카이도 <span class="chat-pill">역삼동</span></div>
+          <div class="chat-bubble">점심 피크타임 시작됩니다 🔥<br>오늘도 맛있게 드세요!</div>
+          <div class="chat-ts">오전 11:45</div>
+        </div>
+      </div>
+
+      <div style="height:10px"></div>
     </div>
 
     <div class="ro-bar">
       <div class="ro-field"><span>🔒</span><span>사장님만 공지를 올릴 수 있어요</span></div>
-      <div class="mb-pill">👥 1,284</div>
+      <div class="mb-pill">👁 247명</div>
     </div>
   </div>
 </div>
@@ -877,29 +966,46 @@ function goalLike(btn){
   document.getElementById('goalpct').textContent=p+'%';
 }
 
-// 쿠폰 받기
-function getCoupon(){
-  const b=document.getElementById('cpbtn');
+// 타임세일 쿠폰발급
+function getCoupon2(){
+  const b=document.getElementById('cpbtn2');
   if(b.classList.contains('done'))return;
   b.textContent='확인중...';b.style.opacity='.6';
   setTimeout(()=>{
-    b.textContent='✅ 받기 완료';b.classList.add('done');b.style.opacity='1';
-    const s=document.getElementById('stock');
-    s.textContent=parseInt(s.textContent)-1;
-    const pct=Math.round((50-parseInt(s.textContent))/50*100);
-    document.getElementById('fillbar').style.width=pct+'%';
-    document.getElementById('spct').textContent=pct+'% 소진';
+    b.textContent='✅ 발급완료';b.classList.add('done');b.style.opacity='1';
   },700);
 }
 
-// 카운트다운
-let secs=2*3600+47*60+5;
+// 쿠폰 좋아요픽
+function toggleCpLike(el){
+  const ic=el.querySelector('.cp-act-ic');
+  const cnt=el.querySelector('.cp-like-cnt');
+  const liked=ic.textContent==='❤️';
+  ic.textContent=liked?'🤍':'❤️';
+  cnt.textContent=liked?parseInt(cnt.textContent)-1:parseInt(cnt.textContent)+1;
+  el.classList.toggle('liked-cp',!liked);
+}
+
+// 공유
+function shareCoupon(){
+  alert('링크가 복사되었어요! 📋');
+}
+
+// 마감 쿠폰 삭제 (시샵 전용)
+function deleteCoupon(btn){
+  if(confirm('마감된 쿠폰을 삭제하시겠어요?')){
+    btn.closest('.coupon').remove();
+  }
+}
+
+// 타임세일 카운트다운
+let ts2=48*60+22;
 setInterval(()=>{
-  secs=Math.max(0,secs-1);
-  const h=String(Math.floor(secs/3600)).padStart(2,'0');
-  const m=String(Math.floor(secs%3600/60)).padStart(2,'0');
-  const s=String(secs%60).padStart(2,'0');
-  const el=document.getElementById('t1');
+  ts2=Math.max(0,ts2-1);
+  const h=String(Math.floor(ts2/3600)).padStart(2,'0');
+  const m=String(Math.floor(ts2%3600/60)).padStart(2,'0');
+  const s=String(ts2%60).padStart(2,'0');
+  const el=document.getElementById('t2');
   if(el)el.textContent=`${h}:${m}:${s}`;
 },1000);
 </script>
