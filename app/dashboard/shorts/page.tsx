@@ -1035,7 +1035,7 @@ function LivePreviewFrame({
           {/* 쿠폰 */}
           {selectedCoupon && (
             <div key={couponAnimKey} style={{ position:'absolute', left:16, right:16, top:`${couponTop}%`, animation: couponAnimKey > 0 ? 'couponSlideIn 0.5s cubic-bezier(0.34,1.56,0.64,1) both' : 'none' }}>
-              <div style={{ background:'color-mix(in srgb, var(--accent) 92%, transparent)', borderRadius:12, padding:'10px 14px', display:'flex', alignItems:'center', gap:10 }}>
+              <div style={{ background:'color-mix(in srgb, var(--accent) 50%, transparent)', borderRadius:12, padding:'10px 14px', display:'flex', alignItems:'center', gap:10 }}>
                 <span style={{ fontSize:24 }}>🎟</span>
                 <div style={{ minWidth:0 }}>
                   <p style={{ color:'#fff', fontSize:13, fontWeight:600, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{selectedCoupon.title}</p>
@@ -1100,6 +1100,7 @@ function LivePreviewFrame({
               bottom: `${wavePosBottom}%`,
               left: 16,
               right: 16,
+              opacity: 0.5,
               cursor: onWavePosChange ? 'grab' : 'default',
               userSelect: 'none',
             }}
