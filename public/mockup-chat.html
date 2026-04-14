@@ -258,6 +258,16 @@ body{
   display:flex;align-items:center;justify-content:center;
   padding:0 5px;flex-shrink:0;
 }
+
+/* 거리 + 쿠폰 댓글 수 세로 묶음 */
+.ci-dist-col{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
+.badge-cp-comment{
+  display:inline-flex;align-items:center;gap:2px;
+  background:var(--brand);color:#fff;
+  font-size:9px;font-weight:800;
+  min-width:18px;height:18px;border-radius:9px;
+  padding:0 5px;justify-content:center;
+}
 .badge-y{
   font-size:10px;font-weight:700;color:#1A1200;
   background:var(--y);padding:2px 8px;border-radius:10px;flex-shrink:0;
@@ -722,11 +732,13 @@ body{
         <div class="ci-body">
           <div class="ci-r1">
             <span class="ci-name">라멘 홋카이도</span><span class="ci-cp timesale">⚡ 타임세일</span>
-            <div class="ci-dist"><span class="d-near">🟢 280m</span></div>
+            <div class="ci-dist-col">
+              <span class="d-near">🟢 280m</span>
+              <span class="badge-cp-comment">💬 3</span>
+            </div>
           </div>
           <div class="ci-r2">
             <span class="ci-preview">🎟 오늘만! 라멘 1,000원 할인 쿠폰</span>
-            <span class="badge-new">3</span>
           </div>
           <div class="ci-r3">
             <span class="ci-tag">음식점</span>
@@ -764,11 +776,13 @@ body{
         <div class="ci-body">
           <div class="ci-r1">
             <span class="ci-name">뷰티살롱 H</span><span class="ci-cp event">🎁 이벤트</span>
-            <div class="ci-dist"><span class="d-mid">🟡 1.1km</span></div>
+            <div class="ci-dist-col">
+              <span class="d-mid">🟡 1.1km</span>
+              <span class="badge-cp-comment">💬 1</span>
+            </div>
           </div>
           <div class="ci-r2">
             <span class="ci-preview">이번 주말 헤어컷 20% 할인!</span>
-            <span class="badge-new">1</span>
           </div>
           <div class="ci-r3">
             <span class="ci-tag">뷰티</span>
