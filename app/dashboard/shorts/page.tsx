@@ -1096,8 +1096,9 @@ function LivePreviewFrame({
             style={{
               position: 'absolute',
               bottom: `${wavePosBottom}%`,
-              left: 16,
-              right: 16,
+              ...(waveformStyle === 'dots'
+                ? { left: '50%', transform: 'translateX(-50%)', width: '50%' }
+                : { left: 16, right: 16 }),
               opacity: 0.5,
               cursor: onWavePosChange ? 'grab' : 'default',
               userSelect: 'none',
