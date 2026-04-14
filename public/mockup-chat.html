@@ -314,10 +314,15 @@ body{
 .biz-val strong{color:var(--t1);font-weight:700}
 .biz-naver{
   display:inline-flex;align-items:center;gap:4px;
-  margin-top:2px;
   font-size:11px;font-weight:700;color:#03C75A;
   background:rgba(3,199,90,0.1);border:1px solid rgba(3,199,90,0.25);
-  padding:3px 10px;border-radius:20px;cursor:pointer;align-self:flex-start;
+  padding:3px 10px;border-radius:20px;cursor:pointer;
+}
+.biz-insta{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:11px;font-weight:700;color:#E1306C;
+  background:rgba(225,48,108,0.1);border:1px solid rgba(225,48,108,0.25);
+  padding:3px 10px;border-radius:20px;cursor:pointer;
 }
 
 .pinned{
@@ -701,8 +706,13 @@ body{
         <span class="biz-icon">📞</span>
         <span class="biz-val">02-1234-5678</span>
       </div>
-      <div class="biz-naver">
-        <span style="font-size:14px;line-height:1">N</span> 네이버 업체정보 바로가기 ↗
+      <div style="display:flex;gap:7px;margin-top:2px">
+        <div class="biz-naver">
+          <span style="font-size:14px;font-weight:900;line-height:1">N</span> 네이버 ↗
+        </div>
+        <div class="biz-insta">
+          <span style="font-size:13px;line-height:1">📷</span> 인스타그램 ↗
+        </div>
       </div>
     </div>
 
