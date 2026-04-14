@@ -496,7 +496,8 @@ body{
 @keyframes livepulse{0%,100%{opacity:1}50%{opacity:.3}}
 
 /* 고정 쿠폰 영역 */
-.pinned-coupon{flex-shrink:0;padding:7px 11px 9px;background:var(--bg2);border-bottom:1px solid var(--border)}
+.pinned-coupon{flex-shrink:0;padding:6px 11px 0;background:var(--bg2);border-bottom:1px solid var(--border)}
+.pinned-coupon::-webkit-scrollbar{display:none}
 .pc-lbl{font-size:10px;font-weight:800;color:var(--t3);letter-spacing:.8px;margin-bottom:4px;display:flex;align-items:center;gap:5px}
 
 /* 쿠폰 액션 버튼 */
@@ -517,6 +518,49 @@ body{
 .cp-cm-pill{font-size:8px;font-weight:800;background:var(--y);color:#1A1200;padding:1px 5px;border-radius:4px}
 .cp-cm-txt{font-size:11px;color:var(--t1);line-height:1.45}
 .cp-cm-ts{font-size:9px;color:var(--t3);margin-top:1px}
+
+/* 댓글 수정/삭제 버튼 */
+.cp-cm-actions{display:flex;gap:4px;margin-top:4px}
+.cp-cm-edit,.cp-cm-del{
+  font-size:9px;font-weight:700;padding:2px 7px;border-radius:6px;
+  border:none;cursor:pointer;font-family:inherit;
+}
+.cp-cm-edit{background:var(--bg4);color:var(--t3)}
+.cp-cm-del{background:rgba(255,60,60,0.1);color:rgba(255,100,100,0.8)}
+
+/* 댓글 입력창 */
+.cp-input-area{
+  border-top:1px solid rgba(255,255,255,0.06);
+  padding:8px 12px;display:flex;gap:8px;align-items:flex-end;
+  background:rgba(254,229,0,0.03);
+}
+.cp-input-av{
+  width:26px;height:26px;border-radius:9px;
+  background:linear-gradient(135deg,#FF6F0F,#FF3C00);
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;flex-shrink:0;
+}
+.cp-input-wrap{flex:1;display:flex;flex-direction:column;gap:4px}
+.cp-input-label{
+  font-size:9px;font-weight:800;color:var(--y);
+  display:flex;align-items:center;gap:3px;
+}
+.cp-input-box{
+  width:100%;background:var(--bg3);border:1px solid rgba(254,229,0,0.2);
+  border-radius:10px;padding:7px 10px;
+  font-size:12px;color:var(--t1);font-family:inherit;
+  resize:none;outline:none;line-height:1.4;
+}
+.cp-input-box::placeholder{color:var(--t3)}
+.cp-input-box:focus{border-color:rgba(254,229,0,0.45)}
+.cp-send-btn{
+  background:var(--y);color:#1A1200;
+  font-size:12px;font-weight:800;
+  padding:7px 11px;border-radius:10px;border:none;
+  cursor:pointer;font-family:inherit;flex-shrink:0;
+  transition:all .15s;align-self:flex-end;
+}
+.cp-send-btn:active{transform:scale(.93)}
 
 /* 타임세일 쿠폰 */
 .coupon.timesale{border-color:rgba(255,77,77,0.35);background:linear-gradient(135deg,rgba(255,77,77,0.08) 0%,rgba(255,111,15,0.06) 100%)}
@@ -755,11 +799,13 @@ body{
         <div class="ci-body">
           <div class="ci-r1">
             <span class="ci-name">카페 봄날</span><span class="ci-cp discount">🎟 할인쿠폰</span>
-            <div class="ci-dist"><span class="d-near">🟢 620m</span></div>
+            <div class="ci-dist-col">
+              <span class="d-near">🟢 620m</span>
+              <span class="badge-cp-comment">💬 2</span>
+            </div>
           </div>
           <div class="ci-r2">
             <span class="ci-preview">아메리카노 무료 증정 이벤트 ☀️</span>
-            <span class="badge-y">🎟 쿠폰</span>
           </div>
           <div class="ci-r3">
             <span class="ci-tag">카페</span>
@@ -1043,26 +1089,29 @@ body{
       </div>
     </div>
 
-    <!-- 업체 정보 -->
-    <div class="biz-info">
-      <div class="biz-row">
+    <!-- 업체 정보 (기본 접힘, 클릭으로 펼치기) -->
+    <div class="biz-info" style="padding:8px 14px;gap:0">
+      <div class="biz-row" style="cursor:pointer;user-select:none" onclick="toggleBizInfo()">
         <span class="biz-icon">🕐</span>
         <span class="biz-val"><strong>11:30 – 21:30</strong> · 브레이크 15:00–17:00</span>
+        <span id="bizToggle" style="font-size:10px;font-weight:700;color:var(--t3);margin-left:8px;flex-shrink:0;transition:all .2s">▾ 정보</span>
       </div>
-      <div class="biz-row">
-        <span class="biz-icon">📅</span>
-        <span class="biz-val"><strong>매주 월요일</strong> 휴무</span>
-      </div>
-      <div class="biz-row">
-        <span class="biz-icon">📞</span>
-        <span class="biz-val">02-1234-5678</span>
-      </div>
-      <div style="display:flex;gap:7px;margin-top:2px">
-        <div class="biz-naver">
-          <span style="font-size:14px;font-weight:900;line-height:1">N</span> 네이버 ↗
+      <div id="bizMore" style="display:none;flex-direction:column;gap:6px;margin-top:8px">
+        <div class="biz-row">
+          <span class="biz-icon">📅</span>
+          <span class="biz-val"><strong>매주 월요일</strong> 휴무</span>
         </div>
-        <div class="biz-insta">
-          <span style="font-size:13px;line-height:1">📷</span> 인스타그램 ↗
+        <div class="biz-row">
+          <span class="biz-icon">📞</span>
+          <span class="biz-val">02-1234-5678</span>
+        </div>
+        <div style="display:flex;gap:7px;margin-top:4px">
+          <div class="biz-naver">
+            <span style="font-size:14px;font-weight:900;line-height:1">N</span> 네이버 ↗
+          </div>
+          <div class="biz-insta">
+            <span style="font-size:13px;line-height:1">📷</span> 인스타그램 ↗
+          </div>
         </div>
       </div>
     </div>
@@ -1112,24 +1161,47 @@ body{
             <span class="cp-act-lbl">공유</span>
           </div>
         </div>
-        <!-- 사장님 댓글 1 -->
-        <div class="cp-comment">
+      </div>
+    </div>
+
+    <!-- 사장님 댓글 목록 (쿠폰 카드 바깥, 고정 영역 안) -->
+    <div style="background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0">
+      <div id="cpCommentList" style="max-height:150px;overflow-y:auto">
+        <div class="cp-comment" id="cpcm1">
           <div class="cp-cm-av">🍜</div>
           <div class="cp-cm-body">
             <div class="cp-cm-name">라멘 홋카이도 <span class="cp-cm-pill">사장님</span></div>
-            <div class="cp-cm-txt">오늘 12시~2시 딱 2시간만! 재고 얼마 안 남았어요 😊🔥</div>
+            <div class="cp-cm-txt" id="cpcm1-txt">오늘 12시~2시 딱 2시간만! 재고 얼마 안 남았어요 😊🔥</div>
             <div class="cp-cm-ts">오전 11:52</div>
+            <div class="cp-cm-actions">
+              <button class="cp-cm-edit" onclick="editComment('cpcm1-txt',this)">✏️ 수정</button>
+              <button class="cp-cm-del" onclick="deleteComment('cpcm1')">🗑 삭제</button>
+            </div>
           </div>
         </div>
-        <!-- 사장님 댓글 2: 좋아요픽 이벤트 -->
-        <div class="cp-comment" style="background:rgba(254,229,0,0.04);border-top:1px solid rgba(254,229,0,0.1)">
+        <div class="cp-comment" id="cpcm2" style="background:rgba(254,229,0,0.04);border-top:1px solid rgba(254,229,0,0.1)">
           <div class="cp-cm-av">🍜</div>
           <div class="cp-cm-body">
             <div class="cp-cm-name">라멘 홋카이도 <span class="cp-cm-pill">사장님</span></div>
-            <div class="cp-cm-txt">🎁 이번달에 <strong style="color:var(--y)">'좋아요픽'</strong> 눌러주신 분 중에 추첨하여<br><strong style="color:var(--y)">라면세트 2인분</strong> 제공합니다! 많은 참여 부탁드려요 🍜🙏</div>
+            <div class="cp-cm-txt" id="cpcm2-txt">🎁 이번달에 <strong style="color:var(--y)">'좋아요픽'</strong> 눌러주신 분 중에 추첨하여<br><strong style="color:var(--y)">라면세트 2인분</strong> 제공합니다! 많은 참여 부탁드려요 🍜🙏</div>
             <div class="cp-cm-ts">오전 11:55</div>
+            <div class="cp-cm-actions">
+              <button class="cp-cm-edit" onclick="editComment('cpcm2-txt',this)">✏️ 수정</button>
+              <button class="cp-cm-del" onclick="deleteComment('cpcm2')">🗑 삭제</button>
+            </div>
           </div>
         </div>
+      </div>
+      <!-- 댓글 입력창 (사장님 전용) -->
+      <div class="cp-input-area">
+        <div class="cp-input-av">🍜</div>
+        <div class="cp-input-wrap">
+          <div class="cp-input-label">🔒 사장님 전용 댓글</div>
+          <textarea class="cp-input-box" id="cpCommentInput" rows="1"
+            placeholder="쿠폰 관련 안내를 입력하세요..."
+            oninput="autoResize(this)"></textarea>
+        </div>
+        <button class="cp-send-btn" onclick="addCpComment()">등록</button>
       </div>
     </div>
 
@@ -1239,6 +1311,16 @@ body{
 </div>
 
 <script>
+// 업체 정보 펼침/접힘
+let bizOpen=false;
+function toggleBizInfo(){
+  bizOpen=!bizOpen;
+  const more=document.getElementById('bizMore');
+  const tog=document.getElementById('bizToggle');
+  more.style.display=bizOpen?'flex':'none';
+  tog.textContent=bizOpen?'▴ 접기':'▾ 정보';
+}
+
 // 거리 패널 토글
 function toggleDistPanel(){
   const p=document.getElementById('dist-panel');
@@ -1289,6 +1371,58 @@ function goalLike(btn){
   const p=Math.min(100,gc);
   document.getElementById('goalfill').style.width=p+'%';
   document.getElementById('goalpct').textContent=p+'%';
+}
+
+// 댓글 자동 높이
+function autoResize(el){el.style.height='auto';el.style.height=el.scrollHeight+'px'}
+
+// 댓글 등록
+let cmIdx=3;
+function addCpComment(){
+  const inp=document.getElementById('cpCommentInput');
+  const txt=inp.value.trim();
+  if(!txt)return;
+  const now=new Date();
+  const ts=`오전 ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
+  const id='cpcm'+cmIdx++;
+  const div=document.createElement('div');
+  div.className='cp-comment';div.id=id;
+  div.style.borderTop='1px solid rgba(255,255,255,0.05)';
+  div.innerHTML=`
+    <div class="cp-cm-av">🍜</div>
+    <div class="cp-cm-body">
+      <div class="cp-cm-name">라멘 홋카이도 <span class="cp-cm-pill">사장님</span></div>
+      <div class="cp-cm-txt" id="${id}-txt">${txt.replace(/\n/g,'<br>')}</div>
+      <div class="cp-cm-ts">${ts}</div>
+      <div class="cp-cm-actions">
+        <button class="cp-cm-edit" onclick="editComment('${id}-txt',this)">✏️ 수정</button>
+        <button class="cp-cm-del" onclick="deleteComment('${id}')">🗑 삭제</button>
+      </div>
+    </div>`;
+  const list=document.getElementById('cpCommentList');
+  list.appendChild(div);
+  list.scrollTop=list.scrollHeight;
+  inp.value='';inp.style.height='auto';
+}
+
+// 댓글 수정
+function editComment(txtId,btn){
+  const el=document.getElementById(txtId);
+  const cur=el.innerText;
+  const newTxt=prompt('댓글 수정 (사장님 전용)',cur);
+  if(newTxt!==null && newTxt.trim()){
+    el.textContent=newTxt.trim();
+    const ts=el.nextElementSibling;
+    if(ts&&ts.classList.contains('cp-cm-ts'))ts.textContent+=' (수정됨)';
+  }
+}
+
+// 댓글 삭제
+function deleteComment(id){
+  if(confirm('댓글을 삭제하시겠어요?')){
+    const el=document.getElementById(id);
+    if(el) el.remove();
+  }
 }
 
 // 쿠폰함 바텀 시트
