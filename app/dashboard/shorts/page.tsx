@@ -113,6 +113,7 @@ function WaveformEditor({
   windowSec,
   onStartChange,
   onPlayStart,
+  onAudioDecoded,
   autoPlayOnSelect = false,
   stopToken = 0,
 }: {
@@ -122,6 +123,7 @@ function WaveformEditor({
   windowSec: number;
   onStartChange: (s: number) => void;
   onPlayStart?: () => void;
+  onAudioDecoded?: (buf: AudioBuffer) => void;
   autoPlayOnSelect?: boolean;
   stopToken?: number;
 }) {
@@ -170,6 +172,7 @@ function WaveformEditor({
         if (cancelled) return;
 
         audioBufRef.current = decoded;           // 재생용 버퍼 저장
+        onAudioDecoded?.(decoded);               // 부모에 공유
 
         const raw = decoded.getChannelData(0);
         const N   = 600;
@@ -456,6 +459,7 @@ function WaveformEditor({
 // ─── 라이브 미리보기 프레임 ────────────────────────────────────────
 interface LivePreviewFrameProps {
   audioUrl: string;
+  audioBuf?: AudioBuffer | null;   // WaveformEditor에서 공유된 디코딩 버퍼
   coverUrl: string | null;
   coverEmoji: string;
   bgVideoUrl: string | null;
@@ -489,7 +493,7 @@ const PARTICLE_EMOJI: Record<string, string> = {
 };
 
 function LivePreviewFrame({
-  audioUrl, coverUrl, coverEmoji, bgVideoUrl,
+  audioUrl, audioBuf, coverUrl, coverEmoji, bgVideoUrl,
   startSec, durationSec,
   shortsTitle, shortsTagline, selectedCoupon,
   trackTitle, artist,
@@ -512,6 +516,14 @@ function LivePreviewFrame({
   const canvasRef      = useRef<HTMLCanvasElement>(null);
   const containerRef   = useRef<HTMLDivElement>(null);
   const vinylDragRef   = useRef<{ startX: number; startY: number; px: number; py: number } | null>(null);
+
+  // circle 실시간 분석용 (AudioBufferSource 방식)
+  const liveCtxRef     = useRef<AudioContext | null>(null);
+  const liveAnalyserRef = useRef<AnalyserNode | null>(null);
+  const liveSrcRef     = useRef<AudioBufferSourceNode | null>(null);
+  const liveFreqRef    = useRef<Uint8Array<ArrayBuffer>>(new Uint8Array(0) as Uint8Array<ArrayBuffer>);
+  const liveStartCtxT  = useRef<number>(0);
+
   const [playing,       setPlaying]       = useState(false);
   const [progress,      setProgress]      = useState(0);
   const [wavePhase,     setWavePhase]     = useState(0);
@@ -535,8 +547,8 @@ function LivePreviewFrame({
     return () => ro.disconnect();
   }, []);
 
-  // 웨이브폼 캔버스 드로우
-  useEffect(() => {
+  // 웨이브폼 캔버스 드로우 (freqData: circle 실시간 데이터, null이면 sine 애니)
+  const drawWaveCanvas = useCallback((freqData?: Uint8Array<ArrayBuffer> | null) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const dpr = window.devicePixelRatio || 1;
@@ -585,19 +597,46 @@ function LivePreviewFrame({
       ctx.stroke();
 
     } else if (waveformStyle === 'circle') {
-      const bars = 24;
-      const cx = W / 2; const cy = H / 2;
-      const baseR = Math.min(cx, cy) * 0.45;
-      for (let i = 0; i < bars; i++) {
-        const amp = getAmp(i);
-        const angle = (i / bars) * Math.PI * 2 - Math.PI / 2;
-        const r1 = baseR;
-        const r2 = baseR + amp * H * 0.38;
+      const BARS  = 48;
+      const cx    = W / 2;
+      const cy    = H / 2;
+      const baseR = Math.min(cx, cy) * 0.38;
+
+      // 기본 원 (항상 표시)
+      ctx.beginPath();
+      ctx.arc(cx, cy, baseR, 0, Math.PI * 2);
+      ctx.strokeStyle = color(0.18);
+      ctx.lineWidth   = 1;
+      ctx.stroke();
+
+      for (let i = 0; i < BARS; i++) {
+        let amp: number;
+        if (freqData && freqData.length > 0 && playing) {
+          // 실시간 주파수 데이터 사용
+          const fi  = Math.floor((i / BARS) * Math.floor(freqData.length * 0.7));
+          amp = freqData[fi] / 255;
+        } else {
+          amp = getAmp(i);
+        }
+        const angle = (i / BARS) * Math.PI * 2 - Math.PI / 2;
+        const r1    = baseR;
+        const r2    = baseR + Math.max(amp * H * 0.48, playing ? 1 : 2);
+        const alpha = 0.4 + amp * 0.6;
+
+        // 바깥쪽 글로우
         ctx.beginPath();
         ctx.moveTo(cx + Math.cos(angle) * r1, cy + Math.sin(angle) * r1);
         ctx.lineTo(cx + Math.cos(angle) * r2, cy + Math.sin(angle) * r2);
-        ctx.strokeStyle = color(0.4 + amp * 0.6);
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = playing ? `rgba(255,111,15,${alpha * 0.35})` : `rgba(255,255,255,${alpha * 0.12})`;
+        ctx.lineWidth = 4;
+        ctx.stroke();
+
+        // 메인 바
+        ctx.beginPath();
+        ctx.moveTo(cx + Math.cos(angle) * r1, cy + Math.sin(angle) * r1);
+        ctx.lineTo(cx + Math.cos(angle) * r2, cy + Math.sin(angle) * r2);
+        ctx.strokeStyle = playing ? `rgba(255,111,15,${alpha})` : `rgba(255,255,255,${alpha * 0.4})`;
+        ctx.lineWidth = 1.5;
         ctx.stroke();
       }
 
@@ -631,20 +670,55 @@ function LivePreviewFrame({
         ctx.fillRect(bx - bw2 / 2, baseY - bh, bw2, bh + 1);
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playing, wavePhase, waveformStyle]);
 
+  // circle 이외 스타일: sine phase 애니
   useEffect(() => {
-    if (!playing) return;
+    if (!playing || waveformStyle === 'circle') return;
     let phase = wavePhase;
-    const tick = () => { phase += 0.12; setWavePhase(phase); animRef.current = requestAnimationFrame(tick); };
+    const tick = () => {
+      phase += 0.12;
+      setWavePhase(phase);
+      animRef.current = requestAnimationFrame(tick);
+    };
     animRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(animRef.current);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [playing]);
+  }, [playing, waveformStyle]);
+
+  // circle 스타일 실시간 주파수 RAF (AudioBufferSource 방식)
+  const startCircleTick = useCallback((fromCtxT: number, dur: number) => {
+    const tick = () => {
+      const actx = liveCtxRef.current;
+      if (!actx || !liveAnalyserRef.current) return;
+      const elapsed  = actx.currentTime - fromCtxT;
+      const pct      = Math.min(elapsed / dur, 1);
+      liveAnalyserRef.current.getByteFrequencyData(liveFreqRef.current);
+      drawWaveCanvas(liveFreqRef.current);
+      setProgress(pct);
+      if (pct < 1) {
+        animRef.current = requestAnimationFrame(tick);
+      } else {
+        setPlaying(false);
+        setProgress(0);
+        drawWaveCanvas(null);
+      }
+    };
+    animRef.current = requestAnimationFrame(tick);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [drawWaveCanvas]);
+
+  const stopLive = useCallback(() => {
+    try { liveSrcRef.current?.stop(); } catch {}
+    liveSrcRef.current?.disconnect();
+    cancelAnimationFrame(animRef.current);
+  }, []);
 
   useEffect(() => {
     if (playing && audioRef.current) {
       audioRef.current.pause();
+      stopLive();
       cancelAnimationFrame(animRef.current);
       setPlaying(false);
       setProgress(0);
@@ -652,50 +726,97 @@ function LivePreviewFrame({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startSec]);
 
-  useEffect(() => () => cancelAnimationFrame(animRef.current), []);
+  useEffect(() => () => {
+    cancelAnimationFrame(animRef.current);
+    stopLive();
+    liveCtxRef.current?.close();
+  }, [stopLive]);
 
   // 외부에서 stopToken이 바뀌면 재생 중지
   useEffect(() => {
     if (stopToken === 0) return;
     if (audioRef.current) { audioRef.current.pause(); }
+    stopLive();
     cancelAnimationFrame(animRef.current);
     setPlaying(false);
     setProgress(0);
-  }, [stopToken]);
+  }, [stopToken, stopLive]);
 
   const togglePlay = () => {
-    const el = audioRef.current;
-    if (!el) return;
     if (playing) {
-      el.pause();
+      audioRef.current?.pause();
+      stopLive();
       cancelAnimationFrame(animRef.current);
       setPlaying(false);
       setProgress(0);
-    } else {
-      onPlayStart?.();
-      el.currentTime = startSec;
-      el.play().then(() => {
-        setPlaying(true);
-        setCouponAnimKey(k => k + 1);
-        const startTime = performance.now();
-        const totalMs   = durationSec * 1000;
-        const tick = () => {
-          const elapsed = performance.now() - startTime;
-          const pct = Math.min(elapsed / totalMs, 1);
-          setProgress(pct);
-          if (pct < 1 && !el.paused) {
-            animRef.current = requestAnimationFrame(tick);
-          } else {
-            el.pause();
-            setPlaying(false);
-            setProgress(0);
-          }
-        };
-        animRef.current = requestAnimationFrame(tick);
-      }).catch((err) => {
-        console.error('[LivePreviewFrame] play() 실패:', err);
-      });
+      return;
     }
+
+    onPlayStart?.();
+    setCouponAnimKey(k => k + 1);
+
+    // circle 스타일 + audioBuf 있으면 → AudioBufferSource (실시간 분석)
+    if (waveformStyle === 'circle' && audioBuf) {
+      try { liveSrcRef.current?.stop(); } catch {}
+      liveSrcRef.current?.disconnect();
+
+      const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      let actx = liveCtxRef.current;
+      if (!actx || actx.state === 'closed') {
+        actx = new AC();
+        const analyser = actx.createAnalyser();
+        analyser.fftSize = 128;
+        analyser.smoothingTimeConstant = 0.82;
+        liveFreqRef.current = new Uint8Array(analyser.frequencyBinCount) as Uint8Array<ArrayBuffer>;
+        analyser.connect(actx.destination);
+        liveCtxRef.current  = actx;
+        liveAnalyserRef.current = analyser;
+      }
+      actx.resume();
+
+      const src = actx.createBufferSource();
+      src.buffer = audioBuf;
+      src.connect(liveAnalyserRef.current!);
+      src.start(0, startSec, durationSec);
+      liveSrcRef.current    = src;
+      liveStartCtxT.current = actx.currentTime;
+
+      setPlaying(true);
+      startCircleTick(liveStartCtxT.current, durationSec);
+
+      src.onended = () => {
+        cancelAnimationFrame(animRef.current);
+        setPlaying(false);
+        setProgress(0);
+        drawWaveCanvas(null);
+      };
+      return;
+    }
+
+    // 기타 스타일 → <audio> 엘리먼트 재생
+    const el = audioRef.current;
+    if (!el) return;
+    el.currentTime = startSec;
+    el.play().then(() => {
+      setPlaying(true);
+      const startTime = performance.now();
+      const totalMs   = durationSec * 1000;
+      const tick = () => {
+        const elapsed = performance.now() - startTime;
+        const pct = Math.min(elapsed / totalMs, 1);
+        setProgress(pct);
+        if (pct < 1 && !el.paused) {
+          animRef.current = requestAnimationFrame(tick);
+        } else {
+          el.pause();
+          setPlaying(false);
+          setProgress(0);
+        }
+      };
+      animRef.current = requestAnimationFrame(tick);
+    }).catch((err) => {
+      console.error('[LivePreviewFrame] play() 실패:', err);
+    });
   };
 
   return (
@@ -1100,6 +1221,7 @@ function ShortsPageInner() {
   const wasPlayingRef = useRef(false);
   const [previewExpanded, setPreviewExpanded] = useState(false);
   const [autoPlayOnSelect, setAutoPlayOnSelect] = useState(false);
+  const [sharedAudioBuf,  setSharedAudioBuf]  = useState<AudioBuffer | null>(null);
   // 재생 중지 토큰: 각 플레이어는 상대방이 재생 시작할 때 올라가는 토큰만 감시
   const [waveStopToken, setWaveStopToken] = useState(0); // WaveformEditor가 감시 (LivePreview 재생 시 증가)
   const [liveStopToken, setLiveStopToken] = useState(0); // LivePreviewFrame이 감시 (Waveform 재생 시 증가)
@@ -1957,6 +2079,7 @@ function ShortsPageInner() {
                     windowSec={durationSec}
                     onStartChange={(s) => { setStartSec(s); setAnalyzed(false); }}
                     onPlayStart={() => { if (player.isPlaying) player.pause(); setLiveStopToken(t => t + 1); }}
+                    onAudioDecoded={(buf) => setSharedAudioBuf(buf)}
                     autoPlayOnSelect={autoPlayOnSelect}
                     stopToken={waveStopToken}
                   />
@@ -2271,6 +2394,7 @@ function ShortsPageInner() {
               {/* 라이브 미리보기 */}
               <LivePreviewFrame
                 audioUrl={selected.audio_url}
+                audioBuf={sharedAudioBuf}
                 coverUrl={coverPreviewUrl ?? selected.cover_image_url}
                 coverEmoji={selected.cover_emoji}
                 bgVideoUrl={bgVideoPreviewUrl}
@@ -2490,6 +2614,7 @@ function ShortsPageInner() {
             <div className="w-full h-full">
               <LivePreviewFrame
                 audioUrl={selected.audio_url}
+                audioBuf={sharedAudioBuf}
                 coverUrl={coverPreviewUrl ?? selected.cover_image_url}
                 coverEmoji={selected.cover_emoji}
                 bgVideoUrl={bgVideoPreviewUrl}
