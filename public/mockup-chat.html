@@ -3,670 +3,712 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>언니픽 채팅 — 카카오 감성 시안</title>
+<title>언니픽 채팅 — 시안 v3</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;900&display=swap');
-
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-:root {
-  --kakao-yellow: #FEE500;
-  --kakao-brown: #3C1E1E;
-  --brand: #FF6F0F;
-  --bg: #1A1B22;
-  --bg2: #22232D;
-  --bg3: #2A2B38;
-  --surface: #2E3044;
-  --border: rgba(255,255,255,0.07);
-  --text1: #F0F0F5;
-  --text2: rgba(240,240,245,0.55);
-  --text3: rgba(240,240,245,0.28);
-  --radius-xl: 22px;
-  --radius-lg: 16px;
-  --radius-md: 12px;
-  --radius-sm: 8px;
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --y:#FEE500; --y2:#FEE50022; --y3:rgba(254,229,0,0.12);
+  --brand:#FF6F0F;
+  --bg:#1A1B22; --bg2:#22232D; --bg3:#2A2B38; --bg4:#32334A;
+  --border:rgba(255,255,255,0.07);
+  --t1:#F0F0F5; --t2:rgba(240,240,245,0.55); --t3:rgba(240,240,245,0.28);
+  --green:#4ADE80;
+}
+body{
+  background:#111218;
+  font-family:'Noto Sans KR',-apple-system,sans-serif;
+  display:flex; gap:28px; padding:36px 28px 60px;
+  justify-content:center; align-items:flex-start;
+  flex-wrap:wrap; min-height:100vh;
 }
 
-body {
-  background: #111218;
-  font-family: 'Noto Sans KR', -apple-system, sans-serif;
-  display: flex;
-  gap: 32px;
-  padding: 40px 32px 60px;
-  justify-content: center;
-  align-items: flex-start;
-  flex-wrap: wrap;
-  min-height: 100vh;
-}
+/* 페이지 헤더 */
+.pg-hd{width:100%;text-align:center;margin-bottom:6px}
+.pg-hd h1{font-size:24px;font-weight:900;
+  background:linear-gradient(135deg,#FEE500,#FF6F0F);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  letter-spacing:-.5px}
+.pg-hd p{font-size:12px;color:var(--t3);margin-top:3px}
 
-/* ── 페이지 헤더 ── */
-.page-header {
-  width: 100%;
-  text-align: center;
-  margin-bottom: 8px;
-}
-.page-header h1 {
-  font-size: 26px; font-weight: 900;
-  background: linear-gradient(135deg, #FEE500 0%, #FF6F0F 100%);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  letter-spacing: -0.5px;
-}
-.page-header p { font-size: 13px; color: var(--text3); margin-top: 4px; }
+/* 컬럼 */
+.col{display:flex;flex-direction:column;align-items:center;gap:9px}
+.col-lbl{font-size:10px;font-weight:800;letter-spacing:1.2px;color:var(--t3);text-transform:uppercase}
 
-/* ── 폰 프레임 ── */
-.col { display: flex; flex-direction: column; align-items: center; gap: 10px; }
-.col-label {
-  font-size: 11px; font-weight: 700; letter-spacing: 1px;
-  color: var(--text3); text-transform: uppercase;
+/* 폰 프레임 */
+.phone{
+  width:375px; height:812px; background:var(--bg);
+  border-radius:42px; overflow:hidden;
+  box-shadow:0 0 0 1px rgba(255,255,255,0.08),0 36px 90px rgba(0,0,0,0.7),
+             inset 0 1px 0 rgba(255,255,255,0.06);
+  display:flex; flex-direction:column; position:relative;
 }
-
-.phone {
-  width: 375px;
-  height: 812px;
-  background: var(--bg);
-  border-radius: 42px;
-  overflow: hidden;
-  box-shadow:
-    0 0 0 1px rgba(255,255,255,0.08),
-    0 40px 100px rgba(0,0,0,0.7),
-    inset 0 1px 0 rgba(255,255,255,0.06);
-  display: flex;
-  flex-direction: column;
-  position: relative;
-}
+.scroll-area{flex:1;overflow-y:auto}
+.scroll-area::-webkit-scrollbar{display:none}
 
 /* 상태바 */
-.statusbar {
-  padding: 14px 24px 6px;
-  display: flex; justify-content: space-between; align-items: center;
-  font-size: 12px; font-weight: 700; color: var(--text1);
-  flex-shrink: 0;
-  background: var(--bg);
-}
-.sb-right { display: flex; gap: 5px; align-items: center; font-size: 11px; }
+.sb{padding:14px 24px 6px;display:flex;justify-content:space-between;align-items:center;
+  font-size:12px;font-weight:700;color:var(--t1);flex-shrink:0;background:var(--bg)}
+.sb-r{display:flex;gap:5px;align-items:center;font-size:11px}
 
-/* ══════════════════════════════
-   화면 1 — 채팅 목록
-══════════════════════════════ */
+/* ═══════════════════════════════
+   화면 1 — 위치 기반 채팅 목록
+═══════════════════════════════ */
 
-.list-header {
-  padding: 10px 20px 0;
-  display: flex; justify-content: space-between; align-items: flex-start;
-  flex-shrink: 0;
+/* 위치 헤더 바 */
+.loc-bar{
+  padding:10px 16px 8px;
+  display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid var(--border);flex-shrink:0;
 }
-.list-title {
-  font-size: 22px; font-weight: 900; color: var(--text1); letter-spacing: -0.5px;
+.loc-left{display:flex;align-items:center;gap:6px}
+.loc-pin{font-size:15px}
+.loc-dong{font-size:17px;font-weight:900;color:var(--t1);letter-spacing:-.3px}
+.loc-arrow{font-size:11px;color:var(--t3);margin-top:1px}
+.loc-right{display:flex;gap:6px;align-items:center}
+.loc-dist-btn{
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:20px;padding:5px 11px;
+  font-size:11px;font-weight:700;color:var(--t2);
+  cursor:pointer;display:flex;align-items:center;gap:4px;
 }
-.header-btns { display: flex; gap: 8px; margin-top: 4px; }
-.hbtn {
-  width: 34px; height: 34px; border-radius: 50%;
-  background: var(--bg3); border: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 14px; cursor: pointer;
-}
-
-/* 배너 */
-.banner {
-  margin: 12px 16px 0;
-  background: linear-gradient(135deg, #FEE50022 0%, #FF6F0F18 100%);
-  border: 1px solid rgba(254,229,0,0.18);
-  border-radius: var(--radius-lg);
-  padding: 12px 14px;
-  display: flex; align-items: center; gap: 10px;
-  flex-shrink: 0;
-}
-.banner-icon { font-size: 22px; }
-.banner-text { flex: 1; }
-.banner-title { font-size: 13px; font-weight: 700; color: #FEE500; }
-.banner-sub { font-size: 11px; color: var(--text3); margin-top: 1px; }
-.banner-btn {
-  font-size: 11px; font-weight: 700;
-  background: #FEE500; color: #1A1200;
-  padding: 5px 12px; border-radius: 20px; white-space: nowrap;
+.loc-dist-btn span{color:var(--y);font-weight:800}
+.loc-search{
+  width:32px;height:32px;border-radius:50%;
+  background:var(--bg3);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;cursor:pointer;
 }
 
-/* 탭바 */
-.tabs {
-  display: flex; gap: 0; padding: 12px 16px 0;
-  overflow-x: auto; flex-shrink: 0;
+/* 거리 설정 드롭다운 (거리 슬라이더 패널) */
+.dist-panel{
+  padding:14px 16px 10px;
+  background:var(--bg2);
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
 }
-.tabs::-webkit-scrollbar { display: none; }
-.tab {
-  padding: 7px 14px; border-radius: 20px;
-  font-size: 12px; font-weight: 700;
-  color: var(--text3); white-space: nowrap; cursor: pointer;
-  transition: all 0.2s;
+.dist-panel-title{font-size:12px;font-weight:700;color:var(--t2);margin-bottom:10px}
+.dist-chips{display:flex;gap:6px;flex-wrap:wrap}
+.dc{
+  padding:6px 14px;border-radius:20px;
+  font-size:12px;font-weight:700;
+  border:1.5px solid var(--border);color:var(--t3);
+  cursor:pointer;transition:all .15s;
 }
-.tab.on { background: #FEE500; color: #1A1200; }
+.dc.on{background:var(--y);color:#1A1200;border-color:var(--y)}
+.dist-panel-sub{font-size:11px;color:var(--t3);margin-top:8px}
+.dist-panel-sub strong{color:var(--y)}
+
+/* 카테고리 탭 */
+.cat-wrap{padding:10px 14px 8px;flex-shrink:0;overflow-x:auto}
+.cat-wrap::-webkit-scrollbar{display:none}
+.cats{display:flex;gap:7px;width:max-content}
+.cat{
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  cursor:pointer;padding:6px 10px;border-radius:14px;
+  transition:background .15s;
+}
+.cat.on{background:var(--y3)}
+.cat-icon{
+  width:40px;height:40px;border-radius:14px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;border:1.5px solid var(--border);
+  background:var(--bg2);transition:all .15s;
+}
+.cat.on .cat-icon{background:var(--y);border-color:var(--y)}
+.cat-name{font-size:10px;font-weight:700;color:var(--t3)}
+.cat.on .cat-name{color:var(--y)}
+
+/* 지도 미니맵 */
+.mini-map{
+  margin:0 14px 10px;
+  height:110px;border-radius:16px;overflow:hidden;
+  background:var(--bg2);border:1px solid var(--border);
+  position:relative;flex-shrink:0;
+}
+.map-bg{
+  width:100%;height:100%;
+  background:linear-gradient(135deg,#1e2038 0%,#252840 50%,#1a1e30 100%);
+  display:flex;align-items:center;justify-content:center;
+  position:relative;
+}
+/* 지도 격자 */
+.map-grid{
+  position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px);
+  background-size:24px 24px;
+}
+/* 도로 */
+.road-h{position:absolute;left:0;right:0;height:3px;background:rgba(255,255,255,0.06)}
+.road-v{position:absolute;top:0;bottom:0;width:3px;background:rgba(255,255,255,0.06)}
+/* 내 위치 */
+.my-pin{
+  position:absolute;z-index:10;
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+}
+.my-dot{
+  width:14px;height:14px;border-radius:50%;
+  background:var(--y);box-shadow:0 0 0 4px rgba(254,229,0,0.25),0 0 0 8px rgba(254,229,0,0.08);
+  border:2px solid #fff;
+}
+.my-label{
+  font-size:9px;font-weight:800;color:var(--t1);
+  background:rgba(0,0,0,0.7);padding:2px 6px;border-radius:6px;
+  white-space:nowrap;backdrop-filter:blur(4px);
+}
+/* 반경 원 */
+.radius-circle{
+  position:absolute;border-radius:50%;
+  border:1.5px dashed rgba(254,229,0,0.35);
+  background:rgba(254,229,0,0.04);
+  transform:translate(-50%,-50%);
+}
+/* 가게 핀 */
+.store-pin{
+  position:absolute;z-index:5;
+  display:flex;flex-direction:column;align-items:center;gap:1px;
+  cursor:pointer;transform:translate(-50%,-100%);
+}
+.sp-bubble{
+  background:var(--bg2);border:1.5px solid var(--border);
+  border-radius:8px;padding:3px 7px;
+  font-size:9px;font-weight:700;color:var(--t1);
+  white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.4);
+}
+.sp-bubble.hot{background:var(--brand);border-color:var(--brand);color:#fff}
+.sp-arrow{
+  width:0;height:0;
+  border-left:4px solid transparent;border-right:4px solid transparent;
+  border-top:5px solid var(--bg2);
+}
+.sp-arrow.hot{border-top-color:var(--brand)}
+.map-label{
+  position:absolute;bottom:8px;right:10px;
+  font-size:10px;color:var(--t3);
+  background:rgba(0,0,0,0.5);padding:2px 7px;border-radius:6px;
+  backdrop-filter:blur(4px);
+}
+/* 지도 확장 버튼 */
+.map-expand{
+  position:absolute;top:8px;right:8px;
+  background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.12);
+  border-radius:8px;padding:4px 8px;
+  font-size:10px;font-weight:700;color:var(--t2);
+  cursor:pointer;backdrop-filter:blur(4px);
+}
+
+/* 정렬 헤더 */
+.sort-bar{
+  padding:2px 16px 6px;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;
+}
+.sort-count{font-size:12px;color:var(--t3)}
+.sort-count strong{color:var(--t2);font-weight:700}
+.sort-opts{display:flex;gap:2px}
+.sort-opt{
+  padding:4px 9px;border-radius:20px;
+  font-size:11px;font-weight:700;color:var(--t3);cursor:pointer;
+}
+.sort-opt.on{color:var(--y);background:var(--y3)}
 
 /* 채팅 아이템 */
-.chat-scroll { flex: 1; overflow-y: auto; padding: 8px 0 0; }
-.chat-scroll::-webkit-scrollbar { display: none; }
-
-.ci {
-  display: flex; align-items: center; gap: 12px;
-  padding: 10px 16px; cursor: pointer;
-  border-radius: 0; transition: background 0.15s;
-  position: relative;
+.ci{
+  display:flex;align-items:center;gap:12px;
+  padding:11px 16px;cursor:pointer;
+  transition:background .15s;
 }
-.ci:active { background: rgba(255,255,255,0.03); }
-
-.ci-avatar {
-  width: 54px; height: 54px; border-radius: 18px;
-  flex-shrink: 0; position: relative;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 24px; overflow: hidden;
+.ci:active{background:rgba(255,255,255,0.03)}
+.ci-av{
+  width:54px;height:54px;border-radius:16px;
+  flex-shrink:0;position:relative;
+  display:flex;align-items:center;justify-content:center;
+  font-size:24px;overflow:hidden;
+  border:1.5px solid var(--border);
 }
-.ci-avatar img { width: 100%; height: 100%; object-fit: cover; }
-.ci-dot {
-  position: absolute; bottom: 1px; right: 1px;
-  width: 11px; height: 11px; border-radius: 50%;
-  background: #4ADE80; border: 2px solid var(--bg);
+.ci-av img{width:100%;height:100%;object-fit:cover}
+.ci-online{
+  position:absolute;bottom:2px;right:2px;
+  width:11px;height:11px;border-radius:50%;
+  background:var(--green);border:2px solid var(--bg);
 }
-
-.ci-body { flex: 1; min-width: 0; }
-.ci-row1 { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px; }
-.ci-name { font-size: 14px; font-weight: 700; color: var(--text1); }
-.ci-time { font-size: 10px; color: var(--text3); }
-.ci-row2 { display: flex; justify-content: space-between; align-items: center; }
-.ci-preview { font-size: 12px; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 210px; }
-.badge-new {
-  background: var(--brand); color: #fff;
-  font-size: 10px; font-weight: 800;
-  min-width: 18px; height: 18px; border-radius: 9px;
-  display: flex; align-items: center; justify-content: center;
-  padding: 0 5px; flex-shrink: 0;
+.ci-body{flex:1;min-width:0}
+.ci-r1{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}
+.ci-name{font-size:14px;font-weight:700;color:var(--t1)}
+.ci-dist{
+  display:flex;align-items:center;gap:3px;
+  font-size:11px;font-weight:700;color:var(--t3);
 }
-.badge-coupon {
-  font-size: 10px; font-weight: 700; color: #FEE500;
-  background: rgba(254,229,0,0.12); border: 1px solid rgba(254,229,0,0.25);
-  padding: 2px 7px; border-radius: 20px; flex-shrink: 0;
+.ci-dist .d-near{color:var(--green)}
+.ci-dist .d-mid{color:var(--y)}
+.ci-r2{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}
+.ci-preview{font-size:12px;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px}
+.ci-r3{display:flex;align-items:center;gap:5px}
+.ci-tag{
+  font-size:10px;color:var(--t3);
+  background:var(--bg3);padding:2px 7px;border-radius:10px;
 }
-
-.ci-divider { height: 1px; background: var(--border); margin: 0 16px; }
+.ci-members{font-size:10px;color:var(--t3)}
+.badge-new{
+  background:var(--brand);color:#fff;
+  font-size:10px;font-weight:800;
+  min-width:18px;height:18px;border-radius:9px;
+  display:flex;align-items:center;justify-content:center;
+  padding:0 5px;flex-shrink:0;
+}
+.badge-y{
+  font-size:10px;font-weight:700;color:#1A1200;
+  background:var(--y);padding:2px 8px;border-radius:10px;flex-shrink:0;
+}
+.ci-time{font-size:10px;color:var(--t3)}
+.ci-div{height:1px;background:var(--border);margin:0 16px}
 
 /* 하단 탭바 */
-.bottom-tab {
-  background: var(--bg);
-  border-top: 1px solid var(--border);
-  padding: 10px 0 22px;
-  display: flex; justify-content: space-around;
-  flex-shrink: 0;
+.btm{
+  background:var(--bg);border-top:1px solid var(--border);
+  padding:10px 0 22px;
+  display:flex;justify-content:space-around;flex-shrink:0;
 }
-.bt-item { display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; }
-.bt-icon { font-size: 22px; }
-.bt-label { font-size: 9px; font-weight: 700; color: var(--text3); }
-.bt-item.on .bt-label { color: #FEE500; }
-.bt-item.on .bt-icon-wrap { position: relative; }
+.bt{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer}
+.bt span:first-child{font-size:22px}
+.bt-l{font-size:9px;font-weight:700;color:var(--t3)}
+.bt.on .bt-l{color:var(--y)}
 
-/* ══════════════════════════════
-   화면 2 — 채팅방 내부
-══════════════════════════════ */
+/* ═══════════════════════════════
+   화면 2 — 공지 피드 (기존 유지)
+═══════════════════════════════ */
+.room-hd{
+  padding:10px 14px;display:flex;align-items:center;gap:10px;
+  border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.back{font-size:20px;color:var(--t2);cursor:pointer;padding:4px;margin-right:-2px}
+.room-av{
+  width:38px;height:38px;border-radius:13px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;flex-shrink:0;overflow:hidden;
+  border:1.5px solid var(--border);
+}
+.room-meta{flex:1}
+.room-name{font-size:15px;font-weight:800;color:var(--t1);display:flex;align-items:center;gap:5px}
+.room-sub{font-size:11px;color:var(--t3);margin-top:1px}
+.room-btns{display:flex;gap:5px}
+.rb{font-size:18px;color:var(--t3);cursor:pointer;padding:4px}
 
-.room-hd {
-  padding: 10px 14px 10px;
-  display: flex; align-items: center; gap: 10px;
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0; background: var(--bg);
-}
-.back { font-size: 20px; color: var(--text2); cursor: pointer; padding: 4px; margin-right: -2px; }
-.room-av {
-  width: 38px; height: 38px; border-radius: 13px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 20px; flex-shrink: 0; overflow: hidden;
-}
-.room-av img { width: 100%; height: 100%; object-fit: cover; }
-.room-info-wrap { flex: 1; }
-.room-name {
-  font-size: 15px; font-weight: 800; color: var(--text1);
-  display: flex; align-items: center; gap: 6px;
-}
-.room-sub { font-size: 11px; color: var(--text3); margin-top: 1px; }
-.room-hd-btns { display: flex; gap: 6px; }
-.rh-btn { font-size: 18px; color: var(--text3); cursor: pointer; padding: 4px; }
-
-/* 공지 고정 */
-.pinned {
-  margin: 0;
-  background: rgba(254,229,0,0.06);
-  border-bottom: 1px solid rgba(254,229,0,0.12);
-  padding: 8px 14px;
-  display: flex; align-items: center; gap: 8px;
-  flex-shrink: 0;
-}
-.pinned-text { font-size: 12px; color: var(--text2); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.pinned-label {
-  font-size: 10px; font-weight: 800; color: #FEE500;
-  background: rgba(254,229,0,0.12); padding: 2px 8px; border-radius: 20px;
+/* 거리 배지 */
+.dist-badge{
+  font-size:10px;font-weight:700;color:var(--green);
+  background:rgba(74,222,128,0.1);border:1px solid rgba(74,222,128,0.2);
+  padding:2px 7px;border-radius:10px;
 }
 
-/* 피드 */
-.feed {
-  flex: 1; overflow-y: auto;
-  padding: 16px 14px 8px;
-  display: flex; flex-direction: column; gap: 14px;
+.pinned{
+  background:rgba(254,229,0,0.05);border-bottom:1px solid rgba(254,229,0,0.1);
+  padding:8px 14px;display:flex;align-items:center;gap:8px;flex-shrink:0;
 }
-.feed::-webkit-scrollbar { display: none; }
+.pinned-txt{font-size:12px;color:var(--t2);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pinned-lbl{font-size:10px;font-weight:800;color:var(--y);background:var(--y3);padding:2px 8px;border-radius:20px}
 
-.date-sep {
-  display: flex; align-items: center; gap: 8px;
-  font-size: 11px; color: var(--text3);
-}
-.date-sep::before, .date-sep::after {
-  content: ''; flex: 1; height: 1px; background: var(--border);
-}
+.feed{flex:1;overflow-y:auto;padding:14px 14px 8px;display:flex;flex-direction:column;gap:13px}
+.feed::-webkit-scrollbar{display:none}
 
-.sys-msg {
-  text-align: center; font-size: 11px; color: var(--text3);
-}
+.dt-sep{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--t3)}
+.dt-sep::before,.dt-sep::after{content:'';flex:1;height:1px;background:var(--border)}
+.sys-msg{text-align:center;font-size:11px;color:var(--t3)}
 
-/* 포스트 카드 */
-.post {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
-  overflow: hidden;
-}
+.post{background:var(--bg2);border:1px solid var(--border);border-radius:20px;overflow:hidden}
+.post-hd{padding:12px 14px 8px;display:flex;align-items:center;gap:10px}
+.post-av{width:36px;height:36px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:17px;overflow:hidden;flex-shrink:0;border:1px solid var(--border)}
+.post-info{flex:1}
+.post-sender{font-size:13px;font-weight:700;color:var(--t1);display:flex;align-items:center;gap:5px}
+.owner-pill{font-size:9px;font-weight:800;background:var(--y);color:#1A1200;padding:1.5px 6px;border-radius:5px}
+.post-ts{font-size:10px;color:var(--t3);margin-top:1px}
+.post-body{padding:0 14px 0}
+.post-txt{font-size:14px;line-height:1.65;color:var(--t1)}
+.post-txt strong{color:var(--y)}
+.post-img{margin:10px 0 0;border-radius:12px;width:100%;height:150px;background:var(--bg3);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;font-size:42px}
+.post-img-g{position:absolute;inset:0;background:linear-gradient(180deg,transparent 45%,rgba(0,0,0,0.6) 100%);display:flex;align-items:flex-end;padding:10px 12px}
+.img-tag{font-size:10px;color:rgba(255,255,255,0.85);font-weight:700;background:rgba(0,0,0,0.45);padding:3px 9px;border-radius:20px;backdrop-filter:blur(6px)}
 
-.post-hd {
-  padding: 12px 14px 8px;
-  display: flex; align-items: center; gap: 10px;
-}
-.post-av {
-  width: 36px; height: 36px; border-radius: 12px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 17px; overflow: hidden; flex-shrink: 0;
-}
-.post-av img { width: 100%; height: 100%; object-fit: cover; }
-.post-av-info { flex: 1; }
-.post-sender {
-  font-size: 13px; font-weight: 700; color: var(--text1);
-  display: flex; align-items: center; gap: 5px;
-}
-.owner-pill {
-  font-size: 9px; font-weight: 800;
-  background: #FEE500; color: #1A1200;
-  padding: 1.5px 6px; border-radius: 5px;
-}
-.post-ts { font-size: 10px; color: var(--text3); margin-top: 1px; }
-.post-menu { font-size: 16px; color: var(--text3); cursor: pointer; }
+.coupon{margin:12px 0 0;border-radius:14px;overflow:hidden;border:1px solid rgba(254,229,0,0.22);background:linear-gradient(135deg,rgba(254,229,0,0.08) 0%,rgba(255,111,15,0.06) 100%)}
+.cp-top{padding:13px 15px 6px;display:flex;align-items:center;gap:12px}
+.cp-em{font-size:28px}
+.cp-info{flex:1}
+.cp-val{font-size:22px;font-weight:900;color:var(--y);line-height:1.1;letter-spacing:-.5px}
+.cp-desc{font-size:11px;color:var(--t2);margin-top:2px}
+.cp-timer{display:flex;flex-direction:column;align-items:flex-end;gap:1px}
+.cp-tl{font-size:10px;color:var(--t3)}
+.cp-tv{font-size:14px;font-weight:800;color:var(--y);font-variant-numeric:tabular-nums}
+.cp-prog{padding:3px 15px 5px}
+.cp-bar{height:3px;background:rgba(255,255,255,0.07);border-radius:2px;overflow:hidden}
+.cp-fill{height:100%;background:linear-gradient(90deg,var(--y),var(--brand));border-radius:2px}
+.cp-stock{font-size:10px;color:var(--t3);margin-top:3px;display:flex;justify-content:space-between}
+.cp-stock strong{color:var(--y)}
+.cp-notch{height:1px;margin:0 14px;background:rgba(254,229,0,0.12);position:relative}
+.cp-notch::before,.cp-notch::after{content:'';position:absolute;top:50%;transform:translateY(-50%);width:15px;height:15px;border-radius:50%;background:var(--bg)}
+.cp-notch::before{left:-21px}.cp-notch::after{right:-21px}
+.cp-btm{padding:9px 15px 13px;display:flex;align-items:center;justify-content:space-between}
+.cp-cond{font-size:11px;color:var(--t3)}
+.cp-btn{background:var(--y);color:#1A1200;font-size:13px;font-weight:800;padding:8px 18px;border-radius:11px;border:none;cursor:pointer;box-shadow:0 4px 12px rgba(254,229,0,0.25);font-family:inherit;transition:all .15s}
+.cp-btn:active{transform:scale(.95)}
+.cp-btn.done{background:var(--bg3);color:var(--t3);box-shadow:none}
 
-.post-body { padding: 0 14px 0; }
-.post-txt {
-  font-size: 14px; line-height: 1.65; color: var(--text1);
-}
-.post-txt strong { color: #FEE500; }
+.goal-bar{margin:10px 0 0;background:var(--bg3);border-radius:12px;padding:10px 13px;display:flex;align-items:center;gap:10px}
+.goal-prog{flex:1}
+.goal-lbl{font-size:11px;color:var(--t2);margin-bottom:5px}
+.goal-lbl strong{color:var(--y)}
+.goal-track{height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden}
+.goal-fill{height:100%;background:linear-gradient(90deg,var(--y),var(--brand));border-radius:2px;transition:width .6s}
+.goal-pct{font-size:13px;font-weight:800;color:var(--y)}
 
-.post-img {
-  margin: 10px 0 0;
-  border-radius: var(--radius-md);
-  width: 100%; height: 155px;
-  background: var(--bg3);
-  display: flex; align-items: center; justify-content: center;
-  position: relative; overflow: hidden; font-size: 44px;
-}
-.post-img-grad {
-  position: absolute; inset: 0;
-  background: linear-gradient(180deg, transparent 45%, rgba(0,0,0,0.6) 100%);
-  display: flex; align-items: flex-end; padding: 10px 12px;
-}
-.post-img-tag {
-  font-size: 10px; color: rgba(255,255,255,0.85); font-weight: 700;
-  background: rgba(0,0,0,0.45); padding: 3px 9px; border-radius: 20px;
-  backdrop-filter: blur(6px);
-}
+.pact{padding:8px 14px 12px;display:flex;align-items:center;gap:2px;border-top:1px solid var(--border);margin-top:12px}
+.ab{display:flex;align-items:center;gap:5px;background:none;border:none;cursor:pointer;font-size:12px;color:var(--t3);padding:5px 9px;border-radius:20px;font-family:inherit;font-weight:600;transition:all .15s}
+.ab.liked{color:var(--brand);background:rgba(255,111,15,0.1)}
+.ab .ic{font-size:15px;display:inline-block;transition:transform .2s}
+.ab.liked .ic{transform:scale(1.25)}
+.pv{margin-left:auto;font-size:10px;color:var(--t3);display:flex;align-items:center;gap:3px}
 
-/* 쿠폰 */
-.coupon {
-  margin: 12px 0 0;
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  border: 1px solid rgba(254,229,0,0.22);
-  background: linear-gradient(135deg, rgba(254,229,0,0.08) 0%, rgba(255,111,15,0.06) 100%);
-}
-.cp-top {
-  padding: 14px 16px 8px;
-  display: flex; align-items: center; gap: 12px;
-}
-.cp-emoji { font-size: 30px; }
-.cp-info { flex: 1; }
-.cp-val { font-size: 24px; font-weight: 900; color: #FEE500; line-height: 1.1; letter-spacing: -0.5px; }
-.cp-desc { font-size: 11px; color: var(--text2); margin-top: 2px; }
-.cp-timer { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
-.cp-timer-label { font-size: 10px; color: var(--text3); }
-.cp-timer-val { font-size: 15px; font-weight: 800; color: #FEE500; font-variant-numeric: tabular-nums; }
+.sys-cp{background:rgba(254,229,0,0.07);border:1px solid rgba(254,229,0,0.14);border-radius:11px;padding:8px 12px;font-size:12px;color:rgba(254,229,0,0.65);text-align:center}
 
-.cp-progress { padding: 4px 16px 6px; }
-.cp-bar { height: 3px; background: rgba(255,255,255,0.07); border-radius: 2px; overflow: hidden; }
-.cp-fill { height: 100%; background: linear-gradient(90deg, #FEE500, #FF6F0F); border-radius: 2px; }
-.cp-stock { font-size: 10px; color: var(--text3); margin-top: 4px; display: flex; justify-content: space-between; }
-.cp-stock strong { color: #FEE500; }
-
-.cp-notch {
-  height: 1px; margin: 0 14px;
-  background: rgba(254,229,0,0.12);
-  position: relative;
-}
-.cp-notch::before, .cp-notch::after {
-  content: ''; position: absolute; top: 50%; transform: translateY(-50%);
-  width: 16px; height: 16px; border-radius: 50%; background: var(--bg);
-}
-.cp-notch::before { left: -22px; }
-.cp-notch::after { right: -22px; }
-
-.cp-bottom {
-  padding: 10px 16px 14px;
-  display: flex; align-items: center; justify-content: space-between;
-}
-.cp-cond { font-size: 11px; color: var(--text3); }
-.cp-btn {
-  background: #FEE500; color: #1A1200;
-  font-size: 13px; font-weight: 800;
-  padding: 9px 20px; border-radius: 12px;
-  border: none; cursor: pointer;
-  box-shadow: 0 4px 14px rgba(254,229,0,0.3);
-  transition: all 0.15s;
-}
-.cp-btn:active { transform: scale(0.95); }
-.cp-btn.done { background: var(--bg3); color: var(--text3); box-shadow: none; }
-
-/* 액션 바 */
-.post-actions {
-  padding: 9px 14px 12px;
-  display: flex; align-items: center; gap: 2px;
-  border-top: 1px solid var(--border);
-  margin-top: 12px;
-}
-.act-btn {
-  display: flex; align-items: center; gap: 5px;
-  background: none; border: none; cursor: pointer;
-  font-size: 12px; color: var(--text3);
-  padding: 5px 10px; border-radius: 20px;
-  font-family: inherit; font-weight: 600;
-  transition: all 0.15s;
-}
-.act-btn.liked { color: #FF6F0F; background: rgba(255,111,15,0.1); }
-.act-btn .icon { font-size: 15px; display: inline-block; transition: transform 0.2s; }
-.act-btn.liked .icon { transform: scale(1.25); }
-.act-views { margin-left: auto; font-size: 10px; color: var(--text3); display: flex; align-items: center; gap: 3px; }
-
-/* 좋아요 목표 */
-.goal-bar {
-  margin: 10px 0 0;
-  background: var(--bg3);
-  border-radius: var(--radius-md);
-  padding: 10px 14px;
-  display: flex; align-items: center; gap: 10px;
-}
-.goal-progress { flex: 1; }
-.goal-label { font-size: 11px; color: var(--text2); margin-bottom: 5px; }
-.goal-label strong { color: #FEE500; }
-.goal-track { height: 4px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; }
-.goal-fill { height: 100%; background: linear-gradient(90deg, #FEE500, #FF6F0F); border-radius: 2px; transition: width 0.6s; }
-.goal-pct { font-size: 13px; font-weight: 800; color: #FEE500; }
-
-/* 시스템: 쿠폰 발행 알림 */
-.sys-coupon {
-  background: rgba(254,229,0,0.07);
-  border: 1px solid rgba(254,229,0,0.15);
-  border-radius: var(--radius-md);
-  padding: 8px 12px;
-  font-size: 12px; color: rgba(254,229,0,0.7);
-  text-align: center;
-}
-
-/* 읽기 전용 바 */
-.readonly-bar {
-  padding: 10px 14px 26px;
-  border-top: 1px solid var(--border);
-  display: flex; align-items: center; gap: 10px;
-  background: var(--bg); flex-shrink: 0;
-}
-.readonly-field {
-  flex: 1;
-  background: var(--bg3); border: 1px solid var(--border);
-  border-radius: 22px; padding: 10px 16px;
-  font-size: 13px; color: var(--text3);
-  display: flex; align-items: center; gap: 7px;
-}
-.members-pill {
-  background: var(--bg3); border: 1px solid var(--border);
-  border-radius: 20px; padding: 8px 11px;
-  font-size: 11px; color: var(--text3);
-  display: flex; align-items: center; gap: 4px; white-space: nowrap;
-}
-
-/* ── Typebot 팝업 레이어 ── */
-.typebot-overlay {
-  position: absolute; inset: 0;
-  background: rgba(0,0,0,0.7);
-  backdrop-filter: blur(8px);
-  display: flex; align-items: flex-end;
-  z-index: 100;
-}
-.typebot-sheet {
-  background: var(--bg2);
-  border-radius: 28px 28px 0 0;
-  width: 100%;
-  padding: 20px 20px 40px;
-  border-top: 1px solid var(--border);
-}
-.sheet-handle {
-  width: 36px; height: 4px; background: rgba(255,255,255,0.15);
-  border-radius: 2px; margin: 0 auto 18px;
-}
-.sheet-title {
-  font-size: 17px; font-weight: 900; color: var(--text1); margin-bottom: 4px;
-  text-align: center;
-}
-.sheet-sub { font-size: 12px; color: var(--text3); text-align: center; margin-bottom: 20px; }
-
-/* 타입봇 버블 */
-.bot-row { display: flex; gap: 8px; align-items: flex-end; margin-bottom: 10px; }
-.bot-av { width: 28px; height: 28px; border-radius: 10px; background: #FEE500; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
-.bot-bubble { background: var(--bg3); border-radius: 4px 14px 14px 14px; padding: 10px 13px; font-size: 13px; color: var(--text1); max-width: 240px; line-height: 1.5; }
-.user-row { display: flex; justify-content: flex-end; margin-bottom: 10px; }
-.user-bubble { background: #FEE500; color: #1A1200; border-radius: 14px 4px 14px 14px; padding: 10px 13px; font-size: 13px; font-weight: 600; max-width: 200px; }
-
-.quick-replies { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
-.qr-btn {
-  background: none; border: 1.5px solid rgba(254,229,0,0.4);
-  color: #FEE500; font-size: 12px; font-weight: 700;
-  padding: 7px 14px; border-radius: 20px; cursor: pointer;
-  font-family: inherit;
-}
-.qr-btn:hover { background: rgba(254,229,0,0.1); }
+.ro-bar{padding:10px 14px 26px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;background:var(--bg);flex-shrink:0}
+.ro-field{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:22px;padding:10px 15px;font-size:13px;color:var(--t3);display:flex;align-items:center;gap:7px}
+.mb-pill{background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:8px 10px;font-size:11px;color:var(--t3);display:flex;align-items:center;gap:4px;white-space:nowrap}
 </style>
 </head>
 <body>
 
-<div class="page-header">
-  <h1>언니픽 채팅 · 디자인 시안 v2</h1>
-  <p>카카오톡 감성 · 20-30대 타깃 · Supabase Realtime + Typebot</p>
+<div class="pg-hd">
+  <h1>언니픽 채팅 · 시안 v3</h1>
+  <p>당근마켓 감성 · 위치 기반 · 카테고리 상권 구분</p>
 </div>
 
-<!-- ══ 화면 1: 채팅방 목록 ══ -->
+<!-- ══════ 화면 1: 위치 기반 채팅 목록 ══════ -->
 <div class="col">
-  <div class="col-label">① 채팅방 목록</div>
+  <div class="col-lbl">① 위치 기반 채팅 목록</div>
   <div class="phone">
-    <div class="statusbar">
-      <span>9:41</span>
-      <div class="sb-right">
-        <span>●●●●</span><span>WiFi</span><span>🔋87%</span>
+    <div class="sb"><span>9:41</span><div class="sb-r"><span>●●●●</span><span>WiFi</span><span>🔋87%</span></div></div>
+
+    <!-- 위치 헤더 -->
+    <div class="loc-bar">
+      <div class="loc-left">
+        <span class="loc-pin">📍</span>
+        <div>
+          <div style="display:flex;align-items:center;gap:5px">
+            <span class="loc-dong">역삼동</span>
+            <span class="loc-arrow">▾</span>
+          </div>
+          <div style="font-size:10px;color:var(--t3);margin-top:1px">서울특별시 강남구</div>
+        </div>
+      </div>
+      <div class="loc-right">
+        <div class="loc-dist-btn" onclick="toggleDistPanel()">
+          📏 <span id="dist-val">5km</span> 이내 ▾
+        </div>
+        <div class="loc-search">🔍</div>
       </div>
     </div>
 
-    <div class="list-header">
-      <div class="list-title">채팅 <span style="font-size:15px;color:var(--text3);font-weight:600">3</span></div>
-      <div class="header-btns">
-        <div class="hbtn">🔍</div>
-        <div class="hbtn" style="background:rgba(254,229,0,0.12);border-color:rgba(254,229,0,0.2);font-size:11px;font-weight:800;color:#FEE500;width:auto;padding:0 13px;border-radius:20px;gap:3px;display:flex;align-items:center">+ 가게 찾기</div>
+    <!-- 거리 설정 패널 -->
+    <div class="dist-panel" id="dist-panel">
+      <div class="dist-panel-title">📏 반경 거리 설정</div>
+      <div class="dist-chips">
+        <div class="dc" onclick="setDist(this,'1km')">1km</div>
+        <div class="dc" onclick="setDist(this,'2km')">2km</div>
+        <div class="dc on" onclick="setDist(this,'5km')">5km</div>
+        <div class="dc" onclick="setDist(this,'10km')">10km</div>
+        <div class="dc" onclick="setDist(this,'전체')">전체</div>
       </div>
-    </div>
-
-    <!-- 쿠폰 배너 -->
-    <div class="banner">
-      <div class="banner-icon">🎟</div>
-      <div class="banner-text">
-        <div class="banner-title">새 쿠폰 3개 도착했어요!</div>
-        <div class="banner-sub">라멘 홋카이도 · 카페 봄날 · 뷰티살롱H</div>
-      </div>
-      <div class="banner-btn">확인</div>
+      <div class="dist-panel-sub">현재 반경 <strong id="dist-sub">5km</strong> 이내 가게 <strong>12곳</strong> 표시 중</div>
     </div>
 
     <!-- 카테고리 탭 -->
-    <div class="tabs">
-      <div class="tab on">전체</div>
-      <div class="tab">맛집 🍜</div>
-      <div class="tab">카페 ☕</div>
-      <div class="tab">뷰티 💄</div>
-      <div class="tab">쇼핑 👗</div>
+    <div class="cat-wrap">
+      <div class="cats">
+        <div class="cat on" onclick="selCat(this)">
+          <div class="cat-icon">🗺</div>
+          <div class="cat-name">전체</div>
+        </div>
+        <div class="cat" onclick="selCat(this)">
+          <div class="cat-icon">🍜</div>
+          <div class="cat-name">음식점</div>
+        </div>
+        <div class="cat" onclick="selCat(this)">
+          <div class="cat-icon">☕</div>
+          <div class="cat-name">카페</div>
+        </div>
+        <div class="cat" onclick="selCat(this)">
+          <div class="cat-icon">💄</div>
+          <div class="cat-name">뷰티</div>
+        </div>
+        <div class="cat" onclick="selCat(this)">
+          <div class="cat-icon">👗</div>
+          <div class="cat-name">쇼핑</div>
+        </div>
+        <div class="cat" onclick="selCat(this)">
+          <div class="cat-icon">🏋️</div>
+          <div class="cat-name">운동</div>
+        </div>
+        <div class="cat" onclick="selCat(this)">
+          <div class="cat-icon">🎮</div>
+          <div class="cat-name">엔터</div>
+        </div>
+      </div>
     </div>
 
-    <!-- 리스트 -->
-    <div class="chat-scroll">
+    <!-- 미니 지도 -->
+    <div class="mini-map">
+      <div class="map-bg">
+        <div class="map-grid"></div>
+        <!-- 도로 -->
+        <div class="road-h" style="top:55px"></div>
+        <div class="road-h" style="top:75px"></div>
+        <div class="road-v" style="left:95px"></div>
+        <div class="road-v" style="left:220px"></div>
 
+        <!-- 반경 원 -->
+        <div class="radius-circle" style="width:130px;height:130px;left:50%;top:50%"></div>
+
+        <!-- 내 위치 -->
+        <div class="my-pin" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)">
+          <div class="my-dot"></div>
+          <div class="my-label">📍 역삼동 (나)</div>
+        </div>
+
+        <!-- 가게 핀들 -->
+        <div class="store-pin" style="left:38%;top:52%">
+          <div class="sp-bubble hot">🍜 라멘 홋카이도</div>
+          <div class="sp-arrow hot"></div>
+        </div>
+        <div class="store-pin" style="left:62%;top:38%">
+          <div class="sp-bubble">☕ 카페 봄날</div>
+          <div class="sp-arrow"></div>
+        </div>
+        <div class="store-pin" style="left:30%;top:32%">
+          <div class="sp-bubble">💄 뷰티살롱H</div>
+          <div class="sp-arrow"></div>
+        </div>
+        <div class="store-pin" style="left:68%;top:65%">
+          <div class="sp-bubble">🥩 한우명가</div>
+          <div class="sp-arrow"></div>
+        </div>
+
+        <div class="map-label">5km 반경</div>
+        <div class="map-expand">지도 크게 보기 ↗</div>
+      </div>
+    </div>
+
+    <!-- 정렬 옵션 -->
+    <div class="sort-bar">
+      <div class="sort-count">내 주변 <strong>12곳</strong></div>
+      <div class="sort-opts">
+        <div class="sort-opt on" onclick="selSort(this)">거리순</div>
+        <div class="sort-opt" onclick="selSort(this)">최신순</div>
+        <div class="sort-opt" onclick="selSort(this)">인기순</div>
+      </div>
+    </div>
+
+    <!-- 채팅 리스트 (거리순) -->
+    <div class="scroll-area">
+
+      <!-- 1. 280m -->
       <div class="ci">
-        <div class="ci-avatar" style="background:linear-gradient(135deg,#2a1f1f,#3a2525)">
-          🍜<div class="ci-dot"></div>
+        <div class="ci-av" style="background:linear-gradient(135deg,#2a1f1f,#3a2525)">
+          🍜<div class="ci-online"></div>
         </div>
         <div class="ci-body">
-          <div class="ci-row1">
+          <div class="ci-r1">
             <span class="ci-name">라멘 홋카이도</span>
-            <span class="ci-time">방금</span>
+            <div class="ci-dist"><span class="d-near">🟢 280m</span></div>
           </div>
-          <div class="ci-row2">
-            <span class="ci-preview">🎟 오늘만! 라멘 1,000원 할인 쿠폰 오픈</span>
+          <div class="ci-r2">
+            <span class="ci-preview">🎟 오늘만! 라멘 1,000원 할인 쿠폰</span>
             <span class="badge-new">3</span>
           </div>
+          <div class="ci-r3">
+            <span class="ci-tag">음식점</span>
+            <span class="ci-tag">역삼동</span>
+            <span class="ci-members">👥 1,284명</span>
+          </div>
         </div>
       </div>
-      <div class="ci-divider"></div>
+      <div class="ci-div"></div>
 
+      <!-- 2. 620m -->
       <div class="ci">
-        <div class="ci-avatar" style="background:linear-gradient(135deg,#1f1f2a,#25253a)">
-          ☕
-        </div>
+        <div class="ci-av" style="background:linear-gradient(135deg,#1a2025,#20303a)">☕</div>
         <div class="ci-body">
-          <div class="ci-row1">
+          <div class="ci-r1">
             <span class="ci-name">카페 봄날</span>
-            <span class="ci-time">3분 전</span>
+            <div class="ci-dist"><span class="d-near">🟢 620m</span></div>
           </div>
-          <div class="ci-row2">
-            <span class="ci-preview">아메리카노 무료 증정 이벤트 시작 ☀️</span>
-            <span class="badge-coupon">🎟 쿠폰</span>
+          <div class="ci-r2">
+            <span class="ci-preview">아메리카노 무료 증정 이벤트 ☀️</span>
+            <span class="badge-y">🎟 쿠폰</span>
+          </div>
+          <div class="ci-r3">
+            <span class="ci-tag">카페</span>
+            <span class="ci-tag">역삼동</span>
+            <span class="ci-members">👥 843명</span>
           </div>
         </div>
       </div>
-      <div class="ci-divider"></div>
+      <div class="ci-div"></div>
 
+      <!-- 3. 1.1km -->
       <div class="ci">
-        <div class="ci-avatar" style="background:linear-gradient(135deg,#1f2a1f,#25352a)">
-          💄
-        </div>
+        <div class="ci-av" style="background:linear-gradient(135deg,#1f2a1f,#25352a)">💄</div>
         <div class="ci-body">
-          <div class="ci-row1">
+          <div class="ci-r1">
             <span class="ci-name">뷰티살롱 H</span>
-            <span class="ci-time">20분 전</span>
+            <div class="ci-dist"><span class="d-mid">🟡 1.1km</span></div>
           </div>
-          <div class="ci-row2">
-            <span class="ci-preview">이번 주말 헤어컷 20% 할인 이벤트!</span>
+          <div class="ci-r2">
+            <span class="ci-preview">이번 주말 헤어컷 20% 할인!</span>
             <span class="badge-new">1</span>
           </div>
+          <div class="ci-r3">
+            <span class="ci-tag">뷰티</span>
+            <span class="ci-tag">논현동</span>
+            <span class="ci-members">👥 512명</span>
+          </div>
         </div>
       </div>
-      <div class="ci-divider"></div>
+      <div class="ci-div"></div>
 
-      <div class="ci" style="opacity:.45">
-        <div class="ci-avatar" style="background:linear-gradient(135deg,#2a1f1f,#352525)">🥩</div>
+      <!-- 4. 2.3km -->
+      <div class="ci">
+        <div class="ci-av" style="background:linear-gradient(135deg,#2a1f1f,#352525)">🥩</div>
         <div class="ci-body">
-          <div class="ci-row1"><span class="ci-name">한우명가</span><span class="ci-time">2시간 전</span></div>
-          <div class="ci-row2"><span class="ci-preview">주말 특선 한우 세트 예약 받습니다</span></div>
+          <div class="ci-r1">
+            <span class="ci-name">한우명가</span>
+            <div class="ci-dist"><span class="d-mid">🟡 2.3km</span></div>
+          </div>
+          <div class="ci-r2">
+            <span class="ci-preview">주말 특선 한우 세트 예약 받습니다</span>
+            <span class="ci-time">2시간 전</span>
+          </div>
+          <div class="ci-r3">
+            <span class="ci-tag">음식점</span>
+            <span class="ci-tag">삼성동</span>
+            <span class="ci-members">👥 368명</span>
+          </div>
         </div>
       </div>
-      <div class="ci-divider"></div>
+      <div class="ci-div"></div>
 
-      <div class="ci" style="opacity:.45">
-        <div class="ci-avatar" style="background:linear-gradient(135deg,#1f1f2a,#25253a)">👗</div>
+      <!-- 5. 3.7km -->
+      <div class="ci">
+        <div class="ci-av" style="background:linear-gradient(135deg,#1f1f2a,#25253a)">👗</div>
         <div class="ci-body">
-          <div class="ci-row1"><span class="ci-name">스타일 언니</span><span class="ci-time">어제</span></div>
-          <div class="ci-row2"><span class="ci-preview">신상 입고 + 얼리버드 30% 쿠폰</span></div>
+          <div class="ci-r1">
+            <span class="ci-name">스타일 언니</span>
+            <div class="ci-dist"><span style="color:var(--t3)">⚪ 3.7km</span></div>
+          </div>
+          <div class="ci-r2">
+            <span class="ci-preview">신상 입고 + 얼리버드 30% 쿠폰</span>
+            <span class="ci-time">어제</span>
+          </div>
+          <div class="ci-r3">
+            <span class="ci-tag">쇼핑</span>
+            <span class="ci-tag">청담동</span>
+            <span class="ci-members">👥 924명</span>
+          </div>
+        </div>
+      </div>
+      <div class="ci-div"></div>
+
+      <!-- 5km 범위 외 구분선 -->
+      <div style="padding:10px 16px;display:flex;align-items:center;gap:10px">
+        <div style="flex:1;height:1px;background:rgba(255,255,255,0.05)"></div>
+        <span style="font-size:11px;color:var(--t3);background:var(--bg3);padding:4px 10px;border-radius:20px;white-space:nowrap">📍 5km 이내 가게 끝 · 이후는 더 먼 곳</span>
+        <div style="flex:1;height:1px;background:rgba(255,255,255,0.05)"></div>
+      </div>
+
+      <!-- 6. 7.2km (범위 밖, 희미) -->
+      <div class="ci" style="opacity:.4">
+        <div class="ci-av" style="background:var(--bg3)">🏋️</div>
+        <div class="ci-body">
+          <div class="ci-r1">
+            <span class="ci-name">퍼스널짐 K</span>
+            <div class="ci-dist"><span style="color:var(--t3)">⚫ 7.2km</span></div>
+          </div>
+          <div class="ci-r2">
+            <span class="ci-preview">1:1 PT 체험 무료 쿠폰 배포 중</span>
+          </div>
+          <div class="ci-r3">
+            <span class="ci-tag">운동</span>
+            <span class="ci-tag">잠실동</span>
+            <span class="ci-members">👥 201명</span>
+          </div>
         </div>
       </div>
 
+      <div style="height:80px"></div>
     </div>
 
     <!-- 하단 탭바 -->
-    <div class="bottom-tab">
-      <div class="bt-item"><span class="bt-icon">🏠</span><span class="bt-label">홈</span></div>
-      <div class="bt-item"><span class="bt-icon">🔍</span><span class="bt-label">탐색</span></div>
-      <div class="bt-item on">
-        <span class="bt-icon">💬</span>
-        <span class="bt-label" style="color:#FEE500">채팅</span>
-      </div>
-      <div class="bt-item"><span class="bt-icon">🎟</span><span class="bt-label">쿠폰함</span></div>
-      <div class="bt-item"><span class="bt-icon">👤</span><span class="bt-label">내정보</span></div>
+    <div class="btm">
+      <div class="bt"><span>🏠</span><span class="bt-l">홈</span></div>
+      <div class="bt"><span>🔍</span><span class="bt-l">탐색</span></div>
+      <div class="bt on"><span>💬</span><span class="bt-l" style="color:var(--y)">채팅</span></div>
+      <div class="bt"><span>🎟</span><span class="bt-l">쿠폰함</span></div>
+      <div class="bt"><span>👤</span><span class="bt-l">내정보</span></div>
     </div>
-
   </div>
 </div>
 
 
-<!-- ══ 화면 2: 채팅방 피드 ══ -->
+<!-- ══════ 화면 2: 공지 피드 ══════ -->
 <div class="col">
-  <div class="col-label">② 공지 피드</div>
+  <div class="col-lbl">② 공지 피드</div>
   <div class="phone">
-    <div class="statusbar"><span>9:41</span><div class="sb-right"><span>●●●●</span><span>WiFi</span><span>🔋87%</span></div></div>
+    <div class="sb"><span>9:41</span><div class="sb-r"><span>●●●●</span><span>WiFi</span><span>🔋87%</span></div></div>
 
     <div class="room-hd">
       <div class="back">←</div>
       <div class="room-av" style="background:linear-gradient(135deg,#2a1f1f,#3a2525)">🍜</div>
-      <div class="room-info-wrap">
-        <div class="room-name">라멘 홋카이도 <span style="font-size:11px;color:var(--text3);font-weight:400">강남점</span></div>
-        <div class="room-sub">👥 1,284명 참여 · 🟢 사장님 온라인</div>
+      <div class="room-meta">
+        <div class="room-name">
+          라멘 홋카이도
+          <span class="dist-badge">📍 280m</span>
+        </div>
+        <div class="room-sub">강남구 역삼동 · 👥 1,284명 · 🟢 온라인</div>
       </div>
-      <div class="room-hd-btns">
-        <div class="rh-btn">🔔</div>
-        <div class="rh-btn">⋯</div>
-      </div>
+      <div class="room-btns"><div class="rb">🔔</div><div class="rb">⋯</div></div>
     </div>
 
     <div class="pinned">
       <span style="font-size:12px">📌</span>
-      <span class="pinned-text">오늘 점심 특선! 라멘+교자 세트 10,900원→8,900원</span>
-      <span class="pinned-label">공지</span>
+      <span class="pinned-txt">오늘 점심 특선! 라멘+교자 세트 10,900원→8,900원</span>
+      <span class="pinned-lbl">공지</span>
     </div>
 
     <div class="feed">
-      <div class="date-sep">2024년 4월 15일 화요일</div>
+      <div class="dt-sep">2024년 4월 15일 화요일</div>
       <div class="sys-msg">채팅방에 참여했습니다 👋</div>
 
-      <!-- 포스트 1: 이미지 공지 -->
+      <!-- 포스트 1 -->
       <div class="post">
         <div class="post-hd">
           <div class="post-av" style="background:linear-gradient(135deg,#FF6F0F,#FF3C00)">🍜</div>
-          <div class="post-av-info">
+          <div class="post-info">
             <div class="post-sender">라멘 홋카이도 <span class="owner-pill">사장님</span></div>
             <div class="post-ts">오전 9:12</div>
           </div>
-          <div class="post-menu">⋯</div>
+          <div style="font-size:16px;color:var(--t3);cursor:pointer">⋯</div>
         </div>
         <div class="post-body">
           <div class="post-txt">오늘 점심 특선입니다! 🍜<br>돈코츠 라멘 + 군만두 세트<br>특별 가격 <strong>8,900원</strong> · 12시~2시 한정!</div>
           <div class="post-img">
             🍜
-            <div class="post-img-grad"><span class="post-img-tag">📷 오늘의 특선</span></div>
+            <div class="post-img-g"><span class="img-tag">📷 오늘의 특선</span></div>
           </div>
         </div>
-        <div class="post-actions">
-          <button class="act-btn liked" onclick="toggleLike(this)">
-            <span class="icon">❤️</span> <span class="cnt">127</span>
-          </button>
-          <button class="act-btn" onclick="toggleLike(this)" style="margin-left:2px">
-            <span class="icon">💬</span> <span class="cnt">댓글</span>
-          </button>
-          <button class="act-btn"><span class="icon">↗</span> 공유</button>
-          <div class="act-views">👁 342</div>
+        <div class="pact">
+          <button class="ab liked" onclick="toggleLike(this)"><span class="ic">❤️</span><span>127</span></button>
+          <button class="ab"><span class="ic">↗</span><span>공유</span></button>
+          <div class="pv">👁 342</div>
         </div>
       </div>
 
@@ -674,47 +716,37 @@ body {
       <div class="post">
         <div class="post-hd">
           <div class="post-av" style="background:linear-gradient(135deg,#FF6F0F,#FF3C00)">🍜</div>
-          <div class="post-av-info">
+          <div class="post-info">
             <div class="post-sender">라멘 홋카이도 <span class="owner-pill">사장님</span></div>
             <div class="post-ts">오전 10:30</div>
           </div>
-          <div class="post-menu">⋯</div>
         </div>
         <div class="post-body">
           <div class="post-txt">🔥 선착순 50명 한정 쿠폰!<br>좋아요 누르고 바로 받아가세요 👇</div>
-
           <div class="coupon">
             <div class="cp-top">
-              <div class="cp-emoji">🎟</div>
+              <div class="cp-em">🎟</div>
               <div class="cp-info">
                 <div class="cp-val">1,000원 할인</div>
-                <div class="cp-desc">라멘 전메뉴 · 1만원 이상 결제시</div>
+                <div class="cp-desc">라멘 전메뉴 · 1만원 이상</div>
               </div>
-              <div class="cp-timer">
-                <div class="cp-timer-label">마감까지</div>
-                <div class="cp-timer-val" id="t1">02:47:05</div>
-              </div>
+              <div class="cp-timer"><div class="cp-tl">마감까지</div><div class="cp-tv" id="t1">02:47:05</div></div>
             </div>
-            <div class="cp-progress">
+            <div class="cp-prog">
               <div class="cp-bar"><div class="cp-fill" id="fillbar" style="width:64%"></div></div>
-              <div class="cp-stock">
-                <span>남은 수량 <strong id="stock">18</strong>장 / 50장</span>
-                <span id="stockpct">64% 소진</span>
-              </div>
+              <div class="cp-stock"><span>남은 수량 <strong id="stock">18</strong>장 / 50장</span><span id="spct">64% 소진</span></div>
             </div>
             <div class="cp-notch"></div>
-            <div class="cp-bottom">
-              <div class="cp-cond">📍 라멘 홋카이도 강남점</div>
+            <div class="cp-btm">
+              <div class="cp-cond">📍 역삼동 280m</div>
               <button class="cp-btn" id="cpbtn" onclick="getCoupon()">쿠폰 받기</button>
             </div>
           </div>
         </div>
-        <div class="post-actions">
-          <button class="act-btn" onclick="toggleLike(this)">
-            <span class="icon">🤍</span> <span class="cnt">89</span>
-          </button>
-          <button class="act-btn"><span class="icon">↗</span> 공유</button>
-          <div class="act-views">👁 218</div>
+        <div class="pact">
+          <button class="ab" onclick="toggleLike(this)"><span class="ic">🤍</span><span>89</span></button>
+          <button class="ab"><span class="ic">↗</span><span>공유</span></button>
+          <div class="pv">👁 218</div>
         </div>
       </div>
 
@@ -722,168 +754,116 @@ body {
       <div class="post">
         <div class="post-hd">
           <div class="post-av" style="background:linear-gradient(135deg,#FF6F0F,#FF3C00)">🍜</div>
-          <div class="post-av-info">
+          <div class="post-info">
             <div class="post-sender">라멘 홋카이도 <span class="owner-pill">사장님</span></div>
             <div class="post-ts">오전 11:05</div>
           </div>
         </div>
         <div class="post-body">
-          <div class="post-txt">❤️ 좋아요 <strong>100개</strong> 달성하면<br>추가 쿠폰 오픈할게요! 지금 <strong id="goal-now">89</strong>/100 💪</div>
+          <div class="post-txt">❤️ 좋아요 <strong>100개</strong> 달성하면<br>추가 쿠폰 오픈! 지금 <strong id="goal-now">89</strong>/100 💪</div>
           <div class="goal-bar">
-            <div class="goal-progress">
-              <div class="goal-label">달성까지 <strong id="goal-left">11</strong>개 남았어요!</div>
+            <div class="goal-prog">
+              <div class="goal-lbl">달성까지 <strong id="goal-left">11</strong>개 남았어요!</div>
               <div class="goal-track"><div class="goal-fill" id="goalfill" style="width:89%"></div></div>
             </div>
             <div class="goal-pct" id="goalpct">89%</div>
           </div>
         </div>
-        <div class="post-actions">
-          <button class="act-btn" id="goalbtn" onclick="goalLike(this)">
-            <span class="icon">🤍</span> <span class="cnt">89</span>
-          </button>
-          <button class="act-btn"><span class="icon">↗</span> 공유</button>
-          <div class="act-views">👁 156</div>
+        <div class="pact">
+          <button class="ab" id="gbtn" onclick="goalLike(this)"><span class="ic">🤍</span><span id="gcnt">89</span></button>
+          <button class="ab"><span class="ic">↗</span><span>공유</span></button>
+          <div class="pv">👁 156</div>
         </div>
       </div>
 
-      <div class="sys-coupon">🎟 방금 쿠폰 2장이 새로 발행되었어요</div>
-      <div style="height:6px"></div>
+      <div class="sys-cp">🎟 방금 쿠폰 2장이 새로 발행되었어요</div>
     </div>
 
-    <!-- 읽기 전용 바 -->
-    <div class="readonly-bar">
-      <div class="readonly-field">
-        <span>🔒</span>
-        <span>사장님만 공지를 올릴 수 있어요</span>
-      </div>
-      <div class="members-pill">👥 1,284</div>
+    <div class="ro-bar">
+      <div class="ro-field"><span>🔒</span><span>사장님만 공지를 올릴 수 있어요</span></div>
+      <div class="mb-pill">👥 1,284</div>
     </div>
-
   </div>
 </div>
-
-
-<!-- ══ 화면 3: Typebot 쿠폰 발행 팝업 ══ -->
-<div class="col">
-  <div class="col-label">③ 쿠폰 발행 (Typebot)</div>
-  <div class="phone">
-    <div class="statusbar"><span>9:41</span><div class="sb-right"><span>●●●●</span><span>WiFi</span><span>🔋87%</span></div></div>
-
-    <!-- 뒤 화면 (희미하게) -->
-    <div style="padding:14px;opacity:0.25;filter:blur(1px);flex:1">
-      <div style="font-size:15px;font-weight:800;color:var(--text1);margin-bottom:12px">라멘 홋카이도</div>
-      <div style="background:var(--bg2);border-radius:18px;padding:14px;margin-bottom:10px;">
-        <div style="font-size:13px;color:var(--text1)">🔥 선착순 50명 한정 쿠폰!</div>
-        <div style="margin-top:10px;background:var(--bg3);border-radius:12px;padding:12px;">
-          <div style="font-size:20px;font-weight:900;color:#FEE500">1,000원 할인</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Typebot 시트 -->
-    <div class="typebot-overlay">
-      <div class="typebot-sheet">
-        <div class="sheet-handle"></div>
-        <div class="sheet-title">🎟 쿠폰 받기</div>
-        <div class="sheet-sub">라멘 홋카이도 · 1,000원 할인쿠폰</div>
-
-        <div class="bot-row">
-          <div class="bot-av">🤖</div>
-          <div class="bot-bubble">안녕하세요! 쿠폰 발행을 도와드릴게요 😊<br>어떻게 부를까요?</div>
-        </div>
-        <div class="user-row">
-          <div class="user-bubble">김언니</div>
-        </div>
-        <div class="bot-row">
-          <div class="bot-av">🤖</div>
-          <div class="bot-bubble">김언니님 반가워요! 🎉<br>쿠폰 수령 방법을 선택해주세요</div>
-        </div>
-        <div class="quick-replies">
-          <button class="qr-btn">📱 카카오로 받기</button>
-          <button class="qr-btn" onclick="issueComplete(this)">✅ 바로 발급</button>
-          <button class="qr-btn">📋 코드 복사</button>
-        </div>
-
-        <div id="issue-result" style="display:none;margin-top:16px;background:rgba(254,229,0,0.08);border:1px solid rgba(254,229,0,0.2);border-radius:14px;padding:14px;text-align:center">
-          <div style="font-size:24px;margin-bottom:6px">🎉</div>
-          <div style="font-size:14px;font-weight:800;color:#FEE500">발급 완료!</div>
-          <div style="font-size:13px;color:var(--text2);margin:6px 0">쿠폰 코드</div>
-          <div style="font-size:20px;font-weight:900;color:var(--text1);letter-spacing:3px;background:var(--bg3);padding:10px;border-radius:10px">RAMEN-1K7X</div>
-          <div style="font-size:11px;color:var(--text3);margin-top:8px">쿠폰함에 저장되었어요 · 오늘 마감</div>
-        </div>
-      </div>
-    </div>
-
-  </div>
-</div>
-
 
 <script>
-// ── 좋아요 토글 ──
-function toggleLike(btn) {
-  const on = btn.classList.toggle('liked');
-  const cnt = btn.querySelector('.cnt');
-  const icon = btn.querySelector('.icon');
-  const n = parseInt(cnt.textContent) || 0;
-  if (!isNaN(n)) {
-    cnt.textContent = on ? n + 1 : n - 1;
-    icon.textContent = on ? '❤️' : '🤍';
-    icon.style.transform = 'scale(1.4)';
-    setTimeout(() => icon.style.transform = '', 200);
-  }
+// 거리 패널 토글
+function toggleDistPanel(){
+  const p=document.getElementById('dist-panel');
+  p.style.display=p.style.display==='none'?'block':'none';
 }
 
-// ── 좋아요 목표 ──
-let goalCount = 89;
-function goalLike(btn) {
-  const on = btn.classList.toggle('liked');
-  goalCount = on ? goalCount + 1 : goalCount - 1;
-  btn.querySelector('.icon').textContent = on ? '❤️' : '🤍';
-  btn.querySelector('.cnt').textContent = goalCount;
-  document.getElementById('goal-now').textContent = goalCount;
-  document.getElementById('goal-left').textContent = Math.max(0, 100 - goalCount);
-  const pct = Math.min(100, goalCount);
-  document.getElementById('goalfill').style.width = pct + '%';
-  document.getElementById('goalpct').textContent = pct + '%';
+// 거리 선택
+function setDist(el,v){
+  document.querySelectorAll('.dc').forEach(d=>d.classList.remove('on'));
+  el.classList.add('on');
+  document.getElementById('dist-val').textContent=v;
+  document.getElementById('dist-sub').textContent=v;
 }
 
-// ── 쿠폰 받기 ──
-function getCoupon() {
-  const btn = document.getElementById('cpbtn');
-  if (btn.classList.contains('done')) return;
-  btn.textContent = '확인중...';
-  btn.style.opacity = '.6';
-  setTimeout(() => {
-    btn.textContent = '✅ 받기 완료';
-    btn.classList.add('done');
-    const s = document.getElementById('stock');
-    s.textContent = parseInt(s.textContent) - 1;
-    const pct = Math.round((50 - parseInt(s.textContent)) / 50 * 100);
-    document.getElementById('fillbar').style.width = pct + '%';
-    document.getElementById('stockpct').textContent = pct + '% 소진';
-  }, 700);
+// 카테고리 선택
+function selCat(el){
+  document.querySelectorAll('.cat').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
 }
 
-// ── Typebot 발급 완료 ──
-function issueComplete(btn) {
-  btn.textContent = '발급중...';
-  btn.disabled = true;
-  setTimeout(() => {
-    document.getElementById('issue-result').style.display = 'block';
-    document.querySelector('.quick-replies').style.display = 'none';
-  }, 800);
+// 정렬 선택
+function selSort(el){
+  document.querySelectorAll('.sort-opt').forEach(s=>s.classList.remove('on'));
+  el.classList.add('on');
 }
 
-// ── 카운트다운 타이머 ──
-let secs = 2 * 3600 + 47 * 60 + 5;
-setInterval(() => {
-  secs = Math.max(0, secs - 1);
-  const h = String(Math.floor(secs / 3600)).padStart(2,'0');
-  const m = String(Math.floor(secs % 3600 / 60)).padStart(2,'0');
-  const s = String(secs % 60).padStart(2,'0');
-  const el = document.getElementById('t1');
-  if (el) el.textContent = `${h}:${m}:${s}`;
-}, 1000);
+// 좋아요
+function toggleLike(btn){
+  const on=btn.classList.toggle('liked');
+  const spans=btn.querySelectorAll('span');
+  const ic=spans[0]; const cnt=spans[1];
+  const n=parseInt(cnt.textContent)||0;
+  if(!isNaN(n)){cnt.textContent=on?n+1:n-1}
+  ic.textContent=on?'❤️':'🤍';
+  ic.style.transform='scale(1.4)';
+  setTimeout(()=>ic.style.transform='',200);
+}
+
+// 좋아요 목표
+let gc=89;
+function goalLike(btn){
+  const on=btn.classList.toggle('liked');
+  gc=on?gc+1:gc-1;
+  btn.querySelector('.ic').textContent=on?'❤️':'🤍';
+  document.getElementById('gcnt').textContent=gc;
+  document.getElementById('goal-now').textContent=gc;
+  document.getElementById('goal-left').textContent=Math.max(0,100-gc);
+  const p=Math.min(100,gc);
+  document.getElementById('goalfill').style.width=p+'%';
+  document.getElementById('goalpct').textContent=p+'%';
+}
+
+// 쿠폰 받기
+function getCoupon(){
+  const b=document.getElementById('cpbtn');
+  if(b.classList.contains('done'))return;
+  b.textContent='확인중...';b.style.opacity='.6';
+  setTimeout(()=>{
+    b.textContent='✅ 받기 완료';b.classList.add('done');b.style.opacity='1';
+    const s=document.getElementById('stock');
+    s.textContent=parseInt(s.textContent)-1;
+    const pct=Math.round((50-parseInt(s.textContent))/50*100);
+    document.getElementById('fillbar').style.width=pct+'%';
+    document.getElementById('spct').textContent=pct+'% 소진';
+  },700);
+}
+
+// 카운트다운
+let secs=2*3600+47*60+5;
+setInterval(()=>{
+  secs=Math.max(0,secs-1);
+  const h=String(Math.floor(secs/3600)).padStart(2,'0');
+  const m=String(Math.floor(secs%3600/60)).padStart(2,'0');
+  const s=String(secs%60).padStart(2,'0');
+  const el=document.getElementById('t1');
+  if(el)el.textContent=`${h}:${m}:${s}`;
+},1000);
 </script>
 </body>
 </html>
