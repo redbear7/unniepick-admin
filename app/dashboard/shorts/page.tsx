@@ -576,10 +576,16 @@ function LivePreviewFrame({
       isPlaying ? Math.max(0.15, Math.abs(Math.sin((phase + i * 0.55) * 1.3)) * 0.85) : 0.18 + 0.08 * Math.abs(Math.sin(i * 0.7));
     const waveformStyle = style;
 
+    const freqLimit = freqData ? Math.floor(freqData.length * 0.65) : 0;
+    const freqAmp = (i: number, total: number) =>
+      (freqData && freqData.length > 0 && isPlaying)
+        ? freqData[Math.floor((i / total) * freqLimit)] / 255
+        : getAmp(i);
+
     if (waveformStyle === 'bar') {
       const bars = 32; const bw = W / bars;
       for (let i = 0; i < bars; i++) {
-        const amp = getAmp(i);
+        const amp = freqAmp(i, bars);
         const h = amp * H * 0.85;
         ctx.fillStyle = color(0.4 + amp * 0.6);
         ctx.fillRect(i * bw + 1, mid - h / 2, Math.max(bw - 2, 1), h);
@@ -588,7 +594,7 @@ function LivePreviewFrame({
     } else if (waveformStyle === 'mirror') {
       const bars = 32; const bw = W / bars;
       for (let i = 0; i < bars; i++) {
-        const amp = getAmp(i);
+        const amp = freqAmp(i, bars);
         const h = amp * H * 0.42;
         ctx.fillStyle = color(0.4 + amp * 0.6);
         ctx.fillRect(i * bw + 1, mid - h, Math.max(bw - 2, 1), h);        // 위
@@ -596,17 +602,29 @@ function LivePreviewFrame({
       }
 
     } else if (waveformStyle === 'wave') {
-      const pts = 64;
-      ctx.beginPath();
-      for (let i = 0; i <= pts; i++) {
-        const amp = getAmp(i);
-        const x = (i / pts) * W;
-        const y = mid + Math.sin((wavePhase + i * 0.4) * 1.5) * amp * mid * 0.8;
-        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      // 클라이맥스 편집기와 동일한 그라디언트 바 스타일
+      const BARS  = 48;
+      const bw    = W / BARS;
+      const aHex  = isPlaying ? '#FF6F0F' : '#ffffff';
+      for (let i = 0; i < BARS; i++) {
+        const val = freqAmp(i, BARS);
+        const bh  = Math.max(val * H * 0.88, 1);
+        const bx  = i * bw;
+        const aStr = Math.round((0.35 + val * 0.65) * 255).toString(16).padStart(2, '0');
+        const lStr = Math.round((0.15 + val * 0.35) * 255).toString(16).padStart(2, '0');
+        if (isPlaying) {
+          const grad = ctx.createLinearGradient(bx, mid - bh / 2, bx, mid + bh / 2);
+          grad.addColorStop(0,   `${aHex}${aStr}`);
+          grad.addColorStop(0.5, `${aHex}ff`);
+          grad.addColorStop(1,   `${aHex}${lStr}`);
+          ctx.fillStyle = grad;
+        } else {
+          ctx.fillStyle = color(0.35 + val * 0.5);
+        }
+        ctx.fillRect(bx + 0.5, mid - bh / 2, Math.max(bw - 1.5, 1), bh);
+        ctx.fillStyle = isPlaying ? `${aHex}20` : 'rgba(255,255,255,0.04)';
+        ctx.fillRect(bx + 0.5, mid + bh / 2, Math.max(bw - 1.5, 1), bh * 0.28);
       }
-      ctx.strokeStyle = color(0.85);
-      ctx.lineWidth = 2.5;
-      ctx.stroke();
 
     } else if (waveformStyle === 'circle') {
       const BARS  = 48;
@@ -659,10 +677,12 @@ function LivePreviewFrame({
       const DOT_N = 110;
       for (let i = 0; i < DOT_N; i++) {
         const x    = (i / (DOT_N - 1)) * W;
-        const ny   = Math.sin(i * 2.3 + wavePhase * 0.12) * H * 0.055;  // 미세 노이즈
-        const amp  = playing
-          ? 0.28 + 0.72 * Math.abs(Math.sin(i * 0.9 + wavePhase * 0.28))
-          : 0.22 + 0.14 * Math.abs(Math.sin(i * 0.9));
+        const ny   = Math.sin(i * 2.3 + phase * 0.12) * H * 0.055;  // 미세 노이즈
+        const amp  = (freqData && freqData.length > 0 && isPlaying)
+          ? freqData[Math.floor((i / DOT_N) * freqLimit)] / 255
+          : isPlaying
+            ? 0.28 + 0.72 * Math.abs(Math.sin(i * 0.9 + phase * 0.28))
+            : 0.22 + 0.14 * Math.abs(Math.sin(i * 0.9));
         const r = 0.9 + amp * 0.7;
         ctx.beginPath();
         ctx.arc(x, baseY + ny, r, 0, Math.PI * 2);
@@ -674,7 +694,7 @@ function LivePreviewFrame({
       const BARS = 24;
       const bw   = W / BARS;
       for (let i = 0; i < BARS; i++) {
-        const amp  = getAmp(i);
+        const amp  = freqAmp(i, BARS);
         const bh   = amp * baseY * 0.96;
         const bw2  = Math.max(bw * 0.26, 1.5);
         const bx   = i * bw + bw / 2;
@@ -686,14 +706,14 @@ function LivePreviewFrame({
 
   // 정적 상태 드로우 (playing/phase/style 변경 시)
   useEffect(() => {
-    if (waveformStyle !== 'circle' || !playing) {
+    if (!playing) {
       drawWaveCanvas(null);
     }
   }, [playing, wavePhase, waveformStyle, drawWaveCanvas]);
 
-  // circle 이외 스타일: sine phase RAF
+  // audioBuf 없을 때 sine phase RAF (circle 제외)
   useEffect(() => {
-    if (!playing || waveformStyle === 'circle') return;
+    if (!playing || waveformStyle === 'circle' || audioBuf) return;
     let phase = wavePhaseRef.current;
     const tick = () => {
       phase += 0.12;
@@ -706,14 +726,17 @@ function LivePreviewFrame({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playing, waveformStyle]);
 
-  // circle 스타일 실시간 주파수 RAF (AudioBufferSource 방식)
+  // 모든 파형 실시간 주파수 RAF (AudioBufferSource 방식)
   const startCircleTick = useCallback((fromCtxT: number, dur: number) => {
+    let ph = wavePhaseRef.current;
     const tick = () => {
       const actx = liveCtxRef.current;
       if (!actx || !liveAnalyserRef.current) return;
       const elapsed  = actx.currentTime - fromCtxT;
       const pct      = Math.min(elapsed / dur, 1);
       liveAnalyserRef.current.getByteFrequencyData(liveFreqRef.current);
+      ph += 0.12;
+      wavePhaseRef.current = ph;
       drawWaveCanvas(liveFreqRef.current);
       setProgress(pct);
       if (pct < 1) {
@@ -774,8 +797,8 @@ function LivePreviewFrame({
     onPlayStart?.();
     setCouponAnimKey(k => k + 1);
 
-    // circle 스타일 + audioBuf 있으면 → AudioBufferSource (실시간 분석)
-    if (waveformStyle === 'circle' && audioBuf) {
+    // audioBuf 있으면 → AudioBufferSource 실시간 분석 (모든 파형 스타일)
+    if (audioBuf) {
       try { liveSrcRef.current?.stop(); } catch {}
       liveSrcRef.current?.disconnect();
 
