@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>언니픽 채팅 시안</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0e0e12;
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 40px;
+    padding: 40px 24px;
+    min-height: 100vh;
+    flex-wrap: wrap;
+  }
+
+  /* ── 공통 폰 프레임 ── */
+  .phone {
+    width: 375px;
+    min-height: 812px;
+    background: #13141a;
+    border-radius: 40px;
+    overflow: hidden;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  /* 상단 상태바 */
+  .status-bar {
+    background: #13141a;
+    padding: 14px 24px 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.9);
+    flex-shrink: 0;
+  }
+  .status-bar .icons { display: flex; gap: 6px; align-items: center; }
+  .signal { display: flex; gap: 2px; align-items: flex-end; }
+  .signal span { background: rgba(255,255,255,0.9); border-radius: 1px; width: 3px; }
+
+  /* ── 화면 1: 채팅방 리스트 ── */
+  .nav-bar {
+    padding: 12px 20px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    flex-shrink: 0;
+  }
+  .nav-title { font-size: 20px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
+  .nav-actions { display: flex; gap: 8px; }
+  .nav-btn {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: rgba(255,255,255,0.06);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 16px;
+  }
+
+  .search-bar {
+    margin: 8px 16px 12px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: rgba(255,255,255,0.3);
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  .tabs {
+    display: flex;
+    padding: 0 16px;
+    gap: 4px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    flex-shrink: 0;
+  }
+  .tab {
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.35);
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+  }
+  .tab.active { color: #FF6F0F; border-bottom-color: #FF6F0F; }
+
+  .chat-list { flex: 1; overflow-y: auto; padding: 4px 0; }
+  .chat-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .chat-item:active { background: rgba(255,255,255,0.04); }
+
+  .store-avatar {
+    width: 52px; height: 52px; border-radius: 16px;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    position: relative;
+    overflow: hidden;
+  }
+  .store-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .avatar-online {
+    position: absolute; bottom: 2px; right: 2px;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: #22c55e;
+    border: 2px solid #13141a;
+  }
+
+  .chat-meta { flex: 1; min-width: 0; }
+  .chat-row1 { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .store-name { font-size: 15px; font-weight: 600; color: #fff; }
+  .chat-time { font-size: 11px; color: rgba(255,255,255,0.3); }
+  .chat-row2 { display: flex; justify-content: space-between; align-items: center; }
+  .chat-preview { font-size: 13px; color: rgba(255,255,255,0.4); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
+  .unread-badge {
+    background: #FF6F0F;
+    color: #fff; font-size: 11px; font-weight: 700;
+    padding: 2px 7px; border-radius: 20px; flex-shrink: 0;
+  }
+  .coupon-badge {
+    background: rgba(255,111,15,0.15);
+    color: #FF6F0F; font-size: 10px; font-weight: 700;
+    padding: 2px 7px; border-radius: 20px; flex-shrink: 0;
+    border: 1px solid rgba(255,111,15,0.3);
+  }
+
+  .divider { height: 1px; background: rgba(255,255,255,0.05); margin: 2px 16px; }
+
+  /* ── 화면 2: 채팅방 내부 ── */
+  .room-header {
+    padding: 12px 16px 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    flex-shrink: 0;
+  }
+  .back-btn { font-size: 20px; color: rgba(255,255,255,0.7); cursor: pointer; padding: 4px; }
+  .room-store-avatar {
+    width: 38px; height: 38px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0; overflow: hidden;
+  }
+  .room-store-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .room-info { flex: 1; }
+  .room-name { font-size: 16px; font-weight: 700; color: #fff; line-height: 1.2; }
+  .room-sub { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 1px; }
+  .room-actions { display: flex; gap: 8px; }
+  .room-btn { font-size: 18px; color: rgba(255,255,255,0.5); cursor: pointer; padding: 4px; }
+
+  .notice-bar {
+    background: rgba(255,111,15,0.08);
+    border-bottom: 1px solid rgba(255,111,15,0.15);
+    padding: 8px 16px;
+    display: flex; align-items: center; gap: 8px;
+    flex-shrink: 0;
+  }
+  .notice-bar .pin { font-size: 12px; }
+  .notice-bar span { font-size: 12px; color: rgba(255,255,255,0.5); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .notice-bar .cnt { font-size: 11px; color: #FF6F0F; font-weight: 700; background: rgba(255,111,15,0.12); padding: 2px 8px; border-radius: 20px; }
+
+  .feed { flex: 1; overflow-y: auto; padding: 16px 16px 12px; display: flex; flex-direction: column; gap: 16px; }
+
+  /* 날짜 구분선 */
+  .date-divider {
+    display: flex; align-items: center; gap: 10px;
+    color: rgba(255,255,255,0.2); font-size: 11px; font-weight: 500;
+  }
+  .date-divider::before, .date-divider::after {
+    content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.07);
+  }
+
+  /* 포스트 카드 */
+  .post-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 18px;
+    overflow: hidden;
+  }
+
+  .post-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 14px 8px;
+  }
+  .owner-avatar {
+    width: 32px; height: 32px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; flex-shrink: 0; overflow: hidden;
+  }
+  .owner-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .owner-info { flex: 1; }
+  .owner-name { font-size: 13px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 5px; }
+  .owner-badge {
+    font-size: 9px; font-weight: 700;
+    background: #FF6F0F; color: #fff;
+    padding: 1px 5px; border-radius: 4px; letter-spacing: 0.3px;
+  }
+  .post-time { font-size: 11px; color: rgba(255,255,255,0.25); }
+  .post-more { font-size: 16px; color: rgba(255,255,255,0.3); cursor: pointer; padding: 4px; }
+
+  .post-body { padding: 0 14px 12px; }
+  .post-text { font-size: 14px; color: rgba(255,255,255,0.85); line-height: 1.6; }
+  .post-image {
+    margin: 8px -0px 0; border-radius: 10px; overflow: hidden;
+    width: 100%; height: 160px;
+    background: linear-gradient(135deg, #1e2030 0%, #252836 100%);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 40px; color: rgba(255,255,255,0.15);
+    position: relative;
+  }
+  .post-image-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.5) 100%);
+    display: flex; align-items: flex-end; padding: 12px;
+  }
+  .post-image-tag {
+    font-size: 11px; color: rgba(255,255,255,0.8); font-weight: 600;
+    background: rgba(0,0,0,0.4); padding: 3px 8px; border-radius: 20px;
+    backdrop-filter: blur(4px);
+  }
+
+  /* 쿠폰 카드 */
+  .coupon-card {
+    margin: 10px 14px 4px;
+    background: linear-gradient(135deg, rgba(255,111,15,0.12) 0%, rgba(255,60,0,0.06) 100%);
+    border: 1px solid rgba(255,111,15,0.25);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .coupon-top {
+    padding: 14px 16px 10px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .coupon-icon { font-size: 28px; }
+  .coupon-info { flex: 1; }
+  .coupon-discount { font-size: 22px; font-weight: 900; color: #FF6F0F; line-height: 1.1; }
+  .coupon-title { font-size: 12px; color: rgba(255,255,255,0.6); margin-top: 2px; }
+  .coupon-timer {
+    text-align: right;
+    font-size: 11px; color: rgba(255,255,255,0.4);
+    display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
+  }
+  .timer-val { font-size: 14px; font-weight: 700; color: #FF6F0F; font-variant-numeric: tabular-nums; }
+
+  .coupon-divider {
+    height: 1px; background: rgba(255,111,15,0.15);
+    margin: 0 14px;
+    position: relative;
+  }
+  .coupon-divider::before, .coupon-divider::after {
+    content: '';
+    position: absolute; top: 50%; transform: translateY(-50%);
+    width: 14px; height: 14px; border-radius: 50%;
+    background: #13141a;
+  }
+  .coupon-divider::before { left: -22px; }
+  .coupon-divider::after { right: -22px; }
+
+  .coupon-bottom {
+    padding: 10px 16px 14px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .coupon-stock { font-size: 11px; color: rgba(255,255,255,0.4); }
+  .coupon-stock strong { color: #FF6F0F; }
+  .coupon-get-btn {
+    background: #FF6F0F; color: #fff;
+    font-size: 13px; font-weight: 700;
+    padding: 8px 18px; border-radius: 10px;
+    cursor: pointer; border: none;
+    box-shadow: 0 4px 12px rgba(255,111,15,0.35);
+    transition: transform 0.1s;
+  }
+  .coupon-get-btn:active { transform: scale(0.96); }
+  .coupon-get-btn.issued {
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.3);
+    box-shadow: none;
+  }
+
+  /* 좋아요 + 공유 액션바 */
+  .post-actions {
+    padding: 8px 14px 12px;
+    display: flex; align-items: center; gap: 14px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+  }
+  .like-btn {
+    display: flex; align-items: center; gap: 5px;
+    background: none; border: none; cursor: pointer;
+    color: rgba(255,255,255,0.4); font-size: 13px;
+    padding: 4px 8px; border-radius: 8px;
+    transition: all 0.15s;
+  }
+  .like-btn.liked { color: #FF6F0F; background: rgba(255,111,15,0.1); }
+  .like-btn .heart { font-size: 16px; transition: transform 0.2s; }
+  .like-btn.liked .heart { transform: scale(1.2); }
+  .like-count { font-weight: 700; }
+
+  .share-btn {
+    display: flex; align-items: center; gap: 5px;
+    background: none; border: none; cursor: pointer;
+    color: rgba(255,255,255,0.3); font-size: 13px;
+    padding: 4px 8px; border-radius: 8px;
+  }
+  .view-count { margin-left: auto; font-size: 11px; color: rgba(255,255,255,0.2); display: flex; align-items: center; gap: 4px; }
+
+  /* 시스템 메시지 */
+  .system-msg {
+    text-align: center;
+    font-size: 11px; color: rgba(255,255,255,0.2);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .system-msg::before, .system-msg::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.06); }
+
+  /* 하단 읽기전용 바 */
+  .readonly-bar {
+    padding: 12px 16px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(255,255,255,0.02);
+    flex-shrink: 0;
+  }
+  .readonly-input {
+    flex: 1; background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 22px; padding: 10px 16px;
+    font-size: 14px; color: rgba(255,255,255,0.2);
+    display: flex; align-items: center; gap: 8px;
+    cursor: not-allowed;
+  }
+  .readonly-icon { font-size: 13px; }
+  .member-count-pill {
+    background: rgba(255,255,255,0.06);
+    border-radius: 20px; padding: 8px 12px;
+    font-size: 12px; color: rgba(255,255,255,0.35);
+    display: flex; align-items: center; gap: 5px;
+    white-space: nowrap;
+  }
+
+  /* 화면 레이블 */
+  .screen-label {
+    text-align: center;
+    color: rgba(255,255,255,0.3);
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    letter-spacing: 0.5px;
+  }
+
+  /* 진행바 (쿠폰 재고) */
+  .stock-bar {
+    height: 3px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 2px;
+    margin: 0 16px 10px;
+    overflow: hidden;
+  }
+  .stock-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #FF6F0F, #FF3C00);
+    border-radius: 2px;
+    transition: width 0.3s;
+  }
+
+  /* 가게 카테고리 칩 */
+  .category-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 10px; color: rgba(255,255,255,0.4);
+    background: rgba(255,255,255,0.06);
+    padding: 2px 8px; border-radius: 20px;
+    margin-bottom: 4px;
+  }
+
+  /* 멤버 수 표시 */
+  .members-inline {
+    font-size: 11px;
+    color: rgba(255,255,255,0.3);
+  }
+
+  ::-webkit-scrollbar { width: 0; }
+
+  /* 배경 레이블 */
+  .page-title {
+    color: rgba(255,255,255,0.6);
+    font-size: 28px;
+    font-weight: 800;
+    text-align: center;
+    margin-bottom: 4px;
+  }
+  .page-sub {
+    color: rgba(255,255,255,0.25);
+    font-size: 13px;
+    text-align: center;
+    margin-bottom: 32px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ── 화면 1: 채팅방 리스트 ── -->
+<div>
+  <p class="page-title">언니픽 채팅</p>
+  <p class="page-sub">가게별 채팅방 리스트</p>
+  <div class="screen-label">① 채팅방 목록</div>
+  <div class="phone">
+    <!-- 상태바 -->
+    <div class="status-bar">
+      <span>9:41</span>
+      <div class="icons">
+        <div class="signal">
+          <span style="height:4px"></span><span style="height:6px"></span><span style="height:9px"></span><span style="height:11px"></span>
+        </div>
+        <span>WiFi</span>
+        <span>🔋</span>
+      </div>
+    </div>
+
+    <!-- 네비 바 -->
+    <div class="nav-bar">
+      <div class="nav-title">채팅 <span style="font-size:14px;color:rgba(255,255,255,0.3);font-weight:500">3</span></div>
+      <div class="nav-actions">
+        <div class="nav-btn">🔍</div>
+        <div class="nav-btn" style="background:rgba(255,111,15,0.15);color:#FF6F0F;font-size:13px;font-weight:700;width:auto;padding:0 12px;border-radius:20px;">+ 가게 찾기</div>
+      </div>
+    </div>
+
+    <!-- 검색 -->
+    <div class="search-bar">
+      <span>🔍</span>
+      <span>가게명 검색</span>
+    </div>
+
+    <!-- 탭 -->
+    <div class="tabs">
+      <div class="tab active">전체</div>
+      <div class="tab">맛집</div>
+      <div class="tab">카페</div>
+      <div class="tab">뷰티</div>
+      <div class="tab">쇼핑</div>
+    </div>
+
+    <!-- 채팅 리스트 -->
+    <div class="chat-list">
+
+      <!-- 채팅 아이템 1 -->
+      <div class="chat-item">
+        <div class="store-avatar" style="background:linear-gradient(135deg,#1a1a2e,#252836)">
+          🍜
+          <div class="avatar-online"></div>
+        </div>
+        <div class="chat-meta">
+          <div class="chat-row1">
+            <div style="display:flex;align-items:center;gap:6px">
+              <span class="store-name">라멘 홋카이도</span>
+              <span class="category-chip">맛집</span>
+            </div>
+            <span class="chat-time">방금</span>
+          </div>
+          <div class="chat-row2">
+            <span class="chat-preview">🎟 오늘만! 라멘 1000원 할인 쿠폰 오픈</span>
+            <span class="unread-badge">3</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- 채팅 아이템 2 -->
+      <div class="chat-item">
+        <div class="store-avatar" style="background:linear-gradient(135deg,#1e1a2e,#2a2040)">
+          ☕
+        </div>
+        <div class="chat-meta">
+          <div class="chat-row1">
+            <div style="display:flex;align-items:center;gap:6px">
+              <span class="store-name">카페 봄날</span>
+              <span class="category-chip">카페</span>
+            </div>
+            <span class="chat-time">2분 전</span>
+          </div>
+          <div class="chat-row2">
+            <span class="chat-preview">아메리카노 무료 증정 이벤트 시작합니다 ☀️</span>
+            <span class="coupon-badge">🎟 쿠폰</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- 채팅 아이템 3 -->
+      <div class="chat-item">
+        <div class="store-avatar" style="background:linear-gradient(135deg,#1a2820,#1e3028)">
+          💄
+        </div>
+        <div class="chat-meta">
+          <div class="chat-row1">
+            <div style="display:flex;align-items:center;gap:6px">
+              <span class="store-name">뷰티 살롱 H</span>
+              <span class="category-chip">뷰티</span>
+            </div>
+            <span class="chat-time">18분 전</span>
+          </div>
+          <div class="chat-row2">
+            <span class="chat-preview">이번 주말 헤어컷 20% 할인 이벤트!</span>
+            <span class="unread-badge">1</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- 채팅 아이템 4 -->
+      <div class="chat-item" style="opacity:0.55">
+        <div class="store-avatar" style="background:linear-gradient(135deg,#201a1a,#2e2020)">
+          🥩
+        </div>
+        <div class="chat-meta">
+          <div class="chat-row1">
+            <div style="display:flex;align-items:center;gap:6px">
+              <span class="store-name">한우명가</span>
+              <span class="category-chip">맛집</span>
+            </div>
+            <span class="chat-time">2시간 전</span>
+          </div>
+          <div class="chat-row2">
+            <span class="chat-preview">주말 특선 한우 세트 예약 받습니다 🥩</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- 채팅 아이템 5 -->
+      <div class="chat-item" style="opacity:0.55">
+        <div class="store-avatar" style="background:linear-gradient(135deg,#1a1e28,#20283a)">
+          👗
+        </div>
+        <div class="chat-meta">
+          <div class="chat-row1">
+            <div style="display:flex;align-items:center;gap:6px">
+              <span class="store-name">스타일 언니</span>
+              <span class="category-chip">쇼핑</span>
+            </div>
+            <span class="chat-time">어제</span>
+          </div>
+          <div class="chat-row2">
+            <span class="chat-preview">신상 입고 소식 + 얼리버드 30% 쿠폰</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="height:80px"></div>
+    </div>
+
+    <!-- 하단 탭바 -->
+    <div style="position:absolute;bottom:0;left:0;right:0;background:#13141a;border-top:1px solid rgba(255,255,255,0.07);padding:10px 0 20px;display:flex;justify-content:space-around;flex-shrink:0">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:2px;color:rgba(255,255,255,0.25);font-size:10px">
+        <span style="font-size:20px">🏠</span>홈
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:2px;color:rgba(255,255,255,0.25);font-size:10px">
+        <span style="font-size:20px">🔍</span>탐색
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:2px;color:#FF6F0F;font-size:10px;position:relative">
+        <span style="font-size:20px">💬</span>채팅
+        <div style="position:absolute;top:0;right:8px;width:8px;height:8px;background:#FF6F0F;border-radius:50%;border:2px solid #13141a"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:2px;color:rgba(255,255,255,0.25);font-size:10px">
+        <span style="font-size:20px">🎟</span>쿠폰함
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:2px;color:rgba(255,255,255,0.25);font-size:10px">
+        <span style="font-size:20px">👤</span>내정보
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ── 화면 2: 채팅방 내부 ── -->
+<div>
+  <p class="page-title">&nbsp;</p>
+  <p class="page-sub">가게 채팅창 (공지 피드)</p>
+  <div class="screen-label">② 채팅방 내부</div>
+  <div class="phone">
+    <!-- 상태바 -->
+    <div class="status-bar">
+      <span>9:41</span>
+      <div class="icons">
+        <div class="signal">
+          <span style="height:4px"></span><span style="height:6px"></span><span style="height:9px"></span><span style="height:11px"></span>
+        </div>
+        <span>WiFi</span>
+        <span>🔋</span>
+      </div>
+    </div>
+
+    <!-- 룸 헤더 -->
+    <div class="room-header">
+      <div class="back-btn">←</div>
+      <div class="room-store-avatar" style="background:linear-gradient(135deg,#1a1a2e,#252836)">🍜</div>
+      <div class="room-info">
+        <div class="room-name">라멘 홋카이도 <span style="font-size:11px;color:rgba(255,255,255,0.3);font-weight:400">· 서울 강남</span></div>
+        <div class="room-sub">👥 멤버 1,284명 · 🟢 사장님 온라인</div>
+      </div>
+      <div class="room-actions">
+        <div class="room-btn">🔔</div>
+        <div class="room-btn">⋯</div>
+      </div>
+    </div>
+
+    <!-- 공지 고정 -->
+    <div class="notice-bar">
+      <span class="pin">📌</span>
+      <span>오늘 점심 특선! 라멘+교자 세트 10,900원 → 8,900원</span>
+      <span class="cnt">공지</span>
+    </div>
+
+    <!-- 피드 -->
+    <div class="feed">
+
+      <div class="date-divider">2024년 4월 15일 화요일</div>
+
+      <!-- 시스템 메시지 -->
+      <div class="system-msg">채팅방에 참여했습니다</div>
+
+      <!-- 포스트 1: 텍스트 + 이미지 -->
+      <div class="post-card">
+        <div class="post-header">
+          <div class="owner-avatar" style="background:linear-gradient(135deg,#FF6F0F,#FF3C00)">🍜</div>
+          <div class="owner-info">
+            <div class="owner-name">
+              라멘 홋카이도
+              <span class="owner-badge">사장님</span>
+            </div>
+            <div class="post-time">오전 9:12</div>
+          </div>
+          <div class="post-more">⋯</div>
+        </div>
+        <div class="post-body">
+          <div class="post-text">오늘 점심 특선입니다! 🍜<br>돈코츠 라멘 + 군만두 세트를<br>특별 가격 <strong style="color:#FF6F0F">8,900원</strong>에 드립니다.<br>12시~2시 한정이에요!</div>
+          <div class="post-image">
+            🍜
+            <div class="post-image-overlay">
+              <span class="post-image-tag">📷 오늘의 특선</span>
+            </div>
+          </div>
+        </div>
+        <div class="post-actions">
+          <button class="like-btn liked" onclick="toggleLike(this)">
+            <span class="heart">❤️</span>
+            <span class="like-count">127</span>
+          </button>
+          <button class="share-btn">
+            <span>↗</span> 공유
+          </button>
+          <div class="view-count">👁 342</div>
+        </div>
+      </div>
+
+      <!-- 포스트 2: 쿠폰 -->
+      <div class="post-card">
+        <div class="post-header">
+          <div class="owner-avatar" style="background:linear-gradient(135deg,#FF6F0F,#FF3C00)">🍜</div>
+          <div class="owner-info">
+            <div class="owner-name">
+              라멘 홋카이도
+              <span class="owner-badge">사장님</span>
+            </div>
+            <div class="post-time">오전 10:30</div>
+          </div>
+          <div class="post-more">⋯</div>
+        </div>
+        <div class="post-body">
+          <div class="post-text">🔥 선착순 쿠폰 오픈합니다!<br>좋아요 누르고 바로 받아가세요 👇</div>
+
+          <!-- 쿠폰 카드 -->
+          <div class="coupon-card">
+            <div class="coupon-top">
+              <div class="coupon-icon">🎟</div>
+              <div class="coupon-info">
+                <div class="coupon-discount">1,000원 할인</div>
+                <div class="coupon-title">라멘 전메뉴 적용 · 1만원 이상</div>
+              </div>
+              <div class="coupon-timer">
+                <span style="font-size:10px;color:rgba(255,255,255,0.3)">마감까지</span>
+                <span class="timer-val" id="timer">02:47:13</span>
+              </div>
+            </div>
+
+            <!-- 재고 바 -->
+            <div class="stock-bar">
+              <div class="stock-fill" style="width:62%"></div>
+            </div>
+
+            <div class="coupon-divider"></div>
+
+            <div class="coupon-bottom">
+              <div class="coupon-stock">남은 수량 <strong>18</strong> / 50장</div>
+              <button class="coupon-get-btn" onclick="getCoupon(this)">쿠폰 받기</button>
+            </div>
+          </div>
+        </div>
+        <div class="post-actions">
+          <button class="like-btn" onclick="toggleLike(this)">
+            <span class="heart">🤍</span>
+            <span class="like-count">89</span>
+          </button>
+          <button class="share-btn">
+            <span>↗</span> 공유
+          </button>
+          <div class="view-count">👁 218</div>
+        </div>
+      </div>
+
+      <!-- 포스트 3: 텍스트만 -->
+      <div class="post-card">
+        <div class="post-header">
+          <div class="owner-avatar" style="background:linear-gradient(135deg,#FF6F0F,#FF3C00)">🍜</div>
+          <div class="owner-info">
+            <div class="owner-name">
+              라멘 홋카이도
+              <span class="owner-badge">사장님</span>
+            </div>
+            <div class="post-time">오전 11:05</div>
+          </div>
+          <div class="post-more">⋯</div>
+        </div>
+        <div class="post-body">
+          <div class="post-text">쿠폰 좋아요 100개 달성하면<br>추가 쿠폰 오픈할게요! 💪<br><br>현재 <strong style="color:#FF6F0F">89 / 100</strong> ❤️</div>
+        </div>
+        <div class="post-actions">
+          <button class="like-btn" onclick="toggleLike(this)">
+            <span class="heart">🤍</span>
+            <span class="like-count">89</span>
+          </button>
+          <button class="share-btn">
+            <span>↗</span> 공유
+          </button>
+          <div class="view-count">👁 156</div>
+        </div>
+      </div>
+
+      <!-- 시스템: 쿠폰 발행 알림 -->
+      <div class="system-msg" style="color:rgba(255,111,15,0.6)">🎟 방금 쿠폰 2장이 발행되었습니다</div>
+
+      <div style="height:4px"></div>
+    </div>
+
+    <!-- 읽기 전용 하단 바 -->
+    <div class="readonly-bar">
+      <div class="readonly-input">
+        <span class="readonly-icon">🔒</span>
+        <span>사장님만 글을 올릴 수 있어요</span>
+      </div>
+      <div class="member-count-pill">👥 1,284</div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // 좋아요 토글
+  function toggleLike(btn) {
+    const isLiked = btn.classList.toggle('liked');
+    const countEl = btn.querySelector('.like-count');
+    const heartEl = btn.querySelector('.heart');
+    const count = parseInt(countEl.textContent);
+    countEl.textContent = isLiked ? count + 1 : count - 1;
+    heartEl.textContent = isLiked ? '❤️' : '🤍';
+
+    // 펄스 애니메이션
+    heartEl.style.transform = 'scale(1.4)';
+    setTimeout(() => heartEl.style.transform = '', 200);
+  }
+
+  // 쿠폰 받기
+  function getCoupon(btn) {
+    if (btn.classList.contains('issued')) return;
+    btn.textContent = '발행중...';
+    btn.style.opacity = '0.7';
+    setTimeout(() => {
+      btn.textContent = '✅ 발행완료';
+      btn.classList.add('issued');
+      // 재고 감소
+      const stockEl = btn.closest('.coupon-card').querySelector('.coupon-stock strong');
+      stockEl.textContent = parseInt(stockEl.textContent) - 1;
+    }, 600);
+  }
+
+  // 타이머 카운트다운
+  let secs = 2 * 3600 + 47 * 60 + 13;
+  setInterval(() => {
+    secs = Math.max(0, secs - 1);
+    const h = String(Math.floor(secs / 3600)).padStart(2, '0');
+    const m = String(Math.floor((secs % 3600) / 60)).padStart(2, '0');
+    const s = String(secs % 60).padStart(2, '0');
+    const el = document.getElementById('timer');
+    if (el) el.textContent = `${h}:${m}:${s}`;
+  }, 1000);
+</script>
+
+</body>
+</html>
