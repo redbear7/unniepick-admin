@@ -457,6 +457,40 @@ body{
 /* 종 버튼 */
 .rb.bell-on{color:var(--y)}
 
+/* 쿠폰 발급 확인 팝업 */
+.cp-popup-overlay{
+  position:absolute;inset:0;background:rgba(0,0,0,0.6);
+  backdrop-filter:blur(3px);display:flex;align-items:flex-end;
+  z-index:100;opacity:0;pointer-events:none;transition:opacity .25s;
+}
+.cp-popup-overlay.show{opacity:1;pointer-events:all}
+.cp-popup{
+  width:100%;background:var(--bg2);border-radius:28px 28px 0 0;
+  border-top:1px solid var(--border);padding:0 0 34px;
+  transform:translateY(100%);transition:transform .3s cubic-bezier(.32,1,.23,1);
+}
+.cp-popup-overlay.show .cp-popup{transform:translateY(0)}
+.cp-popup-handle{width:36px;height:4px;border-radius:2px;background:var(--bg4);margin:12px auto 16px}
+.cp-popup-title{font-size:16px;font-weight:900;color:var(--t1);text-align:center;margin-bottom:16px}
+.cp-popup-card{
+  margin:0 16px;border-radius:16px;overflow:hidden;
+  border:1px solid rgba(255,107,107,0.3);
+  background:linear-gradient(135deg,rgba(255,77,77,0.08),rgba(255,111,15,0.06));
+  padding:14px 16px;
+}
+.cp-popup-store{font-size:11px;color:var(--t3);margin-bottom:4px;display:flex;align-items:center;gap:5px}
+.cp-popup-val{font-size:28px;font-weight:900;color:#FF6B6B;letter-spacing:-.5px;line-height:1.1}
+.cp-popup-desc{font-size:12px;color:var(--t2);margin-top:4px}
+.cp-popup-notice{font-size:11px;color:var(--t3);text-align:center;margin:14px 16px 0;line-height:1.6}
+.cp-popup-notice strong{color:var(--y)}
+.cp-popup-btns{display:flex;gap:8px;margin:14px 16px 0}
+.cp-popup-cancel{flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--t2);font-size:14px;font-weight:700;padding:13px;border-radius:13px;border:none;cursor:pointer;font-family:inherit}
+.cp-popup-confirm{flex:2;background:#FF6B6B;color:#fff;font-size:14px;font-weight:800;padding:13px;border-radius:13px;border:none;cursor:pointer;font-family:inherit;box-shadow:0 4px 14px rgba(255,77,77,0.35)}
+.cp-popup-confirm:active{transform:scale(.97)}
+
+/* 쿠폰사용확인 버튼 */
+.cp-btn.confirmed{background:rgba(74,222,128,0.15);color:var(--green);border:1px solid rgba(74,222,128,0.3);box-shadow:none;font-size:11px;padding:6px 10px}
+
 /* 채팅 말풍선 (사장님 메시지) */
 .chat-msg{display:flex;gap:8px;align-items:flex-start}
 .chat-av{width:32px;height:32px;border-radius:11px;background:linear-gradient(135deg,#FF6F0F,#FF3C00);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
@@ -847,13 +881,22 @@ body{
             <span class="cp-act-lbl">공유</span>
           </div>
         </div>
-        <!-- 사장님 댓글 -->
+        <!-- 사장님 댓글 1 -->
         <div class="cp-comment">
           <div class="cp-cm-av">🍜</div>
           <div class="cp-cm-body">
             <div class="cp-cm-name">라멘 홋카이도 <span class="cp-cm-pill">사장님</span></div>
             <div class="cp-cm-txt">오늘 12시~2시 딱 2시간만! 재고 얼마 안 남았어요 😊🔥</div>
             <div class="cp-cm-ts">오전 11:52</div>
+          </div>
+        </div>
+        <!-- 사장님 댓글 2: 좋아요픽 이벤트 -->
+        <div class="cp-comment" style="background:rgba(254,229,0,0.04);border-top:1px solid rgba(254,229,0,0.1)">
+          <div class="cp-cm-av">🍜</div>
+          <div class="cp-cm-body">
+            <div class="cp-cm-name">라멘 홋카이도 <span class="cp-cm-pill">사장님</span></div>
+            <div class="cp-cm-txt">🎁 이번달에 <strong style="color:var(--y)">'좋아요픽'</strong> 눌러주신 분 중에 추첨하여<br><strong style="color:var(--y)">라면세트 2인분</strong> 제공합니다! 많은 참여 부탁드려요 🍜🙏</div>
+            <div class="cp-cm-ts">오전 11:55</div>
           </div>
         </div>
       </div>
@@ -937,6 +980,30 @@ body{
       <div class="ro-field"><span>🔒</span><span>사장님만 공지를 올릴 수 있어요</span></div>
       <div class="mb-pill">👁 247명</div>
     </div>
+
+    <!-- ── 쿠폰 발급 확인 팝업 ── -->
+    <div class="cp-popup-overlay" id="couponPopup" onclick="popupBgClose(event)">
+      <div class="cp-popup">
+        <div class="cp-popup-handle"></div>
+        <div class="cp-popup-title">쿠폰 발급 확인</div>
+        <div class="cp-popup-card">
+          <div class="cp-popup-store">
+            <span style="font-size:16px">🍜</span> 라멘 홋카이도 · 역삼동
+            <span class="ts-badge" style="margin-left:4px">⚡ 타임세일</span>
+          </div>
+          <div class="cp-popup-val">런치 특가 30%</div>
+          <div class="cp-popup-desc">돈코츠 라멘 세트 · 12시~14시 한정 · 1인 1매</div>
+        </div>
+        <div class="cp-popup-notice">
+          발급된 쿠폰은 <strong>오늘 14:00까지</strong> 사용 가능합니다.<br>
+          매장 직원에게 <strong>'쿠폰사용확인'</strong> 버튼을 보여주세요.
+        </div>
+        <div class="cp-popup-btns">
+          <button class="cp-popup-cancel" onclick="closePopup()">취소</button>
+          <button class="cp-popup-confirm" onclick="confirmCoupon()">발급받기</button>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1013,14 +1080,24 @@ function updateBell(){
   b.classList.toggle('bell-on',bellOn);
 }
 
-// 타임세일 쿠폰발급
+// 쿠폰발급 → 팝업 표시
 function getCoupon2(){
   const b=document.getElementById('cpbtn2');
-  if(b.classList.contains('done'))return;
-  b.textContent='확인중...';b.style.opacity='.6';
-  setTimeout(()=>{
-    b.textContent='✅ 발급완료';b.classList.add('done');b.style.opacity='1';
-  },700);
+  if(b.classList.contains('done')||b.classList.contains('confirmed'))return;
+  document.getElementById('couponPopup').classList.add('show');
+}
+function closePopup(){
+  document.getElementById('couponPopup').classList.remove('show');
+}
+function popupBgClose(e){
+  if(e.target===e.currentTarget) closePopup();
+}
+function confirmCoupon(){
+  closePopup();
+  const b=document.getElementById('cpbtn2');
+  b.textContent='✅ 쿠폰사용확인';
+  b.classList.remove('done');
+  b.classList.add('confirmed');
 }
 
 // 쿠폰 좋아요픽
