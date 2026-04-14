@@ -547,10 +547,21 @@ function LivePreviewFrame({
     return () => ro.disconnect();
   }, []);
 
+  // ── refs로 최신 상태 접근 (stale closure 방지) ──
+  const playingRef      = useRef(false);
+  const wavePhaseRef    = useRef(0);
+  const waveformStyleRef = useRef(waveformStyle);
+  useEffect(() => { playingRef.current = playing; },       [playing]);
+  useEffect(() => { wavePhaseRef.current = wavePhase; },   [wavePhase]);
+  useEffect(() => { waveformStyleRef.current = waveformStyle; }, [waveformStyle]);
+
   // 웨이브폼 캔버스 드로우 (freqData: circle 실시간 데이터, null이면 sine 애니)
   const drawWaveCanvas = useCallback((freqData?: Uint8Array<ArrayBuffer> | null) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    const isPlaying   = playingRef.current;
+    const phase       = wavePhaseRef.current;
+    const style       = waveformStyleRef.current;
     const dpr = window.devicePixelRatio || 1;
     const W = canvas.offsetWidth  || BASE_W;
     const H = canvas.offsetHeight || 56;
@@ -560,9 +571,10 @@ function LivePreviewFrame({
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, W, H);
     const mid  = H / 2;
-    const color  = (alpha: number) => playing ? `rgba(255,111,15,${alpha})` : `rgba(255,255,255,${alpha * 0.4})`;
+    const color  = (alpha: number) => isPlaying ? `rgba(255,111,15,${alpha})` : `rgba(255,255,255,${alpha * 0.4})`;
     const getAmp = (i: number) =>
-      playing ? Math.max(0.15, Math.abs(Math.sin((wavePhase + i * 0.55) * 1.3)) * 0.85) : 0.18 + 0.08 * Math.abs(Math.sin(i * 0.7));
+      isPlaying ? Math.max(0.15, Math.abs(Math.sin((phase + i * 0.55) * 1.3)) * 0.85) : 0.18 + 0.08 * Math.abs(Math.sin(i * 0.7));
+    const waveformStyle = style;
 
     if (waveformStyle === 'bar') {
       const bars = 32; const bw = W / bars;
@@ -611,7 +623,7 @@ function LivePreviewFrame({
 
       for (let i = 0; i < BARS; i++) {
         let amp: number;
-        if (freqData && freqData.length > 0 && playing) {
+        if (freqData && freqData.length > 0 && isPlaying) {
           // 실시간 주파수 데이터 사용
           const fi  = Math.floor((i / BARS) * Math.floor(freqData.length * 0.7));
           amp = freqData[fi] / 255;
@@ -620,14 +632,14 @@ function LivePreviewFrame({
         }
         const angle = (i / BARS) * Math.PI * 2 - Math.PI / 2;
         const r1    = baseR;
-        const r2    = baseR + Math.max(amp * H * 0.48, playing ? 1 : 2);
+        const r2    = baseR + Math.max(amp * H * 0.48, isPlaying ? 1 : 2);
         const alpha = 0.4 + amp * 0.6;
 
         // 바깥쪽 글로우
         ctx.beginPath();
         ctx.moveTo(cx + Math.cos(angle) * r1, cy + Math.sin(angle) * r1);
         ctx.lineTo(cx + Math.cos(angle) * r2, cy + Math.sin(angle) * r2);
-        ctx.strokeStyle = playing ? `rgba(255,111,15,${alpha * 0.35})` : `rgba(255,255,255,${alpha * 0.12})`;
+        ctx.strokeStyle = isPlaying ? `rgba(255,111,15,${alpha * 0.35})` : `rgba(255,255,255,${alpha * 0.12})`;
         ctx.lineWidth = 4;
         ctx.stroke();
 
@@ -635,7 +647,7 @@ function LivePreviewFrame({
         ctx.beginPath();
         ctx.moveTo(cx + Math.cos(angle) * r1, cy + Math.sin(angle) * r1);
         ctx.lineTo(cx + Math.cos(angle) * r2, cy + Math.sin(angle) * r2);
-        ctx.strokeStyle = playing ? `rgba(255,111,15,${alpha})` : `rgba(255,255,255,${alpha * 0.4})`;
+        ctx.strokeStyle = isPlaying ? `rgba(255,111,15,${alpha})` : `rgba(255,255,255,${alpha * 0.4})`;
         ctx.lineWidth = 1.5;
         ctx.stroke();
       }
@@ -670,15 +682,22 @@ function LivePreviewFrame({
         ctx.fillRect(bx - bw2 / 2, baseY - bh, bw2, bh + 1);
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [playing, wavePhase, waveformStyle]);
+  }, []); // deps 없음 — ref로 최신값 접근
 
-  // circle 이외 스타일: sine phase 애니
+  // 정적 상태 드로우 (playing/phase/style 변경 시)
+  useEffect(() => {
+    if (waveformStyle !== 'circle' || !playing) {
+      drawWaveCanvas(null);
+    }
+  }, [playing, wavePhase, waveformStyle, drawWaveCanvas]);
+
+  // circle 이외 스타일: sine phase RAF
   useEffect(() => {
     if (!playing || waveformStyle === 'circle') return;
-    let phase = wavePhase;
+    let phase = wavePhaseRef.current;
     const tick = () => {
       phase += 0.12;
+      wavePhaseRef.current = phase;
       setWavePhase(phase);
       animRef.current = requestAnimationFrame(tick);
     };
