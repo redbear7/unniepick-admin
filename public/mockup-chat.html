@@ -3,816 +3,887 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>언니픽 채팅 시안</title>
+<title>언니픽 채팅 — 카카오 감성 시안</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    background: #0e0e12;
-    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    gap: 40px;
-    padding: 40px 24px;
-    min-height: 100vh;
-    flex-wrap: wrap;
-  }
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;900&display=swap');
 
-  /* ── 공통 폰 프레임 ── */
-  .phone {
-    width: 375px;
-    min-height: 812px;
-    background: #13141a;
-    border-radius: 40px;
-    overflow: hidden;
-    box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06);
-    display: flex;
-    flex-direction: column;
-    position: relative;
-  }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  /* 상단 상태바 */
-  .status-bar {
-    background: #13141a;
-    padding: 14px 24px 8px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 12px;
-    font-weight: 600;
-    color: rgba(255,255,255,0.9);
-    flex-shrink: 0;
-  }
-  .status-bar .icons { display: flex; gap: 6px; align-items: center; }
-  .signal { display: flex; gap: 2px; align-items: flex-end; }
-  .signal span { background: rgba(255,255,255,0.9); border-radius: 1px; width: 3px; }
+:root {
+  --kakao-yellow: #FEE500;
+  --kakao-brown: #3C1E1E;
+  --brand: #FF6F0F;
+  --bg: #1A1B22;
+  --bg2: #22232D;
+  --bg3: #2A2B38;
+  --surface: #2E3044;
+  --border: rgba(255,255,255,0.07);
+  --text1: #F0F0F5;
+  --text2: rgba(240,240,245,0.55);
+  --text3: rgba(240,240,245,0.28);
+  --radius-xl: 22px;
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
+}
 
-  /* ── 화면 1: 채팅방 리스트 ── */
-  .nav-bar {
-    padding: 12px 20px 14px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-bottom: 1px solid rgba(255,255,255,0.06);
-    flex-shrink: 0;
-  }
-  .nav-title { font-size: 20px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
-  .nav-actions { display: flex; gap: 8px; }
-  .nav-btn {
-    width: 36px; height: 36px; border-radius: 50%;
-    background: rgba(255,255,255,0.06);
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer; font-size: 16px;
-  }
+body {
+  background: #111218;
+  font-family: 'Noto Sans KR', -apple-system, sans-serif;
+  display: flex;
+  gap: 32px;
+  padding: 40px 32px 60px;
+  justify-content: center;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  min-height: 100vh;
+}
 
-  .search-bar {
-    margin: 8px 16px 12px;
-    background: rgba(255,255,255,0.06);
-    border-radius: 12px;
-    padding: 10px 14px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: rgba(255,255,255,0.3);
-    font-size: 14px;
-    flex-shrink: 0;
-  }
+/* ── 페이지 헤더 ── */
+.page-header {
+  width: 100%;
+  text-align: center;
+  margin-bottom: 8px;
+}
+.page-header h1 {
+  font-size: 26px; font-weight: 900;
+  background: linear-gradient(135deg, #FEE500 0%, #FF6F0F 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  letter-spacing: -0.5px;
+}
+.page-header p { font-size: 13px; color: var(--text3); margin-top: 4px; }
 
-  .tabs {
-    display: flex;
-    padding: 0 16px;
-    gap: 4px;
-    border-bottom: 1px solid rgba(255,255,255,0.06);
-    flex-shrink: 0;
-  }
-  .tab {
-    padding: 8px 14px;
-    font-size: 13px;
-    font-weight: 600;
-    color: rgba(255,255,255,0.35);
-    border-bottom: 2px solid transparent;
-    cursor: pointer;
-  }
-  .tab.active { color: #FF6F0F; border-bottom-color: #FF6F0F; }
+/* ── 폰 프레임 ── */
+.col { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.col-label {
+  font-size: 11px; font-weight: 700; letter-spacing: 1px;
+  color: var(--text3); text-transform: uppercase;
+}
 
-  .chat-list { flex: 1; overflow-y: auto; padding: 4px 0; }
-  .chat-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 16px;
-    cursor: pointer;
-    transition: background 0.15s;
-  }
-  .chat-item:active { background: rgba(255,255,255,0.04); }
+.phone {
+  width: 375px;
+  height: 812px;
+  background: var(--bg);
+  border-radius: 42px;
+  overflow: hidden;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.08),
+    0 40px 100px rgba(0,0,0,0.7),
+    inset 0 1px 0 rgba(255,255,255,0.06);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
 
-  .store-avatar {
-    width: 52px; height: 52px; border-radius: 16px;
-    flex-shrink: 0;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 22px;
-    position: relative;
-    overflow: hidden;
-  }
-  .store-avatar img { width: 100%; height: 100%; object-fit: cover; }
-  .avatar-online {
-    position: absolute; bottom: 2px; right: 2px;
-    width: 10px; height: 10px; border-radius: 50%;
-    background: #22c55e;
-    border: 2px solid #13141a;
-  }
+/* 상태바 */
+.statusbar {
+  padding: 14px 24px 6px;
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 12px; font-weight: 700; color: var(--text1);
+  flex-shrink: 0;
+  background: var(--bg);
+}
+.sb-right { display: flex; gap: 5px; align-items: center; font-size: 11px; }
 
-  .chat-meta { flex: 1; min-width: 0; }
-  .chat-row1 { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
-  .store-name { font-size: 15px; font-weight: 600; color: #fff; }
-  .chat-time { font-size: 11px; color: rgba(255,255,255,0.3); }
-  .chat-row2 { display: flex; justify-content: space-between; align-items: center; }
-  .chat-preview { font-size: 13px; color: rgba(255,255,255,0.4); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
-  .unread-badge {
-    background: #FF6F0F;
-    color: #fff; font-size: 11px; font-weight: 700;
-    padding: 2px 7px; border-radius: 20px; flex-shrink: 0;
-  }
-  .coupon-badge {
-    background: rgba(255,111,15,0.15);
-    color: #FF6F0F; font-size: 10px; font-weight: 700;
-    padding: 2px 7px; border-radius: 20px; flex-shrink: 0;
-    border: 1px solid rgba(255,111,15,0.3);
-  }
+/* ══════════════════════════════
+   화면 1 — 채팅 목록
+══════════════════════════════ */
 
-  .divider { height: 1px; background: rgba(255,255,255,0.05); margin: 2px 16px; }
+.list-header {
+  padding: 10px 20px 0;
+  display: flex; justify-content: space-between; align-items: flex-start;
+  flex-shrink: 0;
+}
+.list-title {
+  font-size: 22px; font-weight: 900; color: var(--text1); letter-spacing: -0.5px;
+}
+.header-btns { display: flex; gap: 8px; margin-top: 4px; }
+.hbtn {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: var(--bg3); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; cursor: pointer;
+}
 
-  /* ── 화면 2: 채팅방 내부 ── */
-  .room-header {
-    padding: 12px 16px 12px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    border-bottom: 1px solid rgba(255,255,255,0.06);
-    flex-shrink: 0;
-  }
-  .back-btn { font-size: 20px; color: rgba(255,255,255,0.7); cursor: pointer; padding: 4px; }
-  .room-store-avatar {
-    width: 38px; height: 38px; border-radius: 12px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 18px; flex-shrink: 0; overflow: hidden;
-  }
-  .room-store-avatar img { width: 100%; height: 100%; object-fit: cover; }
-  .room-info { flex: 1; }
-  .room-name { font-size: 16px; font-weight: 700; color: #fff; line-height: 1.2; }
-  .room-sub { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 1px; }
-  .room-actions { display: flex; gap: 8px; }
-  .room-btn { font-size: 18px; color: rgba(255,255,255,0.5); cursor: pointer; padding: 4px; }
+/* 배너 */
+.banner {
+  margin: 12px 16px 0;
+  background: linear-gradient(135deg, #FEE50022 0%, #FF6F0F18 100%);
+  border: 1px solid rgba(254,229,0,0.18);
+  border-radius: var(--radius-lg);
+  padding: 12px 14px;
+  display: flex; align-items: center; gap: 10px;
+  flex-shrink: 0;
+}
+.banner-icon { font-size: 22px; }
+.banner-text { flex: 1; }
+.banner-title { font-size: 13px; font-weight: 700; color: #FEE500; }
+.banner-sub { font-size: 11px; color: var(--text3); margin-top: 1px; }
+.banner-btn {
+  font-size: 11px; font-weight: 700;
+  background: #FEE500; color: #1A1200;
+  padding: 5px 12px; border-radius: 20px; white-space: nowrap;
+}
 
-  .notice-bar {
-    background: rgba(255,111,15,0.08);
-    border-bottom: 1px solid rgba(255,111,15,0.15);
-    padding: 8px 16px;
-    display: flex; align-items: center; gap: 8px;
-    flex-shrink: 0;
-  }
-  .notice-bar .pin { font-size: 12px; }
-  .notice-bar span { font-size: 12px; color: rgba(255,255,255,0.5); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .notice-bar .cnt { font-size: 11px; color: #FF6F0F; font-weight: 700; background: rgba(255,111,15,0.12); padding: 2px 8px; border-radius: 20px; }
+/* 탭바 */
+.tabs {
+  display: flex; gap: 0; padding: 12px 16px 0;
+  overflow-x: auto; flex-shrink: 0;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  padding: 7px 14px; border-radius: 20px;
+  font-size: 12px; font-weight: 700;
+  color: var(--text3); white-space: nowrap; cursor: pointer;
+  transition: all 0.2s;
+}
+.tab.on { background: #FEE500; color: #1A1200; }
 
-  .feed { flex: 1; overflow-y: auto; padding: 16px 16px 12px; display: flex; flex-direction: column; gap: 16px; }
+/* 채팅 아이템 */
+.chat-scroll { flex: 1; overflow-y: auto; padding: 8px 0 0; }
+.chat-scroll::-webkit-scrollbar { display: none; }
 
-  /* 날짜 구분선 */
-  .date-divider {
-    display: flex; align-items: center; gap: 10px;
-    color: rgba(255,255,255,0.2); font-size: 11px; font-weight: 500;
-  }
-  .date-divider::before, .date-divider::after {
-    content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.07);
-  }
+.ci {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 16px; cursor: pointer;
+  border-radius: 0; transition: background 0.15s;
+  position: relative;
+}
+.ci:active { background: rgba(255,255,255,0.03); }
 
-  /* 포스트 카드 */
-  .post-card {
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 18px;
-    overflow: hidden;
-  }
+.ci-avatar {
+  width: 54px; height: 54px; border-radius: 18px;
+  flex-shrink: 0; position: relative;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; overflow: hidden;
+}
+.ci-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.ci-dot {
+  position: absolute; bottom: 1px; right: 1px;
+  width: 11px; height: 11px; border-radius: 50%;
+  background: #4ADE80; border: 2px solid var(--bg);
+}
 
-  .post-header {
-    display: flex; align-items: center; gap: 10px;
-    padding: 12px 14px 8px;
-  }
-  .owner-avatar {
-    width: 32px; height: 32px; border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 14px; flex-shrink: 0; overflow: hidden;
-  }
-  .owner-avatar img { width: 100%; height: 100%; object-fit: cover; }
-  .owner-info { flex: 1; }
-  .owner-name { font-size: 13px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 5px; }
-  .owner-badge {
-    font-size: 9px; font-weight: 700;
-    background: #FF6F0F; color: #fff;
-    padding: 1px 5px; border-radius: 4px; letter-spacing: 0.3px;
-  }
-  .post-time { font-size: 11px; color: rgba(255,255,255,0.25); }
-  .post-more { font-size: 16px; color: rgba(255,255,255,0.3); cursor: pointer; padding: 4px; }
+.ci-body { flex: 1; min-width: 0; }
+.ci-row1 { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px; }
+.ci-name { font-size: 14px; font-weight: 700; color: var(--text1); }
+.ci-time { font-size: 10px; color: var(--text3); }
+.ci-row2 { display: flex; justify-content: space-between; align-items: center; }
+.ci-preview { font-size: 12px; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 210px; }
+.badge-new {
+  background: var(--brand); color: #fff;
+  font-size: 10px; font-weight: 800;
+  min-width: 18px; height: 18px; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 5px; flex-shrink: 0;
+}
+.badge-coupon {
+  font-size: 10px; font-weight: 700; color: #FEE500;
+  background: rgba(254,229,0,0.12); border: 1px solid rgba(254,229,0,0.25);
+  padding: 2px 7px; border-radius: 20px; flex-shrink: 0;
+}
 
-  .post-body { padding: 0 14px 12px; }
-  .post-text { font-size: 14px; color: rgba(255,255,255,0.85); line-height: 1.6; }
-  .post-image {
-    margin: 8px -0px 0; border-radius: 10px; overflow: hidden;
-    width: 100%; height: 160px;
-    background: linear-gradient(135deg, #1e2030 0%, #252836 100%);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 40px; color: rgba(255,255,255,0.15);
-    position: relative;
-  }
-  .post-image-overlay {
-    position: absolute; inset: 0;
-    background: linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.5) 100%);
-    display: flex; align-items: flex-end; padding: 12px;
-  }
-  .post-image-tag {
-    font-size: 11px; color: rgba(255,255,255,0.8); font-weight: 600;
-    background: rgba(0,0,0,0.4); padding: 3px 8px; border-radius: 20px;
-    backdrop-filter: blur(4px);
-  }
+.ci-divider { height: 1px; background: var(--border); margin: 0 16px; }
 
-  /* 쿠폰 카드 */
-  .coupon-card {
-    margin: 10px 14px 4px;
-    background: linear-gradient(135deg, rgba(255,111,15,0.12) 0%, rgba(255,60,0,0.06) 100%);
-    border: 1px solid rgba(255,111,15,0.25);
-    border-radius: 14px;
-    overflow: hidden;
-  }
-  .coupon-top {
-    padding: 14px 16px 10px;
-    display: flex; align-items: center; gap: 12px;
-  }
-  .coupon-icon { font-size: 28px; }
-  .coupon-info { flex: 1; }
-  .coupon-discount { font-size: 22px; font-weight: 900; color: #FF6F0F; line-height: 1.1; }
-  .coupon-title { font-size: 12px; color: rgba(255,255,255,0.6); margin-top: 2px; }
-  .coupon-timer {
-    text-align: right;
-    font-size: 11px; color: rgba(255,255,255,0.4);
-    display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
-  }
-  .timer-val { font-size: 14px; font-weight: 700; color: #FF6F0F; font-variant-numeric: tabular-nums; }
+/* 하단 탭바 */
+.bottom-tab {
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  padding: 10px 0 22px;
+  display: flex; justify-content: space-around;
+  flex-shrink: 0;
+}
+.bt-item { display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; }
+.bt-icon { font-size: 22px; }
+.bt-label { font-size: 9px; font-weight: 700; color: var(--text3); }
+.bt-item.on .bt-label { color: #FEE500; }
+.bt-item.on .bt-icon-wrap { position: relative; }
 
-  .coupon-divider {
-    height: 1px; background: rgba(255,111,15,0.15);
-    margin: 0 14px;
-    position: relative;
-  }
-  .coupon-divider::before, .coupon-divider::after {
-    content: '';
-    position: absolute; top: 50%; transform: translateY(-50%);
-    width: 14px; height: 14px; border-radius: 50%;
-    background: #13141a;
-  }
-  .coupon-divider::before { left: -22px; }
-  .coupon-divider::after { right: -22px; }
+/* ══════════════════════════════
+   화면 2 — 채팅방 내부
+══════════════════════════════ */
 
-  .coupon-bottom {
-    padding: 10px 16px 14px;
-    display: flex; align-items: center; justify-content: space-between;
-  }
-  .coupon-stock { font-size: 11px; color: rgba(255,255,255,0.4); }
-  .coupon-stock strong { color: #FF6F0F; }
-  .coupon-get-btn {
-    background: #FF6F0F; color: #fff;
-    font-size: 13px; font-weight: 700;
-    padding: 8px 18px; border-radius: 10px;
-    cursor: pointer; border: none;
-    box-shadow: 0 4px 12px rgba(255,111,15,0.35);
-    transition: transform 0.1s;
-  }
-  .coupon-get-btn:active { transform: scale(0.96); }
-  .coupon-get-btn.issued {
-    background: rgba(255,255,255,0.08);
-    color: rgba(255,255,255,0.3);
-    box-shadow: none;
-  }
+.room-hd {
+  padding: 10px 14px 10px;
+  display: flex; align-items: center; gap: 10px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0; background: var(--bg);
+}
+.back { font-size: 20px; color: var(--text2); cursor: pointer; padding: 4px; margin-right: -2px; }
+.room-av {
+  width: 38px; height: 38px; border-radius: 13px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; flex-shrink: 0; overflow: hidden;
+}
+.room-av img { width: 100%; height: 100%; object-fit: cover; }
+.room-info-wrap { flex: 1; }
+.room-name {
+  font-size: 15px; font-weight: 800; color: var(--text1);
+  display: flex; align-items: center; gap: 6px;
+}
+.room-sub { font-size: 11px; color: var(--text3); margin-top: 1px; }
+.room-hd-btns { display: flex; gap: 6px; }
+.rh-btn { font-size: 18px; color: var(--text3); cursor: pointer; padding: 4px; }
 
-  /* 좋아요 + 공유 액션바 */
-  .post-actions {
-    padding: 8px 14px 12px;
-    display: flex; align-items: center; gap: 14px;
-    border-top: 1px solid rgba(255,255,255,0.05);
-  }
-  .like-btn {
-    display: flex; align-items: center; gap: 5px;
-    background: none; border: none; cursor: pointer;
-    color: rgba(255,255,255,0.4); font-size: 13px;
-    padding: 4px 8px; border-radius: 8px;
-    transition: all 0.15s;
-  }
-  .like-btn.liked { color: #FF6F0F; background: rgba(255,111,15,0.1); }
-  .like-btn .heart { font-size: 16px; transition: transform 0.2s; }
-  .like-btn.liked .heart { transform: scale(1.2); }
-  .like-count { font-weight: 700; }
+/* 공지 고정 */
+.pinned {
+  margin: 0;
+  background: rgba(254,229,0,0.06);
+  border-bottom: 1px solid rgba(254,229,0,0.12);
+  padding: 8px 14px;
+  display: flex; align-items: center; gap: 8px;
+  flex-shrink: 0;
+}
+.pinned-text { font-size: 12px; color: var(--text2); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pinned-label {
+  font-size: 10px; font-weight: 800; color: #FEE500;
+  background: rgba(254,229,0,0.12); padding: 2px 8px; border-radius: 20px;
+}
 
-  .share-btn {
-    display: flex; align-items: center; gap: 5px;
-    background: none; border: none; cursor: pointer;
-    color: rgba(255,255,255,0.3); font-size: 13px;
-    padding: 4px 8px; border-radius: 8px;
-  }
-  .view-count { margin-left: auto; font-size: 11px; color: rgba(255,255,255,0.2); display: flex; align-items: center; gap: 4px; }
+/* 피드 */
+.feed {
+  flex: 1; overflow-y: auto;
+  padding: 16px 14px 8px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.feed::-webkit-scrollbar { display: none; }
 
-  /* 시스템 메시지 */
-  .system-msg {
-    text-align: center;
-    font-size: 11px; color: rgba(255,255,255,0.2);
-    display: flex; align-items: center; gap: 8px;
-  }
-  .system-msg::before, .system-msg::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.06); }
+.date-sep {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11px; color: var(--text3);
+}
+.date-sep::before, .date-sep::after {
+  content: ''; flex: 1; height: 1px; background: var(--border);
+}
 
-  /* 하단 읽기전용 바 */
-  .readonly-bar {
-    padding: 12px 16px;
-    border-top: 1px solid rgba(255,255,255,0.06);
-    display: flex; align-items: center; gap: 10px;
-    background: rgba(255,255,255,0.02);
-    flex-shrink: 0;
-  }
-  .readonly-input {
-    flex: 1; background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 22px; padding: 10px 16px;
-    font-size: 14px; color: rgba(255,255,255,0.2);
-    display: flex; align-items: center; gap: 8px;
-    cursor: not-allowed;
-  }
-  .readonly-icon { font-size: 13px; }
-  .member-count-pill {
-    background: rgba(255,255,255,0.06);
-    border-radius: 20px; padding: 8px 12px;
-    font-size: 12px; color: rgba(255,255,255,0.35);
-    display: flex; align-items: center; gap: 5px;
-    white-space: nowrap;
-  }
+.sys-msg {
+  text-align: center; font-size: 11px; color: var(--text3);
+}
 
-  /* 화면 레이블 */
-  .screen-label {
-    text-align: center;
-    color: rgba(255,255,255,0.3);
-    font-size: 13px;
-    font-weight: 600;
-    margin-bottom: 16px;
-    letter-spacing: 0.5px;
-  }
+/* 포스트 카드 */
+.post {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
 
-  /* 진행바 (쿠폰 재고) */
-  .stock-bar {
-    height: 3px;
-    background: rgba(255,255,255,0.08);
-    border-radius: 2px;
-    margin: 0 16px 10px;
-    overflow: hidden;
-  }
-  .stock-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #FF6F0F, #FF3C00);
-    border-radius: 2px;
-    transition: width 0.3s;
-  }
+.post-hd {
+  padding: 12px 14px 8px;
+  display: flex; align-items: center; gap: 10px;
+}
+.post-av {
+  width: 36px; height: 36px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px; overflow: hidden; flex-shrink: 0;
+}
+.post-av img { width: 100%; height: 100%; object-fit: cover; }
+.post-av-info { flex: 1; }
+.post-sender {
+  font-size: 13px; font-weight: 700; color: var(--text1);
+  display: flex; align-items: center; gap: 5px;
+}
+.owner-pill {
+  font-size: 9px; font-weight: 800;
+  background: #FEE500; color: #1A1200;
+  padding: 1.5px 6px; border-radius: 5px;
+}
+.post-ts { font-size: 10px; color: var(--text3); margin-top: 1px; }
+.post-menu { font-size: 16px; color: var(--text3); cursor: pointer; }
 
-  /* 가게 카테고리 칩 */
-  .category-chip {
-    display: inline-flex; align-items: center; gap: 4px;
-    font-size: 10px; color: rgba(255,255,255,0.4);
-    background: rgba(255,255,255,0.06);
-    padding: 2px 8px; border-radius: 20px;
-    margin-bottom: 4px;
-  }
+.post-body { padding: 0 14px 0; }
+.post-txt {
+  font-size: 14px; line-height: 1.65; color: var(--text1);
+}
+.post-txt strong { color: #FEE500; }
 
-  /* 멤버 수 표시 */
-  .members-inline {
-    font-size: 11px;
-    color: rgba(255,255,255,0.3);
-  }
+.post-img {
+  margin: 10px 0 0;
+  border-radius: var(--radius-md);
+  width: 100%; height: 155px;
+  background: var(--bg3);
+  display: flex; align-items: center; justify-content: center;
+  position: relative; overflow: hidden; font-size: 44px;
+}
+.post-img-grad {
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, transparent 45%, rgba(0,0,0,0.6) 100%);
+  display: flex; align-items: flex-end; padding: 10px 12px;
+}
+.post-img-tag {
+  font-size: 10px; color: rgba(255,255,255,0.85); font-weight: 700;
+  background: rgba(0,0,0,0.45); padding: 3px 9px; border-radius: 20px;
+  backdrop-filter: blur(6px);
+}
 
-  ::-webkit-scrollbar { width: 0; }
+/* 쿠폰 */
+.coupon {
+  margin: 12px 0 0;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid rgba(254,229,0,0.22);
+  background: linear-gradient(135deg, rgba(254,229,0,0.08) 0%, rgba(255,111,15,0.06) 100%);
+}
+.cp-top {
+  padding: 14px 16px 8px;
+  display: flex; align-items: center; gap: 12px;
+}
+.cp-emoji { font-size: 30px; }
+.cp-info { flex: 1; }
+.cp-val { font-size: 24px; font-weight: 900; color: #FEE500; line-height: 1.1; letter-spacing: -0.5px; }
+.cp-desc { font-size: 11px; color: var(--text2); margin-top: 2px; }
+.cp-timer { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
+.cp-timer-label { font-size: 10px; color: var(--text3); }
+.cp-timer-val { font-size: 15px; font-weight: 800; color: #FEE500; font-variant-numeric: tabular-nums; }
 
-  /* 배경 레이블 */
-  .page-title {
-    color: rgba(255,255,255,0.6);
-    font-size: 28px;
-    font-weight: 800;
-    text-align: center;
-    margin-bottom: 4px;
-  }
-  .page-sub {
-    color: rgba(255,255,255,0.25);
-    font-size: 13px;
-    text-align: center;
-    margin-bottom: 32px;
-  }
+.cp-progress { padding: 4px 16px 6px; }
+.cp-bar { height: 3px; background: rgba(255,255,255,0.07); border-radius: 2px; overflow: hidden; }
+.cp-fill { height: 100%; background: linear-gradient(90deg, #FEE500, #FF6F0F); border-radius: 2px; }
+.cp-stock { font-size: 10px; color: var(--text3); margin-top: 4px; display: flex; justify-content: space-between; }
+.cp-stock strong { color: #FEE500; }
+
+.cp-notch {
+  height: 1px; margin: 0 14px;
+  background: rgba(254,229,0,0.12);
+  position: relative;
+}
+.cp-notch::before, .cp-notch::after {
+  content: ''; position: absolute; top: 50%; transform: translateY(-50%);
+  width: 16px; height: 16px; border-radius: 50%; background: var(--bg);
+}
+.cp-notch::before { left: -22px; }
+.cp-notch::after { right: -22px; }
+
+.cp-bottom {
+  padding: 10px 16px 14px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.cp-cond { font-size: 11px; color: var(--text3); }
+.cp-btn {
+  background: #FEE500; color: #1A1200;
+  font-size: 13px; font-weight: 800;
+  padding: 9px 20px; border-radius: 12px;
+  border: none; cursor: pointer;
+  box-shadow: 0 4px 14px rgba(254,229,0,0.3);
+  transition: all 0.15s;
+}
+.cp-btn:active { transform: scale(0.95); }
+.cp-btn.done { background: var(--bg3); color: var(--text3); box-shadow: none; }
+
+/* 액션 바 */
+.post-actions {
+  padding: 9px 14px 12px;
+  display: flex; align-items: center; gap: 2px;
+  border-top: 1px solid var(--border);
+  margin-top: 12px;
+}
+.act-btn {
+  display: flex; align-items: center; gap: 5px;
+  background: none; border: none; cursor: pointer;
+  font-size: 12px; color: var(--text3);
+  padding: 5px 10px; border-radius: 20px;
+  font-family: inherit; font-weight: 600;
+  transition: all 0.15s;
+}
+.act-btn.liked { color: #FF6F0F; background: rgba(255,111,15,0.1); }
+.act-btn .icon { font-size: 15px; display: inline-block; transition: transform 0.2s; }
+.act-btn.liked .icon { transform: scale(1.25); }
+.act-views { margin-left: auto; font-size: 10px; color: var(--text3); display: flex; align-items: center; gap: 3px; }
+
+/* 좋아요 목표 */
+.goal-bar {
+  margin: 10px 0 0;
+  background: var(--bg3);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  display: flex; align-items: center; gap: 10px;
+}
+.goal-progress { flex: 1; }
+.goal-label { font-size: 11px; color: var(--text2); margin-bottom: 5px; }
+.goal-label strong { color: #FEE500; }
+.goal-track { height: 4px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; }
+.goal-fill { height: 100%; background: linear-gradient(90deg, #FEE500, #FF6F0F); border-radius: 2px; transition: width 0.6s; }
+.goal-pct { font-size: 13px; font-weight: 800; color: #FEE500; }
+
+/* 시스템: 쿠폰 발행 알림 */
+.sys-coupon {
+  background: rgba(254,229,0,0.07);
+  border: 1px solid rgba(254,229,0,0.15);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  font-size: 12px; color: rgba(254,229,0,0.7);
+  text-align: center;
+}
+
+/* 읽기 전용 바 */
+.readonly-bar {
+  padding: 10px 14px 26px;
+  border-top: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+  background: var(--bg); flex-shrink: 0;
+}
+.readonly-field {
+  flex: 1;
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 22px; padding: 10px 16px;
+  font-size: 13px; color: var(--text3);
+  display: flex; align-items: center; gap: 7px;
+}
+.members-pill {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 20px; padding: 8px 11px;
+  font-size: 11px; color: var(--text3);
+  display: flex; align-items: center; gap: 4px; white-space: nowrap;
+}
+
+/* ── Typebot 팝업 레이어 ── */
+.typebot-overlay {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(8px);
+  display: flex; align-items: flex-end;
+  z-index: 100;
+}
+.typebot-sheet {
+  background: var(--bg2);
+  border-radius: 28px 28px 0 0;
+  width: 100%;
+  padding: 20px 20px 40px;
+  border-top: 1px solid var(--border);
+}
+.sheet-handle {
+  width: 36px; height: 4px; background: rgba(255,255,255,0.15);
+  border-radius: 2px; margin: 0 auto 18px;
+}
+.sheet-title {
+  font-size: 17px; font-weight: 900; color: var(--text1); margin-bottom: 4px;
+  text-align: center;
+}
+.sheet-sub { font-size: 12px; color: var(--text3); text-align: center; margin-bottom: 20px; }
+
+/* 타입봇 버블 */
+.bot-row { display: flex; gap: 8px; align-items: flex-end; margin-bottom: 10px; }
+.bot-av { width: 28px; height: 28px; border-radius: 10px; background: #FEE500; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+.bot-bubble { background: var(--bg3); border-radius: 4px 14px 14px 14px; padding: 10px 13px; font-size: 13px; color: var(--text1); max-width: 240px; line-height: 1.5; }
+.user-row { display: flex; justify-content: flex-end; margin-bottom: 10px; }
+.user-bubble { background: #FEE500; color: #1A1200; border-radius: 14px 4px 14px 14px; padding: 10px 13px; font-size: 13px; font-weight: 600; max-width: 200px; }
+
+.quick-replies { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.qr-btn {
+  background: none; border: 1.5px solid rgba(254,229,0,0.4);
+  color: #FEE500; font-size: 12px; font-weight: 700;
+  padding: 7px 14px; border-radius: 20px; cursor: pointer;
+  font-family: inherit;
+}
+.qr-btn:hover { background: rgba(254,229,0,0.1); }
 </style>
 </head>
 <body>
 
-<!-- ── 화면 1: 채팅방 리스트 ── -->
-<div>
-  <p class="page-title">언니픽 채팅</p>
-  <p class="page-sub">가게별 채팅방 리스트</p>
-  <div class="screen-label">① 채팅방 목록</div>
+<div class="page-header">
+  <h1>언니픽 채팅 · 디자인 시안 v2</h1>
+  <p>카카오톡 감성 · 20-30대 타깃 · Supabase Realtime + Typebot</p>
+</div>
+
+<!-- ══ 화면 1: 채팅방 목록 ══ -->
+<div class="col">
+  <div class="col-label">① 채팅방 목록</div>
   <div class="phone">
-    <!-- 상태바 -->
-    <div class="status-bar">
+    <div class="statusbar">
       <span>9:41</span>
-      <div class="icons">
-        <div class="signal">
-          <span style="height:4px"></span><span style="height:6px"></span><span style="height:9px"></span><span style="height:11px"></span>
-        </div>
-        <span>WiFi</span>
-        <span>🔋</span>
+      <div class="sb-right">
+        <span>●●●●</span><span>WiFi</span><span>🔋87%</span>
       </div>
     </div>
 
-    <!-- 네비 바 -->
-    <div class="nav-bar">
-      <div class="nav-title">채팅 <span style="font-size:14px;color:rgba(255,255,255,0.3);font-weight:500">3</span></div>
-      <div class="nav-actions">
-        <div class="nav-btn">🔍</div>
-        <div class="nav-btn" style="background:rgba(255,111,15,0.15);color:#FF6F0F;font-size:13px;font-weight:700;width:auto;padding:0 12px;border-radius:20px;">+ 가게 찾기</div>
+    <div class="list-header">
+      <div class="list-title">채팅 <span style="font-size:15px;color:var(--text3);font-weight:600">3</span></div>
+      <div class="header-btns">
+        <div class="hbtn">🔍</div>
+        <div class="hbtn" style="background:rgba(254,229,0,0.12);border-color:rgba(254,229,0,0.2);font-size:11px;font-weight:800;color:#FEE500;width:auto;padding:0 13px;border-radius:20px;gap:3px;display:flex;align-items:center">+ 가게 찾기</div>
       </div>
     </div>
 
-    <!-- 검색 -->
-    <div class="search-bar">
-      <span>🔍</span>
-      <span>가게명 검색</span>
+    <!-- 쿠폰 배너 -->
+    <div class="banner">
+      <div class="banner-icon">🎟</div>
+      <div class="banner-text">
+        <div class="banner-title">새 쿠폰 3개 도착했어요!</div>
+        <div class="banner-sub">라멘 홋카이도 · 카페 봄날 · 뷰티살롱H</div>
+      </div>
+      <div class="banner-btn">확인</div>
     </div>
 
-    <!-- 탭 -->
+    <!-- 카테고리 탭 -->
     <div class="tabs">
-      <div class="tab active">전체</div>
-      <div class="tab">맛집</div>
-      <div class="tab">카페</div>
-      <div class="tab">뷰티</div>
-      <div class="tab">쇼핑</div>
+      <div class="tab on">전체</div>
+      <div class="tab">맛집 🍜</div>
+      <div class="tab">카페 ☕</div>
+      <div class="tab">뷰티 💄</div>
+      <div class="tab">쇼핑 👗</div>
     </div>
 
-    <!-- 채팅 리스트 -->
-    <div class="chat-list">
+    <!-- 리스트 -->
+    <div class="chat-scroll">
 
-      <!-- 채팅 아이템 1 -->
-      <div class="chat-item">
-        <div class="store-avatar" style="background:linear-gradient(135deg,#1a1a2e,#252836)">
-          🍜
-          <div class="avatar-online"></div>
+      <div class="ci">
+        <div class="ci-avatar" style="background:linear-gradient(135deg,#2a1f1f,#3a2525)">
+          🍜<div class="ci-dot"></div>
         </div>
-        <div class="chat-meta">
-          <div class="chat-row1">
-            <div style="display:flex;align-items:center;gap:6px">
-              <span class="store-name">라멘 홋카이도</span>
-              <span class="category-chip">맛집</span>
-            </div>
-            <span class="chat-time">방금</span>
+        <div class="ci-body">
+          <div class="ci-row1">
+            <span class="ci-name">라멘 홋카이도</span>
+            <span class="ci-time">방금</span>
           </div>
-          <div class="chat-row2">
-            <span class="chat-preview">🎟 오늘만! 라멘 1000원 할인 쿠폰 오픈</span>
-            <span class="unread-badge">3</span>
+          <div class="ci-row2">
+            <span class="ci-preview">🎟 오늘만! 라멘 1,000원 할인 쿠폰 오픈</span>
+            <span class="badge-new">3</span>
           </div>
         </div>
       </div>
+      <div class="ci-divider"></div>
 
-      <div class="divider"></div>
-
-      <!-- 채팅 아이템 2 -->
-      <div class="chat-item">
-        <div class="store-avatar" style="background:linear-gradient(135deg,#1e1a2e,#2a2040)">
+      <div class="ci">
+        <div class="ci-avatar" style="background:linear-gradient(135deg,#1f1f2a,#25253a)">
           ☕
         </div>
-        <div class="chat-meta">
-          <div class="chat-row1">
-            <div style="display:flex;align-items:center;gap:6px">
-              <span class="store-name">카페 봄날</span>
-              <span class="category-chip">카페</span>
-            </div>
-            <span class="chat-time">2분 전</span>
+        <div class="ci-body">
+          <div class="ci-row1">
+            <span class="ci-name">카페 봄날</span>
+            <span class="ci-time">3분 전</span>
           </div>
-          <div class="chat-row2">
-            <span class="chat-preview">아메리카노 무료 증정 이벤트 시작합니다 ☀️</span>
-            <span class="coupon-badge">🎟 쿠폰</span>
+          <div class="ci-row2">
+            <span class="ci-preview">아메리카노 무료 증정 이벤트 시작 ☀️</span>
+            <span class="badge-coupon">🎟 쿠폰</span>
           </div>
         </div>
       </div>
+      <div class="ci-divider"></div>
 
-      <div class="divider"></div>
-
-      <!-- 채팅 아이템 3 -->
-      <div class="chat-item">
-        <div class="store-avatar" style="background:linear-gradient(135deg,#1a2820,#1e3028)">
+      <div class="ci">
+        <div class="ci-avatar" style="background:linear-gradient(135deg,#1f2a1f,#25352a)">
           💄
         </div>
-        <div class="chat-meta">
-          <div class="chat-row1">
-            <div style="display:flex;align-items:center;gap:6px">
-              <span class="store-name">뷰티 살롱 H</span>
-              <span class="category-chip">뷰티</span>
-            </div>
-            <span class="chat-time">18분 전</span>
+        <div class="ci-body">
+          <div class="ci-row1">
+            <span class="ci-name">뷰티살롱 H</span>
+            <span class="ci-time">20분 전</span>
           </div>
-          <div class="chat-row2">
-            <span class="chat-preview">이번 주말 헤어컷 20% 할인 이벤트!</span>
-            <span class="unread-badge">1</span>
+          <div class="ci-row2">
+            <span class="ci-preview">이번 주말 헤어컷 20% 할인 이벤트!</span>
+            <span class="badge-new">1</span>
           </div>
         </div>
       </div>
+      <div class="ci-divider"></div>
 
-      <div class="divider"></div>
-
-      <!-- 채팅 아이템 4 -->
-      <div class="chat-item" style="opacity:0.55">
-        <div class="store-avatar" style="background:linear-gradient(135deg,#201a1a,#2e2020)">
-          🥩
+      <div class="ci" style="opacity:.45">
+        <div class="ci-avatar" style="background:linear-gradient(135deg,#2a1f1f,#352525)">🥩</div>
+        <div class="ci-body">
+          <div class="ci-row1"><span class="ci-name">한우명가</span><span class="ci-time">2시간 전</span></div>
+          <div class="ci-row2"><span class="ci-preview">주말 특선 한우 세트 예약 받습니다</span></div>
         </div>
-        <div class="chat-meta">
-          <div class="chat-row1">
-            <div style="display:flex;align-items:center;gap:6px">
-              <span class="store-name">한우명가</span>
-              <span class="category-chip">맛집</span>
-            </div>
-            <span class="chat-time">2시간 전</span>
-          </div>
-          <div class="chat-row2">
-            <span class="chat-preview">주말 특선 한우 세트 예약 받습니다 🥩</span>
-          </div>
+      </div>
+      <div class="ci-divider"></div>
+
+      <div class="ci" style="opacity:.45">
+        <div class="ci-avatar" style="background:linear-gradient(135deg,#1f1f2a,#25253a)">👗</div>
+        <div class="ci-body">
+          <div class="ci-row1"><span class="ci-name">스타일 언니</span><span class="ci-time">어제</span></div>
+          <div class="ci-row2"><span class="ci-preview">신상 입고 + 얼리버드 30% 쿠폰</span></div>
         </div>
       </div>
 
-      <div class="divider"></div>
-
-      <!-- 채팅 아이템 5 -->
-      <div class="chat-item" style="opacity:0.55">
-        <div class="store-avatar" style="background:linear-gradient(135deg,#1a1e28,#20283a)">
-          👗
-        </div>
-        <div class="chat-meta">
-          <div class="chat-row1">
-            <div style="display:flex;align-items:center;gap:6px">
-              <span class="store-name">스타일 언니</span>
-              <span class="category-chip">쇼핑</span>
-            </div>
-            <span class="chat-time">어제</span>
-          </div>
-          <div class="chat-row2">
-            <span class="chat-preview">신상 입고 소식 + 얼리버드 30% 쿠폰</span>
-          </div>
-        </div>
-      </div>
-
-      <div style="height:80px"></div>
     </div>
 
     <!-- 하단 탭바 -->
-    <div style="position:absolute;bottom:0;left:0;right:0;background:#13141a;border-top:1px solid rgba(255,255,255,0.07);padding:10px 0 20px;display:flex;justify-content:space-around;flex-shrink:0">
-      <div style="display:flex;flex-direction:column;align-items:center;gap:2px;color:rgba(255,255,255,0.25);font-size:10px">
-        <span style="font-size:20px">🏠</span>홈
+    <div class="bottom-tab">
+      <div class="bt-item"><span class="bt-icon">🏠</span><span class="bt-label">홈</span></div>
+      <div class="bt-item"><span class="bt-icon">🔍</span><span class="bt-label">탐색</span></div>
+      <div class="bt-item on">
+        <span class="bt-icon">💬</span>
+        <span class="bt-label" style="color:#FEE500">채팅</span>
       </div>
-      <div style="display:flex;flex-direction:column;align-items:center;gap:2px;color:rgba(255,255,255,0.25);font-size:10px">
-        <span style="font-size:20px">🔍</span>탐색
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:center;gap:2px;color:#FF6F0F;font-size:10px;position:relative">
-        <span style="font-size:20px">💬</span>채팅
-        <div style="position:absolute;top:0;right:8px;width:8px;height:8px;background:#FF6F0F;border-radius:50%;border:2px solid #13141a"></div>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:center;gap:2px;color:rgba(255,255,255,0.25);font-size:10px">
-        <span style="font-size:20px">🎟</span>쿠폰함
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:center;gap:2px;color:rgba(255,255,255,0.25);font-size:10px">
-        <span style="font-size:20px">👤</span>내정보
-      </div>
+      <div class="bt-item"><span class="bt-icon">🎟</span><span class="bt-label">쿠폰함</span></div>
+      <div class="bt-item"><span class="bt-icon">👤</span><span class="bt-label">내정보</span></div>
     </div>
 
   </div>
 </div>
 
 
-<!-- ── 화면 2: 채팅방 내부 ── -->
-<div>
-  <p class="page-title">&nbsp;</p>
-  <p class="page-sub">가게 채팅창 (공지 피드)</p>
-  <div class="screen-label">② 채팅방 내부</div>
+<!-- ══ 화면 2: 채팅방 피드 ══ -->
+<div class="col">
+  <div class="col-label">② 공지 피드</div>
   <div class="phone">
-    <!-- 상태바 -->
-    <div class="status-bar">
-      <span>9:41</span>
-      <div class="icons">
-        <div class="signal">
-          <span style="height:4px"></span><span style="height:6px"></span><span style="height:9px"></span><span style="height:11px"></span>
-        </div>
-        <span>WiFi</span>
-        <span>🔋</span>
+    <div class="statusbar"><span>9:41</span><div class="sb-right"><span>●●●●</span><span>WiFi</span><span>🔋87%</span></div></div>
+
+    <div class="room-hd">
+      <div class="back">←</div>
+      <div class="room-av" style="background:linear-gradient(135deg,#2a1f1f,#3a2525)">🍜</div>
+      <div class="room-info-wrap">
+        <div class="room-name">라멘 홋카이도 <span style="font-size:11px;color:var(--text3);font-weight:400">강남점</span></div>
+        <div class="room-sub">👥 1,284명 참여 · 🟢 사장님 온라인</div>
+      </div>
+      <div class="room-hd-btns">
+        <div class="rh-btn">🔔</div>
+        <div class="rh-btn">⋯</div>
       </div>
     </div>
 
-    <!-- 룸 헤더 -->
-    <div class="room-header">
-      <div class="back-btn">←</div>
-      <div class="room-store-avatar" style="background:linear-gradient(135deg,#1a1a2e,#252836)">🍜</div>
-      <div class="room-info">
-        <div class="room-name">라멘 홋카이도 <span style="font-size:11px;color:rgba(255,255,255,0.3);font-weight:400">· 서울 강남</span></div>
-        <div class="room-sub">👥 멤버 1,284명 · 🟢 사장님 온라인</div>
-      </div>
-      <div class="room-actions">
-        <div class="room-btn">🔔</div>
-        <div class="room-btn">⋯</div>
-      </div>
+    <div class="pinned">
+      <span style="font-size:12px">📌</span>
+      <span class="pinned-text">오늘 점심 특선! 라멘+교자 세트 10,900원→8,900원</span>
+      <span class="pinned-label">공지</span>
     </div>
 
-    <!-- 공지 고정 -->
-    <div class="notice-bar">
-      <span class="pin">📌</span>
-      <span>오늘 점심 특선! 라멘+교자 세트 10,900원 → 8,900원</span>
-      <span class="cnt">공지</span>
-    </div>
-
-    <!-- 피드 -->
     <div class="feed">
+      <div class="date-sep">2024년 4월 15일 화요일</div>
+      <div class="sys-msg">채팅방에 참여했습니다 👋</div>
 
-      <div class="date-divider">2024년 4월 15일 화요일</div>
-
-      <!-- 시스템 메시지 -->
-      <div class="system-msg">채팅방에 참여했습니다</div>
-
-      <!-- 포스트 1: 텍스트 + 이미지 -->
-      <div class="post-card">
-        <div class="post-header">
-          <div class="owner-avatar" style="background:linear-gradient(135deg,#FF6F0F,#FF3C00)">🍜</div>
-          <div class="owner-info">
-            <div class="owner-name">
-              라멘 홋카이도
-              <span class="owner-badge">사장님</span>
-            </div>
-            <div class="post-time">오전 9:12</div>
+      <!-- 포스트 1: 이미지 공지 -->
+      <div class="post">
+        <div class="post-hd">
+          <div class="post-av" style="background:linear-gradient(135deg,#FF6F0F,#FF3C00)">🍜</div>
+          <div class="post-av-info">
+            <div class="post-sender">라멘 홋카이도 <span class="owner-pill">사장님</span></div>
+            <div class="post-ts">오전 9:12</div>
           </div>
-          <div class="post-more">⋯</div>
+          <div class="post-menu">⋯</div>
         </div>
         <div class="post-body">
-          <div class="post-text">오늘 점심 특선입니다! 🍜<br>돈코츠 라멘 + 군만두 세트를<br>특별 가격 <strong style="color:#FF6F0F">8,900원</strong>에 드립니다.<br>12시~2시 한정이에요!</div>
-          <div class="post-image">
+          <div class="post-txt">오늘 점심 특선입니다! 🍜<br>돈코츠 라멘 + 군만두 세트<br>특별 가격 <strong>8,900원</strong> · 12시~2시 한정!</div>
+          <div class="post-img">
             🍜
-            <div class="post-image-overlay">
-              <span class="post-image-tag">📷 오늘의 특선</span>
-            </div>
+            <div class="post-img-grad"><span class="post-img-tag">📷 오늘의 특선</span></div>
           </div>
         </div>
         <div class="post-actions">
-          <button class="like-btn liked" onclick="toggleLike(this)">
-            <span class="heart">❤️</span>
-            <span class="like-count">127</span>
+          <button class="act-btn liked" onclick="toggleLike(this)">
+            <span class="icon">❤️</span> <span class="cnt">127</span>
           </button>
-          <button class="share-btn">
-            <span>↗</span> 공유
+          <button class="act-btn" onclick="toggleLike(this)" style="margin-left:2px">
+            <span class="icon">💬</span> <span class="cnt">댓글</span>
           </button>
-          <div class="view-count">👁 342</div>
+          <button class="act-btn"><span class="icon">↗</span> 공유</button>
+          <div class="act-views">👁 342</div>
         </div>
       </div>
 
       <!-- 포스트 2: 쿠폰 -->
-      <div class="post-card">
-        <div class="post-header">
-          <div class="owner-avatar" style="background:linear-gradient(135deg,#FF6F0F,#FF3C00)">🍜</div>
-          <div class="owner-info">
-            <div class="owner-name">
-              라멘 홋카이도
-              <span class="owner-badge">사장님</span>
-            </div>
-            <div class="post-time">오전 10:30</div>
+      <div class="post">
+        <div class="post-hd">
+          <div class="post-av" style="background:linear-gradient(135deg,#FF6F0F,#FF3C00)">🍜</div>
+          <div class="post-av-info">
+            <div class="post-sender">라멘 홋카이도 <span class="owner-pill">사장님</span></div>
+            <div class="post-ts">오전 10:30</div>
           </div>
-          <div class="post-more">⋯</div>
+          <div class="post-menu">⋯</div>
         </div>
         <div class="post-body">
-          <div class="post-text">🔥 선착순 쿠폰 오픈합니다!<br>좋아요 누르고 바로 받아가세요 👇</div>
+          <div class="post-txt">🔥 선착순 50명 한정 쿠폰!<br>좋아요 누르고 바로 받아가세요 👇</div>
 
-          <!-- 쿠폰 카드 -->
-          <div class="coupon-card">
-            <div class="coupon-top">
-              <div class="coupon-icon">🎟</div>
-              <div class="coupon-info">
-                <div class="coupon-discount">1,000원 할인</div>
-                <div class="coupon-title">라멘 전메뉴 적용 · 1만원 이상</div>
+          <div class="coupon">
+            <div class="cp-top">
+              <div class="cp-emoji">🎟</div>
+              <div class="cp-info">
+                <div class="cp-val">1,000원 할인</div>
+                <div class="cp-desc">라멘 전메뉴 · 1만원 이상 결제시</div>
               </div>
-              <div class="coupon-timer">
-                <span style="font-size:10px;color:rgba(255,255,255,0.3)">마감까지</span>
-                <span class="timer-val" id="timer">02:47:13</span>
+              <div class="cp-timer">
+                <div class="cp-timer-label">마감까지</div>
+                <div class="cp-timer-val" id="t1">02:47:05</div>
               </div>
             </div>
-
-            <!-- 재고 바 -->
-            <div class="stock-bar">
-              <div class="stock-fill" style="width:62%"></div>
+            <div class="cp-progress">
+              <div class="cp-bar"><div class="cp-fill" id="fillbar" style="width:64%"></div></div>
+              <div class="cp-stock">
+                <span>남은 수량 <strong id="stock">18</strong>장 / 50장</span>
+                <span id="stockpct">64% 소진</span>
+              </div>
             </div>
-
-            <div class="coupon-divider"></div>
-
-            <div class="coupon-bottom">
-              <div class="coupon-stock">남은 수량 <strong>18</strong> / 50장</div>
-              <button class="coupon-get-btn" onclick="getCoupon(this)">쿠폰 받기</button>
+            <div class="cp-notch"></div>
+            <div class="cp-bottom">
+              <div class="cp-cond">📍 라멘 홋카이도 강남점</div>
+              <button class="cp-btn" id="cpbtn" onclick="getCoupon()">쿠폰 받기</button>
             </div>
           </div>
         </div>
         <div class="post-actions">
-          <button class="like-btn" onclick="toggleLike(this)">
-            <span class="heart">🤍</span>
-            <span class="like-count">89</span>
+          <button class="act-btn" onclick="toggleLike(this)">
+            <span class="icon">🤍</span> <span class="cnt">89</span>
           </button>
-          <button class="share-btn">
-            <span>↗</span> 공유
-          </button>
-          <div class="view-count">👁 218</div>
+          <button class="act-btn"><span class="icon">↗</span> 공유</button>
+          <div class="act-views">👁 218</div>
         </div>
       </div>
 
-      <!-- 포스트 3: 텍스트만 -->
-      <div class="post-card">
-        <div class="post-header">
-          <div class="owner-avatar" style="background:linear-gradient(135deg,#FF6F0F,#FF3C00)">🍜</div>
-          <div class="owner-info">
-            <div class="owner-name">
-              라멘 홋카이도
-              <span class="owner-badge">사장님</span>
-            </div>
-            <div class="post-time">오전 11:05</div>
+      <!-- 포스트 3: 좋아요 목표 -->
+      <div class="post">
+        <div class="post-hd">
+          <div class="post-av" style="background:linear-gradient(135deg,#FF6F0F,#FF3C00)">🍜</div>
+          <div class="post-av-info">
+            <div class="post-sender">라멘 홋카이도 <span class="owner-pill">사장님</span></div>
+            <div class="post-ts">오전 11:05</div>
           </div>
-          <div class="post-more">⋯</div>
         </div>
         <div class="post-body">
-          <div class="post-text">쿠폰 좋아요 100개 달성하면<br>추가 쿠폰 오픈할게요! 💪<br><br>현재 <strong style="color:#FF6F0F">89 / 100</strong> ❤️</div>
+          <div class="post-txt">❤️ 좋아요 <strong>100개</strong> 달성하면<br>추가 쿠폰 오픈할게요! 지금 <strong id="goal-now">89</strong>/100 💪</div>
+          <div class="goal-bar">
+            <div class="goal-progress">
+              <div class="goal-label">달성까지 <strong id="goal-left">11</strong>개 남았어요!</div>
+              <div class="goal-track"><div class="goal-fill" id="goalfill" style="width:89%"></div></div>
+            </div>
+            <div class="goal-pct" id="goalpct">89%</div>
+          </div>
         </div>
         <div class="post-actions">
-          <button class="like-btn" onclick="toggleLike(this)">
-            <span class="heart">🤍</span>
-            <span class="like-count">89</span>
+          <button class="act-btn" id="goalbtn" onclick="goalLike(this)">
+            <span class="icon">🤍</span> <span class="cnt">89</span>
           </button>
-          <button class="share-btn">
-            <span>↗</span> 공유
-          </button>
-          <div class="view-count">👁 156</div>
+          <button class="act-btn"><span class="icon">↗</span> 공유</button>
+          <div class="act-views">👁 156</div>
         </div>
       </div>
 
-      <!-- 시스템: 쿠폰 발행 알림 -->
-      <div class="system-msg" style="color:rgba(255,111,15,0.6)">🎟 방금 쿠폰 2장이 발행되었습니다</div>
-
-      <div style="height:4px"></div>
+      <div class="sys-coupon">🎟 방금 쿠폰 2장이 새로 발행되었어요</div>
+      <div style="height:6px"></div>
     </div>
 
-    <!-- 읽기 전용 하단 바 -->
+    <!-- 읽기 전용 바 -->
     <div class="readonly-bar">
-      <div class="readonly-input">
-        <span class="readonly-icon">🔒</span>
-        <span>사장님만 글을 올릴 수 있어요</span>
+      <div class="readonly-field">
+        <span>🔒</span>
+        <span>사장님만 공지를 올릴 수 있어요</span>
       </div>
-      <div class="member-count-pill">👥 1,284</div>
+      <div class="members-pill">👥 1,284</div>
     </div>
 
   </div>
 </div>
 
+
+<!-- ══ 화면 3: Typebot 쿠폰 발행 팝업 ══ -->
+<div class="col">
+  <div class="col-label">③ 쿠폰 발행 (Typebot)</div>
+  <div class="phone">
+    <div class="statusbar"><span>9:41</span><div class="sb-right"><span>●●●●</span><span>WiFi</span><span>🔋87%</span></div></div>
+
+    <!-- 뒤 화면 (희미하게) -->
+    <div style="padding:14px;opacity:0.25;filter:blur(1px);flex:1">
+      <div style="font-size:15px;font-weight:800;color:var(--text1);margin-bottom:12px">라멘 홋카이도</div>
+      <div style="background:var(--bg2);border-radius:18px;padding:14px;margin-bottom:10px;">
+        <div style="font-size:13px;color:var(--text1)">🔥 선착순 50명 한정 쿠폰!</div>
+        <div style="margin-top:10px;background:var(--bg3);border-radius:12px;padding:12px;">
+          <div style="font-size:20px;font-weight:900;color:#FEE500">1,000원 할인</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Typebot 시트 -->
+    <div class="typebot-overlay">
+      <div class="typebot-sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-title">🎟 쿠폰 받기</div>
+        <div class="sheet-sub">라멘 홋카이도 · 1,000원 할인쿠폰</div>
+
+        <div class="bot-row">
+          <div class="bot-av">🤖</div>
+          <div class="bot-bubble">안녕하세요! 쿠폰 발행을 도와드릴게요 😊<br>어떻게 부를까요?</div>
+        </div>
+        <div class="user-row">
+          <div class="user-bubble">김언니</div>
+        </div>
+        <div class="bot-row">
+          <div class="bot-av">🤖</div>
+          <div class="bot-bubble">김언니님 반가워요! 🎉<br>쿠폰 수령 방법을 선택해주세요</div>
+        </div>
+        <div class="quick-replies">
+          <button class="qr-btn">📱 카카오로 받기</button>
+          <button class="qr-btn" onclick="issueComplete(this)">✅ 바로 발급</button>
+          <button class="qr-btn">📋 코드 복사</button>
+        </div>
+
+        <div id="issue-result" style="display:none;margin-top:16px;background:rgba(254,229,0,0.08);border:1px solid rgba(254,229,0,0.2);border-radius:14px;padding:14px;text-align:center">
+          <div style="font-size:24px;margin-bottom:6px">🎉</div>
+          <div style="font-size:14px;font-weight:800;color:#FEE500">발급 완료!</div>
+          <div style="font-size:13px;color:var(--text2);margin:6px 0">쿠폰 코드</div>
+          <div style="font-size:20px;font-weight:900;color:var(--text1);letter-spacing:3px;background:var(--bg3);padding:10px;border-radius:10px">RAMEN-1K7X</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:8px">쿠폰함에 저장되었어요 · 오늘 마감</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
 <script>
-  // 좋아요 토글
-  function toggleLike(btn) {
-    const isLiked = btn.classList.toggle('liked');
-    const countEl = btn.querySelector('.like-count');
-    const heartEl = btn.querySelector('.heart');
-    const count = parseInt(countEl.textContent);
-    countEl.textContent = isLiked ? count + 1 : count - 1;
-    heartEl.textContent = isLiked ? '❤️' : '🤍';
-
-    // 펄스 애니메이션
-    heartEl.style.transform = 'scale(1.4)';
-    setTimeout(() => heartEl.style.transform = '', 200);
+// ── 좋아요 토글 ──
+function toggleLike(btn) {
+  const on = btn.classList.toggle('liked');
+  const cnt = btn.querySelector('.cnt');
+  const icon = btn.querySelector('.icon');
+  const n = parseInt(cnt.textContent) || 0;
+  if (!isNaN(n)) {
+    cnt.textContent = on ? n + 1 : n - 1;
+    icon.textContent = on ? '❤️' : '🤍';
+    icon.style.transform = 'scale(1.4)';
+    setTimeout(() => icon.style.transform = '', 200);
   }
+}
 
-  // 쿠폰 받기
-  function getCoupon(btn) {
-    if (btn.classList.contains('issued')) return;
-    btn.textContent = '발행중...';
-    btn.style.opacity = '0.7';
-    setTimeout(() => {
-      btn.textContent = '✅ 발행완료';
-      btn.classList.add('issued');
-      // 재고 감소
-      const stockEl = btn.closest('.coupon-card').querySelector('.coupon-stock strong');
-      stockEl.textContent = parseInt(stockEl.textContent) - 1;
-    }, 600);
-  }
+// ── 좋아요 목표 ──
+let goalCount = 89;
+function goalLike(btn) {
+  const on = btn.classList.toggle('liked');
+  goalCount = on ? goalCount + 1 : goalCount - 1;
+  btn.querySelector('.icon').textContent = on ? '❤️' : '🤍';
+  btn.querySelector('.cnt').textContent = goalCount;
+  document.getElementById('goal-now').textContent = goalCount;
+  document.getElementById('goal-left').textContent = Math.max(0, 100 - goalCount);
+  const pct = Math.min(100, goalCount);
+  document.getElementById('goalfill').style.width = pct + '%';
+  document.getElementById('goalpct').textContent = pct + '%';
+}
 
-  // 타이머 카운트다운
-  let secs = 2 * 3600 + 47 * 60 + 13;
-  setInterval(() => {
-    secs = Math.max(0, secs - 1);
-    const h = String(Math.floor(secs / 3600)).padStart(2, '0');
-    const m = String(Math.floor((secs % 3600) / 60)).padStart(2, '0');
-    const s = String(secs % 60).padStart(2, '0');
-    const el = document.getElementById('timer');
-    if (el) el.textContent = `${h}:${m}:${s}`;
-  }, 1000);
+// ── 쿠폰 받기 ──
+function getCoupon() {
+  const btn = document.getElementById('cpbtn');
+  if (btn.classList.contains('done')) return;
+  btn.textContent = '확인중...';
+  btn.style.opacity = '.6';
+  setTimeout(() => {
+    btn.textContent = '✅ 받기 완료';
+    btn.classList.add('done');
+    const s = document.getElementById('stock');
+    s.textContent = parseInt(s.textContent) - 1;
+    const pct = Math.round((50 - parseInt(s.textContent)) / 50 * 100);
+    document.getElementById('fillbar').style.width = pct + '%';
+    document.getElementById('stockpct').textContent = pct + '% 소진';
+  }, 700);
+}
+
+// ── Typebot 발급 완료 ──
+function issueComplete(btn) {
+  btn.textContent = '발급중...';
+  btn.disabled = true;
+  setTimeout(() => {
+    document.getElementById('issue-result').style.display = 'block';
+    document.querySelector('.quick-replies').style.display = 'none';
+  }, 800);
+}
+
+// ── 카운트다운 타이머 ──
+let secs = 2 * 3600 + 47 * 60 + 5;
+setInterval(() => {
+  secs = Math.max(0, secs - 1);
+  const h = String(Math.floor(secs / 3600)).padStart(2,'0');
+  const m = String(Math.floor(secs % 3600 / 60)).padStart(2,'0');
+  const s = String(secs % 60).padStart(2,'0');
+  const el = document.getElementById('t1');
+  if (el) el.textContent = `${h}:${m}:${s}`;
+}, 1000);
 </script>
-
 </body>
 </html>
