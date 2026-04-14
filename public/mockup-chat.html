@@ -403,6 +403,83 @@ body{
 .ro-field{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:22px;padding:10px 15px;font-size:13px;color:var(--t3);display:flex;align-items:center;gap:7px}
 .mb-pill{background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:8px 10px;font-size:11px;color:var(--t3);display:flex;align-items:center;gap:4px;white-space:nowrap}
 
+/* ── 쿠폰함 바텀 시트 ── */
+.wallet-overlay{
+  position:absolute;inset:0;background:rgba(0,0,0,0.55);
+  backdrop-filter:blur(2px);z-index:200;
+  opacity:0;pointer-events:none;transition:opacity .25s;
+}
+.wallet-overlay.show{opacity:1;pointer-events:all}
+.wallet-sheet{
+  position:absolute;bottom:0;left:0;right:0;
+  background:var(--bg2);border-radius:26px 26px 0 0;
+  border-top:1px solid var(--border);
+  display:flex;flex-direction:column;
+  max-height:88%;
+  transform:translateY(100%);transition:transform .32s cubic-bezier(.32,1,.23,1);
+}
+.wallet-overlay.show .wallet-sheet{transform:translateY(0)}
+.wallet-handle{width:36px;height:4px;border-radius:2px;background:var(--bg4);margin:12px auto 0;flex-shrink:0}
+.wallet-hd{padding:14px 18px 0;flex-shrink:0}
+.wallet-title-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.wallet-title{font-size:17px;font-weight:900;color:var(--t1)}
+.wallet-close{font-size:20px;color:var(--t3);cursor:pointer;padding:2px 6px;line-height:1}
+.wallet-total{font-size:11px;color:var(--t3);margin-top:1px}
+
+/* 필터 탭 */
+.wallet-tabs{display:flex;gap:6px;padding:0 18px 12px;flex-shrink:0}
+.wtab{font-size:11px;font-weight:700;padding:5px 13px;border-radius:20px;cursor:pointer;
+  background:var(--bg3);color:var(--t3);border:1px solid var(--border);transition:all .15s}
+.wtab.on{background:rgba(254,229,0,0.15);color:var(--y);border-color:rgba(254,229,0,0.3)}
+
+/* 스크롤 내용 */
+.wallet-body{flex:1;overflow-y:auto;padding:0 16px 30px}
+.wallet-body::-webkit-scrollbar{display:none}
+
+/* 가게 그룹 */
+.ws-group{margin-bottom:18px}
+.ws-store-hd{display:flex;align-items:center;gap:8px;padding:10px 2px 8px;
+  border-bottom:1px solid var(--border);margin-bottom:8px}
+.ws-av{width:30px;height:30px;border-radius:10px;display:flex;align-items:center;
+  justify-content:center;font-size:15px;flex-shrink:0;border:1px solid var(--border)}
+.ws-store-name{font-size:13px;font-weight:800;color:var(--t1);flex:1}
+.ws-store-dong{font-size:10px;color:var(--t3)}
+.ws-count{font-size:10px;font-weight:700;color:var(--y);background:rgba(254,229,0,0.1);
+  padding:2px 7px;border-radius:10px}
+
+/* 쿠폰 아이템 */
+.wc-item{background:var(--bg3);border:1px solid var(--border);border-radius:14px;
+  padding:11px 13px;margin-bottom:8px;display:flex;gap:10px;align-items:flex-start}
+.wc-item.active{border-color:rgba(255,107,107,0.3);background:rgba(255,107,107,0.05)}
+.wc-item.used{opacity:.45}
+.wc-item.expired{opacity:.38;filter:saturate(0)}
+.wc-em{font-size:22px;flex-shrink:0;line-height:1;margin-top:2px}
+.wc-body{flex:1;min-width:0}
+.wc-type{display:flex;align-items:center;gap:5px;margin-bottom:3px}
+.wc-val{font-size:15px;font-weight:900;color:var(--t1);letter-spacing:-.3px}
+.wc-desc{font-size:11px;color:var(--t2);margin-bottom:5px}
+.wc-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.wc-date{font-size:10px;color:var(--t3)}
+.wc-status{font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px}
+.wc-status.ok{color:var(--green);background:rgba(74,222,128,0.12)}
+.wc-status.done{color:var(--t3);background:var(--bg4)}
+.wc-status.exp{color:rgba(255,255,255,0.3);background:rgba(255,255,255,0.05)}
+.wc-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
+.wc-use-btn{background:#FF6B6B;color:#fff;font-size:11px;font-weight:800;
+  padding:6px 11px;border-radius:9px;border:none;cursor:pointer;font-family:inherit;
+  white-space:nowrap;box-shadow:0 3px 8px rgba(255,77,77,0.3)}
+.wc-done-btn{background:var(--bg4);color:var(--t3);font-size:11px;font-weight:700;
+  padding:6px 11px;border-radius:9px;border:1px solid var(--border);font-family:inherit;white-space:nowrap}
+
+/* Typebot 안내 배너 */
+.typebot-banner{
+  margin:0 16px 14px;padding:10px 13px;
+  background:rgba(126,200,255,0.07);border:1px solid rgba(126,200,255,0.2);
+  border-radius:12px;display:flex;gap:8px;align-items:center;
+}
+.typebot-banner-txt{font-size:11px;color:rgba(126,200,255,0.8);line-height:1.5;flex:1}
+.typebot-banner-txt strong{color:#7EC8FF}
+
 /* 라이브 뷰어 */
 .live-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:#FF4D4D;background:rgba(255,77,77,0.12);border:1px solid rgba(255,77,77,0.25);padding:2px 7px;border-radius:10px}
 .live-dot{width:6px;height:6px;border-radius:50%;background:#FF4D4D;animation:livepulse 1.2s infinite}
@@ -778,8 +855,148 @@ body{
       <div class="bt"><span>🏠</span><span class="bt-l">홈</span></div>
       <div class="bt"><span>🔍</span><span class="bt-l">탐색</span></div>
       <div class="bt on"><span>💬</span><span class="bt-l" style="color:var(--y)">채팅</span></div>
-      <div class="bt"><span>🎟</span><span class="bt-l">쿠폰함</span></div>
+      <div class="bt" onclick="openWallet()"><span>🎟</span><span class="bt-l">쿠폰함</span></div>
       <div class="bt"><span>👤</span><span class="bt-l">내정보</span></div>
+    </div>
+
+    <!-- ── 쿠폰함 바텀 시트 ── -->
+    <div class="wallet-overlay" id="walletOverlay" onclick="walletBgClose(event)">
+      <div class="wallet-sheet">
+        <div class="wallet-handle"></div>
+        <div class="wallet-hd">
+          <div class="wallet-title-row">
+            <div>
+              <div class="wallet-title">🎟 내 쿠폰함</div>
+              <div class="wallet-total">총 4개 · 사용가능 2개</div>
+            </div>
+            <span class="wallet-close" onclick="closeWallet()">✕</span>
+          </div>
+        </div>
+        <div class="wallet-tabs">
+          <div class="wtab on" onclick="selWTab(this,'all')">전체</div>
+          <div class="wtab" onclick="selWTab(this,'ok')">사용가능</div>
+          <div class="wtab" onclick="selWTab(this,'done')">사용완료</div>
+          <div class="wtab" onclick="selWTab(this,'exp')">만료</div>
+        </div>
+
+        <div class="wallet-body">
+
+          <!-- Typebot 안내 -->
+          <div class="typebot-banner">
+            <span style="font-size:18px">🤖</span>
+            <div class="typebot-banner-txt">
+              쿠폰 발급은 <strong>Typebot</strong> 챗봇 플로우로 처리돼요.<br>
+              발급 내역은 Supabase DB에 실시간 저장됩니다.
+            </div>
+          </div>
+
+          <!-- ① 라멘 홋카이도 -->
+          <div class="ws-group" data-group="all ok exp">
+            <div class="ws-store-hd">
+              <div class="ws-av" style="background:linear-gradient(135deg,#2a1f1f,#3a2525)">🍜</div>
+              <div>
+                <div class="ws-store-name">라멘 홋카이도</div>
+                <div class="ws-store-dong">강남구 역삼동 · 280m</div>
+              </div>
+              <div class="ws-count">2장</div>
+            </div>
+
+            <!-- 사용가능 쿠폰 -->
+            <div class="wc-item active" data-status="ok">
+              <div class="wc-em">⚡</div>
+              <div class="wc-body">
+                <div class="wc-type">
+                  <span class="ts-badge" style="font-size:8px">타임세일</span>
+                </div>
+                <div class="wc-val">런치 특가 30%</div>
+                <div class="wc-desc">돈코츠 라멘 세트 · 1인 1매</div>
+                <div class="wc-meta">
+                  <span class="wc-date">발급 04.15 11:58</span>
+                  <span class="wc-date">·</span>
+                  <span class="wc-date">만료 오늘 14:00</span>
+                  <span class="wc-status ok">사용가능</span>
+                </div>
+              </div>
+              <div class="wc-right">
+                <button class="wc-use-btn" onclick="useWCoupon(this)">쿠폰사용확인</button>
+              </div>
+            </div>
+
+            <!-- 만료 쿠폰 -->
+            <div class="wc-item expired" data-status="exp">
+              <div class="wc-em">🎟</div>
+              <div class="wc-body">
+                <div class="wc-val">1,000원 할인</div>
+                <div class="wc-desc">라멘 전메뉴 · 1만원 이상</div>
+                <div class="wc-meta">
+                  <span class="wc-date">발급 04.10</span>
+                  <span class="wc-status exp">기간만료</span>
+                </div>
+              </div>
+              <div class="wc-right">
+                <span class="wc-done-btn">만료됨</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ② 카페 봄날 -->
+          <div class="ws-group" data-group="all ok">
+            <div class="ws-store-hd">
+              <div class="ws-av" style="background:linear-gradient(135deg,#1a2025,#20303a)">☕</div>
+              <div>
+                <div class="ws-store-name">카페 봄날</div>
+                <div class="ws-store-dong">강남구 역삼동 · 620m</div>
+              </div>
+              <div class="ws-count">1장</div>
+            </div>
+
+            <div class="wc-item active" data-status="ok">
+              <div class="wc-em">🎟</div>
+              <div class="wc-body">
+                <div class="wc-val">아메리카노 무료</div>
+                <div class="wc-desc">HOT/ICED 선택 · 1인 1매</div>
+                <div class="wc-meta">
+                  <span class="wc-date">발급 04.14</span>
+                  <span class="wc-date">·</span>
+                  <span class="wc-date">만료 04.21</span>
+                  <span class="wc-status ok">사용가능</span>
+                </div>
+              </div>
+              <div class="wc-right">
+                <button class="wc-use-btn" onclick="useWCoupon(this)">쿠폰사용확인</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ③ 뷰티살롱 H -->
+          <div class="ws-group" data-group="all done">
+            <div class="ws-store-hd">
+              <div class="ws-av" style="background:linear-gradient(135deg,#1f2a1f,#25352a)">💄</div>
+              <div>
+                <div class="ws-store-name">뷰티살롱 H</div>
+                <div class="ws-store-dong">강남구 논현동 · 1.1km</div>
+              </div>
+              <div class="ws-count">1장</div>
+            </div>
+
+            <div class="wc-item used" data-status="done">
+              <div class="wc-em">🎁</div>
+              <div class="wc-body">
+                <div class="wc-val">헤어컷 20% 할인</div>
+                <div class="wc-desc">전 스타일 · 주말 한정</div>
+                <div class="wc-meta">
+                  <span class="wc-date">발급 04.12 · 사용 04.13</span>
+                  <span class="wc-status done">사용완료</span>
+                </div>
+              </div>
+              <div class="wc-right">
+                <span class="wc-done-btn">✓ 사용완료</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -1058,6 +1275,42 @@ function goalLike(btn){
   const p=Math.min(100,gc);
   document.getElementById('goalfill').style.width=p+'%';
   document.getElementById('goalpct').textContent=p+'%';
+}
+
+// 쿠폰함 바텀 시트
+function openWallet(){
+  document.getElementById('walletOverlay').classList.add('show');
+}
+function closeWallet(){
+  document.getElementById('walletOverlay').classList.remove('show');
+}
+function walletBgClose(e){
+  if(e.target===e.currentTarget) closeWallet();
+}
+function selWTab(el, status){
+  document.querySelectorAll('.wtab').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on');
+  document.querySelectorAll('.ws-group').forEach(g=>{
+    g.style.display = (status==='all'||g.dataset.group.includes(status)) ? '' : 'none';
+  });
+  document.querySelectorAll('.wc-item').forEach(item=>{
+    if(status==='all') item.style.display='';
+    else item.style.display = item.dataset.status===status ? '' : 'none';
+  });
+}
+function useWCoupon(btn){
+  if(btn.classList.contains('used-done')) return;
+  btn.textContent='확인중...'; btn.style.opacity='.6';
+  setTimeout(()=>{
+    btn.textContent='✓ 확인완료'; btn.style.opacity='1';
+    btn.style.background='var(--bg4)'; btn.style.color='var(--t3)';
+    btn.style.boxShadow='none';
+    btn.classList.add('used-done');
+    const item=btn.closest('.wc-item');
+    item.classList.remove('active'); item.classList.add('used');
+    const st=item.querySelector('.wc-status');
+    if(st){ st.textContent='사용완료'; st.className='wc-status done'; }
+  },700);
 }
 
 // 팔로우
