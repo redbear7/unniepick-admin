@@ -290,11 +290,18 @@ body{
   font-size:20px;flex-shrink:0;overflow:hidden;
   border:1.5px solid var(--border);
 }
-.room-meta{flex:1}
-.room-name{font-size:15px;font-weight:800;color:var(--t1);display:flex;align-items:center;gap:5px}
-.room-sub{font-size:11px;color:var(--t3);margin-top:1px}
-.room-btns{display:flex;gap:5px}
+.room-meta{flex:1;min-width:0}
+.room-name{font-size:15px;font-weight:800;color:var(--t1)}
+.room-addr{font-size:11px;color:var(--t2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.room-sub{font-size:11px;color:var(--t3);margin-top:2px}
+.room-btns{display:flex;gap:5px;flex-shrink:0}
 .rb{font-size:18px;color:var(--t3);cursor:pointer;padding:4px}
+
+/* 채팅목록 동 태그 */
+.ci-dong{font-size:11px;font-weight:600;color:var(--t3);margin-left:4px}
+
+/* 포스트 동 배지 */
+.dong-pill{font-size:9px;font-weight:700;color:var(--t2);background:var(--bg4);padding:1.5px 6px;border-radius:5px}
 
 /* 업체 정보 패널 */
 .biz-info{
@@ -528,7 +535,7 @@ body{
         </div>
         <div class="ci-body">
           <div class="ci-r1">
-            <span class="ci-name">라멘 홋카이도</span>
+            <span class="ci-name">라멘 홋카이도</span><span class="ci-dong">역삼동</span>
             <div class="ci-dist"><span class="d-near">🟢 280m</span></div>
           </div>
           <div class="ci-r2">
@@ -537,7 +544,6 @@ body{
           </div>
           <div class="ci-r3">
             <span class="ci-tag">음식점</span>
-            <span class="ci-tag">역삼동</span>
             <span class="ci-members">👥 1,284명</span>
           </div>
         </div>
@@ -549,7 +555,7 @@ body{
         <div class="ci-av" style="background:linear-gradient(135deg,#1a2025,#20303a)">☕</div>
         <div class="ci-body">
           <div class="ci-r1">
-            <span class="ci-name">카페 봄날</span>
+            <span class="ci-name">카페 봄날</span><span class="ci-dong">역삼동</span>
             <div class="ci-dist"><span class="d-near">🟢 620m</span></div>
           </div>
           <div class="ci-r2">
@@ -558,7 +564,6 @@ body{
           </div>
           <div class="ci-r3">
             <span class="ci-tag">카페</span>
-            <span class="ci-tag">역삼동</span>
             <span class="ci-members">👥 843명</span>
           </div>
         </div>
@@ -570,7 +575,7 @@ body{
         <div class="ci-av" style="background:linear-gradient(135deg,#1f2a1f,#25352a)">💄</div>
         <div class="ci-body">
           <div class="ci-r1">
-            <span class="ci-name">뷰티살롱 H</span>
+            <span class="ci-name">뷰티살롱 H</span><span class="ci-dong">논현동</span>
             <div class="ci-dist"><span class="d-mid">🟡 1.1km</span></div>
           </div>
           <div class="ci-r2">
@@ -579,7 +584,6 @@ body{
           </div>
           <div class="ci-r3">
             <span class="ci-tag">뷰티</span>
-            <span class="ci-tag">논현동</span>
             <span class="ci-members">👥 512명</span>
           </div>
         </div>
@@ -591,7 +595,7 @@ body{
         <div class="ci-av" style="background:linear-gradient(135deg,#2a1f1f,#352525)">🥩</div>
         <div class="ci-body">
           <div class="ci-r1">
-            <span class="ci-name">한우명가</span>
+            <span class="ci-name">한우명가</span><span class="ci-dong">삼성동</span>
             <div class="ci-dist"><span class="d-mid">🟡 2.3km</span></div>
           </div>
           <div class="ci-r2">
@@ -600,7 +604,6 @@ body{
           </div>
           <div class="ci-r3">
             <span class="ci-tag">음식점</span>
-            <span class="ci-tag">삼성동</span>
             <span class="ci-members">👥 368명</span>
           </div>
         </div>
@@ -612,7 +615,7 @@ body{
         <div class="ci-av" style="background:linear-gradient(135deg,#1f1f2a,#25253a)">👗</div>
         <div class="ci-body">
           <div class="ci-r1">
-            <span class="ci-name">스타일 언니</span>
+            <span class="ci-name">스타일 언니</span><span class="ci-dong">청담동</span>
             <div class="ci-dist"><span style="color:var(--t3)">⚪ 3.7km</span></div>
           </div>
           <div class="ci-r2">
@@ -621,7 +624,6 @@ body{
           </div>
           <div class="ci-r3">
             <span class="ci-tag">쇼핑</span>
-            <span class="ci-tag">청담동</span>
             <span class="ci-members">👥 924명</span>
           </div>
         </div>
@@ -640,7 +642,7 @@ body{
         <div class="ci-av" style="background:var(--bg3)">🏋️</div>
         <div class="ci-body">
           <div class="ci-r1">
-            <span class="ci-name">퍼스널짐 K</span>
+            <span class="ci-name">퍼스널짐 K</span><span class="ci-dong">잠실동</span>
             <div class="ci-dist"><span style="color:var(--t3)">⚫ 7.2km</span></div>
           </div>
           <div class="ci-r2">
@@ -648,7 +650,6 @@ body{
           </div>
           <div class="ci-r3">
             <span class="ci-tag">운동</span>
-            <span class="ci-tag">잠실동</span>
             <span class="ci-members">👥 201명</span>
           </div>
         </div>
@@ -680,7 +681,8 @@ body{
       <div class="room-av" style="background:linear-gradient(135deg,#2a1f1f,#3a2525)">🍜</div>
       <div class="room-meta">
         <div class="room-name">라멘 홋카이도</div>
-        <div class="room-sub">강남구 역삼동 · 👥 1,284명 · 🟢 온라인</div>
+        <div class="room-addr">강남구 역삼동 테헤란로 123, 1층</div>
+        <div class="room-sub">👥 1,284명 · 🟢 온라인</div>
       </div>
       <div class="room-btns"><div class="rb">🔔</div><div class="rb">⋯</div></div>
     </div>
@@ -694,10 +696,6 @@ body{
       <div class="biz-row">
         <span class="biz-icon">📅</span>
         <span class="biz-val"><strong>매주 월요일</strong> 휴무</span>
-      </div>
-      <div class="biz-row">
-        <span class="biz-icon">📍</span>
-        <span class="biz-val">서울 강남구 역삼동 테헤란로 123, 1층</span>
       </div>
       <div class="biz-row">
         <span class="biz-icon">📞</span>
@@ -723,7 +721,7 @@ body{
         <div class="post-hd">
           <div class="post-av" style="background:linear-gradient(135deg,#FF6F0F,#FF3C00)">🍜</div>
           <div class="post-info">
-            <div class="post-sender">라멘 홋카이도 <span class="owner-pill">사장님</span></div>
+            <div class="post-sender">라멘 홋카이도 <span class="dong-pill">역삼동</span></div>
             <div class="post-ts">오전 9:12</div>
           </div>
           <div style="font-size:16px;color:var(--t3);cursor:pointer">⋯</div>
@@ -747,7 +745,7 @@ body{
         <div class="post-hd">
           <div class="post-av" style="background:linear-gradient(135deg,#FF6F0F,#FF3C00)">🍜</div>
           <div class="post-info">
-            <div class="post-sender">라멘 홋카이도 <span class="owner-pill">사장님</span></div>
+            <div class="post-sender">라멘 홋카이도 <span class="dong-pill">역삼동</span></div>
             <div class="post-ts">오전 10:30</div>
           </div>
         </div>
@@ -785,7 +783,7 @@ body{
         <div class="post-hd">
           <div class="post-av" style="background:linear-gradient(135deg,#FF6F0F,#FF3C00)">🍜</div>
           <div class="post-info">
-            <div class="post-sender">라멘 홋카이도 <span class="owner-pill">사장님</span></div>
+            <div class="post-sender">라멘 홋카이도 <span class="dong-pill">역삼동</span></div>
             <div class="post-ts">오전 11:05</div>
           </div>
         </div>
