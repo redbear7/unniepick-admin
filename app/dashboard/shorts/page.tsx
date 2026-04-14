@@ -615,29 +615,65 @@ function LivePreviewFrame({
       }
 
     } else if (waveformStyle === 'wave') {
-      // 클라이맥스 편집기와 동일한 그라디언트 바 스타일
-      const BARS  = 48;
-      const bw    = W / BARS;
-      const aHex  = isPlaying ? accentCss : '#ffffff';
-      for (let i = 0; i < BARS; i++) {
-        const val = freqAmp(i, BARS);
-        const bh  = Math.max(val * H * 0.88, 1);
-        const bx  = i * bw;
-        const aStr = Math.round((0.35 + val * 0.65) * 255).toString(16).padStart(2, '0');
-        const lStr = Math.round((0.15 + val * 0.35) * 255).toString(16).padStart(2, '0');
-        if (isPlaying) {
-          const grad = ctx.createLinearGradient(bx, mid - bh / 2, bx, mid + bh / 2);
-          grad.addColorStop(0,   `${aHex}${aStr}`);
-          grad.addColorStop(0.5, `${aHex}ff`);
-          grad.addColorStop(1,   `${aHex}${lStr}`);
-          ctx.fillStyle = grad;
-        } else {
-          ctx.fillStyle = color(0.35 + val * 0.5);
-        }
-        ctx.fillRect(bx + 0.5, mid - bh / 2, Math.max(bw - 1.5, 1), bh);
-        ctx.fillStyle = isPlaying ? `${aHex}20` : 'rgba(255,255,255,0.04)';
-        ctx.fillRect(bx + 0.5, mid + bh / 2, Math.max(bw - 1.5, 1), bh * 0.28);
+      // WaveformEditor 미니 재현: 전체 파형(회색) + 클라이맥스 하이라이트 + 실시간 바
+      const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--bg-surface').trim() || '#13161c';
+      ctx.fillStyle = bgColor;
+      ctx.fillRect(0, 0, W, H);
+
+      const TOTAL = 80;
+      const tbw   = W / TOTAL;
+      const midY  = H / 2;
+      // 클라이맥스 구간: 중앙 40% 표시
+      const selS  = Math.floor(TOTAL * 0.30);
+      const selE  = Math.floor(TOTAL * 0.70);
+      const selX  = selS * tbw;
+      const selWx = (selE - selS) * tbw;
+
+      // ① 선택 구간 배경
+      ctx.fillStyle = `${accentCss}18`;
+      ctx.fillRect(selX, 0, selWx, H);
+
+      // ② 정적 파형 (합성 sine 기반)
+      for (let i = 0; i < TOTAL; i++) {
+        const inSel = i >= selS && i < selE;
+        const amp   = Math.abs(Math.sin(i * 0.31)) * 0.6 + Math.abs(Math.sin(i * 0.17 + 1.2)) * 0.35 + 0.05;
+        const bh    = Math.max(amp * H * 0.82, 1);
+        ctx.fillStyle = inSel ? `${accentCss}bb` : '#25283870';
+        ctx.fillRect(i * tbw + 0.5, midY - bh / 2, Math.max(tbw - 1, 1), bh);
+        ctx.fillStyle = inSel ? `${accentCss}40` : '#2528384a';
+        ctx.fillRect(i * tbw + 0.5, midY + bh / 2, Math.max(tbw - 1, 1), bh * 0.3);
       }
+
+      // ③ 실시간 주파수 오버레이 (클라이맥스 구간)
+      if (freqData && freqData.length > 0 && isPlaying) {
+        const FBARS = 40;
+        const fbw   = selWx / FBARS;
+        const limit = Math.floor(freqData.length * 0.65);
+        for (let i = 0; i < FBARS; i++) {
+          const val  = freqData[Math.floor((i / FBARS) * limit)] / 255;
+          const bh   = Math.max(val * H * 0.92, 2);
+          const bx   = selX + i * fbw;
+          const aStr = Math.round((0.35 + val * 0.65) * 255).toString(16).padStart(2, '0');
+          const lStr = Math.round((0.15 + val * 0.35) * 255).toString(16).padStart(2, '0');
+          const grad = ctx.createLinearGradient(bx, midY - bh / 2, bx, midY + bh / 2);
+          grad.addColorStop(0,   `${accentCss}${aStr}`);
+          grad.addColorStop(0.5, `${accentCss}ff`);
+          grad.addColorStop(1,   `${accentCss}${lStr}`);
+          ctx.fillStyle = grad;
+          ctx.fillRect(bx + 0.5, midY - bh / 2, Math.max(fbw - 1.5, 1), bh);
+          ctx.fillStyle = `${accentCss}20`;
+          ctx.fillRect(bx + 0.5, midY + bh / 2, Math.max(fbw - 1.5, 1), bh * 0.25);
+        }
+      }
+
+      // ④ 경계선 & 핸들 도트
+      ctx.lineWidth = 1.5;
+      [selX, selX + selWx].forEach(lx => {
+        ctx.strokeStyle = accentCss;
+        ctx.beginPath(); ctx.moveTo(lx, 0); ctx.lineTo(lx, H); ctx.stroke();
+        ctx.fillStyle = accentCss;
+        ctx.beginPath(); ctx.arc(lx, midY, 4, 0, Math.PI * 2); ctx.fill();
+      });
 
     } else if (waveformStyle === 'circle') {
       const BARS  = 48;
@@ -1101,6 +1137,7 @@ function LivePreviewFrame({
               left: 16,
               right: 16,
               opacity: 0.5,
+              ...(waveformStyle === 'wave' ? { border: '1px solid rgba(255,255,255,0.18)', borderRadius: 2, overflow: 'hidden' } : {}),
               cursor: onWavePosChange ? 'grab' : 'default',
               userSelect: 'none',
             }}
@@ -1124,7 +1161,7 @@ function LivePreviewFrame({
               window.addEventListener('mouseup', onUp);
             }}
           >
-            <canvas ref={canvasRef} style={{ width:'100%', display:'block', height: waveformStyle === 'dots' ? 56 : 36 }} />
+            <canvas ref={canvasRef} style={{ width:'100%', display:'block', height: waveformStyle === 'dots' ? 56 : waveformStyle === 'wave' ? 80 : 36 }} />
           </div>
 
           {/* 진행 바 */}
