@@ -483,6 +483,8 @@ interface LivePreviewFrameProps {
   vinylPosX?: number;
   vinylPosY?: number;
   onVinylPosChange?: (x: number, y: number) => void;
+  wavePosBottom?: number;
+  onWavePosChange?: (y: number) => void;
   showGuide?: boolean;
   onPlayStart?: () => void;
   stopToken?: number;
@@ -507,6 +509,8 @@ function LivePreviewFrame({
   vinylPosX = 50,
   vinylPosY = 28,
   onVinylPosChange,
+  wavePosBottom = 7,
+  onWavePosChange,
   showGuide = false,
   onPlayStart,
   stopToken = 0,
@@ -516,6 +520,7 @@ function LivePreviewFrame({
   const canvasRef      = useRef<HTMLCanvasElement>(null);
   const containerRef   = useRef<HTMLDivElement>(null);
   const vinylDragRef   = useRef<{ startX: number; startY: number; px: number; py: number } | null>(null);
+  const waveDragRef    = useRef<{ startY: number; py: number } | null>(null);
 
   // circle 실시간 분석용 (AudioBufferSource 방식)
   const liveCtxRef     = useRef<AudioContext | null>(null);
@@ -571,7 +576,15 @@ function LivePreviewFrame({
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, W, H);
     const mid  = H / 2;
-    const color  = (alpha: number) => isPlaying ? `rgba(255,111,15,${alpha})` : `rgba(255,255,255,${alpha * 0.4})`;
+    // CSS 변수 --accent 읽기 (테마 색상 반영)
+    const accentCss = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#FF6F0F';
+    // hex → r,g,b
+    const hexToRgb = (hex: string) => {
+      const h = hex.replace('#', '');
+      return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)] as const;
+    };
+    const [ar, ag, ab] = hexToRgb(accentCss);
+    const color  = (alpha: number) => isPlaying ? `rgba(${ar},${ag},${ab},${alpha})` : `rgba(255,255,255,${alpha * 0.4})`;
     const getAmp = (i: number) =>
       isPlaying ? Math.max(0.15, Math.abs(Math.sin((phase + i * 0.55) * 1.3)) * 0.85) : 0.18 + 0.08 * Math.abs(Math.sin(i * 0.7));
     const waveformStyle = style;
@@ -605,7 +618,7 @@ function LivePreviewFrame({
       // 클라이맥스 편집기와 동일한 그라디언트 바 스타일
       const BARS  = 48;
       const bw    = W / BARS;
-      const aHex  = isPlaying ? '#FF6F0F' : '#ffffff';
+      const aHex  = isPlaying ? accentCss : '#ffffff';
       for (let i = 0; i < BARS; i++) {
         const val = freqAmp(i, BARS);
         const bh  = Math.max(val * H * 0.88, 1);
@@ -657,7 +670,7 @@ function LivePreviewFrame({
         ctx.beginPath();
         ctx.moveTo(cx + Math.cos(angle) * r1, cy + Math.sin(angle) * r1);
         ctx.lineTo(cx + Math.cos(angle) * r2, cy + Math.sin(angle) * r2);
-        ctx.strokeStyle = isPlaying ? `rgba(255,111,15,${alpha * 0.35})` : `rgba(255,255,255,${alpha * 0.12})`;
+        ctx.strokeStyle = isPlaying ? `rgba(${ar},${ag},${ab},${alpha * 0.35})` : `rgba(255,255,255,${alpha * 0.12})`;
         ctx.lineWidth = 4;
         ctx.stroke();
 
@@ -665,7 +678,7 @@ function LivePreviewFrame({
         ctx.beginPath();
         ctx.moveTo(cx + Math.cos(angle) * r1, cy + Math.sin(angle) * r1);
         ctx.lineTo(cx + Math.cos(angle) * r2, cy + Math.sin(angle) * r2);
-        ctx.strokeStyle = isPlaying ? `rgba(255,111,15,${alpha})` : `rgba(255,255,255,${alpha * 0.4})`;
+        ctx.strokeStyle = isPlaying ? `rgba(${ar},${ag},${ab},${alpha})` : `rgba(255,255,255,${alpha * 0.4})`;
         ctx.lineWidth = 1.5;
         ctx.stroke();
       }
@@ -1022,7 +1035,7 @@ function LivePreviewFrame({
           {/* 쿠폰 */}
           {selectedCoupon && (
             <div key={couponAnimKey} style={{ position:'absolute', left:16, right:16, top:`${couponTop}%`, animation: couponAnimKey > 0 ? 'couponSlideIn 0.5s cubic-bezier(0.34,1.56,0.64,1) both' : 'none' }}>
-              <div style={{ background:'rgba(255,111,15,0.92)', borderRadius:12, padding:'10px 14px', display:'flex', alignItems:'center', gap:10 }}>
+              <div style={{ background:'color-mix(in srgb, var(--accent) 92%, transparent)', borderRadius:12, padding:'10px 14px', display:'flex', alignItems:'center', gap:10 }}>
                 <span style={{ fontSize:24 }}>🎟</span>
                 <div style={{ minWidth:0 }}>
                   <p style={{ color:'#fff', fontSize:13, fontWeight:600, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{selectedCoupon.title}</p>
@@ -1043,13 +1056,13 @@ function LivePreviewFrame({
           </div>
 
           {/* 언니픽 배지 */}
-          <div style={{ position:'absolute', top:12, right:12, background:'rgba(255,111,15,0.92)', borderRadius:5, color:'#fff', fontSize:11, fontWeight:700, padding:'3px 7px' }}>언니픽</div>
+          <div style={{ position:'absolute', top:12, right:12, background:'color-mix(in srgb, var(--accent) 92%, transparent)', borderRadius:5, color:'#fff', fontSize:11, fontWeight:700, padding:'3px 7px' }}>언니픽</div>
 
           {/* 장르·무드 태그 */}
           {(genreTag || moodTag) && (
             <div style={{ position:'absolute', bottom:90, left:16, display:'flex', gap:6 }}>
               {genreTag && (
-                <span style={{ background:'rgba(255,111,15,0.85)', color:'#fff', fontSize:11, fontWeight:700, padding:'3px 9px', borderRadius:20 }}>
+                <span style={{ background:'color-mix(in srgb, var(--accent) 85%, transparent)', color:'#fff', fontSize:11, fontWeight:700, padding:'3px 9px', borderRadius:20 }}>
                   #{genreTag}
                 </span>
               )}
@@ -1081,13 +1094,41 @@ function LivePreviewFrame({
           </button>
 
           {/* 파형 */}
-          <div style={{ position:'absolute', bottom:44, left:16, right:16 }}>
+          <div
+            style={{
+              position: 'absolute',
+              bottom: `${wavePosBottom}%`,
+              left: 16,
+              right: 16,
+              cursor: onWavePosChange ? 'grab' : 'default',
+              userSelect: 'none',
+            }}
+            onMouseDown={e => {
+              if (!onWavePosChange || !containerRef.current) return;
+              e.preventDefault();
+              waveDragRef.current = { startY: e.clientY, py: wavePosBottom };
+              const onMove = (me: MouseEvent) => {
+                if (!waveDragRef.current || !containerRef.current) return;
+                const rect = containerRef.current.getBoundingClientRect();
+                const dy = -(me.clientY - waveDragRef.current.startY) / rect.height * 100;
+                const ny = Math.max(0, Math.min(80, waveDragRef.current.py + dy));
+                onWavePosChange(Math.round(ny * 10) / 10);
+              };
+              const onUp = () => {
+                waveDragRef.current = null;
+                window.removeEventListener('mousemove', onMove);
+                window.removeEventListener('mouseup', onUp);
+              };
+              window.addEventListener('mousemove', onMove);
+              window.addEventListener('mouseup', onUp);
+            }}
+          >
             <canvas ref={canvasRef} style={{ width:'100%', display:'block', height: waveformStyle === 'dots' ? 56 : 36 }} />
           </div>
 
           {/* 진행 바 */}
           <div style={{ position:'absolute', bottom:22, left:16, right:16, height:3, background:'rgba(255,255,255,0.15)', borderRadius:2 }}>
-            <div style={{ height:'100%', width:`${progress * 100}%`, background:'#FF6F0F', borderRadius:2 }} />
+            <div style={{ height:'100%', width:`${progress * 100}%`, background:'var(--accent)', borderRadius:2 }} />
           </div>
 
           {/* 시간 표시 */}
@@ -1229,6 +1270,7 @@ function ShortsPageInner() {
   const [vinylBgBlur, setVinylBgBlur] = useState(14);
   const [vinylPosX,   setVinylPosX]   = useState(50); // % of container
   const [vinylPosY,   setVinylPosY]   = useState(28);
+  const [wavePosBottom, setWavePosBottom] = useState(7); // % from bottom
   const [durationSec, setDurationSec] = useState(20);
 
   // 요소 위치 (% from top)
@@ -2236,17 +2278,18 @@ function ShortsPageInner() {
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-semibold text-primary">요소 위치 조정</p>
                   <button
-                    onClick={() => { setHeaderTop(11); setInfoTop(72); setCouponTop(60); }}
+                    onClick={() => { setHeaderTop(11); setInfoTop(72); setCouponTop(60); setWavePosBottom(7); }}
                     className="text-xs text-dim hover:text-muted transition flex items-center gap-1"
                   >
                     <RotateCcw size={11} /> 초기화
                   </button>
                 </div>
                 {[
-                  { label: '제목 / 강조 문구', value: headerTop, set: setHeaderTop, show: !!(shortsTitle || shortsTagline) },
-                  { label: '쿠폰 카드', value: couponTop, set: setCouponTop, show: !!selectedCoupon },
-                  { label: '곡 정보 (제목·아티스트)', value: infoTop, set: setInfoTop, show: true },
-                ].map(({ label, value, set, show }) => (
+                  { label: '제목 / 강조 문구', value: headerTop, set: setHeaderTop, show: !!(shortsTitle || shortsTagline), min: 0, max: 90, minLabel: '상단', maxLabel: '하단' },
+                  { label: '쿠폰 카드', value: couponTop, set: setCouponTop, show: !!selectedCoupon, min: 0, max: 90, minLabel: '상단', maxLabel: '하단' },
+                  { label: '곡 정보 (제목·아티스트)', value: infoTop, set: setInfoTop, show: true, min: 0, max: 90, minLabel: '상단', maxLabel: '하단' },
+                  { label: '파형', value: wavePosBottom, set: setWavePosBottom, show: true, min: 0, max: 80, minLabel: '하단', maxLabel: '상단' },
+                ].map(({ label, value, set, show, min, max, minLabel, maxLabel }) => (
                   <div key={label} className={show ? '' : 'opacity-30 pointer-events-none'}>
                     <div className="flex items-center justify-between mb-1.5">
                       <label className="text-xs text-muted">{label}</label>
@@ -2254,16 +2297,16 @@ function ShortsPageInner() {
                     </div>
                     <input
                       type="range"
-                      min={0}
-                      max={90}
+                      min={min}
+                      max={max}
                       step={1}
                       value={value}
                       onChange={e => set(Number(e.target.value))}
                       className="w-full accent-[#FF6F0F]"
                     />
                     <div className="flex justify-between text-[10px] text-dim mt-0.5">
-                      <span>상단</span>
-                      <span>하단</span>
+                      <span>{minLabel}</span>
+                      <span>{maxLabel}</span>
                     </div>
                   </div>
                 ))}
@@ -2458,6 +2501,8 @@ function ShortsPageInner() {
                 vinylPosX={vinylPosX}
                 vinylPosY={vinylPosY}
                 onVinylPosChange={(x, y) => { setVinylPosX(x); setVinylPosY(y); }}
+                wavePosBottom={wavePosBottom}
+                onWavePosChange={setWavePosBottom}
                 showGuide={showGuide}
                 onPlayStart={() => { if (player.isPlaying) player.pause(); setWaveStopToken(t => t + 1); }}
                 stopToken={liveStopToken}
@@ -2678,6 +2723,8 @@ function ShortsPageInner() {
                 vinylPosX={vinylPosX}
                 vinylPosY={vinylPosY}
                 onVinylPosChange={(x, y) => { setVinylPosX(x); setVinylPosY(y); }}
+                wavePosBottom={wavePosBottom}
+                onWavePosChange={setWavePosBottom}
                 showGuide={showGuide}
                 onPlayStart={() => { if (player.isPlaying) player.pause(); setWaveStopToken(t => t + 1); }}
                 stopToken={liveStopToken}
