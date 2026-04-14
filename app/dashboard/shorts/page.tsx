@@ -1122,7 +1122,7 @@ function LivePreviewFrame({
               window.addEventListener('mouseup', onUp);
             }}
           >
-            <canvas ref={canvasRef} style={{ width:'100%', display:'block', height: waveformStyle === 'dots' ? 56 : waveformStyle === 'wave' ? 80 : 36 }} />
+            <canvas ref={canvasRef} style={{ width:'100%', display:'block', height: waveformStyle === 'dots' ? 28 : waveformStyle === 'wave' ? 80 : 36 }} />
           </div>
 
           {/* 진행 바 */}
