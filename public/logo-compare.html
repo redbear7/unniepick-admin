@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>언니픽 로고 비교 — 해양생물 10종</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #F0F2F5; font-family: -apple-system, 'Apple SD Gothic Neo', sans-serif; padding: 48px 32px; }
+  h1 { text-align: center; font-size: 28px; font-weight: 800; color: #191F28; margin-bottom: 8px; }
+  p.sub { text-align: center; color: #8B95A1; font-size: 14px; margin-bottom: 48px; }
+  .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 24px; max-width: 1100px; margin: 0 auto; }
+  @media (max-width: 900px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 600px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+  .card {
+    background: #fff;
+    border-radius: 24px;
+    padding: 28px 16px 20px;
+    text-align: center;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+    transition: transform .2s, box-shadow .2s;
+    cursor: pointer;
+  }
+  .card:hover { transform: translateY(-6px); box-shadow: 0 8px 32px rgba(0,0,0,0.13); }
+  .card svg { width: 160px; height: 160px; display: block; margin: 0 auto; }
+  .card .name { font-size: 13px; color: #8B95A1; margin-top: 12px; font-weight: 600; }
+  .card .num  { font-size: 11px; color: #C0C7D0; margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<h1>언니픽 로고 비교</h1>
+<p class="sub">해양생물 마스코트 10종 · 앱 스플래시 로고</p>
+
+<div class="grid">
+
+  <!-- 1. 랍스터 -->
+  <div class="card">
+    <svg viewBox="0 0 160 180" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="bg1" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#FF8A65"/>
+          <stop offset="100%" stop-color="#E53935"/>
+        </radialGradient>
+      </defs>
+      <!-- Background circle -->
+      <circle cx="80" cy="80" r="72" fill="url(#bg1)"/>
+      <!-- Antennae -->
+      <line x1="65" y1="42" x2="45" y2="18" stroke="#B71C1C" stroke-width="3" stroke-linecap="round"/>
+      <line x1="95" y1="42" x2="115" y2="18" stroke="#B71C1C" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="45" cy="17" r="4" fill="#B71C1C"/>
+      <circle cx="115" cy="17" r="4" fill="#B71C1C"/>
+      <!-- Body -->
+      <ellipse cx="80" cy="85" rx="22" ry="28" fill="#C62828"/>
+      <!-- Head -->
+      <ellipse cx="80" cy="58" rx="20" ry="18" fill="#E53935"/>
+      <!-- Eyes -->
+      <circle cx="72" cy="54" r="7" fill="white"/>
+      <circle cx="88" cy="54" r="7" fill="white"/>
+      <circle cx="73" cy="55" r="4" fill="#1A1A1A"/>
+      <circle cx="89" cy="55" r="4" fill="#1A1A1A"/>
+      <circle cx="74" cy="54" r="1.5" fill="white"/>
+      <circle cx="90" cy="54" r="1.5" fill="white"/>
+      <!-- Smile -->
+      <path d="M73 65 Q80 70 87 65" stroke="#B71C1C" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <!-- Left claw -->
+      <ellipse cx="46" cy="75" rx="14" ry="10" fill="#E53935" transform="rotate(-30 46 75)"/>
+      <ellipse cx="38" cy="68" rx="8" ry="6" fill="#C62828" transform="rotate(-30 38 68)"/>
+      <!-- Right claw -->
+      <ellipse cx="114" cy="75" rx="14" ry="10" fill="#E53935" transform="rotate(30 114 75)"/>
+      <ellipse cx="122" cy="68" rx="8" ry="6" fill="#C62828" transform="rotate(30 122 68)"/>
+      <!-- Tail segments -->
+      <ellipse cx="80" cy="110" rx="18" ry="8" fill="#C62828"/>
+      <ellipse cx="80" cy="122" rx="15" ry="7" fill="#B71C1C"/>
+      <!-- Tail fan -->
+      <ellipse cx="65" cy="133" rx="10" ry="6" fill="#C62828" transform="rotate(-20 65 133)"/>
+      <ellipse cx="80" cy="135" rx="10" ry="6" fill="#B71C1C"/>
+      <ellipse cx="95" cy="133" rx="10" ry="6" fill="#C62828" transform="rotate(20 95 133)"/>
+      <!-- Cheeks -->
+      <circle cx="66" cy="62" r="5" fill="#FF8A65" opacity="0.6"/>
+      <circle cx="94" cy="62" r="5" fill="#FF8A65" opacity="0.6"/>
+      <!-- Logo text -->
+      <text x="80" y="165" text-anchor="middle" font-size="20" font-weight="800" fill="#191F28" font-family="-apple-system, sans-serif" letter-spacing="-0.5">언니픽</text>
+    </svg>
+    <div class="name">🦞 랍스터</div>
+    <div class="num">부지런한 직장인</div>
+  </div>
+
+  <!-- 2. 문어 -->
+  <div class="card">
+    <svg viewBox="0 0 160 180" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="bg2" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#CE93D8"/>
+          <stop offset="100%" stop-color="#7B1FA2"/>
+        </radialGradient>
+      </defs>
+      <circle cx="80" cy="80" r="72" fill="url(#bg2)"/>
+      <!-- Tentacles (8개) -->
+      <path d="M50 95 Q35 110 38 128 Q40 140 48 135" stroke="#6A1B9A" stroke-width="10" fill="none" stroke-linecap="round"/>
+      <path d="M60 102 Q50 120 52 138 Q53 150 60 145" stroke="#6A1B9A" stroke-width="10" fill="none" stroke-linecap="round"/>
+      <path d="M72 106 Q68 126 70 144 Q71 155 78 150" stroke="#6A1B9A" stroke-width="10" fill="none" stroke-linecap="round"/>
+      <path d="M80 107 Q80 127 82 145 Q83 156 80 151" stroke="#6A1B9A" stroke-width="10" fill="none" stroke-linecap="round"/>
+      <path d="M88 106 Q93 126 91 144 Q90 155 83 150" stroke="#6A1B9A" stroke-width="10" fill="none" stroke-linecap="round"/>
+      <path d="M98 102 Q108 120 106 138 Q105 150 98 145" stroke="#6A1B9A" stroke-width="10" fill="none" stroke-linecap="round"/>
+      <path d="M108 95 Q123 110 120 128 Q118 140 110 135" stroke="#6A1B9A" stroke-width="10" fill="none" stroke-linecap="round"/>
+      <!-- Body -->
+      <ellipse cx="80" cy="78" rx="36" ry="40" fill="#9C27B0"/>
+      <!-- Head bump -->
+      <ellipse cx="80" cy="52" rx="28" ry="22" fill="#AB47BC"/>
+      <!-- Eyes -->
+      <circle cx="68" cy="72" r="9" fill="white"/>
+      <circle cx="92" cy="72" r="9" fill="white"/>
+      <circle cx="69" cy="73" r="5" fill="#1A1A1A"/>
+      <circle cx="93" cy="73" r="5" fill="#1A1A1A"/>
+      <circle cx="70" cy="72" r="2" fill="white"/>
+      <circle cx="94" cy="72" r="2" fill="white"/>
+      <!-- Smile -->
+      <path d="M70 84 Q80 92 90 84" stroke="#7B1FA2" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <!-- Cheeks -->
+      <circle cx="58" cy="79" r="6" fill="#F48FB1" opacity="0.7"/>
+      <circle cx="102" cy="79" r="6" fill="#F48FB1" opacity="0.7"/>
+      <!-- Spots -->
+      <circle cx="75" cy="58" r="3" fill="#CE93D8" opacity="0.5"/>
+      <circle cx="86" cy="54" r="2" fill="#CE93D8" opacity="0.5"/>
+      <text x="80" y="165" text-anchor="middle" font-size="20" font-weight="800" fill="#191F28" font-family="-apple-system, sans-serif" letter-spacing="-0.5">언니픽</text>
+    </svg>
+    <div class="name">🐙 문어</div>
+    <div class="num">멀티태스킹 요리사</div>
+  </div>
+
+  <!-- 3. 상어 -->
+  <div class="card">
+    <svg viewBox="0 0 160 180" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="bg3" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#4FC3F7"/>
+          <stop offset="100%" stop-color="#0277BD"/>
+        </radialGradient>
+      </defs>
+      <circle cx="80" cy="80" r="72" fill="url(#bg3)"/>
+      <!-- Dorsal fin -->
+      <polygon points="80,22 68,52 92,52" fill="#B0BEC5"/>
+      <!-- Body -->
+      <ellipse cx="80" cy="82" rx="38" ry="28" fill="#CFD8DC"/>
+      <!-- Belly -->
+      <ellipse cx="80" cy="88" rx="28" ry="18" fill="#ECEFF1"/>
+      <!-- Tail -->
+      <polygon points="118,75 140,62 140,100 118,90" fill="#B0BEC5"/>
+      <!-- Pectoral fins -->
+      <ellipse cx="52" cy="88" rx="16" ry="8" fill="#B0BEC5" transform="rotate(-20 52 88)"/>
+      <!-- Eye -->
+      <circle cx="65" cy="74" r="8" fill="white"/>
+      <circle cx="66" cy="75" r="4.5" fill="#1A1A1A"/>
+      <circle cx="67" cy="74" r="1.5" fill="white"/>
+      <!-- Smile with teeth -->
+      <path d="M60 90 Q80 104 100 90" stroke="#90A4AE" stroke-width="2" fill="#ECEFF1"/>
+      <line x1="70" y1="90" x2="70" y2="97" stroke="#90A4AE" stroke-width="1.5"/>
+      <line x1="80" y1="91" x2="80" y2="99" stroke="#90A4AE" stroke-width="1.5"/>
+      <line x1="90" y1="90" x2="90" y2="97" stroke="#90A4AE" stroke-width="1.5"/>
+      <!-- Tie (비즈니스맨) -->
+      <polygon points="80,92 76,100 80,115 84,100" fill="#1565C0"/>
+      <polygon points="76,100 80,96 84,100 80,103" fill="#0D47A1"/>
+      <!-- Cheeks -->
+      <circle cx="55" cy="80" r="5" fill="#FF8A65" opacity="0.4"/>
+      <text x="80" y="165" text-anchor="middle" font-size="20" font-weight="800" fill="#191F28" font-family="-apple-system, sans-serif" letter-spacing="-0.5">언니픽</text>
+    </svg>
+    <div class="name">🦈 상어</div>
+    <div class="num">카리스마 비즈니스맨</div>
+  </div>
+
+  <!-- 4. 복어 -->
+  <div class="card">
+    <svg viewBox="0 0 160 180" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="bg4" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#FFF176"/>
+          <stop offset="100%" stop-color="#F9A825"/>
+        </radialGradient>
+      </defs>
+      <circle cx="80" cy="80" r="72" fill="url(#bg4)"/>
+      <!-- Spikes -->
+      <g fill="#F57F17">
+        <polygon points="80,18 76,32 84,32"/>
+        <polygon points="104,22 100,36 108,34"/>
+        <polygon points="122,42 112,52 118,58"/>
+        <polygon points="130,66 116,70 118,78"/>
+        <polygon points="128,90 114,88 116,96"/>
+        <polygon points="118,112 106,104 110,114"/>
+        <polygon points="100,128 92,116 98,128"/>
+        <polygon points="80,132 76,118 84,118"/>
+        <polygon points="60,128 62,114 68,124"/>
+        <polygon points="42,112 52,106 50,116"/>
+        <polygon points="32,90 46,90 44,98"/>
+        <polygon points="30,68 44,70 42,78"/>
+        <polygon points="36,44 48,52 44,58"/>
+        <polygon points="56,22 58,36 66,30"/>
+      </g>
+      <!-- Body (puffed up) -->
+      <circle cx="80" cy="80" r="40" fill="#FFEB3B"/>
+      <!-- Belly spots -->
+      <circle cx="70" cy="88" r="4" fill="#FFF9C4" opacity="0.7"/>
+      <circle cx="82" cy="92" r="3" fill="#FFF9C4" opacity="0.7"/>
+      <circle cx="91" cy="84" r="5" fill="#FFF9C4" opacity="0.7"/>
+      <!-- Eyes (big and round) -->
+      <circle cx="66" cy="70" r="11" fill="white"/>
+      <circle cx="94" cy="70" r="11" fill="white"/>
+      <circle cx="67" cy="71" r="6.5" fill="#1A1A1A"/>
+      <circle cx="95" cy="71" r="6.5" fill="#1A1A1A"/>
+      <circle cx="68" cy="69" r="2.5" fill="white"/>
+      <circle cx="96" cy="69" r="2.5" fill="white"/>
+      <!-- Mouth (small, pouting) -->
+      <circle cx="80" cy="87" r="5" fill="#FB8C00"/>
+      <circle cx="80" cy="88" r="3.5" fill="#E65100"/>
+      <!-- Fins -->
+      <ellipse cx="42" cy="80" rx="10" ry="6" fill="#FBC02D" transform="rotate(-10 42 80)"/>
+      <ellipse cx="118" cy="80" rx="10" ry="6" fill="#FBC02D" transform="rotate(10 118 80)"/>
+      <!-- Top fin -->
+      <ellipse cx="80" cy="44" rx="6" ry="10" fill="#FBC02D"/>
+      <!-- Cheeks -->
+      <circle cx="56" cy="78" r="6" fill="#FF7043" opacity="0.4"/>
+      <circle cx="104" cy="78" r="6" fill="#FF7043" opacity="0.4"/>
+      <text x="80" y="165" text-anchor="middle" font-size="20" font-weight="800" fill="#191F28" font-family="-apple-system, sans-serif" letter-spacing="-0.5">언니픽</text>
+    </svg>
+    <div class="name">🐡 복어</div>
+    <div class="num">소심한 겁쟁이</div>
+  </div>
+
+  <!-- 5. 오징어 -->
+  <div class="card">
+    <svg viewBox="0 0 160 180" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="bg5" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#F48FB1"/>
+          <stop offset="100%" stop-color="#AD1457"/>
+        </radialGradient>
+      </defs>
+      <circle cx="80" cy="80" r="72" fill="url(#bg5)"/>
+      <!-- Mantle (body) -->
+      <ellipse cx="80" cy="65" rx="24" ry="34" fill="#E91E8C"/>
+      <!-- Mantle tip -->
+      <polygon points="80,30 68,44 92,44" fill="#C2185B"/>
+      <!-- Side fins -->
+      <ellipse cx="56" cy="62" rx="14" ry="8" fill="#C2185B" transform="rotate(-30 56 62)"/>
+      <ellipse cx="104" cy="62" rx="14" ry="8" fill="#C2185B" transform="rotate(30 104 62)"/>
+      <!-- Tentacles (10개) -->
+      <path d="M60 92 Q48 108 50 126" stroke="#AD1457" stroke-width="7" fill="none" stroke-linecap="round"/>
+      <path d="M66 96 Q57 114 58 132" stroke="#AD1457" stroke-width="6" fill="none" stroke-linecap="round"/>
+      <path d="M72 98 Q66 118 68 136" stroke="#AD1457" stroke-width="6" fill="none" stroke-linecap="round"/>
+      <path d="M78 99 Q76 120 77 138" stroke="#AD1457" stroke-width="7" fill="none" stroke-linecap="round"/>
+      <path d="M80 99 Q80 121 80 139" stroke="#C2185B" stroke-width="8" fill="none" stroke-linecap="round"/>
+      <path d="M82 99 Q84 121 83 139" stroke="#AD1457" stroke-width="7" fill="none" stroke-linecap="round"/>
+      <path d="M88 98 Q94 118 92 136" stroke="#AD1457" stroke-width="6" fill="none" stroke-linecap="round"/>
+      <path d="M94 96 Q103 114 102 132" stroke="#AD1457" stroke-width="6" fill="none" stroke-linecap="round"/>
+      <path d="M100 92 Q112 108 110 126" stroke="#AD1457" stroke-width="7" fill="none" stroke-linecap="round"/>
+      <!-- Eyes -->
+      <circle cx="71" cy="68" r="8" fill="white"/>
+      <circle cx="89" cy="68" r="8" fill="white"/>
+      <circle cx="72" cy="69" r="5" fill="#1A1A1A"/>
+      <circle cx="90" cy="69" r="5" fill="#1A1A1A"/>
+      <circle cx="73" cy="68" r="2" fill="white"/>
+      <circle cx="91" cy="68" r="2" fill="white"/>
+      <!-- Paintbrush in tentacle -->
+      <line x1="114" y1="70" x2="136" y2="50" stroke="#795548" stroke-width="4" stroke-linecap="round"/>
+      <rect x="131" y="40" width="10" height="14" rx="2" fill="#FF7043" transform="rotate(45 136 47)"/>
+      <path d="M138 44 L144 38 L140 42" fill="#90A4AE"/>
+      <!-- Smile -->
+      <path d="M72 78 Q80 84 88 78" stroke="#C2185B" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <!-- Cheeks -->
+      <circle cx="62" cy="73" r="5" fill="#FF80AB" opacity="0.6"/>
+      <circle cx="98" cy="73" r="5" fill="#FF80AB" opacity="0.6"/>
+      <text x="80" y="165" text-anchor="middle" font-size="20" font-weight="800" fill="#191F28" font-family="-apple-system, sans-serif" letter-spacing="-0.5">언니픽</text>
+    </svg>
+    <div class="name">🦑 오징어</div>
+    <div class="num">감성 아티스트</div>
+  </div>
+
+  <!-- 6. 열대어 -->
+  <div class="card">
+    <svg viewBox="0 0 160 180" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="bg6" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#80DEEA"/>
+          <stop offset="100%" stop-color="#00838F"/>
+        </radialGradient>
+      </defs>
+      <circle cx="80" cy="80" r="72" fill="url(#bg6)"/>
+      <!-- Tail fin (fancy) -->
+      <polygon points="118,80 138,58 145,80 138,102" fill="#FF6F00"/>
+      <polygon points="118,80 132,62 140,80" fill="#FFB300"/>
+      <polygon points="118,80 132,98 140,80" fill="#FF8F00"/>
+      <!-- Body -->
+      <ellipse cx="76" cy="80" rx="38" ry="26" fill="#FF7043"/>
+      <!-- White stripes (clownfish style) -->
+      <rect x="62" y="56" width="10" height="48" rx="5" fill="white" opacity="0.85"/>
+      <rect x="82" y="58" width="8" height="44" rx="4" fill="white" opacity="0.7"/>
+      <!-- Black outlines on stripes -->
+      <rect x="60" y="56" width="2" height="48" rx="1" fill="#1A1A1A" opacity="0.3"/>
+      <rect x="72" y="56" width="2" height="48" rx="1" fill="#1A1A1A" opacity="0.3"/>
+      <!-- Dorsal fin -->
+      <path d="M60 58 Q72 38 88 54" stroke="#E64A19" stroke-width="3" fill="#FF8A65"/>
+      <!-- Pectoral fin -->
+      <ellipse cx="56" cy="85" rx="12" ry="7" fill="#FF8A65" transform="rotate(-20 56 85)"/>
+      <!-- Eye -->
+      <circle cx="50" cy="76" r="10" fill="white"/>
+      <circle cx="51" cy="77" r="6" fill="#1A1A1A"/>
+      <circle cx="52" cy="76" r="2.5" fill="white"/>
+      <!-- Smile -->
+      <path d="M40 84 Q50 92 58 86" stroke="#BF360C" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <!-- Sunglasses (패션 인플루언서) -->
+      <rect x="38" y="70" width="16" height="11" rx="5" fill="#1A1A1A" opacity="0.85"/>
+      <rect x="56" y="70" width="14" height="11" rx="5" fill="#1A1A1A" opacity="0.85"/>
+      <line x1="38" y1="75" x2="36" y2="75" stroke="#1A1A1A" stroke-width="2"/>
+      <line x1="54" y1="75" x2="56" y2="75" stroke="#1A1A1A" stroke-width="2"/>
+      <rect x="38" y="71" width="16" height="5" rx="2" fill="#00BCD4" opacity="0.5"/>
+      <rect x="56" y="71" width="14" height="5" rx="2" fill="#00BCD4" opacity="0.5"/>
+      <text x="80" y="165" text-anchor="middle" font-size="20" font-weight="800" fill="#191F28" font-family="-apple-system, sans-serif" letter-spacing="-0.5">언니픽</text>
+    </svg>
+    <div class="name">🐠 열대어</div>
+    <div class="num">화려한 인플루언서</div>
+  </div>
+
+  <!-- 7. 게 -->
+  <div class="card">
+    <svg viewBox="0 0 160 180" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="bg7" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#FFAB76"/>
+          <stop offset="100%" stop-color="#E65100"/>
+        </radialGradient>
+      </defs>
+      <circle cx="80" cy="80" r="72" fill="url(#bg7)"/>
+      <!-- Legs (6개) -->
+      <line x1="54" y1="82" x2="30" y2="72" stroke="#BF360C" stroke-width="6" stroke-linecap="round"/>
+      <line x1="54" y1="88" x2="28" y2="88" stroke="#BF360C" stroke-width="6" stroke-linecap="round"/>
+      <line x1="54" y1="94" x2="30" y2="106" stroke="#BF360C" stroke-width="6" stroke-linecap="round"/>
+      <line x1="106" y1="82" x2="130" y2="72" stroke="#BF360C" stroke-width="6" stroke-linecap="round"/>
+      <line x1="106" y1="88" x2="132" y2="88" stroke="#BF360C" stroke-width="6" stroke-linecap="round"/>
+      <line x1="106" y1="94" x2="130" y2="106" stroke="#BF360C" stroke-width="6" stroke-linecap="round"/>
+      <!-- Left claw (holding coupon) -->
+      <line x1="52" y1="72" x2="30" y2="52" stroke="#D84315" stroke-width="7" stroke-linecap="round"/>
+      <ellipse cx="24" cy="46" rx="14" ry="10" fill="#E64A19" transform="rotate(-30 24 46)"/>
+      <ellipse cx="18" cy="38" rx="9" ry="7" fill="#BF360C" transform="rotate(-30 18 38)"/>
+      <!-- Right claw (raised up) -->
+      <line x1="108" y1="72" x2="130" y2="52" stroke="#D84315" stroke-width="7" stroke-linecap="round"/>
+      <ellipse cx="136" cy="46" rx="14" ry="10" fill="#E64A19" transform="rotate(30 136 46)"/>
+      <ellipse cx="142" cy="38" rx="9" ry="7" fill="#BF360C" transform="rotate(30 142 38)"/>
+      <!-- Coupon in left claw -->
+      <rect x="5" y="30" width="22" height="14" rx="3" fill="white" transform="rotate(-30 16 37)"/>
+      <line x1="8" y1="33" x2="22" y2="28" stroke="#FF6F00" stroke-width="1.5" transform="rotate(-30 15 30)"/>
+      <line x1="8" y1="37" x2="22" y2="32" stroke="#E0E0E0" stroke-width="1" transform="rotate(-30 15 34)"/>
+      <!-- Body -->
+      <ellipse cx="80" cy="88" rx="34" ry="24" fill="#F4511E"/>
+      <!-- Shell pattern -->
+      <path d="M54 82 Q80 70 106 82" stroke="#E64A19" stroke-width="2" fill="none"/>
+      <path d="M56 90 Q80 80 104 90" stroke="#E64A19" stroke-width="1.5" fill="none"/>
+      <!-- Eye stalks -->
+      <line x1="68" y1="72" x2="62" y2="60" stroke="#D84315" stroke-width="4" stroke-linecap="round"/>
+      <line x1="92" y1="72" x2="98" y2="60" stroke="#D84315" stroke-width="4" stroke-linecap="round"/>
+      <!-- Eyes -->
+      <circle cx="60" cy="57" r="9" fill="white"/>
+      <circle cx="100" cy="57" r="9" fill="white"/>
+      <circle cx="61" cy="58" r="5" fill="#1A1A1A"/>
+      <circle cx="101" cy="58" r="5" fill="#1A1A1A"/>
+      <circle cx="62" cy="57" r="2" fill="white"/>
+      <circle cx="102" cy="57" r="2" fill="white"/>
+      <!-- Smile -->
+      <path d="M66 96 Q80 106 94 96" stroke="#BF360C" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <!-- Cheeks -->
+      <circle cx="60" cy="90" r="5" fill="#FF8A65" opacity="0.5"/>
+      <circle cx="100" cy="90" r="5" fill="#FF8A65" opacity="0.5"/>
+      <text x="80" y="165" text-anchor="middle" font-size="20" font-weight="800" fill="#191F28" font-family="-apple-system, sans-serif" letter-spacing="-0.5">언니픽</text>
+    </svg>
+    <div class="name">🦀 게</div>
+    <div class="num">알뜰 쿠폰 수집가</div>
+  </div>
+
+  <!-- 8. 고래 -->
+  <div class="card">
+    <svg viewBox="0 0 160 180" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="bg8" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#90CAF9"/>
+          <stop offset="100%" stop-color="#1565C0"/>
+        </radialGradient>
+      </defs>
+      <circle cx="80" cy="80" r="72" fill="url(#bg8)"/>
+      <!-- Water spout -->
+      <path d="M72 34 Q68 22 72 14 Q76 8 80 12 Q84 8 88 14 Q92 22 88 34" fill="none" stroke="#81D4FA" stroke-width="3" stroke-linecap="round"/>
+      <ellipse cx="76" cy="13" rx="4" ry="6" fill="#B3E5FC" opacity="0.8"/>
+      <ellipse cx="84" cy="11" rx="3" ry="5" fill="#B3E5FC" opacity="0.8"/>
+      <ellipse cx="80" cy="16" rx="5" ry="7" fill="#E1F5FE" opacity="0.9"/>
+      <!-- Tail fluke -->
+      <path d="M110 85 Q130 70 142 75 Q148 78 144 85 Q148 92 142 96 Q130 100 110 88" fill="#1976D2"/>
+      <!-- Body (large oval, friendly whale) -->
+      <ellipse cx="74" cy="84" rx="44" ry="32" fill="#2196F3"/>
+      <!-- Belly -->
+      <ellipse cx="68" cy="92" rx="30" ry="18" fill="#BBDEFB"/>
+      <!-- Pectoral fin -->
+      <path d="M56 98 Q40 110 36 124 Q48 118 62 108" fill="#1976D2"/>
+      <!-- Dorsal fin -->
+      <path d="M82 56 Q88 44 96 52 Q92 60 84 62" fill="#1976D2"/>
+      <!-- Eye -->
+      <circle cx="52" cy="76" r="10" fill="white"/>
+      <circle cx="53" cy="77" r="6" fill="#1A1A1A"/>
+      <circle cx="54" cy="76" r="2.5" fill="white"/>
+      <!-- Smile (big friendly) -->
+      <path d="M42 88 Q62 104 80 92" stroke="#1565C0" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <!-- Headphones (힐링러) -->
+      <path d="M44 72 Q52 58 62 66" stroke="#1A1A1A" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <rect x="40" y="68" width="8" height="10" rx="4" fill="#FF5722"/>
+      <rect x="58" y="62" width="8" height="10" rx="4" fill="#FF5722"/>
+      <!-- Musical notes -->
+      <text x="90" y="62" font-size="12" fill="white" opacity="0.8">♪</text>
+      <text x="100" y="52" font-size="10" fill="white" opacity="0.6">♫</text>
+      <!-- Cheeks -->
+      <circle cx="44" cy="82" r="6" fill="#90CAF9" opacity="0.6"/>
+      <text x="80" y="165" text-anchor="middle" font-size="20" font-weight="800" fill="#191F28" font-family="-apple-system, sans-serif" letter-spacing="-0.5">언니픽</text>
+    </svg>
+    <div class="name">🐳 고래</div>
+    <div class="num">느긋한 힐링러</div>
+  </div>
+
+  <!-- 9. 새우 -->
+  <div class="card">
+    <svg viewBox="0 0 160 180" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="bg9" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#FFCDD2"/>
+          <stop offset="100%" stop-color="#E91E63"/>
+        </radialGradient>
+      </defs>
+      <circle cx="80" cy="80" r="72" fill="url(#bg9)"/>
+      <!-- Antennae -->
+      <line x1="72" y1="46" x2="50" y2="24" stroke="#C2185B" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="78" y1="44" x2="60" y2="20" stroke="#C2185B" stroke-width="2" stroke-linecap="round"/>
+      <!-- Body (curved arc segments) -->
+      <path d="M80 44 Q100 52 106 66 Q112 80 104 94 Q96 108 82 114 Q68 120 60 112"
+            fill="none" stroke="#F06292" stroke-width="22" stroke-linecap="round"/>
+      <!-- Segments overlay -->
+      <path d="M83 48 Q102 57 107 70" fill="none" stroke="#E91E63" stroke-width="2" stroke-dasharray="6,5" stroke-linecap="round"/>
+      <path d="M86 58 Q108 68 108 82" fill="none" stroke="#E91E63" stroke-width="2" stroke-dasharray="6,5" stroke-linecap="round"/>
+      <path d="M82 70 Q106 78 104 94" fill="none" stroke="#E91E63" stroke-width="2" stroke-dasharray="6,5" stroke-linecap="round"/>
+      <path d="M76 82 Q98 90 90 106" fill="none" stroke="#E91E63" stroke-width="2" stroke-dasharray="6,5" stroke-linecap="round"/>
+      <!-- Tail fan -->
+      <ellipse cx="58" cy="110" rx="12" ry="7" fill="#F06292" transform="rotate(-30 58 110)"/>
+      <ellipse cx="62" cy="118" rx="10" ry="6" fill="#E91E63" transform="rotate(-10 62 118)"/>
+      <ellipse cx="70" cy="122" rx="10" ry="6" fill="#F06292" transform="rotate(10 70 122)"/>
+      <!-- Small legs -->
+      <line x1="97" y1="68" x2="112" y2="62" stroke="#C2185B" stroke-width="3" stroke-linecap="round"/>
+      <line x1="102" y1="78" x2="118" y2="74" stroke="#C2185B" stroke-width="3" stroke-linecap="round"/>
+      <line x1="102" y1="90" x2="118" y2="88" stroke="#C2185B" stroke-width="3" stroke-linecap="round"/>
+      <!-- Head -->
+      <circle cx="76" cy="50" r="18" fill="#F48FB1"/>
+      <!-- Eyes -->
+      <circle cx="68" cy="46" r="7" fill="white"/>
+      <circle cx="82" cy="44" r="7" fill="white"/>
+      <circle cx="69" cy="47" r="4" fill="#1A1A1A"/>
+      <circle cx="83" cy="45" r="4" fill="#1A1A1A"/>
+      <circle cx="70" cy="46" r="1.5" fill="white"/>
+      <circle cx="84" cy="44" r="1.5" fill="white"/>
+      <!-- Smile -->
+      <path d="M68 56 Q76 62 84 56" stroke="#C2185B" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <!-- Cheeks -->
+      <circle cx="62" cy="52" r="5" fill="#FF80AB" opacity="0.6"/>
+      <circle cx="88" cy="50" r="5" fill="#FF80AB" opacity="0.6"/>
+      <!-- Sweat drop (열심히 일하는) -->
+      <path d="M90 36 Q93 30 96 36 Q96 41 90 38" fill="#81D4FA" opacity="0.8"/>
+      <text x="80" y="165" text-anchor="middle" font-size="20" font-weight="800" fill="#191F28" font-family="-apple-system, sans-serif" letter-spacing="-0.5">언니픽</text>
+    </svg>
+    <div class="name">🦐 새우</div>
+    <div class="num">성실한 열정 알바생</div>
+  </div>
+
+  <!-- 10. 조개 -->
+  <div class="card">
+    <svg viewBox="0 0 160 180" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="bg10" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#B2EBF2"/>
+          <stop offset="100%" stop-color="#00838F"/>
+        </radialGradient>
+        <radialGradient id="pearl" cx="40%" cy="35%" r="60%">
+          <stop offset="0%" stop-color="#FFFFFF"/>
+          <stop offset="40%" stop-color="#F3E5F5"/>
+          <stop offset="100%" stop-color="#CE93D8"/>
+        </radialGradient>
+      </defs>
+      <circle cx="80" cy="80" r="72" fill="url(#bg10)"/>
+      <!-- Bottom shell -->
+      <path d="M28 90 Q80 130 132 90 Q128 116 80 122 Q32 116 28 90Z" fill="#EFEBE9"/>
+      <!-- Shell ribs (bottom) -->
+      <path d="M80 122 Q80 108 80 90" stroke="#D7CCC8" stroke-width="1.5" fill="none"/>
+      <path d="M68 121 Q66 107 60 92" stroke="#D7CCC8" stroke-width="1.5" fill="none"/>
+      <path d="M92 121 Q94 107 100 92" stroke="#D7CCC8" stroke-width="1.5" fill="none"/>
+      <path d="M56 118 Q52 104 44 92" stroke="#D7CCC8" stroke-width="1.5" fill="none"/>
+      <path d="M104 118 Q108 104 116 92" stroke="#D7CCC8" stroke-width="1.5" fill="none"/>
+      <!-- Top shell (open) -->
+      <path d="M28 90 Q80 48 132 90 Q106 56 80 52 Q54 56 28 90Z" fill="#BCAAA4"/>
+      <!-- Shell ribs (top) -->
+      <path d="M80 52 Q80 68 80 88" stroke="#A1887F" stroke-width="1.5" fill="none"/>
+      <path d="M68 54 Q64 70 56 88" stroke="#A1887F" stroke-width="1.5" fill="none"/>
+      <path d="M92 54 Q96 70 104 88" stroke="#A1887F" stroke-width="1.5" fill="none"/>
+      <path d="M56 60 Q50 72 40 88" stroke="#A1887F" stroke-width="1.5" fill="none"/>
+      <path d="M104 60 Q110 72 120 88" stroke="#A1887F" stroke-width="1.5" fill="none"/>
+      <!-- Inner shell glow -->
+      <path d="M40 88 Q80 58 120 88 Q80 62 40 88Z" fill="#FFF9C4" opacity="0.3"/>
+      <!-- Pearl (큰 진주) -->
+      <circle cx="80" cy="90" r="22" fill="url(#pearl)"/>
+      <!-- Pearl shine -->
+      <ellipse cx="73" cy="83" rx="8" ry="5" fill="white" opacity="0.6" transform="rotate(-30 73 83)"/>
+      <circle cx="88" cy="96" r="4" fill="#E1BEE7" opacity="0.5"/>
+      <!-- Face on pearl (수줍은 표정) -->
+      <circle cx="73" cy="89" r="5" fill="white"/>
+      <circle cx="87" cy="89" r="5" fill="white"/>
+      <circle cx="74" cy="90" r="3" fill="#1A1A1A"/>
+      <circle cx="88" cy="90" r="3" fill="#1A1A1A"/>
+      <circle cx="75" cy="89" r="1" fill="white"/>
+      <circle cx="89" cy="89" r="1" fill="white"/>
+      <!-- Blush -->
+      <circle cx="68" cy="94" r="4" fill="#F48FB1" opacity="0.6"/>
+      <circle cx="92" cy="94" r="4" fill="#F48FB1" opacity="0.6"/>
+      <!-- Small mouth -->
+      <path d="M76 97 Q80 100 84 97" stroke="#9C27B0" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <text x="80" y="165" text-anchor="middle" font-size="20" font-weight="800" fill="#191F28" font-family="-apple-system, sans-serif" letter-spacing="-0.5">언니픽</text>
+    </svg>
+    <div class="name">🐚 조개</div>
+    <div class="num">수줍은 비밀 선물</div>
+  </div>
+
+</div>
+
+<p style="text-align:center; margin-top:48px; color:#C0C7D0; font-size:13px;">
+  언니픽 © 2026 · 해양생물 마스코트 로고 비교 시트
+</p>
+
+</body>
+</html>

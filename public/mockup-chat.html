@@ -10,6 +10,7 @@
 /* ── 라이트 모드 (토스 디자인 기반, 기본값) ── */
 :root{
   --y:#FEE500; --y2:#FEE50022; --y3:rgba(254,229,0,0.15);
+  --yt:#D4700A;
   --brand:#FF6F0F;
   --page-bg:#F0F2F5;
   --bg:#F7F8FA; --bg2:#FFFFFF; --bg3:#F2F4F6; --bg4:#E8EAED;
@@ -29,6 +30,7 @@
   --border:rgba(255,255,255,0.07);
   --t1:#F0F0F5; --t2:rgba(240,240,245,0.55); --t3:rgba(240,240,245,0.28);
   --green:#4ADE80;
+  --yt:#FFB347;
   --divider:rgba(255,255,255,0.06);
   --phone-shadow:0 0 0 1px rgba(255,255,255,0.08),0 36px 90px rgba(0,0,0,0.7),inset 0 1px 0 rgba(255,255,255,0.06);
   --map-bg:linear-gradient(135deg,#1e2038 0%,#252840 50%,#1a1e30 100%);
@@ -102,7 +104,7 @@ body{
   font-size:11px;font-weight:700;color:var(--t2);
   cursor:pointer;display:flex;align-items:center;gap:4px;
 }
-.loc-dist-btn span{color:var(--y);font-weight:800}
+.loc-dist-btn span{color:var(--yt);font-weight:800}
 .loc-search{
   width:32px;height:32px;border-radius:50%;
   background:var(--bg3);border:1px solid var(--border);
@@ -125,9 +127,9 @@ body{
   border:1.5px solid var(--border);color:var(--t3);
   cursor:pointer;transition:all .15s;
 }
-.dc.on{background:var(--y);color:#1A1200;border-color:var(--y)}
+.dc.on{background:var(--y);color:#1A1200;border-color:var(--yt)}
 .dist-panel-sub{font-size:11px;color:var(--t3);margin-top:8px}
-.dist-panel-sub strong{color:var(--y)}
+.dist-panel-sub strong{color:var(--yt)}
 
 /* 카테고리 탭 */
 .cat-wrap{padding:10px 14px 8px;flex-shrink:0;overflow-x:auto}
@@ -145,9 +147,9 @@ body{
   font-size:20px;border:1.5px solid var(--border);
   background:var(--bg2);transition:all .15s;
 }
-.cat.on .cat-icon{background:var(--y);border-color:var(--y)}
+.cat.on .cat-icon{background:var(--y);border-color:var(--yt)}
 .cat-name{font-size:10px;font-weight:700;color:var(--t3)}
-.cat.on .cat-name{color:var(--y)}
+.cat.on .cat-name{color:var(--yt)}
 
 /* 지도 미니맵 */
 .mini-map{
@@ -242,7 +244,7 @@ body{
   padding:4px 9px;border-radius:20px;
   font-size:11px;font-weight:700;color:var(--t3);cursor:pointer;
 }
-.sort-opt.on{color:var(--y);background:var(--y3)}
+.sort-opt.on{color:var(--yt);background:var(--y3)}
 
 /* 채팅 아이템 */
 .ci{
@@ -272,7 +274,7 @@ body{
   font-size:11px;font-weight:700;color:var(--t3);
 }
 .ci-dist .d-near{color:var(--green)}
-.ci-dist .d-mid{color:var(--y)}
+.ci-dist .d-mid{color:var(--yt)}
 .ci-r2{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}
 .ci-preview{font-size:12px;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px}
 .ci-r3{display:flex;align-items:center;gap:5px}
@@ -314,7 +316,7 @@ body{
 .bt{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer}
 .bt span:first-child{font-size:22px}
 .bt-l{font-size:9px;font-weight:700;color:var(--t3)}
-.bt.on .bt-l{color:var(--y)}
+.bt.on .bt-l{color:var(--yt)}
 
 /* ═══════════════════════════════
    화면 2 — 공지 피드 (기존 유지)
@@ -343,7 +345,7 @@ body{
 /* 발행중 쿠폰 뱃지 */
 .ci-cp{display:inline-flex;align-items:center;gap:2px;font-size:9px;font-weight:800;padding:1.5px 6px;border-radius:6px;margin-left:4px;vertical-align:middle}
 .ci-cp.timesale{color:#FF6B6B;background:rgba(255,107,107,0.15);border:1px solid rgba(255,107,107,0.25)}
-.ci-cp.discount{color:var(--y);background:rgba(254,229,0,0.12);border:1px solid rgba(254,229,0,0.25)}
+.ci-cp.discount{color:var(--yt);background:rgba(254,229,0,0.12);border:1px solid rgba(254,229,0,0.25)}
 .ci-cp.event{color:#7EC8FF;background:rgba(126,200,255,0.12);border:1px solid rgba(126,200,255,0.25)}
 
 /* 포스트 동 배지 */
@@ -376,7 +378,7 @@ body{
   padding:8px 14px;display:flex;align-items:center;gap:8px;flex-shrink:0;
 }
 .pinned-txt{font-size:12px;color:var(--t2);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pinned-lbl{font-size:10px;font-weight:800;color:var(--y);background:var(--y3);padding:2px 8px;border-radius:20px}
+.pinned-lbl{font-size:10px;font-weight:800;color:var(--yt);background:var(--y3);padding:2px 8px;border-radius:20px}
 
 .feed{flex:1;overflow-y:auto;padding:14px 14px 8px;display:flex;flex-direction:column;gap:13px}
 .feed::-webkit-scrollbar{display:none}
@@ -395,7 +397,7 @@ body{
 .post-ts{font-size:10px;color:var(--t3);margin-top:1px}
 .post-body{padding:0 14px 0}
 .post-txt{font-size:14px;line-height:1.65;color:var(--t1)}
-.post-txt strong{color:var(--y)}
+.post-txt strong{color:var(--yt)}
 .post-img{margin:10px 0 0;border-radius:12px;width:100%;height:150px;background:var(--bg3);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;font-size:42px}
 .post-img-g{position:absolute;inset:0;background:linear-gradient(180deg,transparent 45%,rgba(0,0,0,0.6) 100%);display:flex;align-items:flex-end;padding:10px 12px}
 .img-tag{font-size:10px;color:rgba(255,255,255,0.85);font-weight:700;background:rgba(0,0,0,0.45);padding:3px 9px;border-radius:20px;backdrop-filter:blur(6px)}
@@ -404,16 +406,16 @@ body{
 .cp-top{padding:9px 13px 4px;display:flex;align-items:center;gap:10px}
 .cp-em{font-size:22px}
 .cp-info{flex:1}
-.cp-val{font-size:18px;font-weight:900;color:var(--y);line-height:1.1;letter-spacing:-.5px}
+.cp-val{font-size:18px;font-weight:900;color:var(--yt);line-height:1.1;letter-spacing:-.5px}
 .cp-desc{font-size:10px;color:var(--t2);margin-top:1px}
 .cp-timer{display:flex;flex-direction:column;align-items:flex-end;gap:1px}
 .cp-tl{font-size:9px;color:var(--t3)}
-.cp-tv{font-size:13px;font-weight:800;color:var(--y);font-variant-numeric:tabular-nums}
+.cp-tv{font-size:13px;font-weight:800;color:var(--yt);font-variant-numeric:tabular-nums}
 .cp-prog{padding:2px 13px 4px}
 .cp-bar{height:3px;background:var(--bg4);border-radius:2px;overflow:hidden}
 .cp-fill{height:100%;background:linear-gradient(90deg,var(--y),var(--brand));border-radius:2px}
 .cp-stock{font-size:9px;color:var(--t3);margin-top:2px;display:flex;justify-content:space-between}
-.cp-stock strong{color:var(--y)}
+.cp-stock strong{color:var(--yt)}
 .cp-notch{height:1px;margin:0 12px;background:rgba(254,229,0,0.12);position:relative}
 .cp-notch::before,.cp-notch::after{content:'';position:absolute;top:50%;transform:translateY(-50%);width:13px;height:13px;border-radius:50%;background:var(--bg)}
 .cp-notch::before{left:-19px}.cp-notch::after{right:-19px}
@@ -426,10 +428,10 @@ body{
 .goal-bar{margin:10px 0 0;background:var(--bg3);border-radius:12px;padding:10px 13px;display:flex;align-items:center;gap:10px}
 .goal-prog{flex:1}
 .goal-lbl{font-size:11px;color:var(--t2);margin-bottom:5px}
-.goal-lbl strong{color:var(--y)}
+.goal-lbl strong{color:var(--yt)}
 .goal-track{height:4px;background:var(--bg4);border-radius:2px;overflow:hidden}
 .goal-fill{height:100%;background:linear-gradient(90deg,var(--y),var(--brand));border-radius:2px;transition:width .6s}
-.goal-pct{font-size:13px;font-weight:800;color:var(--y)}
+.goal-pct{font-size:13px;font-weight:800;color:var(--yt)}
 
 .pact{padding:8px 14px 12px;display:flex;align-items:center;gap:2px;border-top:1px solid var(--border);margin-top:12px}
 .ab{display:flex;align-items:center;gap:5px;background:none;border:none;cursor:pointer;font-size:12px;color:var(--t3);padding:5px 9px;border-radius:20px;font-family:inherit;font-weight:600;transition:all .15s}
@@ -445,7 +447,7 @@ body{
 .ro-input{flex:1;background:none;border:none;outline:none;font-family:inherit;font-size:13px;color:var(--t1);resize:none;line-height:1.4;min-height:20px;max-height:72px;overflow-y:auto}
 .ro-input::placeholder{color:var(--t3)}
 .mb-pill{background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:8px 10px;font-size:11px;color:var(--t3);display:flex;align-items:center;gap:4px;white-space:nowrap}
-.qn-btn{background:rgba(254,229,0,0.12);border-color:rgba(254,229,0,0.3);color:var(--y);cursor:pointer;font-weight:800;padding:8px 11px}
+.qn-btn{background:rgba(254,229,0,0.12);border-color:rgba(254,229,0,0.3);color:var(--yt);cursor:pointer;font-weight:800;padding:8px 11px}
 
 /* 빠른 공지 바텀 시트 */
 .qn-overlay{position:absolute;inset:0;z-index:150;background:rgba(0,0,0,0);pointer-events:none;transition:background .2s}
@@ -464,7 +466,7 @@ body{
 .qn-ie,.qn-id{font-size:10px;font-weight:700;padding:3px 7px;border-radius:6px;border:none;cursor:pointer;font-family:inherit}
 .qn-ie{background:var(--bg4);color:var(--t3)}
 .qn-id{background:rgba(255,60,60,0.1);color:rgba(255,100,100,0.8)}
-.qn-add{color:var(--y);font-weight:700;border-top:1px solid var(--border);margin-top:4px;padding-top:13px;cursor:pointer;justify-content:flex-start}
+.qn-add{color:var(--yt);font-weight:700;border-top:1px solid var(--border);margin-top:4px;padding-top:13px;cursor:pointer;justify-content:flex-start}
 
 /* 매장음악 플레이어 */
 .mp-bar{flex-shrink:0;padding:9px 14px 9px;background:var(--bg2);border-top:1px solid var(--border);display:flex;align-items:center;gap:10px}
@@ -536,7 +538,7 @@ body{
 .wallet-tabs{display:flex;gap:6px;padding:0 18px 12px;flex-shrink:0}
 .wtab{font-size:11px;font-weight:700;padding:5px 13px;border-radius:20px;cursor:pointer;
   background:var(--bg3);color:var(--t3);border:1px solid var(--border);transition:all .15s}
-.wtab.on{background:rgba(254,229,0,0.15);color:var(--y);border-color:rgba(254,229,0,0.3)}
+.wtab.on{background:rgba(254,229,0,0.15);color:var(--yt);border-color:rgba(254,229,0,0.3)}
 
 /* 스크롤 내용 */
 .wallet-body{flex:1;overflow-y:auto;padding:0 16px 30px}
@@ -550,7 +552,7 @@ body{
   justify-content:center;font-size:15px;flex-shrink:0;border:1px solid var(--border)}
 .ws-store-name{font-size:13px;font-weight:800;color:var(--t1);flex:1}
 .ws-store-dong{font-size:10px;color:var(--t3)}
-.ws-count{font-size:10px;font-weight:700;color:var(--y);background:rgba(254,229,0,0.1);
+.ws-count{font-size:10px;font-weight:700;color:var(--yt);background:rgba(254,229,0,0.1);
   padding:2px 7px;border-radius:10px}
 
 /* 쿠폰 아이템 */
@@ -603,7 +605,7 @@ body{
 .cp-act.primary{background:rgba(254,229,0,0.12);border-color:rgba(254,229,0,0.3)}
 .cp-act-ic{font-size:14px;line-height:1}
 .cp-act-lbl{font-size:11px;font-weight:700;color:var(--t2)}
-.cp-act.primary .cp-act-lbl{color:var(--y)}
+.cp-act.primary .cp-act-lbl{color:var(--yt)}
 .cp-like-cnt{font-size:10px;color:var(--t3)}
 
 /* 사장님 댓글 */
@@ -638,7 +640,7 @@ body{
 }
 .cp-input-wrap{flex:1;display:flex;flex-direction:column;gap:4px}
 .cp-input-label{
-  font-size:9px;font-weight:800;color:var(--y);
+  font-size:9px;font-weight:800;color:var(--yt);
   display:flex;align-items:center;gap:3px;
 }
 .cp-input-box{
@@ -682,7 +684,7 @@ body{
 .follow-btn.following{background:var(--bg4);color:var(--t3);border:1px solid var(--border)}
 
 /* 종 버튼 */
-.rb.bell-on{color:var(--y)}
+.rb.bell-on{color:var(--yt)}
 
 /* 쿠폰 발급 확인 팝업 */
 .cp-popup-overlay{
@@ -709,7 +711,7 @@ body{
 .cp-popup-val{font-size:28px;font-weight:900;color:#FF6B6B;letter-spacing:-.5px;line-height:1.1}
 .cp-popup-desc{font-size:12px;color:var(--t2);margin-top:4px}
 .cp-popup-notice{font-size:11px;color:var(--t3);text-align:center;margin:14px 16px 0;line-height:1.6}
-.cp-popup-notice strong{color:var(--y)}
+.cp-popup-notice strong{color:var(--yt)}
 .cp-popup-btns{display:flex;gap:8px;margin:14px 16px 0}
 .cp-popup-cancel{flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--t2);font-size:14px;font-weight:700;padding:13px;border-radius:13px;border:none;cursor:pointer;font-family:inherit}
 .cp-popup-confirm{flex:2;background:#FF6B6B;color:#fff;font-size:14px;font-weight:800;padding:13px;border-radius:13px;border:none;cursor:pointer;font-family:inherit;box-shadow:0 4px 14px rgba(255,77,77,0.35)}
@@ -743,7 +745,7 @@ body{
 .chat-name{font-size:11px;font-weight:700;color:var(--t2);margin-bottom:4px;display:flex;align-items:center;gap:4px}
 .chat-pill{font-size:8px;font-weight:800;background:var(--bg4);color:var(--t3);padding:1px 5px;border-radius:4px}
 .chat-bubble{background:var(--bg3);border:1px solid var(--border);border-radius:4px 14px 14px 14px;padding:9px 12px;font-size:13px;color:var(--t1);line-height:1.55;display:inline-block;max-width:100%}
-.chat-bubble strong{color:var(--y)}
+.chat-bubble strong{color:var(--yt)}
 .chat-ts{font-size:10px;color:var(--t3);margin-top:3px}
 </style>
 </head>
@@ -1029,7 +1031,7 @@ body{
     <div class="btm">
       <div class="bt"><span>🏠</span><span class="bt-l">홈</span></div>
       <div class="bt"><span>🔍</span><span class="bt-l">탐색</span></div>
-      <div class="bt on"><span>💬</span><span class="bt-l" style="color:var(--y)">채팅</span></div>
+      <div class="bt on"><span>💬</span><span class="bt-l" style="color:var(--yt)">채팅</span></div>
       <div class="bt" onclick="openWallet()"><span>🎟</span><span class="bt-l">쿠폰함</span></div>
       <div class="bt"><span>👤</span><span class="bt-l">내정보</span></div>
     </div>
@@ -1291,7 +1293,7 @@ body{
               <div class="cp-cm-av">🍜</div>
               <div class="cp-cm-body">
                 <div class="cp-cm-name">라멘 홋카이도 <span class="cp-cm-pill">사장님</span></div>
-                <div class="cp-cm-txt" id="cpcm2-txt">🎁 이번달에 <strong style="color:var(--y)">'좋아요픽'</strong> 눌러주신 분 중에 추첨하여<br><strong style="color:var(--y)">라면세트 2인분</strong> 제공합니다! 많은 참여 부탁드려요 🍜🙏</div>
+                <div class="cp-cm-txt" id="cpcm2-txt">🎁 이번달에 <strong style="color:var(--yt)">'좋아요픽'</strong> 눌러주신 분 중에 추첨하여<br><strong style="color:var(--yt)">라면세트 2인분</strong> 제공합니다! 많은 참여 부탁드려요 🍜🙏</div>
                 <div class="cp-cm-ts">오전 11:55</div>
                 <div class="cp-cm-actions">
                   <button class="cp-cm-edit" onclick="editComment('cpcm2-txt',this)">✏️ 수정</button>
