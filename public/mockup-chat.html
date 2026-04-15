@@ -7,16 +7,38 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;900&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+/* ── 라이트 모드 (토스 디자인 기반, 기본값) ── */
 :root{
-  --y:#FEE500; --y2:#FEE50022; --y3:rgba(254,229,0,0.12);
+  --y:#FEE500; --y2:#FEE50022; --y3:rgba(254,229,0,0.15);
   --brand:#FF6F0F;
+  --page-bg:#F0F2F5;
+  --bg:#F7F8FA; --bg2:#FFFFFF; --bg3:#F2F4F6; --bg4:#E8EAED;
+  --border:rgba(0,0,0,0.08);
+  --t1:#191F28; --t2:#4E5968; --t3:#8B95A1;
+  --green:#0AC86E;
+  --divider:rgba(0,0,0,0.06);
+  --phone-shadow:0 0 0 1px rgba(0,0,0,0.08),0 24px 60px rgba(0,0,0,0.13),0 4px 16px rgba(0,0,0,0.06);
+  --map-bg:linear-gradient(135deg,#dce3ea 0%,#e4eaef 50%,#d8dfe6 100%);
+  --map-grid:rgba(0,0,0,0.05);
+  --map-road:rgba(0,0,0,0.09);
+}
+/* ── 다크 모드 ── */
+[data-theme="dark"]{
+  --page-bg:#111218;
   --bg:#1A1B22; --bg2:#22232D; --bg3:#2A2B38; --bg4:#32334A;
   --border:rgba(255,255,255,0.07);
   --t1:#F0F0F5; --t2:rgba(240,240,245,0.55); --t3:rgba(240,240,245,0.28);
   --green:#4ADE80;
+  --divider:rgba(255,255,255,0.06);
+  --phone-shadow:0 0 0 1px rgba(255,255,255,0.08),0 36px 90px rgba(0,0,0,0.7),inset 0 1px 0 rgba(255,255,255,0.06);
+  --map-bg:linear-gradient(135deg,#1e2038 0%,#252840 50%,#1a1e30 100%);
+  --map-grid:rgba(255,255,255,0.03);
+  --map-road:rgba(255,255,255,0.06);
 }
+/* 테마 전환 트랜지션 */
+body,body *{transition:background-color .22s,border-color .18s,color .18s,box-shadow .22s}
 body{
-  background:#111218;
+  background:var(--page-bg);
   font-family:'Noto Sans KR',-apple-system,sans-serif;
   display:flex; gap:28px; padding:36px 28px 60px;
   justify-content:center; align-items:flex-start;
@@ -24,12 +46,21 @@ body{
 }
 
 /* 페이지 헤더 */
-.pg-hd{width:100%;text-align:center;margin-bottom:6px}
+.pg-hd{width:100%;text-align:center;margin-bottom:6px;position:relative}
 .pg-hd h1{font-size:24px;font-weight:900;
   background:linear-gradient(135deg,#FEE500,#FF6F0F);
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;
   letter-spacing:-.5px}
 .pg-hd p{font-size:12px;color:var(--t3);margin-top:3px}
+.theme-btn{
+  position:absolute;right:0;top:50%;transform:translateY(-50%);
+  display:inline-flex;align-items:center;gap:6px;
+  background:var(--bg2);border:1.5px solid var(--border);
+  border-radius:20px;padding:7px 14px;
+  font-size:12px;font-weight:700;color:var(--t2);
+  cursor:pointer;font-family:inherit;
+  box-shadow:0 2px 8px rgba(0,0,0,0.07);
+}
 
 /* 컬럼 */
 .col{display:flex;flex-direction:column;align-items:center;gap:9px}
@@ -39,8 +70,7 @@ body{
 .phone{
   width:375px; height:812px; background:var(--bg);
   border-radius:42px; overflow:hidden;
-  box-shadow:0 0 0 1px rgba(255,255,255,0.08),0 36px 90px rgba(0,0,0,0.7),
-             inset 0 1px 0 rgba(255,255,255,0.06);
+  box-shadow:var(--phone-shadow);
   display:flex; flex-direction:column; position:relative;
 }
 .scroll-area{flex:1;overflow-y:auto}
@@ -128,7 +158,7 @@ body{
 }
 .map-bg{
   width:100%;height:100%;
-  background:linear-gradient(135deg,#1e2038 0%,#252840 50%,#1a1e30 100%);
+  background:var(--map-bg);
   display:flex;align-items:center;justify-content:center;
   position:relative;
 }
@@ -136,13 +166,13 @@ body{
 .map-grid{
   position:absolute;inset:0;
   background-image:
-    linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px);
+    linear-gradient(var(--map-grid) 1px,transparent 1px),
+    linear-gradient(90deg,var(--map-grid) 1px,transparent 1px);
   background-size:24px 24px;
 }
 /* 도로 */
-.road-h{position:absolute;left:0;right:0;height:3px;background:rgba(255,255,255,0.06)}
-.road-v{position:absolute;top:0;bottom:0;width:3px;background:rgba(255,255,255,0.06)}
+.road-h{position:absolute;left:0;right:0;height:3px;background:var(--map-road)}
+.road-v{position:absolute;top:0;bottom:0;width:3px;background:var(--map-road)}
 /* 내 위치 */
 .my-pin{
   position:absolute;z-index:10;
@@ -220,7 +250,7 @@ body{
   padding:11px 16px;cursor:pointer;
   transition:background .15s;
 }
-.ci:active{background:rgba(255,255,255,0.03)}
+.ci:active{background:var(--bg3)}
 .ci-av{
   width:54px;height:54px;border-radius:16px;
   flex-shrink:0;position:relative;
@@ -380,7 +410,7 @@ body{
 .cp-tl{font-size:9px;color:var(--t3)}
 .cp-tv{font-size:13px;font-weight:800;color:var(--y);font-variant-numeric:tabular-nums}
 .cp-prog{padding:2px 13px 4px}
-.cp-bar{height:3px;background:rgba(255,255,255,0.07);border-radius:2px;overflow:hidden}
+.cp-bar{height:3px;background:var(--bg4);border-radius:2px;overflow:hidden}
 .cp-fill{height:100%;background:linear-gradient(90deg,var(--y),var(--brand));border-radius:2px}
 .cp-stock{font-size:9px;color:var(--t3);margin-top:2px;display:flex;justify-content:space-between}
 .cp-stock strong{color:var(--y)}
@@ -397,7 +427,7 @@ body{
 .goal-prog{flex:1}
 .goal-lbl{font-size:11px;color:var(--t2);margin-bottom:5px}
 .goal-lbl strong{color:var(--y)}
-.goal-track{height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden}
+.goal-track{height:4px;background:var(--bg4);border-radius:2px;overflow:hidden}
 .goal-fill{height:100%;background:linear-gradient(90deg,var(--y),var(--brand));border-radius:2px;transition:width .6s}
 .goal-pct{font-size:13px;font-weight:800;color:var(--y)}
 
@@ -443,7 +473,7 @@ body{
 .mp-lbl{font-size:9px;font-weight:800;color:var(--brand);letter-spacing:.6px;margin-bottom:1px}
 .mp-title{font-size:12px;font-weight:700;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mp-artist{font-size:10px;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mp-prog{height:2px;background:rgba(255,255,255,0.08);border-radius:1px;margin-top:4px;overflow:hidden}
+.mp-prog{height:2px;background:var(--bg4);border-radius:1px;margin-top:4px;overflow:hidden}
 .mp-fill{height:100%;background:linear-gradient(90deg,var(--brand),var(--y));border-radius:1px;transition:width .3s linear}
 .mp-ctrls{display:flex;align-items:center;gap:2px;flex-shrink:0}
 .mc{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;color:var(--t2);transition:all .15s}
@@ -539,7 +569,7 @@ body{
 .wc-status{font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px}
 .wc-status.ok{color:var(--green);background:rgba(74,222,128,0.12)}
 .wc-status.done{color:var(--t3);background:var(--bg4)}
-.wc-status.exp{color:rgba(255,255,255,0.3);background:rgba(255,255,255,0.05)}
+.wc-status.exp{color:var(--t3);background:var(--bg4)}
 .wc-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
 .wc-use-btn{background:#FF6B6B;color:#fff;font-size:11px;font-weight:800;
   padding:6px 11px;border-radius:9px;border:none;cursor:pointer;font-family:inherit;
@@ -577,7 +607,7 @@ body{
 .cp-like-cnt{font-size:10px;color:var(--t3)}
 
 /* 사장님 댓글 */
-.cp-comment{background:rgba(255,255,255,0.03);border-top:1px solid rgba(255,255,255,0.05);padding:7px 12px;display:flex;gap:7px;align-items:flex-start}
+.cp-comment{background:var(--bg3);border-top:1px solid var(--divider);padding:7px 12px;display:flex;gap:7px;align-items:flex-start}
 .cp-cm-av{width:22px;height:22px;border-radius:7px;background:linear-gradient(135deg,#FF6F0F,#FF3C00);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
 .cp-cm-body{flex:1}
 .cp-cm-name{font-size:10px;font-weight:800;color:var(--t2);display:flex;align-items:center;gap:4px;margin-bottom:2px}
@@ -596,9 +626,9 @@ body{
 
 /* 댓글 입력창 */
 .cp-input-area{
-  border-top:1px solid rgba(255,255,255,0.06);
+  border-top:1px solid var(--divider);
   padding:8px 12px;display:flex;gap:8px;align-items:flex-end;
-  background:rgba(254,229,0,0.03);
+  background:var(--bg2);
 }
 .cp-input-av{
   width:26px;height:26px;border-radius:9px;
@@ -698,7 +728,7 @@ body{
 .cp-block .coupon.timesale+.cp-block-cmts{border-color:rgba(255,77,77,0.25)}
 
 /* 쿠폰 1줄 액션바 (좋아요픽 | 쿠폰발급 | 공유) */
-.cp-abar{display:flex;align-items:center;gap:6px;padding:7px 12px 9px;border-top:1px solid rgba(255,255,255,0.06)}
+.cp-abar{display:flex;align-items:center;gap:6px;padding:7px 12px 9px;border-top:1px solid var(--divider)}
 .cp-abar-like{flex:1;display:flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:var(--t3);cursor:pointer;padding:3px 0;transition:color .15s}
 .cp-abar-like.on{color:var(--brand)}
 .cp-abar-ic{font-size:14px;line-height:1}
@@ -722,6 +752,7 @@ body{
 <div class="pg-hd">
   <h1>언니픽 채팅 · 시안 v3</h1>
   <p>당근마켓 감성 · 위치 기반 · 카테고리 상권 구분</p>
+  <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">🌙 다크모드</button>
 </div>
 
 <!-- ══════ 화면 1: 위치 기반 채팅 목록 ══════ -->
@@ -1772,6 +1803,14 @@ function renderPL(){
     });
     list.appendChild(item);
   });
+}
+
+// 라이트/다크 모드 전환
+function toggleTheme(){
+  const isDark=document.documentElement.getAttribute('data-theme')==='dark';
+  document.documentElement.setAttribute('data-theme',isDark?'light':'dark');
+  const btn=document.getElementById('themeBtn');
+  btn.textContent=isDark?'🌙 다크모드':'☀️ 라이트모드';
 }
 
 // 타임세일 카운트다운
