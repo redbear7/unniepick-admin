@@ -427,9 +427,28 @@ body{
 .qn-title{font-size:14px;font-weight:800;color:var(--t1)}
 .qn-close{font-size:18px;color:var(--t3);cursor:pointer;padding:2px 6px;line-height:1}
 .qn-list{padding:4px 0 32px}
-.qn-item{padding:11px 18px;font-size:13px;color:var(--t2);cursor:pointer;transition:background .12s;line-height:1.5}
+.qn-item{padding:9px 14px 9px 18px;font-size:13px;color:var(--t2);transition:background .12s;line-height:1.5;display:flex;align-items:center;gap:6px}
 .qn-item:hover,.qn-item:active{background:var(--bg3)}
-.qn-add{color:var(--y);font-weight:700;border-top:1px solid var(--border);margin-top:4px;padding-top:13px}
+.qn-item-txt{flex:1;cursor:pointer;line-height:1.5}
+.qn-item-acts{display:flex;gap:4px;flex-shrink:0}
+.qn-ie,.qn-id{font-size:10px;font-weight:700;padding:3px 7px;border-radius:6px;border:none;cursor:pointer;font-family:inherit}
+.qn-ie{background:var(--bg4);color:var(--t3)}
+.qn-id{background:rgba(255,60,60,0.1);color:rgba(255,100,100,0.8)}
+.qn-add{color:var(--y);font-weight:700;border-top:1px solid var(--border);margin-top:4px;padding-top:13px;cursor:pointer;justify-content:flex-start}
+
+/* 매장음악 플레이어 */
+.mp-bar{flex-shrink:0;padding:9px 14px 9px;background:var(--bg2);border-top:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.mp-av{width:36px;height:36px;border-radius:11px;background:linear-gradient(135deg,#1a2035,#252a45);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.mp-info{flex:1;min-width:0}
+.mp-lbl{font-size:9px;font-weight:800;color:var(--brand);letter-spacing:.6px;margin-bottom:1px}
+.mp-title{font-size:12px;font-weight:700;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mp-artist{font-size:10px;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mp-prog{height:2px;background:rgba(255,255,255,0.08);border-radius:1px;margin-top:4px;overflow:hidden}
+.mp-fill{height:100%;background:linear-gradient(90deg,var(--brand),var(--y));border-radius:1px;transition:width .3s linear}
+.mp-ctrls{display:flex;align-items:center;gap:2px;flex-shrink:0}
+.mc{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;color:var(--t2);transition:all .15s}
+.mc:active{transform:scale(.88)}
+.mc.play{width:32px;height:32px;background:var(--brand);color:#fff;font-size:12px;box-shadow:0 2px 8px rgba(255,111,15,0.4)}
 
 /* ── 쿠폰함 바텀 시트 ── */
 .wallet-overlay{
@@ -1307,6 +1326,22 @@ body{
       <div style="height:10px"></div>
     </div>
 
+    <!-- ── 매장음악 플레이어 ── -->
+    <div class="mp-bar">
+      <div class="mp-av"><span id="mpEmoji">🎵</span></div>
+      <div class="mp-info">
+        <div class="mp-lbl">사장님픽 매장음악</div>
+        <div class="mp-title" id="mpTitle">봄날의 피아노</div>
+        <div class="mp-artist" id="mpArtist">Lo-Fi Cafe Mix</div>
+        <div class="mp-prog"><div class="mp-fill" id="mpFill" style="width:35%"></div></div>
+      </div>
+      <div class="mp-ctrls">
+        <div class="mc" onclick="mpPrev()">⏮</div>
+        <div class="mc play" id="mpPlay" onclick="mpToggle()">▶</div>
+        <div class="mc" onclick="mpNext()">⏭</div>
+      </div>
+    </div>
+
     <div class="ro-bar">
       <div class="ro-field" onclick="document.getElementById('roInput').focus()">
         <span style="font-size:14px;flex-shrink:0">🔒</span>
@@ -1326,11 +1361,11 @@ body{
           <span class="qn-close" onclick="closeQN()">✕</span>
         </div>
         <div class="qn-list" id="qnList">
-          <div class="qn-item" onclick="pickQN(this)">✅ 오늘 영업합니다! 잠시 후 쿠폰 발급 예정이에요 🎟</div>
-          <div class="qn-item" onclick="pickQN(this)">⚡ 타임세일 시작! 지금 바로 쿠폰 발급받으세요!</div>
-          <div class="qn-item" onclick="pickQN(this)">🍜 오늘 점심 특선 — 돈코츠 라멘+군만두 세트 8,900원!</div>
-          <div class="qn-item" onclick="pickQN(this)">⏰ 영업 마감 1시간 전입니다. 서두르세요!</div>
-          <div class="qn-item" onclick="pickQN(this)">🙏 오늘도 방문해주셔서 감사합니다!</div>
+          <div class="qn-item"><span class="qn-item-txt" onclick="pickQN(this)">✅ 오늘 영업합니다! 잠시 후 쿠폰 발급 예정이에요 🎟</span><div class="qn-item-acts"><button class="qn-ie" onclick="editQN(this)">✏️ 수정</button><button class="qn-id" onclick="delQN(this)">🗑 삭제</button></div></div>
+          <div class="qn-item"><span class="qn-item-txt" onclick="pickQN(this)">⚡ 타임세일 시작! 지금 바로 쿠폰 발급받으세요!</span><div class="qn-item-acts"><button class="qn-ie" onclick="editQN(this)">✏️ 수정</button><button class="qn-id" onclick="delQN(this)">🗑 삭제</button></div></div>
+          <div class="qn-item"><span class="qn-item-txt" onclick="pickQN(this)">🍜 오늘 점심 특선 — 돈코츠 라멘+군만두 세트 8,900원!</span><div class="qn-item-acts"><button class="qn-ie" onclick="editQN(this)">✏️ 수정</button><button class="qn-id" onclick="delQN(this)">🗑 삭제</button></div></div>
+          <div class="qn-item"><span class="qn-item-txt" onclick="pickQN(this)">⏰ 영업 마감 1시간 전입니다. 서두르세요!</span><div class="qn-item-acts"><button class="qn-ie" onclick="editQN(this)">✏️ 수정</button><button class="qn-id" onclick="delQN(this)">🗑 삭제</button></div></div>
+          <div class="qn-item"><span class="qn-item-txt" onclick="pickQN(this)">🙏 오늘도 방문해주셔서 감사합니다!</span><div class="qn-item-acts"><button class="qn-ie" onclick="editQN(this)">✏️ 수정</button><button class="qn-id" onclick="delQN(this)">🗑 삭제</button></div></div>
           <div class="qn-item qn-add" onclick="addQNItem()">➕ 새 공지 추가</div>
         </div>
       </div>
@@ -1595,6 +1630,15 @@ function pickQN(el){
   inp.value=txt; inp.focus(); autoResizeRo(inp);
   closeQN();
 }
+function editQN(btn){
+  const txtEl=btn.closest('.qn-item').querySelector('.qn-item-txt');
+  const cur=txtEl.textContent.trim();
+  const nw=prompt('공지 수정:',cur);
+  if(nw&&nw.trim())txtEl.textContent=nw.trim();
+}
+function delQN(btn){
+  if(confirm('이 공지를 삭제하시겠어요?'))btn.closest('.qn-item').remove();
+}
 function addQNItem(){
   const txt=prompt('새 공지를 입력하세요:');
   if(!txt||!txt.trim())return;
@@ -1602,11 +1646,39 @@ function addQNItem(){
   const addBtn=list.querySelector('.qn-add');
   const item=document.createElement('div');
   item.className='qn-item';
-  item.textContent='📌 '+txt.trim();
-  item.onclick=function(){pickQN(this)};
+  item.innerHTML=`<span class="qn-item-txt" onclick="pickQN(this)">📌 ${txt.trim()}</span><div class="qn-item-acts"><button class="qn-ie" onclick="editQN(this)">✏️ 수정</button><button class="qn-id" onclick="delQN(this)">🗑 삭제</button></div>`;
   list.insertBefore(item,addBtn);
 }
 function autoResizeRo(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,72)+'px'}
+
+// 매장음악 플레이어
+const mpTracks=[
+  {emoji:'🎵',title:'봄날의 피아노',artist:'Lo-Fi Cafe Mix'},
+  {emoji:'🎸',title:'Gentle Breeze',artist:'Acoustic Morning'},
+  {emoji:'🎹',title:'커피 한 잔의 여유',artist:'재즈 카페 플레이리스트'},
+  {emoji:'🎻',title:'Summer Afternoon',artist:'Chill Study Beats'},
+];
+let mpIdx=0,mpPlaying=false,mpProg=35,mpTimer=null;
+function mpRender(){
+  const t=mpTracks[mpIdx];
+  document.getElementById('mpEmoji').textContent=t.emoji;
+  document.getElementById('mpTitle').textContent=t.title;
+  document.getElementById('mpArtist').textContent=t.artist;
+  document.getElementById('mpFill').style.width=mpProg+'%';
+}
+function mpToggle(){
+  mpPlaying=!mpPlaying;
+  document.getElementById('mpPlay').textContent=mpPlaying?'⏸':'▶';
+  if(mpPlaying){
+    mpTimer=setInterval(()=>{
+      mpProg=Math.min(100,mpProg+0.4);
+      document.getElementById('mpFill').style.width=mpProg+'%';
+      if(mpProg>=100)mpNext();
+    },300);
+  } else {clearInterval(mpTimer);}
+}
+function mpPrev(){mpProg=0;mpIdx=(mpIdx-1+mpTracks.length)%mpTracks.length;mpRender();}
+function mpNext(){mpProg=0;mpIdx=(mpIdx+1)%mpTracks.length;mpRender();}
 
 // 타임세일 카운트다운
 let ts2=48*60+22;
