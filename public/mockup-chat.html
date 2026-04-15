@@ -449,6 +449,35 @@ body{
 .mc{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;color:var(--t2);transition:all .15s}
 .mc:active{transform:scale(.88)}
 .mc.play{width:32px;height:32px;background:var(--brand);color:#fff;font-size:12px;box-shadow:0 2px 8px rgba(255,111,15,0.4)}
+.mp-like{font-size:18px;cursor:pointer;padding:2px 5px;transition:transform .2s;flex-shrink:0;line-height:1}
+.mp-like:active{transform:scale(1.35)}
+.mp-info{cursor:pointer}
+
+/* 플레이리스트 모달 */
+.pl-overlay{position:absolute;inset:0;z-index:160;background:rgba(0,0,0,0);pointer-events:none;transition:background .22s}
+.pl-overlay.show{background:rgba(0,0,0,0.5);pointer-events:all}
+.pl-sheet{position:absolute;bottom:0;left:0;right:0;background:var(--bg2);border-radius:24px 24px 0 0;border-top:1px solid var(--border);transform:translateY(100%);transition:transform .32s cubic-bezier(.32,1,.23,1);display:flex;flex-direction:column;max-height:80%}
+.pl-overlay.show .pl-sheet{transform:translateY(0)}
+.pl-handle{width:36px;height:4px;border-radius:2px;background:var(--bg4);margin:12px auto 0;flex-shrink:0}
+.pl-hd{padding:14px 18px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);flex-shrink:0}
+.pl-hd-l{display:flex;flex-direction:column;gap:1px}
+.pl-title{font-size:15px;font-weight:900;color:var(--t1)}
+.pl-sub{font-size:11px;color:var(--t3)}
+.pl-close{font-size:18px;color:var(--t3);cursor:pointer;padding:2px 6px;line-height:1}
+.pl-list{overflow-y:auto;padding-bottom:28px}
+.pl-list::-webkit-scrollbar{display:none}
+.pl-item{display:flex;align-items:center;gap:10px;padding:11px 18px;cursor:pointer;transition:background .12s}
+.pl-item:hover{background:var(--bg3)}
+.pl-item.on{background:rgba(255,111,15,0.07);border-left:3px solid var(--brand);padding-left:15px}
+.pl-num{width:18px;font-size:11px;font-weight:700;color:var(--t3);text-align:center;flex-shrink:0}
+.pl-av{width:38px;height:38px;border-radius:11px;background:var(--bg3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.pl-info{flex:1;min-width:0}
+.pl-tk-title{font-size:13px;font-weight:700;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-tk-artist{font-size:11px;color:var(--t3);margin-top:1px}
+.pl-dur{font-size:11px;color:var(--t3);flex-shrink:0}
+.pl-heart{font-size:12px;color:var(--t3);flex-shrink:0;display:flex;align-items:center;gap:3px;padding:4px 6px;border-radius:8px;cursor:pointer;transition:all .15s}
+.pl-heart:hover{background:rgba(255,111,15,0.1)}
+.pl-heart.on{color:var(--brand)}
 
 /* ── 쿠폰함 바텀 시트 ── */
 .wallet-overlay{
@@ -1328,17 +1357,33 @@ body{
 
     <!-- ── 매장음악 플레이어 ── -->
     <div class="mp-bar">
-      <div class="mp-av"><span id="mpEmoji">🎵</span></div>
-      <div class="mp-info">
+      <div class="mp-av" onclick="openPL()"><span id="mpEmoji">🎵</span></div>
+      <div class="mp-info" onclick="openPL()">
         <div class="mp-lbl">사장님픽 매장음악</div>
         <div class="mp-title" id="mpTitle">봄날의 피아노</div>
         <div class="mp-artist" id="mpArtist">Lo-Fi Cafe Mix</div>
         <div class="mp-prog"><div class="mp-fill" id="mpFill" style="width:35%"></div></div>
       </div>
+      <div class="mp-like" id="mpLike" onclick="mpToggleLike()">🤍</div>
       <div class="mp-ctrls">
         <div class="mc" onclick="mpPrev()">⏮</div>
         <div class="mc play" id="mpPlay" onclick="mpToggle()">▶</div>
         <div class="mc" onclick="mpNext()">⏭</div>
+      </div>
+    </div>
+
+    <!-- ── 플레이리스트 모달 ── -->
+    <div class="pl-overlay" id="plOverlay" onclick="plBgClose(event)">
+      <div class="pl-sheet">
+        <div class="pl-handle"></div>
+        <div class="pl-hd">
+          <div class="pl-hd-l">
+            <div class="pl-title">🎵 사장님픽 플레이리스트</div>
+            <div class="pl-sub">최근 5곡 · 사장님이 직접 추천한 음악</div>
+          </div>
+          <span class="pl-close" onclick="closePL()">✕</span>
+        </div>
+        <div class="pl-list" id="plList"></div>
       </div>
     </div>
 
@@ -1653,18 +1698,21 @@ function autoResizeRo(el){el.style.height='auto';el.style.height=Math.min(el.scr
 
 // 매장음악 플레이어
 const mpTracks=[
-  {emoji:'🎵',title:'봄날의 피아노',artist:'Lo-Fi Cafe Mix'},
-  {emoji:'🎸',title:'Gentle Breeze',artist:'Acoustic Morning'},
-  {emoji:'🎹',title:'커피 한 잔의 여유',artist:'재즈 카페 플레이리스트'},
-  {emoji:'🎻',title:'Summer Afternoon',artist:'Chill Study Beats'},
+  {emoji:'🎵',title:'봄날의 피아노',artist:'Lo-Fi Cafe Mix',dur:'3:24',likes:12,liked:false},
+  {emoji:'🎸',title:'Gentle Breeze',artist:'Acoustic Morning',dur:'4:02',likes:8,liked:false},
+  {emoji:'🎹',title:'커피 한 잔의 여유',artist:'재즈 카페 플레이리스트',dur:'5:15',likes:21,liked:true},
+  {emoji:'🎻',title:'Summer Afternoon',artist:'Chill Study Beats',dur:'3:48',likes:5,liked:false},
+  {emoji:'🎷',title:'Rainy Day Bossa',artist:'Cafe BGM Collection',dur:'4:33',likes:17,liked:false},
 ];
 let mpIdx=0,mpPlaying=false,mpProg=35,mpTimer=null;
+
 function mpRender(){
   const t=mpTracks[mpIdx];
   document.getElementById('mpEmoji').textContent=t.emoji;
   document.getElementById('mpTitle').textContent=t.title;
   document.getElementById('mpArtist').textContent=t.artist;
   document.getElementById('mpFill').style.width=mpProg+'%';
+  document.getElementById('mpLike').textContent=t.liked?'❤️':'🤍';
 }
 function mpToggle(){
   mpPlaying=!mpPlaying;
@@ -1677,8 +1725,54 @@ function mpToggle(){
     },300);
   } else {clearInterval(mpTimer);}
 }
-function mpPrev(){mpProg=0;mpIdx=(mpIdx-1+mpTracks.length)%mpTracks.length;mpRender();}
-function mpNext(){mpProg=0;mpIdx=(mpIdx+1)%mpTracks.length;mpRender();}
+function mpPrev(){mpProg=0;mpIdx=(mpIdx-1+mpTracks.length)%mpTracks.length;mpRender();if(document.getElementById('plOverlay').classList.contains('show'))renderPL();}
+function mpNext(){mpProg=0;mpIdx=(mpIdx+1)%mpTracks.length;mpRender();if(document.getElementById('plOverlay').classList.contains('show'))renderPL();}
+function mpToggleLike(){
+  const t=mpTracks[mpIdx];
+  t.liked=!t.liked; t.likes=t.liked?t.likes+1:t.likes-1;
+  document.getElementById('mpLike').textContent=t.liked?'❤️':'🤍';
+  const lk=document.getElementById('mpLike');
+  lk.style.transform='scale(1.4)'; setTimeout(()=>lk.style.transform='',200);
+}
+
+// 플레이리스트 모달
+function openPL(){renderPL();document.getElementById('plOverlay').classList.add('show');}
+function closePL(){document.getElementById('plOverlay').classList.remove('show');}
+function plBgClose(e){if(e.target===e.currentTarget)closePL();}
+function renderPL(){
+  const list=document.getElementById('plList');
+  list.innerHTML='';
+  mpTracks.forEach((t,i)=>{
+    const item=document.createElement('div');
+    item.className='pl-item'+(i===mpIdx?' on':'');
+    item.innerHTML=`
+      <div class="pl-num">${i===mpIdx?'<span style="color:var(--brand);font-size:10px">▶</span>':(i+1)}</div>
+      <div class="pl-av">${t.emoji}</div>
+      <div class="pl-info">
+        <div class="pl-tk-title">${t.title}</div>
+        <div class="pl-tk-artist">${t.artist}</div>
+      </div>
+      <div class="pl-dur">${t.dur}</div>
+      <div class="pl-heart${t.liked?' on':''}" data-idx="${i}">${t.liked?'❤️':'🤍'} ${t.likes}</div>
+    `;
+    // 트랙 선택
+    item.addEventListener('click',function(e){
+      if(e.target.closest('.pl-heart'))return;
+      mpProg=0; mpIdx=i; mpRender();
+      if(mpPlaying){clearInterval(mpTimer);mpPlaying=false;document.getElementById('mpPlay').textContent='▶';}
+      renderPL();
+    });
+    // 좋아요
+    item.querySelector('.pl-heart').addEventListener('click',function(e){
+      e.stopPropagation();
+      t.liked=!t.liked; t.likes=t.liked?t.likes+1:t.likes-1;
+      this.className='pl-heart'+(t.liked?' on':'');
+      this.innerHTML=(t.liked?'❤️':'🤍')+' '+t.likes;
+      if(i===mpIdx) document.getElementById('mpLike').textContent=t.liked?'❤️':'🤍';
+    });
+    list.appendChild(item);
+  });
+}
 
 // 타임세일 카운트다운
 let ts2=48*60+22;
