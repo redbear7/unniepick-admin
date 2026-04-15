@@ -411,8 +411,25 @@ body{
 .sys-cp{background:rgba(254,229,0,0.07);border:1px solid rgba(254,229,0,0.14);border-radius:11px;padding:8px 12px;font-size:12px;color:rgba(254,229,0,0.65);text-align:center}
 
 .ro-bar{padding:10px 14px 26px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;background:var(--bg);flex-shrink:0}
-.ro-field{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:22px;padding:10px 15px;font-size:13px;color:var(--t3);display:flex;align-items:center;gap:7px}
+.ro-field{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:22px;padding:9px 14px;font-size:13px;color:var(--t3);display:flex;align-items:center;gap:7px;cursor:text}
+.ro-input{flex:1;background:none;border:none;outline:none;font-family:inherit;font-size:13px;color:var(--t1);resize:none;line-height:1.4;min-height:20px;max-height:72px;overflow-y:auto}
+.ro-input::placeholder{color:var(--t3)}
 .mb-pill{background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:8px 10px;font-size:11px;color:var(--t3);display:flex;align-items:center;gap:4px;white-space:nowrap}
+.qn-btn{background:rgba(254,229,0,0.12);border-color:rgba(254,229,0,0.3);color:var(--y);cursor:pointer;font-weight:800;padding:8px 11px}
+
+/* 빠른 공지 바텀 시트 */
+.qn-overlay{position:absolute;inset:0;z-index:150;background:rgba(0,0,0,0);pointer-events:none;transition:background .2s}
+.qn-overlay.show{background:rgba(0,0,0,0.45);pointer-events:all}
+.qn-sheet{position:absolute;bottom:0;left:0;right:0;background:var(--bg2);border-radius:22px 22px 0 0;border-top:1px solid var(--border);transform:translateY(100%);transition:transform .3s cubic-bezier(.32,1,.23,1)}
+.qn-overlay.show .qn-sheet{transform:translateY(0)}
+.qn-handle{width:36px;height:4px;border-radius:2px;background:var(--bg4);margin:11px auto 0;flex-shrink:0}
+.qn-hd{display:flex;align-items:center;justify-content:space-between;padding:12px 18px 10px;border-bottom:1px solid var(--border)}
+.qn-title{font-size:14px;font-weight:800;color:var(--t1)}
+.qn-close{font-size:18px;color:var(--t3);cursor:pointer;padding:2px 6px;line-height:1}
+.qn-list{padding:4px 0 32px}
+.qn-item{padding:11px 18px;font-size:13px;color:var(--t2);cursor:pointer;transition:background .12s;line-height:1.5}
+.qn-item:hover,.qn-item:active{background:var(--bg3)}
+.qn-add{color:var(--y);font-weight:700;border-top:1px solid var(--border);margin-top:4px;padding-top:13px}
 
 /* ── 쿠폰함 바텀 시트 ── */
 .wallet-overlay{
@@ -1291,8 +1308,32 @@ body{
     </div>
 
     <div class="ro-bar">
-      <div class="ro-field"><span>🔒</span><span>사장님만 공지를 올릴 수 있어요</span></div>
-      <div class="mb-pill">👁 247명</div>
+      <div class="ro-field" onclick="document.getElementById('roInput').focus()">
+        <span style="font-size:14px;flex-shrink:0">🔒</span>
+        <textarea class="ro-input" id="roInput" rows="1"
+          placeholder="사장님만 공지를 올릴 수 있어요"
+          oninput="autoResizeRo(this)"></textarea>
+      </div>
+      <div class="mb-pill qn-btn" onclick="toggleQN()">⚡ 빠른공지</div>
+    </div>
+
+    <!-- ── 빠른 공지 바텀 시트 ── -->
+    <div class="qn-overlay" id="qnOverlay" onclick="qnBgClose(event)">
+      <div class="qn-sheet">
+        <div class="qn-handle"></div>
+        <div class="qn-hd">
+          <span class="qn-title">⚡ 자주 쓰는 공지</span>
+          <span class="qn-close" onclick="closeQN()">✕</span>
+        </div>
+        <div class="qn-list" id="qnList">
+          <div class="qn-item" onclick="pickQN(this)">✅ 오늘 영업합니다! 잠시 후 쿠폰 발급 예정이에요 🎟</div>
+          <div class="qn-item" onclick="pickQN(this)">⚡ 타임세일 시작! 지금 바로 쿠폰 발급받으세요!</div>
+          <div class="qn-item" onclick="pickQN(this)">🍜 오늘 점심 특선 — 돈코츠 라멘+군만두 세트 8,900원!</div>
+          <div class="qn-item" onclick="pickQN(this)">⏰ 영업 마감 1시간 전입니다. 서두르세요!</div>
+          <div class="qn-item" onclick="pickQN(this)">🙏 오늘도 방문해주셔서 감사합니다!</div>
+          <div class="qn-item qn-add" onclick="addQNItem()">➕ 새 공지 추가</div>
+        </div>
+      </div>
     </div>
 
     <!-- ── 쿠폰 발급 확인 팝업 ── -->
@@ -1543,6 +1584,29 @@ function deleteCoupon(btn){
     btn.closest('.coupon').remove();
   }
 }
+
+// 빠른 공지
+function toggleQN(){document.getElementById('qnOverlay').classList.toggle('show')}
+function closeQN(){document.getElementById('qnOverlay').classList.remove('show')}
+function qnBgClose(e){if(e.target===e.currentTarget)closeQN()}
+function pickQN(el){
+  const txt=el.textContent.trim();
+  const inp=document.getElementById('roInput');
+  inp.value=txt; inp.focus(); autoResizeRo(inp);
+  closeQN();
+}
+function addQNItem(){
+  const txt=prompt('새 공지를 입력하세요:');
+  if(!txt||!txt.trim())return;
+  const list=document.getElementById('qnList');
+  const addBtn=list.querySelector('.qn-add');
+  const item=document.createElement('div');
+  item.className='qn-item';
+  item.textContent='📌 '+txt.trim();
+  item.onclick=function(){pickQN(this)};
+  list.insertBefore(item,addBtn);
+}
+function autoResizeRo(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,72)+'px'}
 
 // 타임세일 카운트다운
 let ts2=48*60+22;
