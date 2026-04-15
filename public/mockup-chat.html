@@ -350,6 +350,7 @@ body{
 
 .feed{flex:1;overflow-y:auto;padding:14px 14px 8px;display:flex;flex-direction:column;gap:13px}
 .feed::-webkit-scrollbar{display:none}
+.feed>*{flex-shrink:0}
 
 .dt-sep{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--t3)}
 .dt-sep::before,.dt-sep::after{content:'';flex:1;height:1px;background:var(--border)}
@@ -1122,8 +1123,10 @@ body{
       <span class="pinned-lbl">공지</span>
     </div>
 
-    <!-- ── 상단 고정 쿠폰 (1개) ── -->
-    <div class="pinned-coupon">
+    <!-- ── 통합 스크롤 피드 ── -->
+    <div class="feed">
+
+      <!-- ① 진행중 쿠폰 -->
       <div class="pc-lbl">📌 진행중 쿠폰 <span style="color:var(--green);margin-left:2px">● 활성</span></div>
       <div class="coupon timesale" style="margin:0;position:relative">
         <div style="padding:7px 13px 0">
@@ -1149,7 +1152,6 @@ body{
           <div class="cp-cond">📍 역삼동 280m</div>
           <button class="cp-btn" id="cpbtn2" onclick="getCoupon2()">쿠폰발급</button>
         </div>
-        <!-- 액션 버튼 -->
         <div class="cp-actions">
           <div class="cp-act primary" onclick="toggleCpLike(this)">
             <span class="cp-act-ic">🤍</span>
@@ -1162,52 +1164,49 @@ body{
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- 사장님 댓글 목록 (쿠폰 카드 바깥, 고정 영역 안) -->
-    <div style="background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0">
-      <div id="cpCommentList" style="max-height:150px;overflow-y:auto">
-        <div class="cp-comment" id="cpcm1">
-          <div class="cp-cm-av">🍜</div>
-          <div class="cp-cm-body">
-            <div class="cp-cm-name">라멘 홋카이도 <span class="cp-cm-pill">사장님</span></div>
-            <div class="cp-cm-txt" id="cpcm1-txt">오늘 12시~2시 딱 2시간만! 재고 얼마 안 남았어요 😊🔥</div>
-            <div class="cp-cm-ts">오전 11:52</div>
-            <div class="cp-cm-actions">
-              <button class="cp-cm-edit" onclick="editComment('cpcm1-txt',this)">✏️ 수정</button>
-              <button class="cp-cm-del" onclick="deleteComment('cpcm1')">🗑 삭제</button>
+      <!-- ② 사장님 댓글 + 입력창 -->
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-top:-4px">
+        <div id="cpCommentList">
+          <div class="cp-comment" id="cpcm1">
+            <div class="cp-cm-av">🍜</div>
+            <div class="cp-cm-body">
+              <div class="cp-cm-name">라멘 홋카이도 <span class="cp-cm-pill">사장님</span></div>
+              <div class="cp-cm-txt" id="cpcm1-txt">오늘 12시~2시 딱 2시간만! 재고 얼마 안 남았어요 😊🔥</div>
+              <div class="cp-cm-ts">오전 11:52</div>
+              <div class="cp-cm-actions">
+                <button class="cp-cm-edit" onclick="editComment('cpcm1-txt',this)">✏️ 수정</button>
+                <button class="cp-cm-del" onclick="deleteComment('cpcm1')">🗑 삭제</button>
+              </div>
+            </div>
+          </div>
+          <div class="cp-comment" id="cpcm2" style="background:rgba(254,229,0,0.04);border-top:1px solid rgba(254,229,0,0.1)">
+            <div class="cp-cm-av">🍜</div>
+            <div class="cp-cm-body">
+              <div class="cp-cm-name">라멘 홋카이도 <span class="cp-cm-pill">사장님</span></div>
+              <div class="cp-cm-txt" id="cpcm2-txt">🎁 이번달에 <strong style="color:var(--y)">'좋아요픽'</strong> 눌러주신 분 중에 추첨하여<br><strong style="color:var(--y)">라면세트 2인분</strong> 제공합니다! 많은 참여 부탁드려요 🍜🙏</div>
+              <div class="cp-cm-ts">오전 11:55</div>
+              <div class="cp-cm-actions">
+                <button class="cp-cm-edit" onclick="editComment('cpcm2-txt',this)">✏️ 수정</button>
+                <button class="cp-cm-del" onclick="deleteComment('cpcm2')">🗑 삭제</button>
+              </div>
             </div>
           </div>
         </div>
-        <div class="cp-comment" id="cpcm2" style="background:rgba(254,229,0,0.04);border-top:1px solid rgba(254,229,0,0.1)">
-          <div class="cp-cm-av">🍜</div>
-          <div class="cp-cm-body">
-            <div class="cp-cm-name">라멘 홋카이도 <span class="cp-cm-pill">사장님</span></div>
-            <div class="cp-cm-txt" id="cpcm2-txt">🎁 이번달에 <strong style="color:var(--y)">'좋아요픽'</strong> 눌러주신 분 중에 추첨하여<br><strong style="color:var(--y)">라면세트 2인분</strong> 제공합니다! 많은 참여 부탁드려요 🍜🙏</div>
-            <div class="cp-cm-ts">오전 11:55</div>
-            <div class="cp-cm-actions">
-              <button class="cp-cm-edit" onclick="editComment('cpcm2-txt',this)">✏️ 수정</button>
-              <button class="cp-cm-del" onclick="deleteComment('cpcm2')">🗑 삭제</button>
-            </div>
+        <!-- 댓글 입력창 (사장님 전용) -->
+        <div class="cp-input-area">
+          <div class="cp-input-av">🍜</div>
+          <div class="cp-input-wrap">
+            <div class="cp-input-label">🔒 사장님 전용 댓글</div>
+            <textarea class="cp-input-box" id="cpCommentInput" rows="1"
+              placeholder="쿠폰 관련 안내를 입력하세요..."
+              oninput="autoResize(this)"></textarea>
           </div>
+          <button class="cp-send-btn" onclick="addCpComment()">등록</button>
         </div>
       </div>
-      <!-- 댓글 입력창 (사장님 전용) -->
-      <div class="cp-input-area">
-        <div class="cp-input-av">🍜</div>
-        <div class="cp-input-wrap">
-          <div class="cp-input-label">🔒 사장님 전용 댓글</div>
-          <textarea class="cp-input-box" id="cpCommentInput" rows="1"
-            placeholder="쿠폰 관련 안내를 입력하세요..."
-            oninput="autoResize(this)"></textarea>
-        </div>
-        <button class="cp-send-btn" onclick="addCpComment()">등록</button>
-      </div>
-    </div>
 
-    <!-- ── 피드 (스크롤) ── -->
-    <div class="feed">
-      <!-- 마감된 쿠폰 (회색) -->
+      <!-- ③ 마감된 쿠폰 (회색) -->
       <div class="coupon expired" style="margin:0;position:relative">
         <div class="cp-expired-overlay">🚫 마감</div>
         <div class="cp-delete" onclick="deleteCoupon(this)">🗑 삭제 <span style="font-size:8px;opacity:.7">(시샵)</span></div>
