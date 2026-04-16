@@ -357,8 +357,13 @@ if (mode === 'test') {
 } else if (mode === 'daily') {
   crawl(DAILY_QUERIES, 'daily').catch(console.error);
 } else {
-  console.log('스케줄러 시작');
-  console.log('  - 매일 09:10: 새로오픈 맛집 (상세 리뷰 분석)');
-  crawl(DAILY_QUERIES, 'daily').catch(console.error);
-  cron.schedule('10 9 * * *', () => crawl(DAILY_QUERIES, 'daily').catch(console.error));
+  // 맥북 켜질 때 1회 실행 (랜덤 지연 후 크롤링 → 종료)
+  const delayMin = Math.floor(Math.random() * 20) + 3; // 3~23분 랜덤 대기
+  console.log(`맥북 부팅 감지 — ${delayMin}분 후 크롤링 시작 (봇 감지 회피)`);
+
+  setTimeout(async () => {
+    await crawl(DAILY_QUERIES, 'daily').catch(console.error);
+    console.log('크롤링 완료. 프로세스 종료.');
+    process.exit(0);
+  }, delayMin * 60 * 1000);
 }
