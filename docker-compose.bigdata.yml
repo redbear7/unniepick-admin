@@ -1,0 +1,64 @@
+# 창원맛집 빅데이터 관리 스택
+# Metabase (BI/시각화) + Directus (데이터 관리)
+#
+# 실행: docker compose -f docker-compose.bigdata.yml up -d
+# 중지: docker compose -f docker-compose.bigdata.yml down
+#
+# Metabase:  http://localhost:3100
+# Directus:  http://localhost:8055
+
+services:
+  # ── Metabase: BI 대시보드 & 시각화 ──
+  metabase:
+    image: metabase/metabase:latest
+    container_name: unniepick-metabase
+    ports:
+      - "3100:3000"
+    environment:
+      # Metabase 내부 DB (H2 파일 — 간단 운영용)
+      MB_DB_TYPE: h2
+      MB_DB_FILE: /metabase-data/metabase.db
+      # 한국어
+      MB_SITE_LOCALE: ko
+      # 임베드 허용
+      MB_ENABLE_EMBEDDING: "true"
+      MB_EMBEDDING_APP_ORIGIN: "http://localhost:3000"
+    volumes:
+      - metabase_data:/metabase-data
+    restart: unless-stopped
+
+  # ── Directus: 데이터 관리 & API ──
+  directus:
+    image: directus/directus:11
+    container_name: unniepick-directus
+    ports:
+      - "8055:8055"
+    environment:
+      # Supabase PostgreSQL 직접 연결
+      DB_CLIENT: pg
+      DB_HOST: ${SUPABASE_DB_HOST}
+      DB_PORT: ${SUPABASE_DB_PORT:-5432}
+      DB_DATABASE: ${SUPABASE_DB_NAME:-postgres}
+      DB_USER: ${SUPABASE_DB_USER:-postgres}
+      DB_PASSWORD: ${SUPABASE_DB_PASSWORD}
+      DB_SSL__REJECT_UNAUTHORIZED: "false"
+
+      # Directus 관리자 계정
+      ADMIN_EMAIL: admin@unniepick.com
+      ADMIN_PASSWORD: ${DIRECTUS_ADMIN_PASSWORD:-changeme123}
+
+      # 보안
+      SECRET: ${DIRECTUS_SECRET:-super-secret-key-change-in-production}
+
+      # CORS (Next.js에서 접근)
+      CORS_ENABLED: "true"
+      CORS_ORIGIN: "http://localhost:3000"
+    volumes:
+      - directus_uploads:/directus/uploads
+      - directus_extensions:/directus/extensions
+    restart: unless-stopped
+
+volumes:
+  metabase_data:
+  directus_uploads:
+  directus_extensions:
