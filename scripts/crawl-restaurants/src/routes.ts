@@ -14,28 +14,54 @@ export async function createListHandler(ctx: PlaywrightCrawlingContext) {
     log.warning('검색 결과 컨테이너를 찾을 수 없음 — 셀렉터가 변경되었을 수 있습니다');
   });
 
-  // 무한스크롤로 더 많은 결과 로딩 (최대 5회)
-  for (let i = 0; i < 5; i++) {
-    await page.evaluate(() => {
-      const el = document.querySelector('#_pcmap_list_scroll_container');
-      if (el) el.scrollTop = el.scrollHeight;
+  // 페이지네이션으로 여러 페이지 수집 (최대 5페이지)
+  const allIds = new Set<string>();
+
+  for (let pageNum = 0; pageNum < 5; pageNum++) {
+    // 현재 페이지에서 스크롤하여 모든 결과 로딩
+    for (let i = 0; i < 3; i++) {
+      await page.evaluate(() => {
+        const el = document.querySelector('#_pcmap_list_scroll_container');
+        if (el) el.scrollTop = el.scrollHeight;
+      });
+      await page.waitForTimeout(1000);
+    }
+
+    // __APOLLO_STATE__ 및 script 태그에서 place ID 추출
+    const pageIds = await page.evaluate(() => {
+      const ids = new Set<string>();
+
+      // 방법 1: __APOLLO_STATE__에서 추출
+      const apollo = (window as any).__APOLLO_STATE__;
+      if (apollo) {
+        for (const key of Object.keys(apollo)) {
+          const match = key.match(/Place:(\d{7,})/);
+          if (match) ids.add(match[1]);
+        }
+      }
+
+      // 방법 2: script 태그 내 JSON에서 추출
+      for (const s of document.querySelectorAll('script')) {
+        const text = s.textContent ?? '';
+        for (const m of text.matchAll(/"id"\s*:\s*"?(\d{7,})"?/g)) {
+          ids.add(m[1]);
+        }
+      }
+
+      return [...ids];
     });
-    await page.waitForTimeout(1500);
+
+    for (const id of pageIds) allIds.add(id);
+    log.info(`페이지 ${pageNum + 1}: ${pageIds.length}개 ID 발견 (누적 ${allIds.size}개)`);
+
+    // 다음 페이지 버튼 클릭
+    const nextBtn = await page.$('a:has-text("다음페이지"), button:has-text("다음페이지")');
+    if (!nextBtn) break;
+    await nextBtn.click();
+    await page.waitForTimeout(2000);
   }
 
-  // place ID 수집
-  const placeIds = await page.$$eval(
-    'a[href*="/restaurant/"], a[href*="/place/"]',
-    (anchors) => {
-      const ids = new Set<string>();
-      for (const a of anchors) {
-        const href = a.getAttribute('href') ?? '';
-        const match = href.match(/\/(?:restaurant|place)\/(\d{5,})/);
-        if (match) ids.add(match[1]);
-      }
-      return [...ids];
-    },
-  );
+  const placeIds = [...allIds];
 
   log.info(`${placeIds.length}개 맛집 발견`);
 
