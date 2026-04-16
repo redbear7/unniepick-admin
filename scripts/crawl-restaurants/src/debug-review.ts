@@ -5,83 +5,71 @@ async function debug() {
   const browser = await chromium.launch({ headless: false });
   const page = await browser.newPage();
 
-  // 새로오픈 검색
-  const url = 'https://pcmap.place.naver.com/restaurant/list?query=%EC%B0%BD%EC%9B%90%EC%8B%9C+%EC%83%88%EB%A1%9C%EC%98%A4%ED%94%88+%EB%A7%9B%EC%A7%91';
-  console.log('접속:', url);
-  await page.goto(url, { waitUntil: 'networkidle', timeout: 30_000 });
-  await page.waitForTimeout(5000);
+  // 이미 확인된 ID로 바로 상세+리뷰 페이지 분석
+  const placeId = '2013464939'; // 속초오징어어시장 산호점
 
-  console.log('현재 URL:', page.url());
+  // ── 1. 방문자 리뷰 페이지 ──
+  console.log('\n=== 방문자 리뷰 페이지 ===');
+  await page.goto(`https://pcmap.place.naver.com/restaurant/${placeId}/review/visitor`, {
+    waitUntil: 'networkidle', timeout: 20_000,
+  });
+  await page.waitForTimeout(3000);
+  await page.screenshot({ path: 'debug-visitor-review.png', fullPage: true });
 
-  // Apollo 확인
-  const apolloCheck = await page.evaluate(() => {
-    const apollo = (window as any).__APOLLO_STATE__;
-    if (!apollo) return { exists: false, keys: [] };
-    const keys = Object.keys(apollo);
-    const placeKeys = keys.filter((k) => k.startsWith('Place:'));
+  const visitorData = await page.evaluate(() => {
+    const body = document.body.innerText;
+
+    // 키워드 칩 — 다양한 셀렉터 시도
+    const chipTexts: string[] = [];
+    document.querySelectorAll('span, button, a, div').forEach((el) => {
+      const cls = el.className ?? '';
+      if (cls.includes('chip') || cls.includes('filter') || cls.includes('keyword') || cls.includes('FvwMK')) {
+        const t = el.textContent?.trim();
+        if (t && t.length > 1 && t.length < 30 && !t.includes('\n')) chipTexts.push(t);
+      }
+    });
+
+    // 리뷰 텍스트
+    const reviews: string[] = [];
+    document.querySelectorAll('div, p, span').forEach((el) => {
+      const cls = el.className ?? '';
+      if (cls.includes('ZZ4OK') || cls.includes('text_comment') || cls.includes('review_content') || cls.includes('pui__') || cls.includes('WoYOw')) {
+        const t = el.textContent?.trim();
+        if (t && t.length > 20) reviews.push(t.slice(0, 200));
+      }
+    });
+
+    // body 앞부분에서 키워드 패턴 찾기 ("맛있어요 30" 같은)
+    const kwPattern = body.match(/([가-힣]+(?:해요|있어요|좋아요|져요|이에요|네요|달라요))\s*(\d+)/g);
+
     return {
-      exists: true,
-      totalKeys: keys.length,
-      placeKeys: placeKeys.slice(0, 10),
-      sampleKeys: keys.slice(0, 20),
+      chipTexts: [...new Set(chipTexts)].slice(0, 20),
+      reviews: [...new Set(reviews)].slice(0, 5),
+      kwPattern: kwPattern?.slice(0, 15) ?? [],
+      bodyPreview: body.slice(0, 2000),
     };
   });
-  console.log('\nApollo:', JSON.stringify(apolloCheck, null, 2));
 
-  // script 태그에서 ID 찾기
-  const scriptIds = await page.evaluate(() => {
-    const ids = new Set<string>();
-    for (const s of document.querySelectorAll('script')) {
-      const text = s.textContent ?? '';
-      for (const m of text.matchAll(/"id"\s*:\s*"(\d{7,})"/g)) ids.add(m[1]);
-    }
-    return [...ids];
+  console.log('키워드 칩:', visitorData.chipTexts);
+  console.log('키워드 패턴:', visitorData.kwPattern);
+  console.log('리뷰 샘플:', visitorData.reviews.slice(0, 3));
+  console.log('\nbody 앞 2000자:\n', visitorData.bodyPreview);
+
+  // ── 2. 블로그 리뷰 페이지 ──
+  console.log('\n\n=== 블로그 리뷰 페이지 ===');
+  await page.goto(`https://pcmap.place.naver.com/restaurant/${placeId}/review/ugc`, {
+    waitUntil: 'networkidle', timeout: 20_000,
   });
-  console.log('\nScript IDs:', scriptIds);
+  await page.waitForTimeout(3000);
+  await page.screenshot({ path: 'debug-blog-review.png', fullPage: true });
 
-  // TYaxT (맛집 이름) 확인
-  const names = await page.$$eval('[class*="TYaxT"]', (els) =>
-    els.slice(0, 5).map((el) => el.textContent?.trim())
-  );
-  console.log('\n맛집 이름들:', names);
+  const blogData = await page.evaluate(() => {
+    const body = document.body.innerText;
+    return { bodyPreview: body.slice(0, 2000) };
+  });
+  console.log('블로그 body 앞 2000자:\n', blogData.bodyPreview);
 
-  // 맛집 이름 부모 <a> 태그의 onclick/href 확인
-  const parentLinks = await page.$$eval('[class*="TYaxT"]', (els) =>
-    els.slice(0, 5).map((el) => {
-      const a = el.closest('a');
-      return {
-        name: el.textContent?.trim(),
-        href: a?.getAttribute('href')?.slice(0, 100),
-        onclick: a?.getAttribute('onclick')?.slice(0, 100),
-        dataId: a?.getAttribute('data-id'),
-        parentClass: a?.className?.slice(0, 80),
-      };
-    })
-  );
-  console.log('\n링크 정보:', JSON.stringify(parentLinks, null, 2));
-
-  // 맛집 이름 클릭 시 URL 변화 확인
-  if (names.length > 0) {
-    console.log(`\n"${names[0]}" 클릭 시도...`);
-    const firstItem = await page.$('[class*="TYaxT"]');
-    if (firstItem) {
-      const parent = await firstItem.evaluateHandle((el) => el.closest('a') || el.parentElement);
-      await (parent as any).click();
-      await page.waitForTimeout(3000);
-      console.log('클릭 후 URL:', page.url());
-
-      // 클릭 후 Apollo 재확인
-      const afterApollo = await page.evaluate(() => {
-        const apollo = (window as any).__APOLLO_STATE__;
-        if (!apollo) return [];
-        return Object.keys(apollo).filter((k) => k.startsWith('Place:')).slice(0, 5);
-      });
-      console.log('클릭 후 Place keys:', afterApollo);
-    }
-  }
-
-  console.log('\n10초 후 종료...');
-  await page.waitForTimeout(10000);
+  await page.waitForTimeout(5000);
   await browser.close();
 }
 
