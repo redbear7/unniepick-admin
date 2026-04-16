@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import localFont from "next/font/local";
-import Script from "next/script";
 import ThemeProvider from "@/components/ThemeProvider";
+import NaverAnalytics from "@/components/NaverAnalytics";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -41,28 +41,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        {/* ── 네이버 애널리틱스 ── */}
-        {NAVER_ANALYTICS_ID && (
-          <Script id="naver-analytics-init" strategy="afterInteractive">
-            {`
-              if(!wcs_add) var wcs_add = {};
-              wcs_add["wa"] = "${NAVER_ANALYTICS_ID}";
-              if(window.wcs) { wcs.inflow(); wcs_do(wcs_add); }
-            `}
-          </Script>
-        )}
-        {NAVER_ANALYTICS_ID && (
-          <Script
-            src="//wcs.naver.net/wcslog.js"
-            strategy="afterInteractive"
-            onLoad={() => {
-              if (typeof window !== 'undefined' && (window as any).wcs_add) {
-                (window as any).wcs?.inflow();
-                (window as any).wcs_do?.((window as any).wcs_add);
-              }
-            }}
-          />
-        )}
+        {NAVER_ANALYTICS_ID && <NaverAnalytics siteId={NAVER_ANALYTICS_ID} />}
       </head>
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <ThemeProvider>
