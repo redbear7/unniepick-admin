@@ -12,6 +12,7 @@ const SEARCH_QUERIES = [
   '창원 카페 핫플',
   '창원 모범음식점',
   '창원 블루리본',
+  '창원 새로오픈 맛집',
 ];
 
 async function crawl() {
