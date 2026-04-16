@@ -44,7 +44,7 @@ export default function RootLayout({
         <ThemeProvider>
           {children}
         </ThemeProvider>
-        {NAVER_ANALYTICS_ID && <NaverAnalytics siteId={NAVER_ANALYTICS_ID} />}
+        {!!NAVER_ANALYTICS_ID && <NaverAnalytics siteId={NAVER_ANALYTICS_ID} />}
       </body>
     </html>
   );
