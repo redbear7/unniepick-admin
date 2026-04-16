@@ -1,31 +1,30 @@
-import { createPlaywrightRouter } from 'crawlee';
+import type { PlaywrightCrawlingContext } from 'crawlee';
 import type { RestaurantData } from './storage.js';
 
-export const router = createPlaywrightRouter();
-
 /**
- * 검색 결과 목록 페이지 핸들러
- * 네이버 플레이스 검색 결과에서 각 맛집의 상세 링크를 수집
+ * 검색 결과 목록 핸들러
+ * 네이버 플레이스 검색 결과에서 각 맛집의 place ID를 수집하고 상세 크롤링 큐에 추가
  */
-router.addDefaultHandler(async ({ page, log, crawler }) => {
+export async function createListHandler(ctx: PlaywrightCrawlingContext) {
+  const { page, log, crawler } = ctx;
   log.info('검색 결과 페이지 로딩...');
 
-  // 검색 결과가 로딩될 때까지 대기
+  // 검색 결과 컨테이너 대기
   await page.waitForSelector('#_pcmap_list_scroll_container', { timeout: 15_000 }).catch(() => {
-    log.warning('검색 결과 컨테이너를 찾을 수 없습니다. 셀렉터 변경 가능성');
+    log.warning('검색 결과 컨테이너를 찾을 수 없음 — 셀렉터가 변경되었을 수 있습니다');
   });
 
   // 무한스크롤로 더 많은 결과 로딩 (최대 5회)
   for (let i = 0; i < 5; i++) {
     await page.evaluate(() => {
-      const container = document.querySelector('#_pcmap_list_scroll_container');
-      if (container) container.scrollTop = container.scrollHeight;
+      const el = document.querySelector('#_pcmap_list_scroll_container');
+      if (el) el.scrollTop = el.scrollHeight;
     });
     await page.waitForTimeout(1500);
   }
 
-  // 각 맛집 리스트 아이템에서 place ID 추출
-  const placeLinks = await page.$$eval(
+  // place ID 수집
+  const placeIds = await page.$$eval(
     'a[href*="/restaurant/"], a[href*="/place/"]',
     (anchors) => {
       const ids = new Set<string>();
@@ -38,44 +37,38 @@ router.addDefaultHandler(async ({ page, log, crawler }) => {
     },
   );
 
-  log.info(`${placeLinks.length}개 맛집 발견`);
+  log.info(`${placeIds.length}개 맛집 발견`);
 
-  // 각 상세 페이지를 크롤링 큐에 추가
-  for (const placeId of placeLinks) {
-    await crawler.addRequests([{
-      url: `https://pcmap.place.naver.com/restaurant/${placeId}/home`,
-      label: 'DETAIL',
-      userData: { placeId },
-    }]);
-  }
-});
+  const requests = placeIds.map((id) => ({
+    url: `https://pcmap.place.naver.com/restaurant/${id}/home`,
+    label: 'DETAIL',
+    userData: { placeId: id },
+  }));
+
+  await crawler.addRequests(requests);
+}
 
 /**
  * 맛집 상세 페이지 핸들러
- * 개별 맛집 페이지에서 상세 정보 추출
+ * 개별 맛집 페이지에서 상세 정보를 추출하여 RestaurantData로 반환
  */
-router.addHandler('DETAIL', async ({ page, request, log }) => {
+export async function createDetailHandler(ctx: PlaywrightCrawlingContext): Promise<RestaurantData | null> {
+  const { page, request, log } = ctx;
   const { placeId } = request.userData as { placeId: string };
-  log.info(`상세 페이지 크롤링: ${placeId}`);
+  log.info(`상세 크롤링: ${placeId}`);
 
-  await page.waitForTimeout(2000); // 페이지 렌더링 대기
+  await page.waitForTimeout(2000);
 
   const data = await page.evaluate(() => {
-    const getText = (sel: string) => document.querySelector(sel)?.textContent?.trim() ?? '';
-    const getMeta = (prop: string) => {
-      const el = document.querySelector(`meta[property="${prop}"]`);
-      return el?.getAttribute('content') ?? '';
-    };
+    const getMeta = (prop: string) =>
+      document.querySelector(`meta[property="${prop}"]`)?.getAttribute('content') ?? '';
 
-    // 이름
-    const rawTitle = getMeta('og:title');
-    const name = rawTitle.replace(/\s*:\s*네이버.*$/, '').trim();
+    // 이름: og:title에서 " : 네이버" 제거
+    const name = getMeta('og:title').replace(/\s*:\s*네이버.*$/, '').trim();
 
     // 주소
-    const addressEl = document.querySelector('[class*="addr"]') ??
-                      document.querySelector('[data-kakaotalk-description]');
-    const address = addressEl?.getAttribute('data-kakaotalk-description') ??
-                    addressEl?.textContent?.trim() ?? '';
+    const addrEl = document.querySelector('[data-kakaotalk-description]');
+    const address = addrEl?.getAttribute('data-kakaotalk-description')?.replace(/&amp;/g, '&').trim() ?? '';
 
     // 전화번호
     const phoneMatch = document.body.innerHTML.match(/0\d{1,3}-\d{3,4}-\d{4}/);
@@ -86,44 +79,48 @@ router.addHandler('DETAIL', async ({ page, request, log }) => {
     const category = catMatch?.[1] ?? '';
 
     // 평점
-    const ratingEl = document.querySelector('[class*="PXMot"] em, .LXIwF em, [class*="star_score"] em');
+    const ratingEl = document.querySelector('[class*="PXMot"] em, .LXIwF em');
     const rating = ratingEl ? parseFloat(ratingEl.textContent ?? '0') : undefined;
 
-    // 리뷰 수 추출
-    const reviewMatch = document.body.innerHTML.match(/"visitorReviewCount"\s*:\s*(\d+)/);
-    const visitorReviewCount = reviewMatch ? parseInt(reviewMatch[1]) : 0;
-
-    const blogReviewMatch = document.body.innerHTML.match(/"reviewCount"\s*:\s*(\d+)/);
-    const reviewCount = blogReviewMatch ? parseInt(blogReviewMatch[1]) : 0;
+    // 리뷰 수
+    const visitorMatch = document.body.innerHTML.match(/"visitorReviewCount"\s*:\s*(\d+)/);
+    const visitorReviewCount = visitorMatch ? parseInt(visitorMatch[1]) : 0;
+    const blogMatch = document.body.innerHTML.match(/"reviewCount"\s*:\s*(\d+)/);
+    const reviewCount = blogMatch ? parseInt(blogMatch[1]) : 0;
 
     // 이미지
     const rawImage = getMeta('og:image');
-    const imgSrcMatch = rawImage.match(/[?&]src=([^&]+)/);
-    const image_url = imgSrcMatch ? decodeURIComponent(imgSrcMatch[1]) : rawImage;
+    const imgSrc = rawImage.match(/[?&]src=([^&]+)/);
+    const image_url = imgSrc ? decodeURIComponent(imgSrc[1]) : rawImage;
 
-    // 좌표
+    // 좌표 (JSON 내 x/y 값)
     const latMatch = document.body.innerHTML.match(/"y"\s*:\s*"?([\d.]+)"?/);
     const lngMatch = document.body.innerHTML.match(/"x"\s*:\s*"?([\d.]+)"?/);
     const latitude = latMatch ? parseFloat(latMatch[1]) : undefined;
     const longitude = lngMatch ? parseFloat(lngMatch[1]) : undefined;
 
-    // 메뉴
+    // 메뉴 (최대 5개)
     const menuItems: Array<{ name: string; price?: string }> = [];
     document.querySelectorAll('[class*="menu_item"], [class*="item_info"]').forEach((el) => {
-      const menuName = el.querySelector('[class*="name"]')?.textContent?.trim();
-      const menuPrice = el.querySelector('[class*="price"]')?.textContent?.trim();
-      if (menuName) menuItems.push({ name: menuName, price: menuPrice ?? undefined });
+      const n = el.querySelector('[class*="name"]')?.textContent?.trim();
+      const p = el.querySelector('[class*="price"]')?.textContent?.trim();
+      if (n) menuItems.push({ name: n, price: p ?? undefined });
     });
 
-    return { name, address, phone, category, rating, reviewCount, visitorReviewCount, image_url, latitude, longitude, menuItems };
+    return {
+      name, address, phone, category, rating,
+      reviewCount, visitorReviewCount,
+      image_url, latitude, longitude,
+      menuItems: menuItems.slice(0, 5),
+    };
   });
 
   if (!data.name) {
-    log.warning(`이름을 추출할 수 없음: ${placeId}`);
-    return;
+    log.warning(`이름 추출 실패: ${placeId}`);
+    return null;
   }
 
-  const result: RestaurantData = {
+  return {
     naver_place_id: placeId,
     name: data.name,
     address: data.address || undefined,
@@ -136,19 +133,14 @@ router.addHandler('DETAIL', async ({ page, request, log }) => {
     longitude: data.longitude,
     image_url: data.image_url || undefined,
     naver_place_url: `https://map.naver.com/p/entry/place/${placeId}`,
-    menu_items: data.menuItems.slice(0, 5),
+    menu_items: data.menuItems,
     tags: inferTags(data.category ?? '', data.name),
   };
+}
 
-  // request.userData에 결과 저장 (main.ts에서 일괄 처리)
-  request.userData.result = result;
-});
-
-/** 카테고리/이름으로 태그 자동 추론 */
+/** 카테고리/이름 기반 태그 자동 추론 */
 function inferTags(category: string, name: string): string[] {
-  const tags: string[] = [];
   const text = `${category} ${name}`;
-
   const tagMap: Record<string, string[]> = {
     '한식': ['한식'],
     '일식': ['일식', '초밥', '라멘', '돈카츠'],
@@ -158,16 +150,14 @@ function inferTags(category: string, name: string): string[] {
     '분식': ['분식', '떡볶이'],
     '치킨': ['치킨'],
     '고기': ['고기', '삼겹살', '소고기', '갈비'],
-    '해물': ['해물', '회', '초밥'],
+    '해물': ['해물', '회'],
     '베이커리': ['베이커리', '빵'],
     '브런치': ['브런치'],
   };
 
+  const tags = new Set<string>();
   for (const [tag, keywords] of Object.entries(tagMap)) {
-    if (keywords.some((kw) => text.includes(kw))) {
-      tags.push(tag);
-    }
+    if (keywords.some((kw) => text.includes(kw))) tags.add(tag);
   }
-
-  return [...new Set(tags)];
+  return [...tags];
 }
