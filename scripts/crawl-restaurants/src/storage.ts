@@ -29,6 +29,7 @@ export async function upsertRestaurants(items: RestaurantData[]): Promise<number
     ...item,
     menu_items: JSON.stringify(item.menu_items ?? []),
     tags: item.tags ?? [],
+    naver_verified: item.naver_place_url ? true : false,
     crawled_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   }));

@@ -1,4 +1,4 @@
--- 창원 신상 맛집 크롤링 데이터 저장 테이블
+-- 창원 맛집 크롤링 데이터 저장 테이블 (다중 소스 + 네이버 검증)
 CREATE TABLE IF NOT EXISTS restaurants (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   naver_place_id TEXT UNIQUE NOT NULL,
@@ -15,7 +15,8 @@ CREATE TABLE IF NOT EXISTS restaurants (
   naver_place_url TEXT,
   menu_items JSONB DEFAULT '[]',
   open_date DATE,
-  tags TEXT[] DEFAULT '{}',
+  tags TEXT[] DEFAULT '{}',        -- 소스 태그: 창원관광포털, 블루리본, 모범음식점 등
+  naver_verified BOOLEAN DEFAULT false,
   crawled_at TIMESTAMPTZ DEFAULT now(),
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
