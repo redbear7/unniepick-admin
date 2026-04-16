@@ -126,10 +126,10 @@ async function crawl(queries: string[], mode: string) {
   return { newRestaurants, total: deduped.length };
 }
 
-// ── ID 수집 (1~5 페이지) ────────────────────────────────────
+// ── ID 수집 (1~5 페이지, 실제 검색결과만) ───────────────────
 
 async function collectPlaceIds(page: any, query: string): Promise<string[]> {
-  const allIds = new Set<string>();
+  const allIds: string[] = [];
 
   await page.goto(
     `https://pcmap.place.naver.com/restaurant/list?query=${encodeURIComponent(query)}`,
@@ -138,29 +138,57 @@ async function collectPlaceIds(page: any, query: string): Promise<string[]> {
   await page.waitForTimeout(2500);
 
   for (let pageNum = 1; pageNum <= 5; pageNum++) {
-    const ids: string[] = await page.evaluate(() => {
-      const found = new Set<string>();
-      // script 태그 내 ID (가장 안정적)
-      for (const s of document.querySelectorAll('script')) {
-        const text = s.textContent ?? '';
-        for (const m of text.matchAll(/"id"\s*:\s*"(\d{7,})"/g)) found.add(m[1]);
+    // Apollo __APOLLO_STATE__에서 RestaurantListSummary: 키로 실제 검색 결과 ID만 추출
+    const pageIds: string[] = await page.evaluate(() => {
+      const apollo = (window as any).__APOLLO_STATE__;
+      if (!apollo) return [];
+
+      const ids: string[] = [];
+      for (const key of Object.keys(apollo)) {
+        const m = key.match(/^RestaurantListSummary:(\d{7,}):/);
+        if (m) ids.push(m[1]);
       }
-      return [...found];
+      return ids;
     });
 
-    const prevSize = allIds.size;
-    for (const id of ids) allIds.add(id);
-    console.log(`     페이지 ${pageNum}: +${allIds.size - prevSize}개 (누적 ${allIds.size}개)`);
+    // 이전 페이지와 중복되지 않는 ID만 추가
+    const existingSet = new Set(allIds);
+    const newIds = pageIds.filter((id) => !existingSet.has(id));
+
+    allIds.push(...newIds);
+    console.log(`     페이지 ${pageNum}: ${newIds.length}개 (누적 ${allIds.length}개)`);
+
+    if (newIds.length === 0 && pageNum > 1) {
+      console.log(`     (새 결과 없음 — 종료)`);
+      break;
+    }
 
     if (pageNum < 5) {
       const nextBtn = await page.$('a:has-text("다음페이지"), button:has-text("다음페이지")');
       if (!nextBtn) { console.log(`     (마지막 페이지)`); break; }
+
+      // 현재 리스트 이름 저장 (페이지 변경 감지용)
+      const currentFirstName = await page.$eval(
+        '[class*="TYaxT"]',
+        (el: Element) => el.textContent?.trim() ?? '',
+      ).catch(() => '');
+
       await nextBtn.click();
-      await page.waitForTimeout(2500);
+
+      // 리스트가 바뀔 때까지 대기 (최대 5초)
+      for (let w = 0; w < 10; w++) {
+        await page.waitForTimeout(500);
+        const newFirstName = await page.$eval(
+          '[class*="TYaxT"]',
+          (el: Element) => el.textContent?.trim() ?? '',
+        ).catch(() => '');
+        if (newFirstName && newFirstName !== currentFirstName) break;
+      }
+      await page.waitForTimeout(1000);
     }
   }
 
-  return [...allIds];
+  return allIds;
 }
 
 // ── 상세 페이지 기본 정보 ───────────────────────────────────
