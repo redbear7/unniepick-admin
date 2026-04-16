@@ -223,29 +223,41 @@ async function crawlReviews(page: Page, placeId: string): Promise<{
 
   const visitorData = await page.evaluate(() => {
     const body = document.body.innerText;
+    const lines = body.split('\n').map((l) => l.trim()).filter(Boolean);
 
     // 키워드 리뷰: "음식이 맛있어요" ... 229 패턴
     const keywords: Array<{ keyword: string; count: number }> = [];
-    const kwMatches = body.matchAll(/"([^"]+)"\s*이 키워드를 선택한 인원\s*(\d+)/g);
-    for (const m of kwMatches) {
+    for (const m of body.matchAll(/"([^"]{4,20})"\s*이 키워드를 선택한 인원\s*(\d+)/g)) {
       keywords.push({ keyword: m[1], count: parseInt(m[2]) });
     }
 
-    // 메뉴 키워드: "메뉴\n오징어38\n..." → "특징" 사이
-    const menuSection = body.match(/메뉴\n([\s\S]*?)\n특징/);
+    // 메뉴/특징 구간을 줄 단위로 정확히 파싱
+    // body 예: ...메뉴\n오징어38\n튀김23\n...\n특징\n맛169\n만족도135\n...\n추천순...
     const menuKeywords: Array<{ menu: string; count: number }> = [];
-    if (menuSection) {
-      for (const m of menuSection[1].matchAll(/([가-힣]+(?:\s?[가-힣]+)?)(\d+)/g)) {
-        menuKeywords.push({ menu: m[1].trim(), count: parseInt(m[2]) });
-      }
-    }
-
-    // 특징 요약: "맛169\n만족도135\n..."
-    const featureSection = body.match(/특징\n([\s\S]*?)\n(?:추천순|최신순)/);
     const summary: Record<string, number> = {};
-    if (featureSection) {
-      for (const m of featureSection[1].matchAll(/([가-힣]+)(\d+)/g)) {
-        summary[m[1]] = parseInt(m[2]);
+
+    let section: 'none' | 'menu' | 'feature' = 'none';
+    const skipWords = new Set(['이전', '다음', '리뷰', '안내', '사진', '영상', '더보기', '정렬']);
+
+    for (const line of lines) {
+      // 구간 전환 감지
+      if (line === '메뉴') { section = 'menu'; continue; }
+      if (line === '특징') { section = 'feature'; continue; }
+      if (line === '추천순' || line === '최신순') { section = 'none'; continue; }
+
+      // "한글+숫자" 패턴만 추출 (예: "오징어38", "맛169")
+      const match = line.match(/^([가-힣\s]+)(\d+)$/);
+      if (!match) continue;
+
+      const name = match[1].trim();
+      const count = parseInt(match[2]);
+      if (!name || name.length > 10 || count < 1) continue;
+      if (skipWords.has(name)) continue;
+
+      if (section === 'menu') {
+        menuKeywords.push({ menu: name, count });
+      } else if (section === 'feature') {
+        summary[name] = count;
       }
     }
 
@@ -260,14 +272,18 @@ async function crawlReviews(page: Page, placeId: string): Promise<{
 
   const blogReviews: BlogReview[] = await page.evaluate(() => {
     const body = document.body.innerText;
-    const reviews: BlogReview[] = [];
     const lines = body.split('\n').map((l) => l.trim()).filter(Boolean);
+    const reviews: Array<{ title: string; snippet: string; date: string }> = [];
 
-    // 블로그 리뷰 영역 찾기 (피드형식/리스트형식 이후)
+    // 블로그 리뷰 구조:
+    // [닉네임] [블로그명] [다음] [제목] [본문...] [yy.mm.dd.요일] [yyyy년 mm월 dd일 ...]
+    // 날짜 패턴으로 리뷰 경계를 나누고, 직전 긴 텍스트들에서 제목/본문 추출
+
     let started = false;
-    let currentTitle = '';
-    let currentSnippet = '';
-    let currentDate = '';
+    let buffer: string[] = [];
+    const skipPatterns = /^(리뷰|정렬|추천순|최신순|더보기|이전|피드형식|리스트형식|방문자|블로그)/;
+    const dateShort = /^\d{2}\.\d{1,2}\.\d{1,2}\.[가-힣]$/;       // 26.4.16.목
+    const dateLong = /^\d{4}년 \d{1,2}월 \d{1,2}일/;              // 2026년 4월 16일
 
     for (const line of lines) {
       if (line.includes('피드형식으로') || line.includes('리스트형식으로')) {
@@ -276,34 +292,25 @@ async function crawlReviews(page: Page, placeId: string): Promise<{
       }
       if (!started) continue;
 
-      // 날짜 패턴
-      const dateMatch = line.match(/^\d{2}\.\d{1,2}\.\d{1,2}\.[가-힣]$/);
-      const fullDateMatch = line.match(/^\d{4}년 \d{1,2}월 \d{1,2}일/);
+      // 짧은 날짜 = 리뷰 경계 (긴 날짜는 직후에 오므로 스킵)
+      if (dateShort.test(line)) {
+        // buffer에서 제목(20~80자)과 본문(80자+) 추출
+        const title = buffer.find((l) => l.length >= 15 && l.length <= 80) ?? '';
+        const snippet = buffer.find((l) => l.length > 80)?.slice(0, 300) ?? '';
 
-      if (dateMatch || fullDateMatch) {
-        // 이전 리뷰 저장
-        if (currentTitle || currentSnippet) {
-          reviews.push({ title: currentTitle, snippet: currentSnippet.slice(0, 300), date: line });
-          currentTitle = '';
-          currentSnippet = '';
+        if (title || snippet) {
+          reviews.push({ title, snippet, date: line });
         }
+        buffer = [];
         continue;
       }
+      if (dateLong.test(line)) continue; // 긴 날짜는 스킵
 
-      // 15~80자 = 제목 후보
-      if (line.length >= 10 && line.length <= 80 && !currentTitle
-          && !line.includes('리뷰') && !line.includes('정렬') && !line.includes('더보기')
-          && !line.includes('다음') && !line.includes('이전')) {
-        currentTitle = line;
-      }
-      // 80자 이상 = 본문
-      else if (line.length > 80 && !currentSnippet) {
-        currentSnippet = line;
-      }
-    }
-    // 마지막 리뷰
-    if (currentTitle || currentSnippet) {
-      reviews.push({ title: currentTitle, snippet: currentSnippet.slice(0, 300), date: currentDate });
+      // 필터링
+      if (line.length < 5 || skipPatterns.test(line)) continue;
+      if (line === '다음' || line === '이전' || line === '안내') continue;
+
+      buffer.push(line);
     }
 
     return reviews.slice(0, 5);
