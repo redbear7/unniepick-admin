@@ -358,9 +358,7 @@ if (mode === 'test') {
   crawl(DAILY_QUERIES, 'daily').catch(console.error);
 } else {
   console.log('스케줄러 시작');
-  console.log('  - 매일 06:00: 새로오픈 맛집 (상세 리뷰 분석)');
-  console.log('  - 매주 월 03:00: 전체 동별 크롤링');
+  console.log('  - 매일 09:10: 새로오픈 맛집 (상세 리뷰 분석)');
   crawl(DAILY_QUERIES, 'daily').catch(console.error);
-  cron.schedule('0 6 * * *', () => crawl(DAILY_QUERIES, 'daily').catch(console.error));
-  cron.schedule('0 3 * * 1', () => crawl(DISTRICT_QUERIES, 'district').catch(console.error));
+  cron.schedule('10 9 * * *', () => crawl(DAILY_QUERIES, 'daily').catch(console.error));
 }
