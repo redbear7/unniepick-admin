@@ -21,7 +21,7 @@ export default function RestaurantAnalyticsPage() {
         <iframe
           src={`${METABASE_PUBLIC_URL}#bordered=false&titled=false`}
           className="w-full h-full border-0"
-          allowTransparency
+          style={{ border: 'none', background: 'transparent' }}
         />
       </div>
     </div>
