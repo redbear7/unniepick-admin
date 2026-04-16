@@ -357,12 +357,25 @@ if (mode === 'test') {
 } else if (mode === 'daily') {
   crawl(DAILY_QUERIES, 'daily').catch(console.error);
 } else {
-  // 맥북 켜질 때 1회 실행 (랜덤 지연 후 크롤링 → 종료)
-  const delayMin = Math.floor(Math.random() * 20) + 3; // 3~23분 랜덤 대기
-  console.log(`맥북 부팅 감지 — ${delayMin}분 후 크롤링 시작 (봇 감지 회피)`);
+  // 하루 1회만 실행 (부팅/잠자기 해제 시 체크)
+  const lockFile = new URL('../.last-crawl', import.meta.url).pathname;
+  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+
+  let lastRun = '';
+  try { lastRun = (await import('fs')).readFileSync(lockFile, 'utf-8').trim(); } catch {}
+
+  if (lastRun === today) {
+    console.log(`[${today}] 오늘 이미 크롤링 완료. 건너뜀.`);
+    process.exit(0);
+  }
+
+  const delayMin = Math.floor(Math.random() * 20) + 3; // 3~23분 랜덤
+  console.log(`[${today}] ${delayMin}분 후 크롤링 시작 (봇 감지 회피)`);
 
   setTimeout(async () => {
     await crawl(DAILY_QUERIES, 'daily').catch(console.error);
+    // 실행 완료 기록
+    (await import('fs')).writeFileSync(lockFile, today);
     console.log('크롤링 완료. 프로세스 종료.');
     process.exit(0);
   }, delayMin * 60 * 1000);
