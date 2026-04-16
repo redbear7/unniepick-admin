@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { chromium } from 'playwright';
+import { chromium, type Page } from 'playwright';
 import cron from 'node-cron';
 import {
   upsertRestaurants, getStats, getExistingIds,
@@ -29,8 +29,6 @@ async function crawl(queries: string[], mode: string) {
   console.log(`${'='.repeat(50)}`);
 
   const isDaily = mode === 'daily';
-
-  // 신규 감지용: 기존 DB의 place ID 목록
   const existingIds = await getExistingIds();
   console.log(`기존 DB: ${existingIds.size}개`);
 
@@ -44,32 +42,34 @@ async function crawl(queries: string[], mode: string) {
 
       const page = await browser.newPage();
       try {
-        // 1~5페이지 place ID 수집
-        const placeIds = await collectPlaceIds(page, query);
-        console.log(`     ${placeIds.length}개 ID 수집`);
+        // ── 1. 목록에서 기본 정보 일괄 추출 (Apollo 캐시) ──
+        const restaurants = await collectFromApollo(page, query);
+        console.log(`     ${restaurants.length}개 업체 수집`);
 
-        for (const id of placeIds) {
-          try {
-            // 기본 정보 크롤링
-            const data = await crawlDetail(page, id);
-            if (!data) continue;
-
-            // 새로오픈 모드: 키워드 리뷰 + 블로그 리뷰 상세 분석
-            if (isDaily) {
-              data.is_new_open = true;
-              const reviews = await crawlReviews(page, id);
-              data.review_keywords = reviews.keywords;
-              data.menu_keywords = reviews.menuKeywords;
-              data.review_summary = reviews.summary;
-              data.blog_reviews = reviews.blogReviews;
+        // ── 2. 새로오픈 모드: 업체별 상세 리뷰 분석 ──
+        if (isDaily) {
+          for (let i = 0; i < restaurants.length; i++) {
+            const r = restaurants[i];
+            r.is_new_open = true;
+            try {
+              console.log(`     [${i + 1}/${restaurants.length}] ${r.name} 리뷰 분석...`);
+              const reviews = await crawlReviews(page, r.naver_place_id);
+              r.review_keywords = reviews.keywords;
+              r.menu_keywords = reviews.menuKeywords;
+              r.review_summary = reviews.summary;
+              r.blog_reviews = reviews.blogReviews;
+            } catch (e) {
+              console.log(`       리뷰 에러: ${(e as Error).message}`);
             }
-
-            if (!isDaily) data.tags = [...(data.tags ?? []), q];
-            allResults.push(data);
-          } catch { /* 개별 실패 무시 */ }
-          await page.waitForTimeout(isDaily ? 800 : 400);
+            await page.waitForTimeout(500 + Math.random() * 500);
+          }
         }
 
+        if (!isDaily) {
+          for (const r of restaurants) r.tags = [...(r.tags ?? []), q];
+        }
+
+        allResults.push(...restaurants);
         console.log(`     ✓ 완료 (누적 ${allResults.length}개)`);
       } catch (e) {
         console.log(`     ✗ 에러: ${(e as Error).message}`);
@@ -95,7 +95,7 @@ async function crawl(queries: string[], mode: string) {
 
   // ── 신규 업체 감지 ──
   const newRestaurants = deduped.filter((r) => !existingIds.has(r.naver_place_id));
-  if (newRestaurants.length > 0) {
+  if (newRestaurants.length > 0 && existingIds.size > 0) {
     console.log(`\n${'🆕'.repeat(20)}`);
     console.log(`🆕 신규 업체 ${newRestaurants.length}개 발견!`);
     console.log(`${'🆕'.repeat(20)}`);
@@ -105,10 +105,7 @@ async function crawl(queries: string[], mode: string) {
       if (r.review_keywords?.length) {
         console.log(`     키워드: ${r.review_keywords.slice(0, 3).map((k) => `${k.keyword}(${k.count})`).join(', ')}`);
       }
-      if (r.naver_place_url) {
-        console.log(`     ${r.naver_place_url}`);
-      }
-      console.log('');
+      console.log(`     ${r.naver_place_url ?? ''}\n`);
     }
   } else if (existingIds.size > 0) {
     console.log('\n✅ 신규 업체 없음 (변동 없음)');
@@ -122,14 +119,14 @@ async function crawl(queries: string[], mode: string) {
 
   const stats = await getStats();
   console.log(`📊 DB 총: ${stats.total}개\n`);
-
   return { newRestaurants, total: deduped.length };
 }
 
-// ── ID 수집 (1~5 페이지, 실제 검색결과만) ───────────────────
+// ── Apollo 캐시에서 목록 기본 정보 일괄 추출 ────────────────
 
-async function collectPlaceIds(page: any, query: string): Promise<string[]> {
-  const allIds: string[] = [];
+async function collectFromApollo(page: Page, query: string): Promise<RestaurantData[]> {
+  const allResults: RestaurantData[] = [];
+  const seenIds = new Set<string>();
 
   await page.goto(
     `https://pcmap.place.naver.com/restaurant/list?query=${encodeURIComponent(query)}`,
@@ -138,128 +135,81 @@ async function collectPlaceIds(page: any, query: string): Promise<string[]> {
   await page.waitForTimeout(2500);
 
   for (let pageNum = 1; pageNum <= 5; pageNum++) {
-    // Apollo __APOLLO_STATE__에서 RestaurantListSummary: 키로 실제 검색 결과 ID만 추출
-    const pageIds: string[] = await page.evaluate(() => {
+    // Apollo RestaurantListSummary에서 기본 정보 추출
+    const items: RestaurantData[] = await page.evaluate(() => {
       const apollo = (window as any).__APOLLO_STATE__;
       if (!apollo) return [];
 
-      const ids: string[] = [];
-      for (const key of Object.keys(apollo)) {
-        const m = key.match(/^RestaurantListSummary:(\d{7,}):/);
-        if (m) ids.push(m[1]);
+      const results: any[] = [];
+      for (const [key, val] of Object.entries(apollo) as [string, any][]) {
+        const m = key.match(/^RestaurantListSummary:(\d+):/);
+        if (!m) continue;
+
+        results.push({
+          naver_place_id: m[1],
+          name: val.name ?? '',
+          address: val.roadAddress
+            ? `${val.commonAddress ?? ''} ${val.roadAddress}`.trim()
+            : val.address ?? '',
+          phone: val.virtualPhone ?? val.phone ?? '',
+          category: val.category ?? '',
+          latitude: val.y ? parseFloat(val.y) : undefined,
+          longitude: val.x ? parseFloat(val.x) : undefined,
+          image_url: val.imageUrl ?? '',
+          visitor_review_count: parseInt(val.visitorReviewCount ?? '0') || 0,
+          review_count: parseInt(val.blogCafeReviewCount ?? val.totalReviewCount ?? '0') || 0,
+          naver_place_url: `https://map.naver.com/p/entry/place/${m[1]}`,
+        });
       }
-      return ids;
+      return results;
     });
 
-    // 이전 페이지와 중복되지 않는 ID만 추가
-    const existingSet = new Set(allIds);
-    const newIds = pageIds.filter((id) => !existingSet.has(id));
+    // 새 ID만 추가
+    let newCount = 0;
+    for (const item of items) {
+      if (seenIds.has(item.naver_place_id)) continue;
+      seenIds.add(item.naver_place_id);
+      item.tags = inferTags(item.category ?? '', item.name);
+      allResults.push(item);
+      newCount++;
+    }
 
-    allIds.push(...newIds);
-    console.log(`     페이지 ${pageNum}: ${newIds.length}개 (누적 ${allIds.length}개)`);
+    console.log(`     페이지 ${pageNum}: ${newCount}개 (누적 ${allResults.length}개)`);
 
-    if (newIds.length === 0 && pageNum > 1) {
+    if (newCount === 0 && pageNum > 1) {
       console.log(`     (새 결과 없음 — 종료)`);
       break;
     }
 
+    // 다음 페이지
     if (pageNum < 5) {
       const nextBtn = await page.$('a:has-text("다음페이지"), button:has-text("다음페이지")');
       if (!nextBtn) { console.log(`     (마지막 페이지)`); break; }
 
-      // 현재 리스트 이름 저장 (페이지 변경 감지용)
-      const currentFirstName = await page.$eval(
-        '[class*="TYaxT"]',
-        (el: Element) => el.textContent?.trim() ?? '',
+      const prevFirstName = await page.$eval(
+        '[class*="TYaxT"]', (el: Element) => el.textContent?.trim() ?? '',
       ).catch(() => '');
 
       await nextBtn.click();
 
-      // 리스트가 바뀔 때까지 대기 (최대 5초)
+      // 페이지 변경 대기
       for (let w = 0; w < 10; w++) {
         await page.waitForTimeout(500);
         const newFirstName = await page.$eval(
-          '[class*="TYaxT"]',
-          (el: Element) => el.textContent?.trim() ?? '',
+          '[class*="TYaxT"]', (el: Element) => el.textContent?.trim() ?? '',
         ).catch(() => '');
-        if (newFirstName && newFirstName !== currentFirstName) break;
+        if (newFirstName && newFirstName !== prevFirstName) break;
       }
       await page.waitForTimeout(1000);
     }
   }
 
-  return allIds;
-}
-
-// ── 상세 페이지 기본 정보 ───────────────────────────────────
-
-async function crawlDetail(page: any, placeId: string): Promise<RestaurantData | null> {
-  await page.goto(`https://pcmap.place.naver.com/restaurant/${placeId}/home`, {
-    waitUntil: 'networkidle', timeout: 15_000,
-  });
-  await page.waitForTimeout(1500);
-
-  const data = await page.evaluate(() => {
-    const getMeta = (prop: string) =>
-      document.querySelector(`meta[property="${prop}"]`)?.getAttribute('content') ?? '';
-
-    const name = getMeta('og:title').replace(/\s*:\s*네이버.*$/, '').trim();
-    const addrEl = document.querySelector('[data-kakaotalk-description]');
-    const address = addrEl?.getAttribute('data-kakaotalk-description')?.replace(/&amp;/g, '&').trim() ?? '';
-    const phoneMatch = document.body.innerHTML.match(/0\d{1,3}-\d{3,4}-\d{4}/);
-    const catMatch = document.body.innerHTML.match(/"category"\s*:\s*"([^"]{2,30})"/);
-    const ratingEl = document.querySelector('[class*="PXMot"] em, .LXIwF em');
-    const visitorMatch = document.body.innerHTML.match(/"visitorReviewCount"\s*:\s*(\d+)/);
-    const blogMatch = document.body.innerHTML.match(/"reviewCount"\s*:\s*(\d+)/);
-    const rawImage = getMeta('og:image');
-    const imgSrc = rawImage.match(/[?&]src=([^&]+)/);
-    const latMatch = document.body.innerHTML.match(/"y"\s*:\s*"?([\d.]+)"?/);
-    const lngMatch = document.body.innerHTML.match(/"x"\s*:\s*"?([\d.]+)"?/);
-
-    const menuItems: Array<{ name: string; price?: string }> = [];
-    document.querySelectorAll('[class*="menu_item"], [class*="item_info"]').forEach((el) => {
-      const n = el.querySelector('[class*="name"]')?.textContent?.trim();
-      const p = el.querySelector('[class*="price"]')?.textContent?.trim();
-      if (n) menuItems.push({ name: n, price: p ?? undefined });
-    });
-
-    return {
-      name, address,
-      phone: phoneMatch?.[0] ?? '',
-      category: catMatch?.[1] ?? '',
-      rating: ratingEl ? parseFloat(ratingEl.textContent ?? '0') : undefined,
-      visitorReviewCount: visitorMatch ? parseInt(visitorMatch[1]) : 0,
-      reviewCount: blogMatch ? parseInt(blogMatch[1]) : 0,
-      image_url: imgSrc ? decodeURIComponent(imgSrc[1]) : rawImage,
-      latitude: latMatch ? parseFloat(latMatch[1]) : undefined,
-      longitude: lngMatch ? parseFloat(lngMatch[1]) : undefined,
-      menuItems: menuItems.slice(0, 5),
-    };
-  });
-
-  if (!data.name) return null;
-
-  return {
-    naver_place_id: placeId,
-    name: data.name,
-    address: data.address || undefined,
-    phone: data.phone || undefined,
-    category: data.category || undefined,
-    rating: data.rating,
-    review_count: data.reviewCount,
-    visitor_review_count: data.visitorReviewCount,
-    latitude: data.latitude,
-    longitude: data.longitude,
-    image_url: data.image_url || undefined,
-    naver_place_url: `https://map.naver.com/p/entry/place/${placeId}`,
-    menu_items: data.menuItems,
-    tags: inferTags(data.category ?? '', data.name),
-  };
+  return allResults;
 }
 
 // ── 리뷰 상세 분석 (새로오픈 전용) ─────────────────────────
 
-async function crawlReviews(page: any, placeId: string): Promise<{
+async function crawlReviews(page: Page, placeId: string): Promise<{
   keywords: ReviewKeyword[];
   menuKeywords: MenuKeyword[];
   summary: Record<string, number>;
@@ -281,23 +231,20 @@ async function crawlReviews(page: any, placeId: string): Promise<{
       keywords.push({ keyword: m[1], count: parseInt(m[2]) });
     }
 
-    // 메뉴 키워드: "오징어38" 형태 (메뉴 + 숫자가 붙어있음)
-    // body에서 "메뉴" 이후 ~ "특징" 이전 구간 추출
+    // 메뉴 키워드: "메뉴\n오징어38\n..." → "특징" 사이
     const menuSection = body.match(/메뉴\n([\s\S]*?)\n특징/);
     const menuKeywords: Array<{ menu: string; count: number }> = [];
     if (menuSection) {
-      const menuMatches = menuSection[1].matchAll(/([가-힣]+(?:\s?[가-힣]+)?)(\d+)/g);
-      for (const m of menuMatches) {
+      for (const m of menuSection[1].matchAll(/([가-힣]+(?:\s?[가-힣]+)?)(\d+)/g)) {
         menuKeywords.push({ menu: m[1].trim(), count: parseInt(m[2]) });
       }
     }
 
-    // 특징 요약: "맛169 만족도135 서비스34" 형태
+    // 특징 요약: "맛169\n만족도135\n..."
     const featureSection = body.match(/특징\n([\s\S]*?)\n(?:추천순|최신순)/);
     const summary: Record<string, number> = {};
     if (featureSection) {
-      const featMatches = featureSection[1].matchAll(/([가-힣]+)(\d+)/g);
-      for (const m of featMatches) {
+      for (const m of featureSection[1].matchAll(/([가-힣]+)(\d+)/g)) {
         summary[m[1]] = parseInt(m[2]);
       }
     }
@@ -313,48 +260,53 @@ async function crawlReviews(page: any, placeId: string): Promise<{
 
   const blogReviews: BlogReview[] = await page.evaluate(() => {
     const body = document.body.innerText;
-    const reviews: Array<{ title: string; snippet: string; date?: string }> = [];
-
-    // 블로그 리뷰 패턴: 닉네임 → 블로그명 → (다음) → 제목 → 본문... → 날짜
-    // 제목은 보통 긴 텍스트 줄, 그 다음이 본문
+    const reviews: BlogReview[] = [];
     const lines = body.split('\n').map((l) => l.trim()).filter(Boolean);
 
-    let i = 0;
-    while (i < lines.length) {
-      // "피드형식으로 보기" 이후부터 블로그 리뷰 시작
-      if (lines[i].includes('피드형식으로') || lines[i].includes('리스트형식으로')) {
-        i++;
+    // 블로그 리뷰 영역 찾기 (피드형식/리스트형식 이후)
+    let started = false;
+    let currentTitle = '';
+    let currentSnippet = '';
+    let currentDate = '';
+
+    for (const line of lines) {
+      if (line.includes('피드형식으로') || line.includes('리스트형식으로')) {
+        started = true;
         continue;
       }
+      if (!started) continue;
 
-      // 날짜 패턴으로 리뷰 경계 감지 (26.4.16.목 또는 2026년 4월 16일)
-      const dateMatch = lines[i].match(/(\d{2}\.\d{1,2}\.\d{1,2}\.[가-힣])/);
-      if (dateMatch && reviews.length > 0) {
-        reviews[reviews.length - 1].date = lines[i];
-        i++;
-        continue;
-      }
+      // 날짜 패턴
+      const dateMatch = line.match(/^\d{2}\.\d{1,2}\.\d{1,2}\.[가-힣]$/);
+      const fullDateMatch = line.match(/^\d{4}년 \d{1,2}월 \d{1,2}일/);
 
-      // 30자 이상이면 제목 또는 본문 후보
-      if (lines[i].length >= 15 && !lines[i].includes('리뷰') && !lines[i].includes('정렬')) {
-        // 이전에 제목이 없는 리뷰가 있으면 본문으로 추가
-        if (reviews.length > 0 && !reviews[reviews.length - 1].snippet) {
-          reviews[reviews.length - 1].snippet = lines[i].slice(0, 300);
-        } else if (lines[i].length >= 15 && lines[i].length <= 80) {
-          // 제목 후보
-          reviews.push({ title: lines[i], snippet: '' });
-        } else if (lines[i].length > 80) {
-          // 본문 (제목 없이)
-          if (reviews.length > 0 && !reviews[reviews.length - 1].snippet) {
-            reviews[reviews.length - 1].snippet = lines[i].slice(0, 300);
-          }
+      if (dateMatch || fullDateMatch) {
+        // 이전 리뷰 저장
+        if (currentTitle || currentSnippet) {
+          reviews.push({ title: currentTitle, snippet: currentSnippet.slice(0, 300), date: line });
+          currentTitle = '';
+          currentSnippet = '';
         }
+        continue;
       }
 
-      i++;
+      // 15~80자 = 제목 후보
+      if (line.length >= 10 && line.length <= 80 && !currentTitle
+          && !line.includes('리뷰') && !line.includes('정렬') && !line.includes('더보기')
+          && !line.includes('다음') && !line.includes('이전')) {
+        currentTitle = line;
+      }
+      // 80자 이상 = 본문
+      else if (line.length > 80 && !currentSnippet) {
+        currentSnippet = line;
+      }
+    }
+    // 마지막 리뷰
+    if (currentTitle || currentSnippet) {
+      reviews.push({ title: currentTitle, snippet: currentSnippet.slice(0, 300), date: currentDate });
     }
 
-    return reviews.filter((r) => r.title || r.snippet).slice(0, 5);
+    return reviews.slice(0, 5);
   });
 
   return {
