@@ -6,6 +6,7 @@ import {
   type RestaurantData, type ReviewKeyword, type MenuKeyword, type BlogReview,
 } from './storage.js';
 import { notifyNewRestaurants, notifyDailySummary } from './notify.js';
+import { processImage } from './image.js';
 
 // ── 검색어 설정 ──────────────────────────────────────────────
 
@@ -69,6 +70,21 @@ async function crawl(queries: string[], mode: string) {
         if (!isDaily) {
           for (const r of restaurants) r.tags = [...(r.tags ?? []), q];
         }
+
+        // ── 이미지 리사이즈 + Storage 업로드 ──
+        console.log(`     📷 이미지 처리 중...`);
+        let imgCount = 0;
+        for (const r of restaurants) {
+          if (r.image_url) {
+            (r as any).image_url_original = r.image_url;
+            const { url, isProcessed } = await processImage(r.image_url, r.naver_place_id);
+            if (isProcessed) {
+              r.image_url = url;
+              imgCount++;
+            }
+          }
+        }
+        console.log(`     📷 ${imgCount}/${restaurants.length}개 이미지 저장`);
 
         allResults.push(...restaurants);
         console.log(`     ✓ 완료 (누적 ${allResults.length}개)`);

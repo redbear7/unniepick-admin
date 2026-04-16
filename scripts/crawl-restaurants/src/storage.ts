@@ -42,6 +42,7 @@ export interface RestaurantData {
   review_summary?: Record<string, number>;
   blog_reviews?: BlogReview[];
   is_new_open?: boolean;
+  image_url_original?: string;
 }
 
 /** 기존 DB에 있는 naver_place_id 목록 조회 (신규 감지용) */
