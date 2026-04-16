@@ -40,13 +40,11 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${pretendard.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <head>
-        {NAVER_ANALYTICS_ID && <NaverAnalytics siteId={NAVER_ANALYTICS_ID} />}
-      </head>
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <ThemeProvider>
           {children}
         </ThemeProvider>
+        {NAVER_ANALYTICS_ID && <NaverAnalytics siteId={NAVER_ANALYTICS_ID} />}
       </body>
     </html>
   );
