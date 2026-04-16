@@ -5,6 +5,7 @@ import {
   upsertRestaurants, getStats, getExistingIds,
   type RestaurantData, type ReviewKeyword, type MenuKeyword, type BlogReview,
 } from './storage.js';
+import { notifyNewRestaurants, notifyDailySummary } from './notify.js';
 
 // ── 검색어 설정 ──────────────────────────────────────────────
 
@@ -119,6 +120,13 @@ async function crawl(queries: string[], mode: string) {
 
   const stats = await getStats();
   console.log(`📊 DB 총: ${stats.total}개\n`);
+
+  // ── 텔레그램 알림 ──
+  if (newRestaurants.length > 0 && existingIds.size > 0) {
+    await notifyNewRestaurants(newRestaurants);
+  }
+  await notifyDailySummary(deduped.length, existingIds.size > 0 ? newRestaurants.length : 0);
+
   return { newRestaurants, total: deduped.length };
 }
 
