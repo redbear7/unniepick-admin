@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>창원 맛집 태그 빅데이터 시스템</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="prd-style.css" />
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">창원 맛집 태그 빅데이터 시스템</h1>
+</header>
+<h1 id="prd-창원-맛집-태그-빅데이터-시스템-hotpepper-벤치마크-반영">PRD: 창원 맛집 태그 빅데이터 시스템 (HotPepper 벤치마크 반영)</h1>
+<p><strong>Author</strong>: bangju <strong>Date</strong>: 2026-04-17 <strong>Status</strong>: Draft v2 <strong>Context</strong>: 언니픽 V2 창원 AI 맛집 추천의 기반 시스템 <strong>벤치마크</strong>: <a href="https://www.hotpepper.jp">HotPepper Gourmet (Japan)</a>, <a href="https://www.meo-times.com/other/other_hotpepper-effect/">HotPepper 분석</a></p>
+<hr />
+<h2 id="0-hotpepper-벤치마크-요약">0. HotPepper 벤치마크 요약</h2>
+<h3 id="일본-1위-맛집-앱이-된-이유-2021년-기준-예약-사이트-1위-사용자-만족도-575-1위">일본 1위 맛집 앱이 된 이유 (2021년 기준 예약 사이트 1위, 사용자 만족도 57.5% 1위)</h3>
+<table>
+<thead>
+<tr class="header">
+<th>HotPepper 차별화 요소</th>
+<th>핵심 인사이트</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>🎯 シーン検索 (상황 검색)</strong></td>
+<td>女子会·デート·歓送迎会·接待·合コン 등 <em>목적/상황</em> 중심 검색 — <strong>언니픽 태그 시스템의 Root 아이디어</strong></td>
+</tr>
+<tr class="even">
+<td><strong>🔥 こだわり条件 (구체 조건)</strong></td>
+<td>"치즈가 먹고싶다", "매운 거 먹고싶다" 같은 <strong>음식 욕구 태그</strong></td>
+</tr>
+<tr class="odd">
+<td><strong>🍽️ 세분화된 장르</strong></td>
+<td>한식&gt;와쇼쿠&gt;카이세키&gt;료테이 같은 <strong>3-4단계 계층 분류</strong></td>
+</tr>
+<tr class="even">
+<td><strong>⚡ 席押さえ (실시간 자리 선점)</strong></td>
+<td>현재 입장 가능 식당 + 즉시 자리 확보</td>
+</tr>
+<tr class="odd">
+<td><strong>💰 Ponta/d포인트</strong></td>
+<td>적립/사용으로 재방문 유도 — 쿠폰과 시너지</td>
+</tr>
+<tr class="even">
+<td><strong>🎁 쿠폰 통합</strong></td>
+<td>앱 내 즉시 표시, 가게에서 바로 제시</td>
+</tr>
+<tr class="odd">
+<td><strong>🖼️ こだわり情報 (점주 자랑 포인트)</strong></td>
+<td>店長のおすすめ料理 / こだわりの空間 / 心をこめたおもてなし 등 <strong>감성적 차별화 섹션</strong></td>
+</tr>
+<tr class="even">
+<td><strong>📊 검색 키워드 분석 (B2B)</strong></td>
+<td>점주가 "어떤 키워드로 내 가게를 발견했나" 확인 가능</td>
+</tr>
+</tbody>
+</table>
+<h3 id="언니픽-v2에-적용할-hotpepper-dna">언니픽 V2에 적용할 HotPepper DNA</h3>
+<ol type="1">
+<li><strong>"シーン = 목적 태그"</strong> 를 최우선 카테고리로 격상</li>
+<li><strong>"こだわり条件 = 구체 욕구 태그"</strong> 카테고리 신설</li>
+<li><strong>"席押さえ = 실시간 대기 정보"</strong> 기능 (네이버 테이블링 연동)</li>
+<li><strong>"점장 자랑 섹션"</strong> — 사장님이 직접 자랑 포인트 입력 → 언니픽 매장과 강력 시너지</li>
+<li><strong>"검색 키워드 분석"</strong> — 사장님 분석 도구 → B2B SaaS 유료 모델화 가능</li>
+</ol>
+<hr />
+<h2 id="1-executive-summary">1. Executive Summary</h2>
+<p>일본 HotPepper가 상황(シーン) 기반 검색으로 일본 시장을 석권한 DNA를, 창원 맛집에 적용한 <strong>AI 태그 빅데이터 시스템</strong>. 음악 트랙을 수십 개 태그로 분류해 상황별 플레이리스트를 만드는 언니픽 음악 시스템의 맛집 버전. 업체 1개당 평균 <strong>30-50개 다차원 태그</strong> × 12개 카테고리로 분류해, <em>"상남동 상견례 룸 한식"</em> 같은 복합 자연어 질문을 1초 안에 정확히 해석하고 추천한다.</p>
+<p><strong>한 줄 가치</strong>: <em>"네이버는 키워드, 카카오는 거리, 언니픽은 상황을 이해한다."</em></p>
+<hr />
+<h2 id="2-12개-태그-카테고리-hotpepper--한국-특화">2. 12개 태그 카테고리 (HotPepper + 한국 특화)</h2>
+<h3 id="카테고리-구조-우선순위-순">카테고리 구조 (우선순위 순)</h3>
+<pre><code>⭐ 1. 목적/상황 (Scene) 🎯        ← HotPepper &quot;シーン&quot; 차용, 가장 중요
+⭐ 2. 음식 욕구 (Craving) 🤤      ← HotPepper &quot;こだわり条件&quot; 차용
+📍 3. 위치 (Location)
+🏪 4. 편의시설 (Amenity)
+🎨 5. 분위기 (Mood)
+🍽️ 6. 메뉴 카테고리 (Genre)
+💰 7. 가격대 (Price)
+⏰ 8. 운영 시간 (Time)
+👥 9. 고객층 (Audience)
+🌶️ 10. 음식 속성 (Food Attr)
+💬 11. 리뷰 감성 (Sentiment)
+✨ 12. 점장 자랑 (Owner Picks) ← HotPepper &quot;こだわり情報&quot; 차용</code></pre>
+<h3 id="-1-목적상황-scene--최상위-카테고리">⭐ 1. 목적/상황 (Scene) — 최상위 카테고리</h3>
+<h4 id="격식-있는-모임">격식 있는 모임</h4>
+<ul>
+<li>상견례 · 프로포즈 · 기념일 · 결혼기념일 · 부모님생신 · 어버이날 · 어른접대</li>
+</ul>
+<h4 id="일상-외식">일상 외식</h4>
+<ul>
+<li>데이트 · 가족외식 · 친구만남 · 혼밥 · 브런치 · 간식</li>
+</ul>
+<h4 id="업무회사">업무·회사</h4>
+<ul>
+<li>회식 · 접대 · 점심회의 · 송별회 · 환영회 · 승진축하 · 팀빌딩</li>
+</ul>
+<h4 id="커뮤니티">커뮤니티</h4>
+<ul>
+<li>동창회 · 돌잔치 · 아이생일 · 학부모모임 · 학교모임 · 학원수강끝나고</li>
+</ul>
+<h4 id="특수-상황">특수 상황</h4>
+<ul>
+<li>소개팅 · 소개팅후술자리 · 이별후혼술 · 기분전환 · 비오는날 · 추운날 · 더운날</li>
+</ul>
+<h4 id="시즌">시즌</h4>
+<ul>
+<li>벚꽃뷰 · 단풍뷰 · 크리스마스 · 연말 · 새해 · 복날</li>
+</ul>
+<p><strong>★ 중요</strong>: 각 태그에 <strong>aliases (동의어)</strong> 저장 예: <code>상견례</code> = <code>[양가상견례, 가족상견례, 부모님만남, 어른들인사]</code></p>
+<hr />
+<h3 id="-2-음식-욕구-craving--새로-추가">⭐ 2. 음식 욕구 (Craving) — 새로 추가</h3>
+<p>HotPepper의 "チーズが食べたい" 처럼 <strong>구체적 음식 욕구</strong> 태깅:</p>
+<h4 id="맛-욕구">맛 욕구</h4>
+<ul>
+<li>매운거땡긴다 · 달달한거 · 느끼하게 · 시원하게 · 얼큰한국물 · 담백한거 · 짜릿한탄산</li>
+</ul>
+<h4 id="재료-욕구">재료 욕구</h4>
+<ul>
+<li>고기먹고싶다 · 해산물 · 회먹고싶다 · 치즈 · 치킨 · 면 · 밥 · 빵 · 샐러드</li>
+</ul>
+<h4 id="조리-욕구">조리 욕구</h4>
+<ul>
+<li>굽고싶다 · 끓여서 · 튀긴거 · 찜 · 날것 · 차가운거 · 따뜻한거</li>
+</ul>
+<h4 id="음료-욕구">음료 욕구</h4>
+<ul>
+<li>소주 · 맥주 · 와인 · 막걸리 · 하이볼 · 커피 · 디저트</li>
+</ul>
+<p><strong>이 카테고리는 음악의 "오늘 기분" 태그처럼 감성적 유입 키</strong> — "오늘 매운 거 먹고 싶어" 같은 즉흥 검색 파워.</p>
+<hr />
+<h3 id="-3-위치-location">📍 3. 위치 (Location)</h3>
+<ul>
+<li><strong>구</strong>: 마산합포구 · 진해구 · 성산구 · 의창구</li>
+<li><strong>동</strong>: 상남동 · 중앙동 · 산호동 ... (24개)</li>
+<li><strong>랜드마크</strong>: NC파크근처 · 창원역근처 · 창원대근처 · 진해군항근처 · 마산어시장근처 · 경남대근처</li>
+<li><strong>상권</strong>: 상남상업지구 · 창동상권 · 오동동상권 · 진해번화가</li>
+</ul>
+<hr />
+<h3 id="-4-편의시설-amenity">🏪 4. 편의시설 (Amenity)</h3>
+<h4 id="수용공간">수용/공간</h4>
+<ul>
+<li><strong>룸있음</strong> ⭐ (상견례/접대 필수) · 단체석 · 10명이상 · 20명이상 · 40명이상 · 100명이상</li>
+<li>프라이빗룸 · 연회장 · 야외테라스 · 루프탑</li>
+</ul>
+<h4 id="주차">주차</h4>
+<ul>
+<li>주차가능 · 무료주차 · 발렛파킹 · 대형버스주차</li>
+</ul>
+<h4 id="가족">가족</h4>
+<ul>
+<li>키즈존 · 유아의자 · 수유실 · 기저귀교환대 · 놀이공간 · 어린이메뉴</li>
+</ul>
+<h4 id="접근성">접근성</h4>
+<ul>
+<li>휠체어접근 · 엘리베이터 · 1층 · 경사로</li>
+</ul>
+<h4 id="기타">기타</h4>
+<ul>
+<li>반려동물동반 · 와이파이 · 콘센트 · 흡연실 · 금연 · 노키즈존</li>
+</ul>
+<hr />
+<h3 id="-5-분위기-mood">🎨 5. 분위기 (Mood)</h3>
+<ul>
+<li><strong>톤</strong>: 고급진 · 캐주얼 · 편안한 · 활기찬 · 차분한 · 로맨틱 · 힙한</li>
+<li><strong>스타일</strong>: 모던 · 빈티지 · 감성 · 이국적 · 전통 · 미니멀 · 레트로 · 오픈키친</li>
+<li><strong>공간감</strong>: 뷰맛집 · 야경 · 오션뷰 · 강뷰 · 넓은 · 아늑한 · 조용한 · 시끌벅적한</li>
+<li><strong>조명</strong>: 따뜻한조명 · 밝은 · 어두운 · 촛불 · 감성조명</li>
+<li><strong>컨셉</strong>: 인스타감성 · 포토스팟 · 이국적</li>
+</ul>
+<hr />
+<h3 id="️-6-메뉴-카테고리-genre--3단계-계층">🍽️ 6. 메뉴 카테고리 (Genre) — 3단계 계층</h3>
+<pre><code>대분류 &gt; 중분류 &gt; 소분류
+한식 &gt; 고기집 &gt; 삼겹살 / 갈비 / 곱창 / 닭갈비
+한식 &gt; 면요리 &gt; 국수 / 냉면 / 칼국수
+한식 &gt; 국밥 &gt; 돼지국밥 / 순대국밥 / 설렁탕
+한식 &gt; 회·해물 &gt; 횟집 / 초장집 / 조개구이
+한식 &gt; 한정식 &gt; 코스요리 / 백반 / 가정식
+일식 &gt; 스시 &gt; 오마카세 / 회전초밥 / 정통스시
+일식 &gt; 면요리 &gt; 라멘 / 우동 / 소바
+일식 &gt; 이자카야 &gt; 꼬치 / 튀김 / 안주
+양식 &gt; 이탈리안 &gt; 파스타 / 피자 / 리조또
+양식 &gt; 스테이크 &gt; 하우스스테이크 / 정통 / 야키니쿠
+카페 &gt; 디저트 &gt; 베이커리 / 케이크 / 마카롱
+카페 &gt; 브런치 &gt; 올데이브런치 / 샌드위치 / 샐러드
+술집 &gt; 이자카야 / 와인바 / 막걸리집 / 칵테일바
+...</code></pre>
+<hr />
+<h3 id="-7-가격대-price">💰 7. 가격대 (Price)</h3>
+<ul>
+<li><strong>1인당</strong>: 1만원이하 · 1-2만원 · 2-3만원 · 3-5만원 · 5-10만원 · 10만원이상</li>
+<li><strong>세부</strong>: 가성비 · 프리미엄 · 코스요리 · 런치특선 · 해피아워 · 한정메뉴</li>
+</ul>
+<hr />
+<h3 id="-8-운영-시간-time">⏰ 8. 운영 시간 (Time)</h3>
+<ul>
+<li><strong>시간대</strong>: 브런치(10-14시) · 런치(11-14시) · 디너(17-22시) · 심야(22시이후) · 24시간</li>
+<li><strong>요일</strong>: 주말오픈 · 주말휴무 · 평일만 · 월요일휴무</li>
+<li><strong>특수</strong>: 예약필수 · 워크인가능 · 연중무휴 · 명절휴무</li>
+</ul>
+<hr />
+<h3 id="-9-고객층-audience--ai-추론">👥 9. 고객층 (Audience) — AI 추론</h3>
+<p>리뷰 데이터 분석으로 자동:</p>
+<ul>
+<li>20대인기 · 30대인기 · 40대+선호 · 가족단위많음 · 커플많음 · 혼밥손님많음 · 직장인 · 대학생 · 여성선호 · 남성선호</li>
+</ul>
+<hr />
+<h3 id="️-10-음식-속성-food-attr">🌶️ 10. 음식 속성 (Food Attr)</h3>
+<ul>
+<li><strong>맛</strong>: 매운맛0~5단계 · 담백 · 달달 · 얼큰 · 시원 · 짠맛 · 느끼</li>
+<li><strong>특수식</strong>: 비건가능 · 할랄가능 · 글루텐프리 · 저염 · 저당 · 유기농</li>
+<li><strong>양</strong>: 1인분많음 · 적당 · 소량</li>
+</ul>
+<hr />
+<h3 id="-11-리뷰-감성-sentiment--ai-자동-생성">💬 11. 리뷰 감성 (Sentiment) — AI 자동 생성</h3>
+<ul>
+<li>음식맛있음 · 친절함 · 청결 · 양많음 · 재료신선 · 분위기좋음 · 가성비좋음 · 인테리어좋음 · 특별한메뉴 · 대기시간짧음 · 주차편함 · 재방문의향높음</li>
+</ul>
+<hr />
+<h3 id="-12-점장-자랑-owner-picks--hotpepper-핵심-차용">✨ 12. 점장 자랑 (Owner Picks) — HotPepper 핵심 차용</h3>
+<p><strong>사장님이 직접 입력하는 감성 차별화 섹션</strong>:</p>
+<pre><code>사장님 자랑 입력 UI (언니픽 사장님 앱):
+
+1. 🍳 店長のおすすめ — 대표 메뉴 1-3개 + 스토리
+   &quot;10년간 매일 아침 고르고 고른 국내산 한우만 씁니다&quot;
+
+2. 🏠 こだわりの空間 — 공간 자랑 1-3개
+   &quot;25년 된 한옥을 그대로 살린 서까래가 있습니다&quot;
+
+3. 💝 心をこめたおもてなし — 서비스 자랑 1-3개
+   &quot;상견례 손님께는 가족 사진 촬영 서비스를 무료로 드립니다&quot;
+
+4. 🎁 이번 달 프로모션 — 쿠폰/할인 자동 생성</code></pre>
+<p><strong>AI 추천 시 이 섹션이 "왜 이 가게인지" 설명에 직접 인용됨</strong></p>
+<hr />
+<h2 id="3-예상-사용자-쿼리--태그-매핑-확장">3. 예상 사용자 쿼리 &amp; 태그 매핑 (확장)</h2>
+<h3 id="hotpepper-스타일-시나리오">HotPepper 스타일 시나리오</h3>
+<table>
+<thead>
+<tr class="header">
+<th>질문</th>
+<th>추출 태그</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>상남동 상견례 룸 한식당</td>
+<td><code>상남동</code> + <code>상견례</code> + <code>룸있음</code> + <code>한식</code></td>
+</tr>
+<tr class="even">
+<td>여자친구 프로포즈 할 루프탑</td>
+<td><code>프로포즈</code> + <code>루프탑</code> + <code>로맨틱</code> + <code>뷰맛집</code></td>
+</tr>
+<tr class="odd">
+<td>회사 환영회 40명 한식 2만원</td>
+<td><code>환영회</code> + <code>40명이상</code> + <code>한식</code> + <code>2-3만원</code></td>
+</tr>
+<tr class="even">
+<td>비 오는 날 따뜻한 국물</td>
+<td><code>비오는날</code> + <code>얼큰한국물</code> + <code>따뜻한거</code></td>
+</tr>
+<tr class="odd">
+<td>아이 돌잔치 하기 좋은 곳</td>
+<td><code>돌잔치</code> + <code>가족외식</code> + <code>키즈존</code> + <code>단체석</code></td>
+</tr>
+<tr class="even">
+<td>오늘 매운 거 땡겨 혼밥</td>
+<td><code>혼밥</code> + <code>매운거땡긴다</code> + <code>1만원이하</code></td>
+</tr>
+<tr class="odd">
+<td>소개팅 조용한 분위기 이자카야</td>
+<td><code>소개팅</code> + <code>조용한</code> + <code>이자카야</code> + <code>프라이빗</code></td>
+</tr>
+<tr class="even">
+<td>부모님 생신 한정식 고급</td>
+<td><code>부모님생신</code> + <code>한정식</code> + <code>고급진</code> + <code>코스요리</code></td>
+</tr>
+<tr class="odd">
+<td>진해 벚꽃 뷰 카페</td>
+<td><code>진해구</code> + <code>벚꽃뷰</code> + <code>카페</code> + <code>뷰맛집</code></td>
+</tr>
+<tr class="even">
+<td>회사 동료랑 바로 입장 가능한 점심</td>
+<td><code>점심회의</code> + <code>직장인</code> + <code>워크인가능</code> + (실시간)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="hotpepper식-シーン-랜딩-페이지">HotPepper식 "シーン 랜딩 페이지"</h3>
+<p>앱 홈에서 상황별 큐레이션 피드 제공 (검색 없이도 시작):</p>
+<pre><code>[홈]
+  &quot;오늘은 어떤 상황이세요?&quot;
+
+  [상견례·기념일] [데이트] [혼밥] [회식]
+  [브런치]       [심야]   [가족]  [친구]
+
+  → 클릭 시 해당 태그 기반 TOP 맛집 피드</code></pre>
+<hr />
+<h2 id="4-데이터-모델-확장">4. 데이터 모델 확장</h2>
+<h3 id="점장-자랑-owner-picks-테이블-추가">점장 자랑 (Owner Picks) 테이블 추가</h3>
+<div class="sourceCode" id="cb5"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> restaurant_owner_picks (</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">id</span> UUID <span class="kw">PRIMARY</span> <span class="kw">KEY</span>,</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  restaurant_id UUID <span class="kw">REFERENCES</span> restaurants(<span class="kw">id</span>),</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  pick_type TEXT,  <span class="co">-- &#39;signature_menu&#39; | &#39;space&#39; | &#39;service&#39; | &#39;promotion&#39;</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  title TEXT,</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  description TEXT,</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  image_url TEXT,</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  order_index <span class="dt">INTEGER</span>,</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  verified <span class="dt">BOOLEAN</span> <span class="kw">DEFAULT</span> <span class="kw">false</span>,  <span class="co">-- 언니픽 운영자 검수</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  created_at TIMESTAMPTZ <span class="kw">DEFAULT</span> now()</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>);</span></code></pre></div>
+<h3 id="실시간-상태-테이블-席押さえ용">실시간 상태 테이블 (席押さえ용)</h3>
+<div class="sourceCode" id="cb6"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> restaurant_live_status (</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  restaurant_id UUID <span class="kw">PRIMARY</span> <span class="kw">KEY</span> <span class="kw">REFERENCES</span> restaurants(<span class="kw">id</span>),</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  is_open_now <span class="dt">BOOLEAN</span>,</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  wait_estimate_minutes <span class="dt">INTEGER</span>,</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  available_tables <span class="dt">INTEGER</span>,</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  last_updated TIMESTAMPTZ <span class="kw">DEFAULT</span> now(),</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>  <span class="kw">source</span> TEXT  <span class="co">-- &#39;naver_tabling&#39; | &#39;manual&#39; | &#39;estimate&#39;</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>);</span></code></pre></div>
+<h3 id="쿠폰-테이블-hotpepper-쿠폰-기능-차용">쿠폰 테이블 (HotPepper 쿠폰 기능 차용)</h3>
+<div class="sourceCode" id="cb7"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> restaurant_coupons (</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">id</span> UUID <span class="kw">PRIMARY</span> <span class="kw">KEY</span>,</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  restaurant_id UUID <span class="kw">REFERENCES</span> restaurants(<span class="kw">id</span>),</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  title TEXT,</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  description TEXT,</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  discount_type TEXT,  <span class="co">-- &#39;percent&#39; | &#39;amount&#39; | &#39;free_item&#39;</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  discount_value <span class="dt">NUMERIC</span>,</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  conditions TEXT,</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>  valid_from <span class="dt">DATE</span>,</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>  valid_until <span class="dt">DATE</span>,</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>  max_uses <span class="dt">INTEGER</span>,</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>  used_count <span class="dt">INTEGER</span> <span class="kw">DEFAULT</span> <span class="dv">0</span>,</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>  is_unniepick_exclusive <span class="dt">BOOLEAN</span> <span class="kw">DEFAULT</span> <span class="kw">true</span>,  <span class="co">-- V1 매장 독점 쿠폰</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>  created_at TIMESTAMPTZ <span class="kw">DEFAULT</span> now()</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>);</span></code></pre></div>
+<hr />
+<h2 id="5-사용자-앱-ux-hotpepper-스타일">5. 사용자 앱 UX (HotPepper 스타일)</h2>
+<h3 id="홈-화면-구조">홈 화면 구조</h3>
+<pre><code>┌──────────────────────────────┐
+│ 📍 상남동 근처 (GPS)          │
+├──────────────────────────────┤
+│ 🔍 &quot;어떤 곳을 찾으시나요?&quot;     │ ← 자연어 검색창
+├──────────────────────────────┤
+│ 🎯 오늘의 추천 시나리오         │
+│ [상견례] [데이트] [회식]       │
+│ [혼밥]   [브런치] [친구모임]   │
+├──────────────────────────────┤
+│ 🆕 이번 주 새로오픈           │
+│ (가로 스크롤 카드)             │
+├──────────────────────────────┤
+│ ⚡ 지금 바로 갈 수 있어요      │
+│ (실시간 대기 5분 이내)         │
+├──────────────────────────────┤
+│ 🎁 이번 주 쿠폰               │
+│ (언니픽 매장 독점)             │
+├──────────────────────────────┤
+│ 📊 인기 검색                   │
+│ &quot;상남동 한식&quot; &quot;진해 회&quot;       │
+└──────────────────────────────┘</code></pre>
+<h3 id="검색-결과-화면">검색 결과 화면</h3>
+<pre><code>┌──────────────────────────────┐
+│ ← &quot;상남동 상견례 룸 한식당&quot;   │
+├──────────────────────────────┤
+│ [상남동] [상견례] [룸] [한식]  │ ← 추출된 태그 칩
+│                               │
+│ 3곳 찾았어요                   │
+├──────────────────────────────┤
+│ 🏆 ○○한정식                   │
+│ [사진] ★4.8 · 3만원대          │
+│                               │
+│ 🏆 AI 추천 이유                │
+│ &quot;전용 VIP룸 2개, 최근 3개월    │
+│ 상견례 방문 블로그 12건&quot;       │
+│                               │
+│ ✨ 사장님 자랑                 │
+│ &quot;25년 된 한옥, 서까래가 있어요&quot;│
+│                               │
+│ 🏪 편의: 룸 2개, 주차 10대    │
+│ 🍽️ 대표메뉴: 한우코스 5만원    │
+│ [🗺️ 지도] [📞 전화] [🎁 쿠폰] │
+└──────────────────────────────┘</code></pre>
+<hr />
+<h2 id="6-사장님-대시보드-hotpepper-b2b-차용">6. 사장님 대시보드 (HotPepper B2B 차용)</h2>
+<p>V1 언니픽 매장 사장님만 접근 가능:</p>
+<h3 id="기능">기능</h3>
+<ol type="1">
+<li><strong>내 가게 태그 관리</strong> — AI가 붙인 태그 + 수동 보정</li>
+<li><strong>점장 자랑 입력</strong> — 대표메뉴/공간/서비스 스토리</li>
+<li><strong>실시간 상태 토글</strong> — "지금 자리 있어요/대기중이에요"</li>
+<li><strong>쿠폰 발행</strong> — 기간/조건 설정</li>
+<li><strong>⭐ 검색 키워드 분석</strong> — "어떤 키워드로 내 가게가 노출됐나"
+<ul>
+<li>"상견례"로 100회 노출, 10회 클릭</li>
+<li>"룸 있는 한식" 으로 50회 노출, 8회 클릭</li>
+<li>→ 약점 파악: 가격대 키워드 유입 적음 → 가성비 쿠폰 발행 제안</li>
+</ul></li>
+<li><strong>경쟁 분석</strong> — 같은 동/카테고리 TOP 3 가게 태그 비교</li>
+</ol>
+<p><strong>★ 이 기능은 B2B SaaS 유료 플랜으로 확장 가능</strong> (HotPepper 유료 계약과 동일 모델)</p>
+<hr />
+<h2 id="7-ai-태깅-파이프라인-강화">7. AI 태깅 파이프라인 (강화)</h2>
+<h3 id="소스별-태깅">소스별 태깅</h3>
+<table>
+<thead>
+<tr class="header">
+<th>소스</th>
+<th>생성 태그 카테고리</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>리뷰 키워드</td>
+<td>리뷰 감성</td>
+</tr>
+<tr class="even">
+<td>블로그 리뷰 (Claude Haiku)</td>
+<td><strong>목적/상황</strong> ⭐ + 분위기 + 고객층</td>
+</tr>
+<tr class="odd">
+<td>메뉴 데이터 + 이미지</td>
+<td>메뉴 장르 + 가격대 + 음식 속성</td>
+</tr>
+<tr class="even">
+<td>편의시설 크롤링</td>
+<td>편의시설</td>
+</tr>
+<tr class="odd">
+<td>영업시간 크롤링</td>
+<td>운영 시간</td>
+</tr>
+<tr class="even">
+<td>주소 파싱</td>
+<td>위치</td>
+</tr>
+<tr class="odd">
+<td>사장님 입력</td>
+<td>점장 자랑 + 일부 편의시설</td>
+</tr>
+<tr class="even">
+<td>블로그 맥락</td>
+<td>음식 욕구 ("비 오는 날 생각나는 국물")</td>
+</tr>
+</tbody>
+</table>
+<h3 id="프롬프트-예시-목적상황-태깅">프롬프트 예시 (목적/상황 태깅)</h3>
+<pre><code>블로그 리뷰를 읽고 이 식당이 어떤 상황에 어울리는지 태그를 선택하세요.
+
+식당명: ○○한정식
+블로그 제목: &quot;양가 상견례 후기&quot;
+본문: &quot;부모님 모시고 다녀왔습니다. 조용한 VIP룸에서...&quot;
+
+카테고리: [상견례, 데이트, 회식, 가족외식, 혼밥, 친구모임, 프로포즈, 기념일, ...]
+
+JSON 응답:
+{
+  &quot;primary_scene&quot;: &quot;상견례&quot;,
+  &quot;secondary_scenes&quot;: [&quot;가족외식&quot;, &quot;부모님생신&quot;],
+  &quot;confidence&quot;: 0.95,
+  &quot;evidence&quot;: &quot;양가 상견례 후기, 부모님 모시고, 조용한 VIP룸&quot;
+}</code></pre>
+<hr />
+<h2 id="8-구현-로드맵">8. 구현 로드맵</h2>
+<h3 id="phase-a--태그-마스터--ui-3주">Phase A — 태그 마스터 + UI (3주)</h3>
+<ol type="1">
+<li>12개 카테고리 × 250+ 태그 시드 데이터</li>
+<li>태그 관리 대시보드 (추가/병합/동의어)</li>
+<li>맛집별 수동 태깅 UI</li>
+</ol>
+<h3 id="phase-b--ai-태깅-엔진-3주">Phase B — AI 태깅 엔진 (3주)</h3>
+<ol type="1">
+<li>소스별 프롬프트 설계 (10개 소스)</li>
+<li>배치 파이프라인 (Claude Haiku)</li>
+<li>증분 태깅 (신규 크롤링 자동)</li>
+<li>검수 큐</li>
+</ol>
+<h3 id="phase-c--사장님-대시보드-2주--hotpepper-차용">Phase C — 사장님 대시보드 (2주) ⭐ HotPepper 차용</h3>
+<ol type="1">
+<li>점장 자랑 입력 UI</li>
+<li>실시간 상태 토글</li>
+<li>검색 키워드 분석</li>
+<li>쿠폰 발행</li>
+</ol>
+<h3 id="phase-d--쿼리-api-2주">Phase D — 쿼리 API (2주)</h3>
+<ol type="1">
+<li>자연어 → 태그 파서</li>
+<li>다태그 매칭 SQL</li>
+<li>랭킹 + 설명 생성</li>
+<li>쿠폰/자랑 섹션 결합</li>
+</ol>
+<h3 id="phase-e--사용자-앱-ui-3주">Phase E — 사용자 앱 UI (3주)</h3>
+<ol type="1">
+<li>HotPepper 스타일 홈 (시나리오 칩)</li>
+<li>채팅 검색</li>
+<li>카드형 결과 (태그 칩 + 사장님 자랑 + 쿠폰)</li>
+<li>실시간 대기 정보</li>
+</ol>
+<h3 id="phase-f--런칭--개선-2주">Phase F — 런칭 + 개선 (2주)</h3>
+<ol type="1">
+<li>베타 30명</li>
+<li>피드백 기반 태그 보정</li>
+<li>창원시 PR</li>
+</ol>
+<p><strong>Total: 15주 (3.5개월)</strong></p>
+<hr />
+<h2 id="9-success-metrics-확장">9. Success Metrics (확장)</h2>
+<table>
+<thead>
+<tr class="header">
+<th>지표</th>
+<th>목표</th>
+<th>의미</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>맛집당 평균 태그 수</td>
+<td><strong>30+</strong></td>
+<td>음악 시스템(15-30) 수준 이상</td>
+</tr>
+<tr class="even">
+<td>シーン 태그 커버리지</td>
+<td>전 업체 95%+</td>
+<td>목적 검색 누락 최소화</td>
+</tr>
+<tr class="odd">
+<td>자연어 쿼리 매칭률</td>
+<td>90%+</td>
+<td>파서 품질</td>
+</tr>
+<tr class="even">
+<td>복합 조건(3+태그) 응답</td>
+<td>&lt;2s</td>
+<td>성능</td>
+</tr>
+<tr class="odd">
+<td>사장님 "자랑" 입력율</td>
+<td>V1 매장 60%+</td>
+<td>B2B 참여</td>
+</tr>
+<tr class="even">
+<td>쿠폰 사용률</td>
+<td>10%+</td>
+<td>재방문 지표</td>
+</tr>
+<tr class="odd">
+<td>실시간 대기 갱신 매장</td>
+<td>50개+</td>
+<td>席押さえ 기능성</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="10-비즈니스-모델-hotpepper-벤치마크">10. 비즈니스 모델 (HotPepper 벤치마크)</h2>
+<h3 id="단계별-수익화">단계별 수익화</h3>
+<table>
+<thead>
+<tr class="header">
+<th>Phase</th>
+<th>수익원</th>
+<th>HotPepper 벤치마크</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>V2 런칭</td>
+<td>무료 (사용자 확보)</td>
+<td>HotPepper 초기 전략</td>
+</tr>
+<tr class="even">
+<td>+3개월</td>
+<td>매장 광고 상위 노출</td>
+<td>月5만원~ (타베로그/HotPepper 기본 플랜)</td>
+</tr>
+<tr class="odd">
+<td>+6개월</td>
+<td>사장님 분석 대시보드 유료</td>
+<td>月10만원 (HotPepper 분석 리포트)</td>
+</tr>
+<tr class="even">
+<td>+12개월</td>
+<td>쿠폰 사용 수수료</td>
+<td>건당 500원 (HotPepper 예약 수수료)</td>
+</tr>
+<tr class="odd">
+<td>+18개월</td>
+<td>실시간 예약 수수료</td>
+<td>Ponta 포인트 모델</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="11-핵심-차별화-경쟁사-비교표">11. 핵심 차별화 (경쟁사 비교표)</h2>
+<table>
+<thead>
+<tr class="header">
+<th></th>
+<th>네이버</th>
+<th>카카오</th>
+<th>다이닝코드</th>
+<th><strong>언니픽 V2</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>태그 수</td>
+<td>~20</td>
+<td>~10</td>
+<td>~30</td>
+<td><strong>250+</strong></td>
+</tr>
+<tr class="even">
+<td>상황 검색</td>
+<td>❌</td>
+<td>❌</td>
+<td>일부</td>
+<td><strong>⭐ 최강점</strong></td>
+</tr>
+<tr class="odd">
+<td>자연어 쿼리</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+<td><strong>✅ AI 챗봇</strong></td>
+</tr>
+<tr class="even">
+<td>창원 커버리지</td>
+<td>평이</td>
+<td>평이</td>
+<td>취약</td>
+<td><strong>특화</strong></td>
+</tr>
+<tr class="odd">
+<td>사장님 자랑 섹션</td>
+<td>제한적</td>
+<td>❌</td>
+<td>❌</td>
+<td><strong>✅ HotPepper식</strong></td>
+</tr>
+<tr class="even">
+<td>실시간 대기</td>
+<td>일부(테이블링)</td>
+<td>❌</td>
+<td>❌</td>
+<td><strong>연동 예정</strong></td>
+</tr>
+<tr class="odd">
+<td>쿠폰</td>
+<td>광고형</td>
+<td>❌</td>
+<td>❌</td>
+<td><strong>언니픽 매장 독점</strong></td>
+</tr>
+<tr class="even">
+<td>B2B 분석</td>
+<td>제한</td>
+<td>❌</td>
+<td>❌</td>
+<td><strong>✅ 유료 SaaS</strong></td>
+</tr>
+<tr class="odd">
+<td>키워드 기반 검색</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="12-창원-특화-포인트">12. 창원 특화 포인트</h2>
+<p>HotPepper가 도쿄/오사카 같은 대도시 기준인 반면, 언니픽은 창원 특수성 반영:</p>
+<ol type="1">
+<li><strong>NC파크 연동</strong>: 야구 경기 전후 특화 검색 ("NC경기 후 뒷풀이")</li>
+<li><strong>진해 군항제/벚꽃</strong>: 시즌 태그 ("벚꽃뷰", "군항제근처")</li>
+<li><strong>창원공단</strong>: 직장인 점심/회식 특화 ("공단근처", "점심특선")</li>
+<li><strong>마산 어시장</strong>: 해산물 본고장 특화 ("마산회", "아귀찜")</li>
+<li><strong>경남대/창원대</strong>: 대학생 상권 ("대학생가성비", "과회식")</li>
+</ol>
+<hr />
+<h2 id="sources">Sources</h2>
+<ul>
+<li><a href="https://www.hotpepper.jp">HotPepper Gourmet (Official)</a></li>
+<li><a href="https://www.meo-times.com/other/other_hotpepper-effect/">HotPepper 분석 리포트 - MEO Times</a></li>
+<li><a href="https://www.mobiinside.co.kr/2016/08/09/appape_food/">일본 맛집 앱 4대 천왕 - 모비인사이드</a></li>
+<li><a href="https://www.tablecheck.com/ja/blog/seo-gourmet-media/">TableCheck 분석</a></li>
+</ul>
+</body>
+</html>
