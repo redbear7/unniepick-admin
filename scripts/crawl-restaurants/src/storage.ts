@@ -57,6 +57,7 @@ export interface CrawlKeyword {
   last_result_count?: number;
   last_new_count?: number;
   last_crawled_at?: string;
+  current_pid?: number | null;
 }
 
 /**
@@ -84,13 +85,31 @@ export async function getActiveKeywords(opts: {
   return (data ?? []) as CrawlKeyword[];
 }
 
-/** 키워드 상태 업데이트 */
+/** 키워드 상태 업데이트 (컬럼 누락 대응 자동 재시도) */
 export async function updateKeywordStatus(id: string, patch: Partial<CrawlKeyword>): Promise<void> {
+  const now = new Date().toISOString();
   const { error } = await supabase
     .from('crawl_keywords')
-    .update({ ...patch, updated_at: new Date().toISOString() })
+    .update({ ...patch, updated_at: now })
     .eq('id', id);
-  if (error) console.error('[storage] updateKeywordStatus:', error.message);
+
+  if (!error) return;
+
+  console.error('[storage] updateKeywordStatus:', error.message);
+
+  // current_pid 컬럼이 없으면 제거 후 재시도
+  if (error.message?.includes('current_pid')) {
+    const { current_pid, ...safePatch } = patch;
+    const retry = await supabase
+      .from('crawl_keywords')
+      .update({ ...safePatch, updated_at: now })
+      .eq('id', id);
+    if (retry.error) {
+      console.error('[storage] 재시도도 실패:', retry.error.message);
+    } else {
+      console.log('[storage] current_pid 제외 후 재시도 성공');
+    }
+  }
 }
 
 /** 기존 DB에 있는 naver_place_id 목록 조회 (신규 감지용) */

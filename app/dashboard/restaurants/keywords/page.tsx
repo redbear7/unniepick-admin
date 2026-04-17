@@ -174,7 +174,7 @@ export default function CrawlKeywordsPage() {
   }
 
   async function stopManual(id: string) {
-    if (!confirm('실행 중인 크롤링을 중지할까요?')) return;
+    if (!confirm('실행 중인 크롤링을 중지할까요?\n(이미 종료된 상태라면 DB 상태만 idle로 리셋됩니다)')) return;
     const res = await fetch('/api/crawl-restaurants/run', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
@@ -184,6 +184,12 @@ export default function CrawlKeywordsPage() {
       const err = await res.json();
       alert(err.error ?? '중지 실패');
     }
+    // running 상태 강제 리셋
+    await fetch(`/api/crawl-restaurants/keywords/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'idle' }),
+    }).catch(() => {});
     load();
   }
 

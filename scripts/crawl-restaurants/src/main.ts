@@ -77,6 +77,18 @@ async function crawl(keywords: CrawlKeyword[]) {
         keywordResults = restaurants;
         allResults.push(...restaurants);
         console.log(`     ✓ 완료 (누적 ${allResults.length}개)`);
+
+        // 키워드별 신규 수 계산 (성공 시에만)
+        const newForKw = keywordResults.filter((r) => !existingIds.has(r.naver_place_id)).length;
+
+        // 상태 'success' + 결과 기록 + PID 정리
+        await updateKeywordStatus(kw.id, {
+          status: 'success',
+          last_crawled_at: new Date().toISOString(),
+          last_result_count: keywordResults.length,
+          last_new_count: existingIds.size > 0 ? newForKw : 0,
+          current_pid: null,
+        });
       } catch (e) {
         const msg = (e as Error).message;
         console.log(`     ✗ 에러: ${msg}`);
@@ -84,20 +96,10 @@ async function crawl(keywords: CrawlKeyword[]) {
           status: 'failed',
           last_error: msg,
           last_crawled_at: new Date().toISOString(),
+          current_pid: null,
         });
       }
       await page.close();
-
-      // 키워드별 신규 수 계산
-      const newForKw = keywordResults.filter((r) => !existingIds.has(r.naver_place_id)).length;
-
-      // 상태 'success' + 결과 기록
-      await updateKeywordStatus(kw.id, {
-        status: 'success',
-        last_crawled_at: new Date().toISOString(),
-        last_result_count: keywordResults.length,
-        last_new_count: existingIds.size > 0 ? newForKw : 0,
-      });
     }
   } finally {
     await browser.close();

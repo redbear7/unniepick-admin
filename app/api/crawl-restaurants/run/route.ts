@@ -53,16 +53,20 @@ export async function POST(req: NextRequest) {
   });
   child.unref();
 
-  // running 마킹 + PID 기록
-  await sb()
+  // running 마킹 + PID 기록 (current_pid 컬럼 없으면 fallback)
+  const now = new Date().toISOString();
+  const { error: upErr } = await sb()
     .from('crawl_keywords')
-    .update({
-      status: 'running',
-      last_error: null,
-      current_pid: child.pid,
-      updated_at: new Date().toISOString(),
-    })
+    .update({ status: 'running', last_error: null, current_pid: child.pid, updated_at: now })
     .eq('id', keyword_id);
+
+  if (upErr?.message?.includes('current_pid')) {
+    // current_pid 없는 경우 그 필드만 제외하고 재시도
+    await sb()
+      .from('crawl_keywords')
+      .update({ status: 'running', last_error: null, updated_at: now })
+      .eq('id', keyword_id);
+  }
 
   return NextResponse.json({
     ok: true,

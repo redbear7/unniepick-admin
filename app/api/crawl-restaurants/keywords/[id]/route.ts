@@ -18,6 +18,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if ('enabled' in body) patch.enabled = body.enabled;
   if ('is_daily' in body) patch.is_daily = body.is_daily;
   if ('analyze_reviews' in body) patch.analyze_reviews = body.analyze_reviews;
+  if ('status' in body) patch.status = body.status;        // 수동 리셋용
+  if ('last_error' in body) patch.last_error = body.last_error;
 
   const { data, error } = await sb()
     .from('crawl_keywords')
