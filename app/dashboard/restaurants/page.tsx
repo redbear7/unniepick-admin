@@ -449,6 +449,21 @@ function RestaurantCard({ r, onClick }: { r: Restaurant; onClick: () => void }) 
             {new Date(r.crawled_at).toLocaleDateString('ko-KR')}
           </span>
         </div>
+
+        {/* 네이버 지도 이동 버튼 */}
+        {r.naver_place_url && (
+          <a
+            href={r.naver_place_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="mt-1 flex items-center justify-center gap-1.5 w-full py-2 bg-[#03C75A]/10 hover:bg-[#03C75A]/20 border border-[#03C75A]/30 rounded-lg text-xs font-semibold text-[#03C75A] transition"
+          >
+            <span className="font-black text-sm">N</span>
+            네이버 지도에서 보기
+            <ExternalLink className="w-3 h-3" />
+          </a>
+        )}
       </div>
     </div>
   );
@@ -485,7 +500,30 @@ function DetailModal({ r, onClose }: { r: Restaurant; onClose: () => void }) {
             <Info label="주소" value={r.address} />
             <Info label="전화" value={r.phone} />
             <Info label="좌표" value={r.latitude && r.longitude ? `${r.latitude}, ${r.longitude}` : null} />
-            <Info label="네이버" value={r.naver_place_url ? <a href={r.naver_place_url} target="_blank" rel="noopener noreferrer" className="text-blue-400 underline">바로가기</a> : null} />
+          </div>
+
+          {/* 외부 링크 버튼 */}
+          <div className="flex gap-2 flex-wrap">
+            {r.naver_place_url && (
+              <a
+                href={r.naver_place_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 min-w-[140px] flex items-center justify-center gap-2 py-2.5 bg-[#03C75A]/10 hover:bg-[#03C75A]/20 border border-[#03C75A]/30 rounded-lg text-sm font-semibold text-[#03C75A] transition"
+              >
+                <span className="font-black">N</span>
+                네이버 지도에서 보기
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            )}
+            {r.phone && (
+              <a
+                href={`tel:${r.phone}`}
+                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-fill-subtle hover:bg-[#FF6F0F]/15 hover:text-[#FF6F0F] border border-border-subtle rounded-lg text-sm font-medium text-secondary transition"
+              >
+                📞 전화
+              </a>
+            )}
           </div>
 
           {/* 키워드 리뷰 */}
