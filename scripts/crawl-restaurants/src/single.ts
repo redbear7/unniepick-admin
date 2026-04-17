@@ -64,8 +64,8 @@ async function getFirstResult(page: Page, query: string): Promise<RestaurantData
         latitude: val.y ? parseFloat(val.y) : undefined,
         longitude: val.x ? parseFloat(val.x) : undefined,
         image_url: val.imageUrl ?? '',
-        visitor_review_count: parseInt(val.visitorReviewCount ?? '0') || 0,
-        review_count: parseInt(val.blogCafeReviewCount ?? val.totalReviewCount ?? '0') || 0,
+        visitor_review_count: parseInt((val.visitorReviewCount ?? '0').replace(/,/g, '')) || 0,
+        review_count: parseInt((val.blogCafeReviewCount ?? val.totalReviewCount ?? '0').replace(/,/g, '')) || 0,
         naver_place_url: `https://map.naver.com/p/entry/place/${m[1]}`,
       });
     }
