@@ -3,6 +3,7 @@
  * body: { id: string }
  *
  * 가게 등록 신청 승인 — service_role 키로 RLS 우회하여 stores 테이블에 저장
+ * + 신청자에게 Expo 푸시 알림 발송
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
@@ -12,6 +13,42 @@ function adminClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   );
+}
+
+/** 특정 user_id의 Expo 푸시 토큰 조회 */
+async function getPushToken(sb: ReturnType<typeof adminClient>, userId: string): Promise<string | null> {
+  const { data } = await sb
+    .from('push_tokens')
+    .select('token')
+    .eq('user_id', userId)
+    .not('token', 'is', null)
+    .single();
+  return data?.token ?? null;
+}
+
+/** Expo Push API 단건 발송 */
+async function sendExpoPush(
+  token: string,
+  title: string,
+  body: string,
+  data?: Record<string, string>,
+): Promise<boolean> {
+  try {
+    const res = await fetch('https://exp.host/--/api/v2/push/send', {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Accept-Encoding': 'gzip, deflate',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ to: token, sound: 'default', title, body, data: data ?? {} }),
+    });
+    const result = await res.json();
+    return result?.data?.status === 'ok';
+  } catch (e) {
+    console.error('[push] Expo 발송 실패:', (e as Error).message);
+    return false;
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -79,5 +116,19 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  return NextResponse.json({ ok: true, store_id: store.id });
+  // 4. 신청자 푸시 알림 발송 (best-effort)
+  let pushSent = false;
+  if (app.owner_id) {
+    const token = await getPushToken(sb, app.owner_id);
+    if (token) {
+      pushSent = await sendExpoPush(
+        token,
+        '🎉 가게 등록이 승인되었어요!',
+        `"${app.store_name}" 가게가 언니픽에 등록되었습니다. 지금 바로 사장님 페이지를 확인해보세요!`,
+        { type: 'store_approved', store_id: store.id },
+      );
+    }
+  }
+
+  return NextResponse.json({ ok: true, store_id: store.id, push_sent: pushSent });
 }
