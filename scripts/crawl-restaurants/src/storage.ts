@@ -47,6 +47,7 @@ export interface RestaurantData {
   review_summary?: Record<string, number>;
   blog_reviews?: BlogReview[];
   is_new_open?: boolean;
+  auto_tags?: Record<string, string[]>;  // 다차원 자동 태그 { foodType: [], atmosphere: [], ... }
   image_url_original?: string;
 }
 
@@ -135,6 +136,7 @@ export async function upsertRestaurants(items: RestaurantData[]): Promise<number
     menu_keywords: JSON.stringify(item.menu_keywords ?? []),
     review_summary: JSON.stringify(item.review_summary ?? {}),
     blog_reviews: JSON.stringify(item.blog_reviews ?? []),
+    auto_tags: item.auto_tags ? JSON.stringify(item.auto_tags) : JSON.stringify({}),
     tags: item.tags ?? [],
     naver_verified: !!item.naver_place_url,
     crawled_at: new Date().toISOString(),

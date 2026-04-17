@@ -8,6 +8,7 @@
  * 결과를 logs/single-result.json 에 저장
  */
 import 'dotenv/config';
+import { autoTagRestaurant } from './tagger.js';
 import { chromium, type Page } from 'playwright';
 import { upsertRestaurants, type RestaurantData, type ReviewKeyword, type MenuKeyword, type BlogReview } from './storage.js';
 import { crawlDetailInfo } from './main.js';
@@ -248,6 +249,12 @@ try {
       console.log(`  이미지 에러: ${(e as Error).message}`);
     }
   }
+
+  // 4-b. 자동 태그 부여
+  console.log('\n🏷️  태그 자동 분류 중...');
+  store.auto_tags = autoTagRestaurant(store);
+  const flatTags = Object.values(store.auto_tags).flat();
+  console.log(`  ${flatTags.length}개 태그: ${flatTags.slice(0, 8).join(', ')}${flatTags.length > 8 ? ' ...' : ''}`);
 
   // 5. DB 저장
   console.log('\n💾 DB 저장 중...');

@@ -6,6 +6,7 @@ import {
   type RestaurantData, type ReviewKeyword, type MenuKeyword, type BlogReview,
   type CrawlKeyword,
 } from './storage.js';
+import { autoTagRestaurant } from './tagger.js';
 import { notifyNewRestaurants, notifyDailySummary } from './notify.js';
 import { processImage } from './image.js';
 
@@ -59,6 +60,9 @@ async function crawl(keywords: CrawlKeyword[]) {
               r.menu_keywords = reviews.menuKeywords;
               r.review_summary = reviews.summary;
               r.blog_reviews = reviews.blogReviews;
+
+              // 상세 데이터로 auto_tags 재계산
+              r.auto_tags = autoTagRestaurant(r);
             } catch (e) {
               console.log(`       분석 에러: ${(e as Error).message}`);
             }
@@ -214,6 +218,7 @@ async function collectFromApollo(page: Page, query: string): Promise<RestaurantD
       if (seenIds.has(item.naver_place_id)) continue;
       seenIds.add(item.naver_place_id);
       item.tags = inferTags(item.category ?? '', item.name);
+      item.auto_tags = autoTagRestaurant(item);
       allResults.push(item);
       newCount++;
     }
