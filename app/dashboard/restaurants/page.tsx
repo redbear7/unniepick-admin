@@ -91,18 +91,24 @@ export default function RestaurantsPage() {
     setLoading(false);
   }
 
-  // 구/동 옵션 추출
-  const { guList, dongList } = (() => {
-    const guSet = new Set<string>();
-    const dongSet = new Set<string>();
+  // 구/동 옵션 + 카운트 추출
+  const { guList, dongList, guCounts, dongCounts } = (() => {
+    const guCountMap = new Map<string, number>();
+    const dongCountMap = new Map<string, number>();
+
     for (const r of restaurants) {
       const { gu, dong } = parseLocation(r.address);
-      if (gu) guSet.add(gu);
-      if (dong && (!guFilter || gu === guFilter)) dongSet.add(dong);
+      if (gu) guCountMap.set(gu, (guCountMap.get(gu) ?? 0) + 1);
+      if (dong && (!guFilter || gu === guFilter)) {
+        dongCountMap.set(dong, (dongCountMap.get(dong) ?? 0) + 1);
+      }
     }
+
     return {
-      guList: [...guSet].sort(),
-      dongList: [...dongSet].sort(),
+      guList: [...guCountMap.keys()].sort((a, b) => (guCountMap.get(b)! - guCountMap.get(a)!)),
+      dongList: [...dongCountMap.keys()].sort((a, b) => (dongCountMap.get(b)! - dongCountMap.get(a)!)),
+      guCounts: guCountMap,
+      dongCounts: dongCountMap,
     };
   })();
 
@@ -146,6 +152,50 @@ export default function RestaurantsPage() {
         <StatCard icon={<MessageSquare className="w-4 h-4" />} label="총 리뷰" value={`${totalReviews.toLocaleString()}건`} />
         <StatCard icon={<BarChart3 className="w-4 h-4" />} label="평균 리뷰" value={`${avgReviews}건`} />
       </div>
+
+      {/* 구별 카드 */}
+      {guList.length > 0 && (
+        <div>
+          <p className="text-xs text-muted mb-2 flex items-center gap-1">
+            <MapPin className="w-3 h-3" /> 구별 ({guList.length}개)
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {guList.map((gu) => (
+              <LocationChip
+                key={gu}
+                label={gu}
+                count={guCounts.get(gu) ?? 0}
+                active={guFilter === gu}
+                onClick={() => {
+                  setGuFilter(guFilter === gu ? '' : gu);
+                  setDongFilter('');
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 동별 카드 */}
+      {dongList.length > 0 && (
+        <div>
+          <p className="text-xs text-muted mb-2 flex items-center gap-1">
+            <MapPin className="w-3 h-3" />
+            동별 ({dongList.length}개){guFilter && ` · ${guFilter}`}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {dongList.slice(0, 30).map((dong) => (
+              <LocationChip
+                key={dong}
+                label={dong}
+                count={dongCounts.get(dong) ?? 0}
+                active={dongFilter === dong}
+                onClick={() => setDongFilter(dongFilter === dong ? '' : dong)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* 필터 바 */}
       <div className="flex flex-wrap gap-3">
@@ -230,6 +280,28 @@ function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label:
         <p className={`text-lg font-bold ${color ?? 'text-primary'}`}>{value}</p>
       </div>
     </div>
+  );
+}
+
+function LocationChip({
+  label, count, active, onClick,
+}: {
+  label: string; count: number; active: boolean; onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`px-3 py-1.5 rounded-lg text-sm border transition flex items-center gap-1.5 ${
+        active
+          ? 'bg-[#FF6F0F] border-[#FF6F0F] text-white'
+          : 'bg-card border-border-main text-secondary hover:border-[#FF6F0F]/50 hover:text-primary'
+      }`}
+    >
+      <span>{label}</span>
+      <span className={`text-xs ${active ? 'text-white/80' : 'text-muted'}`}>
+        {count}
+      </span>
+    </button>
   );
 }
 
