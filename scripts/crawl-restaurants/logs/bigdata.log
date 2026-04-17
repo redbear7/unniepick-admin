@@ -1,0 +1,1 @@
+unable to get image 'metabase/metabase:latest': Cannot connect to the Docker daemon at unix:///Users/bangju/.orbstack/run/docker.sock. Is the docker daemon running?

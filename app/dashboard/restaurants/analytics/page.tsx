@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { BarChart3, Loader2, Check, AlertCircle, Play, ExternalLink, Square } from 'lucide-react';
+import { BarChart3, Loader2, Check, AlertCircle, Play, ExternalLink, Square, Terminal } from 'lucide-react';
 
 const METABASE_PUBLIC_URL = 'http://localhost:3100/public/dashboard/f5079417-b338-4c42-a3c1-7355b56e5c6e';
 
@@ -21,7 +21,26 @@ export default function RestaurantAnalyticsPage() {
   const [status, setStatus] = useState<BigDataStatus | null>(null);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState('');
+  const [elapsed, setElapsed] = useState(0);
+  const [logContent, setLogContent] = useState('');
+  const [diagnosis, setDiagnosis] = useState('');
+  const [logOpen, setLogOpen] = useState(false);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
+  const elapsedRef = useRef<NodeJS.Timeout | null>(null);
+  const startTimeRef = useRef<number>(0);
+  const logPreRef = useRef<HTMLPreElement | null>(null);
+
+  async function fetchLog() {
+    try {
+      const res = await fetch('/api/crawl-restaurants/bigdata/log');
+      const data = await res.json();
+      setLogContent(data.content || '(로그 없음)');
+      setDiagnosis(data.diagnosis || '');
+      setTimeout(() => {
+        if (logPreRef.current) logPreRef.current.scrollTop = logPreRef.current.scrollHeight;
+      }, 50);
+    } catch {}
+  }
 
   async function checkStatus(): Promise<BigDataStatus | null> {
     try {
@@ -67,6 +86,7 @@ export default function RestaurantAnalyticsPage() {
     (async () => {
       const s = await checkStatus();
       if (s && !s.allReady) {
+        startTimeRef.current = Date.now();
         await startContainers();
       }
     })();
@@ -76,16 +96,29 @@ export default function RestaurantAnalyticsPage() {
   useEffect(() => {
     if (status?.allReady) {
       if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+      if (elapsedRef.current) { clearInterval(elapsedRef.current); elapsedRef.current = null; }
       setStarting(false);
       return;
     }
     if (!pollRef.current) {
-      pollRef.current = setInterval(checkStatus, 5000);
+      pollRef.current = setInterval(() => {
+        checkStatus();
+        if (logOpen) fetchLog();
+      }, 5000);
+    }
+    if (!elapsedRef.current && starting) {
+      elapsedRef.current = setInterval(() => {
+        setElapsed(Math.floor((Date.now() - startTimeRef.current) / 1000));
+      }, 1000);
     }
     return () => {
       if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+      if (elapsedRef.current) { clearInterval(elapsedRef.current); elapsedRef.current = null; }
     };
-  }, [status?.allReady]);
+  }, [status?.allReady, starting, logOpen]);
+
+  // 로그 창 열릴 때 즉시 fetch
+  useEffect(() => { if (logOpen) fetchLog(); }, [logOpen]);
 
   // 로딩 / 시작 중 화면
   if (!status || !status.allReady) {
@@ -101,7 +134,7 @@ export default function RestaurantAnalyticsPage() {
           </p>
         </div>
 
-        <div className="bg-card border border-border-main rounded-xl p-8 space-y-6 max-w-2xl">
+        <div className="bg-card border border-border-main rounded-xl p-8 space-y-6 max-w-3xl">
           <ServiceRow
             name="Metabase"
             description="BI 대시보드 · 차트 · 지도"
@@ -114,21 +147,34 @@ export default function RestaurantAnalyticsPage() {
           />
 
           {!status?.allReady && (
-            <div className="pt-2 border-t border-border-subtle">
-              {starting || status?.metabase?.state === 'running' ? (
-                <div className="flex items-center gap-2 text-sm text-muted">
-                  <Loader2 className="w-4 h-4 animate-spin text-[#FF6F0F]" />
-                  서비스 시작 중... (최대 1~2분 소요)
-                </div>
-              ) : (
+            <div className="pt-2 border-t border-border-subtle space-y-3">
+              <div className="flex items-center gap-3 flex-wrap">
+                {starting || status?.metabase?.state === 'running' ? (
+                  <div className="flex items-center gap-2 text-sm text-muted">
+                    <Loader2 className="w-4 h-4 animate-spin text-[#FF6F0F]" />
+                    서비스 시작 중
+                    {elapsed > 0 && <span className="text-xs">({elapsed}초 경과)</span>}
+                    {elapsed > 120 && <span className="text-amber-400 text-xs">— 너무 오래 걸리네요. 로그 확인 필요</span>}
+                  </div>
+                ) : (
+                  <button
+                    onClick={startContainers}
+                    className="px-4 py-2 bg-[#FF6F0F] text-white rounded-lg text-sm font-medium hover:bg-[#FF6F0F]/90 flex items-center gap-1.5"
+                  >
+                    <Play className="w-4 h-4" />
+                    빅데이터 스택 시작
+                  </button>
+                )}
                 <button
-                  onClick={startContainers}
-                  className="px-4 py-2 bg-[#FF6F0F] text-white rounded-lg text-sm font-medium hover:bg-[#FF6F0F]/90 flex items-center gap-1.5"
+                  onClick={() => setLogOpen((v) => !v)}
+                  className={`px-3 py-2 rounded-lg text-sm flex items-center gap-1.5 border transition ${
+                    logOpen ? 'bg-fill-subtle border-border-main text-primary' : 'border-border-subtle text-muted hover:text-primary'
+                  }`}
                 >
-                  <Play className="w-4 h-4" />
-                  빅데이터 스택 시작
+                  <Terminal className="w-4 h-4" />
+                  {logOpen ? '로그 닫기' : '로그 보기'}
                 </button>
-              )}
+              </div>
               {error && (
                 <p className="mt-2 text-sm text-red-400 flex items-center gap-1">
                   <AlertCircle className="w-3.5 h-3.5" />
@@ -138,6 +184,39 @@ export default function RestaurantAnalyticsPage() {
             </div>
           )}
         </div>
+
+        {/* 로그 + 진단 뷰어 */}
+        {logOpen && (
+          <div className="max-w-3xl space-y-3">
+            {diagnosis && (
+              <div className="bg-sidebar border border-border-main rounded-xl overflow-hidden">
+                <div className="px-4 py-2 border-b border-border-subtle flex items-center justify-between">
+                  <span className="text-xs text-muted">🔍 진단 (실시간)</span>
+                  <button onClick={fetchLog} className="text-xs text-muted hover:text-primary">
+                    새로고침
+                  </button>
+                </div>
+                <pre className="text-[11px] leading-5 px-4 py-3 font-mono text-secondary whitespace-pre-wrap">
+                  {diagnosis}
+                </pre>
+              </div>
+            )}
+            <div className="bg-sidebar border border-border-main rounded-xl overflow-hidden">
+              <div className="px-4 py-2 border-b border-border-subtle">
+                <span className="text-xs text-muted flex items-center gap-1.5">
+                  <Terminal className="w-3 h-3" />
+                  docker compose 로그
+                </span>
+              </div>
+              <pre
+                ref={logPreRef}
+                className="text-[11px] leading-5 px-4 py-3 overflow-y-auto max-h-[400px] font-mono text-secondary whitespace-pre-wrap break-all"
+              >
+                {logContent || '(로그 없음 — "빅데이터 스택 시작" 눌러주세요)'}
+              </pre>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
