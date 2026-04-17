@@ -41,6 +41,17 @@ interface Restaurant {
 
 type SortField = 'visitor_review_count' | 'crawled_at' | 'name';
 
+/** 주소에서 구/동 추출 — 예: "창원 마산합포구 산호동 용마로 96" → { gu: "마산합포구", dong: "산호동" } */
+function parseLocation(address: string | null | undefined): { gu: string; dong: string } {
+  if (!address) return { gu: '', dong: '' };
+  const guMatch = address.match(/[가-힣]+구(?=\s|$)/);
+  const dongMatch = address.match(/[가-힣]+(?:동|읍|면)(?=\s|$)/);
+  return {
+    gu: guMatch?.[0] ?? '',
+    dong: dongMatch?.[0] ?? '',
+  };
+}
+
 /* ------------------------------------------------------------------ */
 /* Main Page                                                            */
 /* ------------------------------------------------------------------ */
@@ -50,6 +61,8 @@ export default function RestaurantsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [guFilter, setGuFilter] = useState('');
+  const [dongFilter, setDongFilter] = useState('');
   const [sortBy, setSortBy] = useState<SortField>('visitor_review_count');
   const [categories, setCategories] = useState<string[]>([]);
   const [selected, setSelected] = useState<Restaurant | null>(null);
@@ -78,7 +91,25 @@ export default function RestaurantsPage() {
     setLoading(false);
   }
 
+  // 구/동 옵션 추출
+  const { guList, dongList } = (() => {
+    const guSet = new Set<string>();
+    const dongSet = new Set<string>();
+    for (const r of restaurants) {
+      const { gu, dong } = parseLocation(r.address);
+      if (gu) guSet.add(gu);
+      if (dong && (!guFilter || gu === guFilter)) dongSet.add(dong);
+    }
+    return {
+      guList: [...guSet].sort(),
+      dongList: [...dongSet].sort(),
+    };
+  })();
+
   const filtered = restaurants.filter((r) => {
+    const { gu, dong } = parseLocation(r.address);
+    if (guFilter && gu !== guFilter) return false;
+    if (dongFilter && dong !== dongFilter) return false;
     if (!search) return true;
     const q = search.toLowerCase();
     return r.name.toLowerCase().includes(q) || r.address?.toLowerCase().includes(q)
@@ -126,6 +157,20 @@ export default function RestaurantsPage() {
             className="w-full pl-10 pr-4 py-2 bg-card border border-border-main rounded-lg text-sm text-primary placeholder:text-muted focus:outline-none focus:border-[#FF6F0F]"
           />
         </div>
+        <SelectFilter
+          value={guFilter}
+          onChange={(v) => { setGuFilter(v); setDongFilter(''); }}
+          options={guList}
+          placeholder="전체 구"
+          icon={<MapPin className="w-4 h-4" />}
+        />
+        <SelectFilter
+          value={dongFilter}
+          onChange={setDongFilter}
+          options={dongList}
+          placeholder="전체 동"
+          icon={<MapPin className="w-4 h-4" />}
+        />
         <SelectFilter value={categoryFilter} onChange={setCategoryFilter} options={categories} placeholder="전체 카테고리" icon={<Filter className="w-4 h-4" />} />
         <SelectFilter
           value={sortBy} onChange={(v) => setSortBy(v as SortField)}
@@ -136,7 +181,22 @@ export default function RestaurantsPage() {
           ]}
           placeholder="" icon={null}
         />
+        {(guFilter || dongFilter || categoryFilter || search) && (
+          <button
+            onClick={() => { setGuFilter(''); setDongFilter(''); setCategoryFilter(''); setSearch(''); }}
+            className="px-3 py-2 text-xs text-muted hover:text-primary hover:bg-fill-subtle rounded-lg"
+          >
+            초기화
+          </button>
+        )}
       </div>
+
+      {/* 필터 결과 요약 */}
+      {(guFilter || dongFilter || categoryFilter) && (
+        <p className="text-xs text-muted">
+          필터 적용: {filtered.length}개 / {restaurants.length}개
+        </p>
+      )}
 
       {/* 맛집 리스트 */}
       {loading ? (
