@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase';
 import {
   Search, Star, MapPin, ExternalLink, Clock, X,
   ChevronDown, UtensilsCrossed, Filter, BarChart3,
-  MessageSquare, TrendingUp, Tag, Newspaper,
+  MessageSquare, TrendingUp, Tag, Newspaper, Ticket,
 } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
@@ -43,6 +43,45 @@ interface Restaurant {
 }
 
 type SortField = 'visitor_review_count' | 'crawled_at' | 'name';
+
+interface MockCoupon {
+  title: string;
+  discount: string;
+  issued_at: string;  // 발급일
+}
+
+/**
+ * 언니픽 쿠폰 목 데이터 (TODO: 실제 coupons 테이블 연동)
+ * naver_place_id 해시 기반으로 결정적 생성 (새로고침해도 동일)
+ */
+function getMockCoupons(placeId: string): MockCoupon[] {
+  const hash = [...placeId].reduce((a, c) => a + c.charCodeAt(0), 0);
+  const count = hash % 4;  // 0~3개
+  if (count === 0) return [];
+
+  const templates = [
+    { title: '첫 방문 20% 할인', discount: '20%', daysAgo: 2 },
+    { title: '디저트 1개 무료', discount: '무료', daysAgo: 5 },
+    { title: '2인 세트 15% 할인', discount: '15%', daysAgo: 7 },
+    { title: '음료 1잔 서비스', discount: '1+1', daysAgo: 12 },
+    { title: '주말 런치 3천원 할인', discount: '3,000원', daysAgo: 20 },
+  ];
+
+  const coupons: MockCoupon[] = [];
+  for (let i = 0; i < count; i++) {
+    const t = templates[(hash + i) % templates.length];
+    const d = new Date();
+    d.setDate(d.getDate() - t.daysAgo);
+    coupons.push({
+      title: t.title,
+      discount: t.discount,
+      issued_at: d.toISOString().slice(0, 10),
+    });
+  }
+  // 최신순 정렬
+  coupons.sort((a, b) => b.issued_at.localeCompare(a.issued_at));
+  return coupons;
+}
 
 /** 주소에서 구/동 추출 — 예: "창원 마산합포구 산호동 용마로 96" → { gu: "마산합포구", dong: "산호동" } */
 function parseLocation(address: string | null | undefined): { gu: string; dong: string } {
@@ -336,6 +375,52 @@ function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label:
   );
 }
 
+/** 언니픽 쿠폰 표시 섹션 — 최신 쿠폰 1건 + 총 개수 */
+function CouponSection({ placeId }: { placeId: string }) {
+  const coupons = getMockCoupons(placeId);
+
+  if (coupons.length === 0) {
+    return (
+      <div className="flex items-center gap-2 py-1.5 px-2.5 bg-fill-subtle/50 border border-border-subtle rounded-lg text-xs text-muted">
+        <Ticket className="w-3.5 h-3.5" />
+        <span>쿠폰 없음</span>
+      </div>
+    );
+  }
+
+  const latest = coupons[0];
+  const days = Math.floor((Date.now() - new Date(latest.issued_at).getTime()) / 86400000);
+  const isRecent = days <= 7;
+
+  return (
+    <div
+      onClick={(e) => e.stopPropagation()}
+      className="flex items-center gap-2 py-2 px-2.5 bg-gradient-to-r from-[#FF6F0F]/10 to-amber-500/5 border border-[#FF6F0F]/30 rounded-lg"
+    >
+      <div className="shrink-0 w-10 h-10 rounded-lg bg-[#FF6F0F] text-white flex flex-col items-center justify-center leading-none">
+        <Ticket className="w-3 h-3 mb-0.5" />
+        <span className="text-[10px] font-bold">{latest.discount}</span>
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-semibold text-[#FF6F0F] truncate">{latest.title}</p>
+        <p className="text-[10px] text-muted">
+          {isRecent ? <span className="text-green-400 font-semibold">NEW · </span> : null}
+          {days === 0 ? '오늘 발급' : `${days}일 전`}
+          {coupons.length > 1 && (
+            <span className="ml-1.5 px-1 py-0.5 bg-fill-subtle rounded font-semibold">
+              +{coupons.length - 1}
+            </span>
+          )}
+        </p>
+      </div>
+      <div className="shrink-0 text-[10px] text-muted text-right">
+        쿠폰북<br />
+        <span className="font-bold text-[#FF6F0F]">{coupons.length}</span>장
+      </div>
+    </div>
+  );
+}
+
 function LocationChip({
   label, count, active, onClick,
 }: {
@@ -449,6 +534,9 @@ function RestaurantCard({ r, onClick }: { r: Restaurant; onClick: () => void }) 
             {new Date(r.crawled_at).toLocaleDateString('ko-KR')}
           </span>
         </div>
+
+        {/* 언니픽 쿠폰 */}
+        <CouponSection placeId={r.naver_place_id} />
 
         {/* 네이버 지도 이동 버튼 */}
         {r.naver_place_url && (
