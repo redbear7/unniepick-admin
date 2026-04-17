@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import {
   Sparkles, Send, Search, Loader2, Check, Star, MapPin,
   MessageSquare, UtensilsCrossed, ExternalLink, Phone,
-  Trophy, Info, Tag as TagIcon, RefreshCw,
+  Trophy, Info, Tag as TagIcon, RefreshCw, Ticket, Gift,
 } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
@@ -22,6 +22,16 @@ interface ParsedFilter {
   rewritten_intent?: string;
 }
 
+interface Coupon {
+  id: string;
+  title: string;
+  description: string;
+  discount: string;         // "20%" or "3,000원" or "무료"
+  conditions?: string;      // "2인 이상 주문 시"
+  valid_until: string;      // "2026-05-31"
+  is_exclusive?: boolean;   // 언니픽 독점
+}
+
 interface Recommendation {
   rank: number;
   restaurant_id: string;
@@ -36,6 +46,7 @@ interface Recommendation {
   why: string;
   matched_signals: string[];
   owner_pick?: string;
+  coupon?: Coupon;
 }
 
 type StageStatus = 'idle' | 'parsing' | 'searching' | 'ranking' | 'done';
@@ -82,6 +93,15 @@ const MOCK_DATA: Record<string, { filter: ParsedFilter; candidateCount: number; 
         why: 'VIP 독립룸 2개와 정통 한정식 코스를 갖춘 창원 상남동 대표 상견례 장소. 최근 3개월 블로그 후기 12건에서 "상견례", "부모님 모시고" 키워드가 다수 등장.',
         matched_signals: ['"음식이 맛있어요" 267명', '"재료가 신선해요" 185명', '룸 태그', '한정식 카테고리'],
         owner_pick: '25년 된 한옥 서까래 그대로 살린 공간',
+        coupon: {
+          id: 'cp-1',
+          title: '상견례 코스 특별가',
+          description: '양가 상견례 코스 예약 시',
+          discount: '15%',
+          conditions: '6인 이상 예약, 3일 전 예약 필수',
+          valid_until: '2026-06-30',
+          is_exclusive: true,
+        },
       },
       {
         rank: 2,
@@ -96,6 +116,14 @@ const MOCK_DATA: Record<string, { filter: ParsedFilter; candidateCount: number; 
         naver_place_url: 'https://map.naver.com',
         why: '프라이빗 다이닝룸 3개 보유, 전통 한정식 + 와인 페어링 제공. "조용한 분위기"와 "격식 있는 서비스" 리뷰 다수.',
         matched_signals: ['"분위기가 좋아요" 142명', '"친절해요" 121명', '프라이빗룸', '예약가능'],
+        coupon: {
+          id: 'cp-2',
+          title: '와인 1병 무료',
+          description: '한정식 코스 2인 이상 주문 시',
+          discount: '무료',
+          conditions: '평일 저녁 한정',
+          valid_until: '2026-05-31',
+        },
       },
       {
         rank: 3,
@@ -135,6 +163,15 @@ const MOCK_DATA: Record<string, { filter: ParsedFilter; candidateCount: number; 
         image_url: 'https://images.unsplash.com/photo-1562967914-608f82629710?w=600&q=80',
         why: '1인 세트 8,500원, 카운터석 6석으로 혼밥하기 편함. 매운맛 단계 조절 가능.',
         matched_signals: ['"매워요" 187명', '1인석 태그', '8천원대'],
+        coupon: {
+          id: 'cp-3',
+          title: '주먹밥 무료 추가',
+          description: '매운 떡볶이 세트 주문 시',
+          discount: '무료',
+          conditions: '런치타임 11-14시',
+          valid_until: '2026-05-15',
+          is_exclusive: true,
+        },
       },
       {
         rank: 2,
@@ -171,6 +208,15 @@ const MOCK_DATA: Record<string, { filter: ParsedFilter; candidateCount: number; 
         why: '여좌천 벚꽃길 바로 앞. 2층 통창에서 벚꽃 터널을 한눈에. 4월 군항제 기간 예약 필수.',
         matched_signals: ['"뷰가 좋아요" 412명', '"벚꽃" 리뷰 89건', '루프탑 태그'],
         owner_pick: '벚꽃 시즌 한정 라떼 3종',
+        coupon: {
+          id: 'cp-4',
+          title: '벚꽃 라떼 20% 할인',
+          description: '시즌 한정 라떼 메뉴 전체',
+          discount: '20%',
+          conditions: '군항제 기간 (~2026-04-14)',
+          valid_until: '2026-04-14',
+          is_exclusive: true,
+        },
       },
     ],
   },
@@ -513,6 +559,9 @@ function RecommendationCard({ r }: { r: Recommendation }) {
             </div>
           )}
 
+          {/* 쿠폰 */}
+          {r.coupon && <CouponCard coupon={r.coupon} />}
+
           {/* 매칭 시그널 */}
           {r.matched_signals.length > 0 && (
             <div>
@@ -559,6 +608,95 @@ function RecommendationCard({ r }: { r: Recommendation }) {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Coupon Card                                                          */
+/* ------------------------------------------------------------------ */
+
+function CouponCard({ coupon }: { coupon: Coupon }) {
+  const [claimed, setClaimed] = useState(false);
+
+  const validDate = new Date(coupon.valid_until);
+  const daysLeft = Math.ceil((validDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+
+  return (
+    <div className="relative overflow-hidden rounded-lg border-2 border-dashed border-[#FF6F0F]/40 bg-gradient-to-r from-[#FF6F0F]/10 to-amber-500/5">
+      {/* 티켓 모양 좌측 원형 notches */}
+      <div className="absolute top-1/2 -left-2 w-4 h-4 rounded-full bg-card border border-[#FF6F0F]/40 -translate-y-1/2" />
+      <div className="absolute top-1/2 -right-2 w-4 h-4 rounded-full bg-card border border-[#FF6F0F]/40 -translate-y-1/2" />
+
+      <div className="p-3 flex items-center gap-3">
+        {/* 할인 큰 글씨 */}
+        <div className="shrink-0 flex flex-col items-center justify-center bg-[#FF6F0F] text-white rounded-lg px-3 py-2 min-w-[72px]">
+          <Ticket className="w-3 h-3 mb-0.5" />
+          <p className="font-black text-lg leading-none">{coupon.discount}</p>
+          <p className="text-[9px] opacity-80 mt-0.5">할인</p>
+        </div>
+
+        {/* 내용 */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <p className="text-sm font-bold text-[#FF6F0F]">{coupon.title}</p>
+            {coupon.is_exclusive && (
+              <span className="px-1.5 py-0 text-[9px] bg-amber-500/25 text-amber-400 rounded border border-amber-500/40 font-bold">
+                언니픽 독점
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-secondary mt-0.5">{coupon.description}</p>
+          {coupon.conditions && (
+            <p className="text-[11px] text-muted mt-1">· {coupon.conditions}</p>
+          )}
+          <p className="text-[10px] text-muted mt-1">
+            {daysLeft > 0 ? (
+              <span className={daysLeft <= 7 ? 'text-red-400' : ''}>
+                ⏳ {daysLeft}일 남음 ({coupon.valid_until}까지)
+              </span>
+            ) : (
+              <span className="text-red-400">만료됨</span>
+            )}
+          </p>
+        </div>
+
+        {/* 받기 버튼 */}
+        <button
+          onClick={() => setClaimed(true)}
+          disabled={claimed || daysLeft <= 0}
+          className={`shrink-0 px-3 py-2 rounded-lg text-xs font-semibold transition flex items-center gap-1 ${
+            claimed
+              ? 'bg-green-500/15 text-green-400 border border-green-500/30'
+              : daysLeft <= 0
+              ? 'bg-fill-subtle text-muted cursor-not-allowed'
+              : 'bg-[#FF6F0F] text-white hover:bg-[#FF6F0F]/90'
+          }`}
+        >
+          {claimed ? (
+            <>
+              <Check className="w-3.5 h-3.5" /> 받음
+            </>
+          ) : (
+            <>
+              <Gift className="w-3.5 h-3.5" /> 받기
+            </>
+          )}
+        </button>
+      </div>
+
+      {/* 점선 구분 */}
+      <div className="border-t border-dashed border-[#FF6F0F]/20 mx-10" />
+
+      {/* 받은 상태일 때 쿠폰 코드 */}
+      {claimed && (
+        <div className="px-3 py-2 text-center bg-[#FF6F0F]/5">
+          <p className="text-[10px] text-muted">매장에서 이 코드를 제시해주세요</p>
+          <p className="font-mono font-bold text-[#FF6F0F] tracking-widest text-sm mt-0.5">
+            UNNIE-{coupon.id.toUpperCase()}-{Math.random().toString(36).slice(2, 6).toUpperCase()}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
