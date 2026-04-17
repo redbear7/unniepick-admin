@@ -73,37 +73,23 @@ export default function ApplicationsPage() {
     if (!confirm(`"${app.store_name}" 신청을 승인하시겠습니까?`)) return;
     setActionLoading(app.id);
     try {
-      // 1. store_applications 상태 업데이트
-      const { error: updateError } = await supabase
-        .from('store_applications')
-        .update({ status: 'approved' })
-        .eq('id', app.id);
+      // service_role API 라우트를 통해 승인 (RLS 우회)
+      const res = await fetch('/api/applications/approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: app.id }),
+      });
+      const result = await res.json();
 
-      if (updateError) throw updateError;
-
-      // 2. stores 테이블에 insert
-      const { error: insertError } = await supabase
-        .from('stores')
-        .insert({
-          name:        app.store_name,
-          category:    app.category,
-          address:     app.address,
-          phone:       app.phone,
-          description: app.description,
-          latitude:    app.latitude,
-          longitude:   app.longitude,
-        });
-
-      if (insertError) {
-        console.error('stores 등록 오류 (무시):', insertError);
-      }
+      if (!res.ok) throw new Error(result.error ?? '승인 실패');
 
       setApplications(prev =>
         prev.map(a => a.id === app.id ? { ...a, status: 'approved' } : a)
       );
+      alert(`✅ "${app.store_name}" 승인 완료! (stores 등록됨)`);
     } catch (err) {
       console.error('승인 처리 오류:', err);
-      alert('승인 처리 중 오류가 발생했습니다.');
+      alert('승인 처리 중 오류가 발생했습니다: ' + (err as Error).message);
     } finally {
       setActionLoading(null);
     }
