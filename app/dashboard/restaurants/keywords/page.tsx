@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import {
   Search, Plus, Play, Loader2, Trash2, Check, X,
   Calendar, MessageSquare, AlertCircle, Clock, Terminal, ChevronDown, ChevronUp,
+  ShieldCheck, Sparkles,
 } from 'lucide-react';
 
 interface CrawlKeyword {
@@ -33,6 +34,64 @@ export default function CrawlKeywordsPage() {
   });
   const [submitting, setSubmitting] = useState(false);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
+
+  // 폐업 검증
+  const [verifyRunning, setVerifyRunning] = useState(false);
+  const [verifyLog, setVerifyLog] = useState('');
+  const [verifyLogOpen, setVerifyLogOpen] = useState(false);
+  const verifyPollRef = useRef<NodeJS.Timeout | null>(null);
+  const verifyLogPreRef = useRef<HTMLPreElement | null>(null);
+
+  async function checkVerifyStatus() {
+    const res = await fetch('/api/crawl-restaurants/verify');
+    const data = await res.json();
+    setVerifyRunning(!!data.running);
+    return !!data.running;
+  }
+
+  async function fetchVerifyLog() {
+    const res = await fetch('/api/crawl-restaurants/verify/log');
+    const data = await res.json();
+    setVerifyLog(data.content || '(로그 없음 — 아직 실행하지 않았습니다)');
+    setTimeout(() => {
+      if (verifyLogPreRef.current) verifyLogPreRef.current.scrollTop = verifyLogPreRef.current.scrollHeight;
+    }, 50);
+  }
+
+  async function runVerify() {
+    if (!confirm('폐업 검증을 실행할까요? (모든 업체 대상, 약 10~15분 소요)')) return;
+
+    const res = await fetch('/api/crawl-restaurants/verify', { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) {
+      alert(data.error ?? '실행 실패');
+      return;
+    }
+    setVerifyRunning(true);
+    setVerifyLogOpen(true);
+  }
+
+  // 검증 중이면 로그+상태 폴링
+  useEffect(() => {
+    checkVerifyStatus();
+  }, []);
+
+  useEffect(() => {
+    if (verifyLogOpen || verifyRunning) {
+      fetchVerifyLog();
+      verifyPollRef.current = setInterval(async () => {
+        await fetchVerifyLog();
+        const running = await checkVerifyStatus();
+        if (!running) {
+          // 완료되면 맛집 리스트 갱신 (상태 반영)
+          load();
+        }
+      }, 3000);
+    }
+    return () => {
+      if (verifyPollRef.current) { clearInterval(verifyPollRef.current); verifyPollRef.current = null; }
+    };
+  }, [verifyLogOpen, verifyRunning]);
 
   async function load() {
     const res = await fetch('/api/crawl-restaurants/keywords');
@@ -117,15 +176,78 @@ export default function CrawlKeywordsPage() {
   return (
     <div className="space-y-6">
       {/* 헤더 */}
-      <div>
-        <h1 className="text-2xl font-bold text-primary flex items-center gap-2">
-          <Search className="w-6 h-6" />
-          크롤링 키워드
-        </h1>
-        <p className="text-sm text-muted mt-1">
-          네이버 플레이스 검색어를 등록하고 수동/자동 크롤링을 관리합니다
-        </p>
+      <div className="flex items-start justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-primary flex items-center gap-2">
+            <Search className="w-6 h-6" />
+            크롤링 키워드
+          </h1>
+          <p className="text-sm text-muted mt-1">
+            네이버 플레이스 검색어를 등록하고 수동/자동 크롤링을 관리합니다
+          </p>
+        </div>
+
+        {/* 폐업 검증 버튼 */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => setVerifyLogOpen((v) => !v)}
+            className={`px-3 py-2 rounded-lg text-sm flex items-center gap-1.5 border transition ${
+              verifyLogOpen
+                ? 'bg-fill-subtle border-border-main text-primary'
+                : 'border-border-subtle text-muted hover:text-primary'
+            }`}
+          >
+            <Terminal className="w-4 h-4" />
+            검증 로그
+          </button>
+          <button
+            onClick={runVerify}
+            disabled={verifyRunning}
+            className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-1.5 ${
+              verifyRunning
+                ? 'bg-fill-subtle text-muted cursor-not-allowed border border-border-subtle'
+                : 'bg-red-500/15 text-red-400 border border-red-500/30 hover:bg-red-500/25'
+            }`}
+          >
+            {verifyRunning ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                검증 중...
+              </>
+            ) : (
+              <>
+                <ShieldCheck className="w-4 h-4" />
+                폐업 검증 테스트
+              </>
+            )}
+          </button>
+        </div>
       </div>
+
+      {/* 검증 로그 뷰어 */}
+      {verifyLogOpen && (
+        <div className="bg-sidebar border border-border-main rounded-xl overflow-hidden">
+          <div className="px-4 py-2 flex items-center justify-between border-b border-border-subtle">
+            <span className="text-xs text-muted flex items-center gap-1.5">
+              <Terminal className="w-3 h-3" />
+              폐업 검증 실시간 로그
+              {verifyRunning && <Loader2 className="w-3 h-3 animate-spin text-red-400" />}
+            </span>
+            <button
+              onClick={() => setVerifyLogOpen(false)}
+              className="text-xs text-muted hover:text-primary"
+            >
+              닫기
+            </button>
+          </div>
+          <pre
+            ref={verifyLogPreRef}
+            className="text-[11px] leading-5 px-4 py-3 overflow-y-auto max-h-[400px] font-mono text-secondary whitespace-pre-wrap break-all"
+          >
+            {verifyLog || '로딩 중...'}
+          </pre>
+        </div>
+      )}
 
       {/* 추가 폼 */}
       <form
