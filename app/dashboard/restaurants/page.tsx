@@ -31,6 +31,7 @@ interface Restaurant {
   naver_place_url: string | null;
   menu_items: Array<{ name: string; price?: string }>;
   tags: string[];
+  custom_tags: string[];
   review_keywords: ReviewKeyword[];
   menu_keywords: MenuKeyword[];
   review_summary: Record<string, number>;
@@ -41,6 +42,20 @@ interface Restaurant {
   closed_at: string | null;
   crawled_at: string;
   created_at: string;
+}
+
+/** 카드에 표기할 대표 태그 3개 (custom_tags 우선, 부족하면 review_keywords 보완) */
+function getRepresentativeTags(r: Restaurant): string[] {
+  const custom = r.custom_tags ?? [];
+  const reviewTop = [...(r.review_keywords ?? [])]
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 3)
+    .map((k) => k.keyword);
+  const menuTop = [...(r.menu_keywords ?? [])]
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 2)
+    .map((k) => k.menu);
+  return [...new Set([...custom, ...reviewTop, ...menuTop])].slice(0, 3);
 }
 
 type SortField = 'visitor_review_count' | 'crawled_at' | 'name';
@@ -448,11 +463,20 @@ function RestaurantCard({ r, onClick }: { r: Restaurant; onClick: () => void }) 
           </div>
         )}
 
-        {/* 태그 + 크롤링 날짜 */}
+        {/* 대표 태그 3개 + 크롤링 날짜 */}
         <div className="flex items-center justify-between text-xs text-muted">
           <div className="flex gap-1 flex-wrap">
-            {r.tags?.slice(0, 3).map((tag) => (
-              <span key={tag} className="px-1.5 py-0.5 bg-fill-subtle rounded">#{tag}</span>
+            {getRepresentativeTags(r).map((tag) => (
+              <span
+                key={tag}
+                className={`px-1.5 py-0.5 rounded-full text-[11px] font-semibold ${
+                  (r.custom_tags ?? []).includes(tag)
+                    ? 'bg-[#FF6F0F]/15 text-[#FF6F0F]'
+                    : 'bg-fill-subtle text-secondary'
+                }`}
+              >
+                #{tag}
+              </span>
             ))}
           </div>
           <span className="flex items-center gap-1 shrink-0">
