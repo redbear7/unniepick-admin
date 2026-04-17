@@ -60,7 +60,7 @@ function getRepresentativeTags(r: Restaurant): string[] {
     .sort((a, b) => b.count - a.count)
     .slice(0, 2)
     .map((k) => k.menu);
-  return [...new Set([...custom, ...reviewTop, ...menuTop])].slice(0, 3);
+  return [...new Set([...custom, ...reviewTop, ...menuTop].filter(Boolean))].slice(0, 3);
 }
 
 type SortField = 'visitor_review_count' | 'crawled_at' | 'name';
@@ -503,9 +503,9 @@ function RestaurantCard({ r, onClick }: { r: Restaurant; onClick: () => void }) 
         {/* 대표 태그 3개 + 크롤링 날짜 */}
         <div className="flex items-center justify-between text-xs text-muted">
           <div className="flex gap-1 flex-wrap">
-            {getRepresentativeTags(r).map((tag) => (
+            {getRepresentativeTags(r).map((tag, i) => (
               <span
-                key={tag}
+                key={`${tag}-${i}`}
                 className={`px-1.5 py-0.5 rounded-full text-[11px] font-semibold ${
                   (r.custom_tags ?? []).includes(tag)
                     ? 'bg-[#FF6F0F]/15 text-[#FF6F0F]'
