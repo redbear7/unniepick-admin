@@ -52,14 +52,14 @@ export default function CrawlKeywordsPage() {
     keyword: '',
     description: '',
     is_daily: false,
-    analyze_reviews: false,
+    analyze_reviews: true,
   });
   const [submitting, setSubmitting] = useState(false);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
 
   // ── 단일 업체 크롤링 상태 ──
   const [singleQuery, setSingleQuery] = useState('');
-  const [singleAnalyze, setSingleAnalyze] = useState(false);
+  const [singleAnalyze, setSingleAnalyze] = useState(true);
   const [singleRunning, setSingleRunning] = useState(false);
   const [singleLog, setSingleLog] = useState('');
   const [singleLogOpen, setSingleLogOpen] = useState(false);
@@ -234,7 +234,7 @@ export default function CrawlKeywordsPage() {
       if (!res.ok) {
         alert(data.error ?? '추가 실패');
       } else {
-        setForm({ keyword: '', description: '', is_daily: false, analyze_reviews: false });
+        setForm({ keyword: '', description: '', is_daily: false, analyze_reviews: true });
         load();
       }
     } finally {
