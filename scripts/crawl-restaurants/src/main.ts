@@ -140,9 +140,15 @@ async function crawl(keywords: CrawlKeyword[]) {
     console.log(`\n💾 ${saved}개 DB 저장`);
   }
 
-  // ── 신규 업체 텔레그램 알림 ──
-  if (newRestaurants.length > 0 && existingIds.size > 0) {
-    await notifyNewRestaurants(newRestaurants);
+  // ── 신규 업체 텔레그램 알림 (키워드별로 분리) ──
+  if (existingIds.size > 0) {
+    for (const kw of keywords) {
+      // 이 키워드 태그가 붙은 신규 업체만 골라냄
+      const kwNew = newRestaurants.filter((r) => r.tags?.includes(kw.keyword));
+      if (kwNew.length > 0) {
+        await notifyNewRestaurants(kwNew, kw.keyword);
+      }
+    }
   }
 
   return { newRestaurants, total: deduped.length };
@@ -392,7 +398,7 @@ async function runWithKeywords(keywords: CrawlKeyword[]) {
   ).from('crawl_keywords').select('last_new_count').in('id', keywords.map((k) => k.id));
   const newCount = (updated ?? []).reduce((s, r: any) => s + (r.last_new_count ?? 0), 0);
 
-  await notifyDailySummary(stats.total, newCount);
+  await notifyDailySummary(stats.total, newCount, keywords.map((k) => k.keyword));
   console.log(`📊 DB 총: ${stats.total}개\n`);
 }
 

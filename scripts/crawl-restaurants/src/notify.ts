@@ -3,11 +3,12 @@ import type { RestaurantData } from './storage.js';
 const BOT_TOKEN = '8491699194:AAG6gXOiK09eYm7gcvE7y7nj9TP3zcSKPg0';
 const CHAT_ID = '914082906';
 
-export async function notifyNewRestaurants(restaurants: RestaurantData[]) {
+export async function notifyNewRestaurants(restaurants: RestaurantData[], keyword?: string) {
   if (!restaurants.length) return;
 
-  // 헤더
-  let text = `🆕 *창원 새로오픈 맛집 ${restaurants.length}개 발견\\!*\n\n`;
+  // 헤더 — 키워드가 주어지면 그대로, 없으면 일반 문구
+  const title = keyword ? escapeMarkdown(keyword) : '신규 업체';
+  let text = `🆕 *${title} ${restaurants.length}개 발견\\!*\n\n`;
 
   for (const r of restaurants.slice(0, 10)) {
     const name = escapeMarkdown(r.name);
@@ -40,11 +41,14 @@ export async function notifyNewRestaurants(restaurants: RestaurantData[]) {
   await sendTelegram(text);
 }
 
-export async function notifyDailySummary(total: number, newCount: number) {
+export async function notifyDailySummary(total: number, newCount: number, keywords?: string[]) {
   const now = new Date().toLocaleString('ko-KR');
+  const kwLabel = keywords && keywords.length
+    ? `\n키워드: ${keywords.map(escapeMarkdown).join(', ')}`
+    : '';
   const text = newCount > 0
-    ? `✅ *크롤링 완료* \\(${escapeMarkdown(now)}\\)\n총 ${total}개 수집, 🆕 신규 ${newCount}개`
-    : `✅ *크롤링 완료* \\(${escapeMarkdown(now)}\\)\n총 ${total}개 수집, 신규 업체 없음`;
+    ? `✅ *크롤링 완료* \\(${escapeMarkdown(now)}\\)\n총 ${total}개 수집, 🆕 신규 ${newCount}개${kwLabel}`
+    : `✅ *크롤링 완료* \\(${escapeMarkdown(now)}\\)\n총 ${total}개 수집, 신규 업체 없음${kwLabel}`;
 
   await sendTelegram(text);
 }
