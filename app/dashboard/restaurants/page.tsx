@@ -123,7 +123,7 @@ export default function RestaurantsPage() {
   // 통계
   const totalReviews = restaurants.reduce((s, r) => s + (r.visitor_review_count ?? 0), 0);
   const avgReviews = restaurants.length ? Math.round(totalReviews / restaurants.length) : 0;
-  const newOpenCount = restaurants.filter((r) => r.is_new_open).length;
+  const newOpenCount = restaurants.filter((r) => r.tags?.includes('창원시 새로오픈 맛집')).length;
 
   return (
     <div className="space-y-6">

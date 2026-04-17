@@ -56,10 +56,8 @@ async function crawl(keywords: CrawlKeyword[]) {
           }
         }
 
-        // 키워드 태그 부착 (리뷰분석 아닌 경우)
-        if (!kw.analyze_reviews) {
-          for (const r of restaurants) r.tags = [...(r.tags ?? []), kw.keyword];
-        }
+        // 키워드 태그 부착 (어떤 키워드에서 왔는지 식별용)
+        for (const r of restaurants) r.tags = [...(r.tags ?? []), kw.keyword];
 
         // ── 이미지 리사이즈 + Storage 업로드 ──
         console.log(`     📷 이미지 처리 중...`);
