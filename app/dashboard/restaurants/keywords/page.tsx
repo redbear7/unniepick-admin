@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import {
   Search, Plus, Play, Loader2, Trash2, Check, X,
-  Calendar, MessageSquare, AlertCircle, Clock,
+  Calendar, MessageSquare, AlertCircle, Clock, Terminal, ChevronDown, ChevronUp,
 } from 'lucide-react';
 
 interface CrawlKeyword {
@@ -210,10 +210,45 @@ function KeywordRow({
 }) {
   const running = k.status === 'running';
   const failed = k.status === 'failed';
+  const [logOpen, setLogOpen] = useState(false);
+  const [logContent, setLogContent] = useState('');
+  const [logLoading, setLogLoading] = useState(false);
+  const logPollRef = useRef<NodeJS.Timeout | null>(null);
+  const logPreRef = useRef<HTMLPreElement | null>(null);
+
+  // 로그 fetch
+  const fetchLog = async () => {
+    setLogLoading(true);
+    try {
+      const res = await fetch(`/api/crawl-restaurants/logs/${k.id}`);
+      const data = await res.json();
+      setLogContent(data.content || '(로그 없음 — 아직 실행하지 않았거나 로그 파일이 생성되지 않았습니다)');
+      // 자동 스크롤 to bottom
+      setTimeout(() => {
+        if (logPreRef.current) logPreRef.current.scrollTop = logPreRef.current.scrollHeight;
+      }, 50);
+    } finally {
+      setLogLoading(false);
+    }
+  };
+
+  // 로그 창이 열려있고 실행 중이면 2초마다 폴링
+  useEffect(() => {
+    if (logOpen) {
+      fetchLog();
+      if (running) {
+        logPollRef.current = setInterval(fetchLog, 2000);
+      }
+    }
+    return () => {
+      if (logPollRef.current) { clearInterval(logPollRef.current); logPollRef.current = null; }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [logOpen, running, k.id]);
 
   return (
-    <div className={`bg-card border rounded-xl p-4 transition ${failed ? 'border-red-500/30' : 'border-border-main'}`}>
-      <div className="flex items-center gap-3">
+    <div className={`bg-card border rounded-xl transition ${failed ? 'border-red-500/30' : 'border-border-main'}`}>
+      <div className="p-4 flex items-center gap-3">
         {/* 활성화 토글 */}
         <button
           onClick={() => onToggle({ enabled: !k.enabled })}
@@ -303,6 +338,14 @@ function KeywordRow({
         </button>
 
         <button
+          onClick={() => setLogOpen((v) => !v)}
+          className={`p-2 rounded-lg ${logOpen ? 'bg-[#FF6F0F]/15 text-[#FF6F0F]' : 'text-muted hover:bg-fill-subtle'}`}
+          title="로그 보기"
+        >
+          <Terminal className="w-4 h-4" />
+        </button>
+
+        <button
           onClick={onDelete}
           className="p-2 text-muted hover:text-red-400 hover:bg-fill-subtle rounded-lg"
           title="삭제"
@@ -310,6 +353,39 @@ function KeywordRow({
           <Trash2 className="w-4 h-4" />
         </button>
       </div>
+
+      {/* 실시간 로그 뷰어 */}
+      {logOpen && (
+        <div className="border-t border-border-subtle bg-sidebar">
+          <div className="px-4 py-2 flex items-center justify-between">
+            <span className="text-xs text-muted flex items-center gap-1.5">
+              <Terminal className="w-3 h-3" />
+              실시간 로그 {running && <Loader2 className="w-3 h-3 animate-spin text-[#FF6F0F]" />}
+            </span>
+            <div className="flex gap-2 text-xs">
+              <button
+                onClick={fetchLog}
+                disabled={logLoading}
+                className="text-muted hover:text-primary"
+              >
+                새로고침
+              </button>
+              <button
+                onClick={() => setLogOpen(false)}
+                className="text-muted hover:text-primary"
+              >
+                닫기
+              </button>
+            </div>
+          </div>
+          <pre
+            ref={logPreRef}
+            className="text-[11px] leading-5 px-4 pb-4 overflow-y-auto max-h-[320px] font-mono text-secondary whitespace-pre-wrap break-all"
+          >
+            {logContent || '로딩 중...'}
+          </pre>
+        </div>
+      )}
     </div>
   );
 }
