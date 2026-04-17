@@ -7,6 +7,7 @@
     "start": "tsx src/main.ts",
     "crawl": "tsx src/main.ts --once",
     "verify": "tsx src/verify.ts",
+    "verify:test": "tsx src/verify-test.ts",
     "build": "tsc",
     "start:prod": "node dist/main.js"
   },

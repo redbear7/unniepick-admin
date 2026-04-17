@@ -28,17 +28,22 @@ async function checkNaverPlace(page: Page, placeId: string): Promise<CheckResult
 
     const bodyText = await page.evaluate(() => document.body.innerText);
 
-    // 폐업/휴업 명시적 텍스트 감지
-    const closedPatterns = [
-      /영업\s*종료/,
-      /폐업/,
-      /휴업/,
+    // ⚠️ 중요: "영업 종료"는 "오늘 영업시간 종료"를 의미할 뿐 폐업이 아님!
+    // Naver Place에서 실제 폐업은 다음 경우:
+    // 1. 페이지 자체가 404 또는 "존재하지 않는 업체" 표시
+    // 2. 명시적으로 "폐업" 단어 + 컨텍스트 (예: "폐업되었습니다", "폐업된 업체")
+
+    // 진짜 폐업 시그널 (엄격)
+    const TRUE_CLOSED_PATTERNS = [
       /존재하지\s*않는\s*업체/,
       /삭제된\s*업체/,
-      /지역을\s*이전/,
+      /폐업되었습니다/,
+      /폐업한\s*업체/,
+      /영업을\s*중단/,
+      /영업\s*중단/,
     ];
 
-    for (const p of closedPatterns) {
+    for (const p of TRUE_CLOSED_PATTERNS) {
       const m = bodyText.match(p);
       if (m) return { status: 'closed_text', reason: m[0] };
     }
@@ -49,6 +54,7 @@ async function checkNaverPlace(page: Page, placeId: string): Promise<CheckResult
     );
     if (!title) return { status: 'not_found' };
 
+    // "영업 종료" 는 today closed, "영업 중" 은 현재 영업중 — 모두 active
     return { status: 'ok' };
   } catch (e) {
     return { status: 'network_error', reason: (e as Error).message };
@@ -108,12 +114,12 @@ async function verify() {
         });
         newlyClosed.push({ name: r.name, reason: result.reason, placeId: r.naver_place_id });
       } else if (result.status === 'not_found') {
-        // 의심 카운트 증가
+        // 의심 카운트 증가 (페이지 자체가 없음 — 진짜 폐업 가능성)
         const nextCount = (r.suspicion_count ?? 0) + 1;
-        const confidence = Math.min(30 + (nextCount - 1) * 30, 95);
+        const confidence = Math.min(20 + (nextCount - 1) * 25, 90);
 
-        if (nextCount >= 3) {
-          // 3회 연속 — inactive 확정
+        if (nextCount >= 4) {
+          // 4회 연속 — inactive 확정 (3회 → 4회로 상향 조정)
           await updateClosureStatus(r.id, {
             operating_status: 'inactive',
             suspicion_count: nextCount,
@@ -122,7 +128,7 @@ async function verify() {
             closed_at: now,
             last_verified_at: now,
           });
-          newlyClosed.push({ name: r.name, reason: 'naver_404 (3회 연속)', placeId: r.naver_place_id });
+          newlyClosed.push({ name: r.name, reason: 'naver_404 (4회 연속)', placeId: r.naver_place_id });
         } else {
           // 의심 단계
           await updateClosureStatus(r.id, {
