@@ -1,18 +1,24 @@
+[2026-04-17] 5분 후 크롤링 시작 (봇 감지 회피)
 
 ──────────────────────────────────────────────────
 단일 업체 크롤링
-쿼리: "가월돈까스 주남저수지점"
+쿼리: "다이노 브루잉 창원진해"
 리뷰분석: ✓
 ──────────────────────────────────────────────────
 
-🔍 네이버 플레이스 검색: "가월돈까스 주남저수지점"
+🔍 네이버 플레이스 검색: "다이노 브루잉 창원진해"
    검색 결과: 1개
-✓ 발견: 가월돈까스 주남저수지점
-  카테고리: 돈가스
-  주소: 창원 의창구 동읍 주남로71번길 7-8
-  전화: 0507-1416-1365
-  방문리뷰: 2건
-  URL: https://map.naver.com/p/entry/place/37309394
+✓ 발견: 다이노 브루잉 창원진해
+  카테고리: 요리주점
+  주소: 창원 진해구 화천동 중원로86번길 22-2 1층 다이노 브루잉
+  전화: 055-274-5006
+  방문리뷰: 314건
+  URL: https://map.naver.com/p/entry/place/1166468718
+
+📋 상세 정보 수집 중...
+  영업시간: 영업시간 | 영업 종료 | 17:00에 영업 시작 | 17시 0분에 영업 시작 | 펼쳐보기
+  인스타: http://www.instagram.com/dinobrewingco
+  메뉴: 14개
 
 리뷰 분석 중...
   키워드 5개, 메뉴 15개, 블로그리뷰 5개
@@ -23,4 +29,35 @@
 💾 DB 저장 중...
   ✓ 저장 완료
 
-✅ 완료: 가월돈까스 주남저수지점
+✅ 완료: 다이노 브루잉 창원진해
+
+==================================================
+[2026. 4. 18. 오전 12:34:41] 크롤링 시작 (5개 키워드)
+==================================================
+기존 DB: 214개
+
+  🔍 "창원시 새로오픈 맛집" (리뷰분석)
+     페이지 1: 50개 (누적 50개)
+     페이지 2: 0개 (누적 50개)
+     (새 결과 없음 — 종료)
+     50개 업체 수집
+     [1/50] 속초오징어어시장 산호점 상세+리뷰 분석...
+     [2/50] 삼거리식당 창원가로수길본점 상세+리뷰 분석...
+     [3/50] 꼬떼드보네르 CDB 상세+리뷰 분석...
+     [4/50] 할매기름집 상남점 상세+리뷰 분석...
+     [5/50] 오브셀라 상세+리뷰 분석...
+     [6/50] 끼룩이네 진해화천점 상세+리뷰 분석...
+       분석 에러: page.waitForTimeout: Target page, context or browser has been closed
+     ✗ 에러: page.waitForTimeout: Target page, context or browser has been closed
+
+  🔍 "창원시 산호동 맛집" (리뷰분석)
+node:internal/process/promises:332
+    triggerUncaughtException(err, true /* fromPromise */);
+    ^
+
+browser.newPage: Target page, context or browser has been closed
+    at crawl (/Users/bangju/Documents/PROGRAM/unniepick-admin/scripts/crawl-restaurants/src/main.ts:32:34)
+    at async runWithKeywords (/Users/bangju/Documents/PROGRAM/unniepick-admin/scripts/crawl-restaurants/src/main.ts:549:3)
+    at async Timeout._onTimeout (/Users/bangju/Documents/PROGRAM/unniepick-admin/scripts/crawl-restaurants/src/main.ts:591:5)
+
+Node.js v25.6.1

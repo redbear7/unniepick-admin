@@ -756,6 +756,36 @@ function SingleResultCard({
   query: string;
   finishedAt: string;
 }) {
+  const [registerState, setRegisterState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
+  const [errorMsg, setErrorMsg] = useState('');
+
+  async function handleRegister() {
+    setRegisterState('loading');
+    setErrorMsg('');
+    try {
+      const res = await fetch('/api/restaurants/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(store),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        if (json.error === 'already_exists') {
+          setErrorMsg('이미 등록된 업체입니다');
+          setRegisterState('done');
+        } else {
+          setErrorMsg(json.error ?? '등록 실패');
+          setRegisterState('error');
+        }
+      } else {
+        setRegisterState('done');
+      }
+    } catch (e) {
+      setErrorMsg((e as Error).message);
+      setRegisterState('error');
+    }
+  }
+
   return (
     <div className="border border-green-500/30 bg-green-500/5 rounded-xl overflow-hidden">
       <div className="flex gap-3 p-4">
@@ -780,7 +810,7 @@ function SingleResultCard({
               <p className="text-xs text-muted mt-0.5">{store.category}</p>
             </div>
             <span className="px-2 py-0.5 bg-green-500/20 text-green-400 text-[10px] rounded-full border border-green-500/30 flex-shrink-0">
-              ✓ 저장됨
+              ✓ 크롤됨
             </span>
           </div>
 
@@ -814,6 +844,45 @@ function SingleResultCard({
               ))}
             </div>
           )}
+
+          {/* 가게 등록 버튼 */}
+          <div className="mt-3 flex items-center gap-2">
+            {registerState === 'idle' && (
+              <button
+                onClick={handleRegister}
+                className="px-3 py-1.5 bg-[#FF6F0F] hover:bg-[#e85e00] text-white text-xs font-medium rounded-lg flex items-center gap-1.5 transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                창원맛집에 등록
+              </button>
+            )}
+            {registerState === 'loading' && (
+              <span className="px-3 py-1.5 bg-fill-subtle text-muted text-xs rounded-lg flex items-center gap-1.5">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                등록 중...
+              </span>
+            )}
+            {registerState === 'done' && (
+              <span className="px-3 py-1.5 bg-green-500/15 text-green-400 text-xs font-medium rounded-lg flex items-center gap-1.5 border border-green-500/30">
+                <Check className="w-3.5 h-3.5" />
+                {errorMsg || '등록 완료'}
+              </span>
+            )}
+            {registerState === 'error' && (
+              <>
+                <span className="px-3 py-1.5 bg-red-500/10 text-red-400 text-xs rounded-lg flex items-center gap-1.5 border border-red-500/20">
+                  <X className="w-3.5 h-3.5" />
+                  {errorMsg}
+                </span>
+                <button
+                  onClick={handleRegister}
+                  className="text-xs text-muted hover:text-secondary underline"
+                >
+                  재시도
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
