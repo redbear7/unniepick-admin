@@ -41,6 +41,55 @@ export async function notifyNewRestaurants(restaurants: RestaurantData[], keywor
   await sendTelegram(text);
 }
 
+interface ClosureReport {
+  okCount: number;
+  newlyClosed: Array<{ name: string; reason: string; placeId: string }>;
+  newlySuspected: Array<{ name: string; count: number }>;
+  recovered: string[];
+  errorCount: number;
+  total: number;
+}
+
+export async function notifyClosureReport(report: ClosureReport) {
+  const now = new Date().toLocaleString('ko-KR');
+
+  // 변화 없으면 발송 스킵 (너무 잦은 알림 방지)
+  if (report.newlyClosed.length === 0 && report.newlySuspected.length === 0 && report.recovered.length === 0) {
+    console.log('[telegram] 변동 없음 — 알림 생략');
+    return;
+  }
+
+  let text = `🧹 *폐업 검증 리포트* \\(${escapeMarkdown(now)}\\)\n\n`;
+  text += `검증 ${report.total}개 \\| ✅ ${report.okCount} \\| ⚠️ ${report.errorCount}\n\n`;
+
+  if (report.newlyClosed.length) {
+    text += `🔴 *신규 폐업* ${report.newlyClosed.length}개\n`;
+    for (const c of report.newlyClosed.slice(0, 10)) {
+      text += `• ${escapeMarkdown(c.name)} \\- ${escapeMarkdown(c.reason)}\n`;
+    }
+    if (report.newlyClosed.length > 10) text += `\\.\\.\\. 외 ${report.newlyClosed.length - 10}개\n`;
+    text += '\n';
+  }
+
+  if (report.newlySuspected.length) {
+    text += `🟡 *신규 의심* ${report.newlySuspected.length}개 \\(확인 필요\\)\n`;
+    for (const s of report.newlySuspected.slice(0, 5)) {
+      text += `• ${escapeMarkdown(s.name)} \\(${s.count}회\\)\n`;
+    }
+    if (report.newlySuspected.length > 5) text += `\\.\\.\\. 외 ${report.newlySuspected.length - 5}개\n`;
+    text += '\n';
+  }
+
+  if (report.recovered.length) {
+    text += `♻️ *복구* ${report.recovered.length}개\n`;
+    for (const n of report.recovered.slice(0, 5)) {
+      text += `• ${escapeMarkdown(n)}\n`;
+    }
+  }
+
+  await sendTelegram(text);
+}
+
 export async function notifyDailySummary(total: number, newCount: number, keywords?: string[]) {
   const now = new Date().toLocaleString('ko-KR');
   const kwLabel = keywords && keywords.length

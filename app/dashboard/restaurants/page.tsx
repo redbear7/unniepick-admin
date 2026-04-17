@@ -35,6 +35,9 @@ interface Restaurant {
   review_summary: Record<string, number>;
   blog_reviews: BlogReview[];
   is_new_open: boolean;
+  operating_status: 'active' | 'suspected' | 'inactive' | 'relocated' | 'unknown' | null;
+  last_verified_at: string | null;
+  closed_at: string | null;
   crawled_at: string;
   created_at: string;
 }
@@ -63,6 +66,7 @@ export default function RestaurantsPage() {
   const [categoryFilter, setCategoryFilter] = useState('');
   const [guFilter, setGuFilter] = useState('');
   const [dongFilter, setDongFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'suspected' | 'inactive'>('active');
   const [sortBy, setSortBy] = useState<SortField>('visitor_review_count');
   const [categories, setCategories] = useState<string[]>([]);
   const [selected, setSelected] = useState<Restaurant | null>(null);
@@ -113,6 +117,12 @@ export default function RestaurantsPage() {
   })();
 
   const filtered = restaurants.filter((r) => {
+    // 영업 상태 필터 (기본: active + null만 노출, null은 구버전 데이터)
+    const status = r.operating_status ?? 'active';
+    if (statusFilter === 'active' && status !== 'active') return false;
+    if (statusFilter === 'suspected' && status !== 'suspected') return false;
+    if (statusFilter === 'inactive' && status !== 'inactive') return false;
+
     const { gu, dong } = parseLocation(r.address);
     if (guFilter && gu !== guFilter) return false;
     if (dongFilter && dong !== dongFilter) return false;
@@ -121,6 +131,14 @@ export default function RestaurantsPage() {
     return r.name.toLowerCase().includes(q) || r.address?.toLowerCase().includes(q)
       || r.category?.toLowerCase().includes(q) || r.tags?.some((t) => t.includes(q));
   });
+
+  // 상태별 카운트
+  const statusCounts = {
+    all: restaurants.length,
+    active: restaurants.filter((r) => (r.operating_status ?? 'active') === 'active').length,
+    suspected: restaurants.filter((r) => r.operating_status === 'suspected').length,
+    inactive: restaurants.filter((r) => r.operating_status === 'inactive').length,
+  };
 
   const lastCrawled = restaurants.length
     ? new Date(Math.max(...restaurants.map((r) => new Date(r.crawled_at).getTime())))
@@ -151,6 +169,14 @@ export default function RestaurantsPage() {
         <StatCard icon={<TrendingUp className="w-4 h-4" />} label="새로오픈" value={`${newOpenCount}개`} color="text-green-400" />
         <StatCard icon={<MessageSquare className="w-4 h-4" />} label="총 리뷰" value={`${totalReviews.toLocaleString()}건`} />
         <StatCard icon={<BarChart3 className="w-4 h-4" />} label="평균 리뷰" value={`${avgReviews}건`} />
+      </div>
+
+      {/* 영업 상태 필터 탭 */}
+      <div className="flex gap-2 flex-wrap">
+        <StatusTab label="영업중" value="active" count={statusCounts.active} current={statusFilter} onClick={setStatusFilter} color="green" />
+        <StatusTab label="의심" value="suspected" count={statusCounts.suspected} current={statusFilter} onClick={setStatusFilter} color="amber" />
+        <StatusTab label="폐업" value="inactive" count={statusCounts.inactive} current={statusFilter} onClick={setStatusFilter} color="red" />
+        <StatusTab label="전체" value="all" count={statusCounts.all} current={statusFilter} onClick={setStatusFilter} color="gray" />
       </div>
 
       {/* 구별 카드 */}
@@ -271,6 +297,33 @@ export default function RestaurantsPage() {
 /* Components                                                           */
 /* ------------------------------------------------------------------ */
 
+function StatusTab({
+  label, value, count, current, onClick, color,
+}: {
+  label: string;
+  value: 'all' | 'active' | 'suspected' | 'inactive';
+  count: number;
+  current: string;
+  onClick: (v: any) => void;
+  color: 'green' | 'amber' | 'red' | 'gray';
+}) {
+  const active = current === value;
+  const colorMap = {
+    green: active ? 'bg-green-500/20 border-green-500/50 text-green-400' : 'border-green-500/20 text-green-400/70',
+    amber: active ? 'bg-amber-500/20 border-amber-500/50 text-amber-400' : 'border-amber-500/20 text-amber-400/70',
+    red:   active ? 'bg-red-500/20 border-red-500/50 text-red-400'       : 'border-red-500/20 text-red-400/70',
+    gray:  active ? 'bg-fill-subtle border-border-main text-primary'     : 'border-border-subtle text-muted',
+  };
+  return (
+    <button
+      onClick={() => onClick(value)}
+      className={`px-3 py-1.5 rounded-lg border text-sm transition ${colorMap[color]} hover:opacity-100`}
+    >
+      {label} <span className="font-bold ml-1">{count}</span>
+    </button>
+  );
+}
+
 function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: string; color?: string }) {
   return (
     <div className="bg-card border border-border-main rounded-xl p-4 flex items-center gap-3">
@@ -342,9 +395,15 @@ function RestaurantCard({ r, onClick }: { r: Restaurant; onClick: () => void }) 
       <div className="p-4 space-y-2.5">
         <div className="flex items-start justify-between">
           <div>
-            <h3 className="font-semibold text-primary flex items-center gap-2">
+            <h3 className="font-semibold text-primary flex items-center gap-2 flex-wrap">
               {r.name}
               {r.is_new_open && <span className="px-1.5 py-0.5 bg-green-500/15 text-green-400 text-[10px] rounded-full border border-green-500/25">NEW</span>}
+              {r.operating_status === 'suspected' && (
+                <span className="px-1.5 py-0.5 bg-amber-500/15 text-amber-400 text-[10px] rounded-full border border-amber-500/25">🟡 의심</span>
+              )}
+              {r.operating_status === 'inactive' && (
+                <span className="px-1.5 py-0.5 bg-red-500/15 text-red-400 text-[10px] rounded-full border border-red-500/25">🔴 폐업</span>
+              )}
             </h3>
             {r.category && (
               <span className="inline-block mt-1 px-2 py-0.5 bg-blue-500/15 text-blue-400 text-xs rounded-full border border-blue-500/25">{r.category}</span>

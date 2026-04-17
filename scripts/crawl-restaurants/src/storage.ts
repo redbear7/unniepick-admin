@@ -136,3 +136,38 @@ export async function getStats() {
     .select('*', { count: 'exact', head: true });
   return { total: count ?? 0 };
 }
+
+/** 검증 대상 맛집 조회 (inactive/relocated 제외) */
+export async function getRestaurantsForVerification(): Promise<Array<{
+  id: string; naver_place_id: string; name: string;
+  operating_status: string; suspicion_count: number;
+}>> {
+  const { data, error } = await supabase
+    .from('restaurants')
+    .select('id, naver_place_id, name, operating_status, suspicion_count')
+    .in('operating_status', ['active', 'suspected', 'unknown'])
+    .order('last_verified_at', { ascending: true, nullsFirst: true });
+
+  if (error) {
+    console.error('[storage] getRestaurantsForVerification:', error.message);
+    return [];
+  }
+  return (data ?? []) as any;
+}
+
+export interface ClosureUpdate {
+  operating_status?: 'active' | 'suspected' | 'inactive' | 'relocated' | 'unknown';
+  suspicion_count?: number;
+  closure_confidence?: number;
+  closure_source?: string;
+  closed_at?: string;
+  last_verified_at?: string;
+}
+
+export async function updateClosureStatus(id: string, patch: ClosureUpdate): Promise<void> {
+  const { error } = await supabase
+    .from('restaurants')
+    .update({ ...patch, updated_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) console.error('[storage] updateClosureStatus:', error.message);
+}

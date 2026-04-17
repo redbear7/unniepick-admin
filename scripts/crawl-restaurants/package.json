@@ -6,6 +6,7 @@
   "scripts": {
     "start": "tsx src/main.ts",
     "crawl": "tsx src/main.ts --once",
+    "verify": "tsx src/verify.ts",
     "build": "tsc",
     "start:prod": "node dist/main.js"
   },
