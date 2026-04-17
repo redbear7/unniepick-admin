@@ -45,6 +45,45 @@ export interface RestaurantData {
   image_url_original?: string;
 }
 
+export interface CrawlKeyword {
+  id: string;
+  keyword: string;
+  description?: string;
+  enabled: boolean;
+  is_daily: boolean;
+  analyze_reviews: boolean;
+  status: 'idle' | 'running' | 'success' | 'failed';
+  last_error?: string;
+  last_result_count?: number;
+  last_new_count?: number;
+  last_crawled_at?: string;
+}
+
+/** 활성 키워드 조회 */
+export async function getActiveKeywords(opts: {
+  daily?: boolean; id?: string;
+} = {}): Promise<CrawlKeyword[]> {
+  let query = supabase.from('crawl_keywords').select('*').eq('enabled', true);
+  if (opts.daily) query = query.eq('is_daily', true);
+  if (opts.id) query = query.eq('id', opts.id);
+
+  const { data, error } = await query.order('created_at');
+  if (error) {
+    console.error('[storage] getActiveKeywords:', error.message);
+    return [];
+  }
+  return (data ?? []) as CrawlKeyword[];
+}
+
+/** 키워드 상태 업데이트 */
+export async function updateKeywordStatus(id: string, patch: Partial<CrawlKeyword>): Promise<void> {
+  const { error } = await supabase
+    .from('crawl_keywords')
+    .update({ ...patch, updated_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) console.error('[storage] updateKeywordStatus:', error.message);
+}
+
 /** 기존 DB에 있는 naver_place_id 목록 조회 (신규 감지용) */
 export async function getExistingIds(): Promise<Set<string>> {
   const { data } = await supabase

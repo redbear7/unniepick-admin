@@ -1,36 +1,21 @@
 import 'dotenv/config';
 import { chromium, type Page } from 'playwright';
-import cron from 'node-cron';
 import {
   upsertRestaurants, getStats, getExistingIds,
+  getActiveKeywords, updateKeywordStatus,
   type RestaurantData, type ReviewKeyword, type MenuKeyword, type BlogReview,
+  type CrawlKeyword,
 } from './storage.js';
 import { notifyNewRestaurants, notifyDailySummary } from './notify.js';
 import { processImage } from './image.js';
 
-// ── 검색어 설정 ──────────────────────────────────────────────
-
-const DAILY_QUERIES = ['창원시 새로오픈 맛집'];
-
-const DISTRICT_QUERIES = [
-  '상남동', '중앙동', '용호동', '팔용동',
-  '명곡동', '사파동', '봉곡동', '대방동',
-  '산호동', '합성동', '석전동', '반림동',
-  '교방동', '자은동', '두대동', '북면',
-  '마산합포구', '오동동', '창동', '양덕동',
-  '진해구', '충무동', '여좌동', '풍호동',
-];
-
-const TEST_QUERIES = ['상남동'];
-
 // ── 메인 크롤링 ─────────────────────────────────────────────
 
-async function crawl(queries: string[], mode: string) {
+async function crawl(keywords: CrawlKeyword[]) {
   console.log(`\n${'='.repeat(50)}`);
-  console.log(`[${new Date().toLocaleString('ko-KR')}] 크롤링 시작 (${mode})`);
+  console.log(`[${new Date().toLocaleString('ko-KR')}] 크롤링 시작 (${keywords.length}개 키워드)`);
   console.log(`${'='.repeat(50)}`);
 
-  const isDaily = mode === 'daily';
   const existingIds = await getExistingIds();
   console.log(`기존 DB: ${existingIds.size}개`);
 
@@ -38,18 +23,22 @@ async function crawl(queries: string[], mode: string) {
   const allResults: RestaurantData[] = [];
 
   try {
-    for (const q of queries) {
-      const query = isDaily ? q : `창원시 ${q} 맛집`;
-      console.log(`\n  🔍 "${query}"`);
+    for (const kw of keywords) {
+      console.log(`\n  🔍 "${kw.keyword}" ${kw.analyze_reviews ? '(리뷰분석)' : ''}`);
+
+      // 상태 'running'으로 마킹
+      await updateKeywordStatus(kw.id, { status: 'running', last_error: undefined });
 
       const page = await browser.newPage();
+      let keywordResults: RestaurantData[] = [];
+
       try {
-        // ── 1. 목록에서 기본 정보 일괄 추출 (Apollo 캐시) ──
-        const restaurants = await collectFromApollo(page, query);
+        // ── 1. 목록에서 기본 정보 일괄 추출 ──
+        const restaurants = await collectFromApollo(page, kw.keyword);
         console.log(`     ${restaurants.length}개 업체 수집`);
 
-        // ── 2. 새로오픈 모드: 업체별 상세 리뷰 분석 ──
-        if (isDaily) {
+        // ── 2. analyze_reviews=true인 경우만 상세 리뷰 분석 ──
+        if (kw.analyze_reviews) {
           for (let i = 0; i < restaurants.length; i++) {
             const r = restaurants[i];
             r.is_new_open = true;
@@ -67,8 +56,9 @@ async function crawl(queries: string[], mode: string) {
           }
         }
 
-        if (!isDaily) {
-          for (const r of restaurants) r.tags = [...(r.tags ?? []), q];
+        // 키워드 태그 부착 (리뷰분석 아닌 경우)
+        if (!kw.analyze_reviews) {
+          for (const r of restaurants) r.tags = [...(r.tags ?? []), kw.keyword];
         }
 
         // ── 이미지 리사이즈 + Storage 업로드 ──
@@ -86,12 +76,30 @@ async function crawl(queries: string[], mode: string) {
         }
         console.log(`     📷 ${imgCount}/${restaurants.length}개 이미지 저장`);
 
+        keywordResults = restaurants;
         allResults.push(...restaurants);
         console.log(`     ✓ 완료 (누적 ${allResults.length}개)`);
       } catch (e) {
-        console.log(`     ✗ 에러: ${(e as Error).message}`);
+        const msg = (e as Error).message;
+        console.log(`     ✗ 에러: ${msg}`);
+        await updateKeywordStatus(kw.id, {
+          status: 'failed',
+          last_error: msg,
+          last_crawled_at: new Date().toISOString(),
+        });
       }
       await page.close();
+
+      // 키워드별 신규 수 계산
+      const newForKw = keywordResults.filter((r) => !existingIds.has(r.naver_place_id)).length;
+
+      // 상태 'success' + 결과 기록
+      await updateKeywordStatus(kw.id, {
+        status: 'success',
+        last_crawled_at: new Date().toISOString(),
+        last_result_count: keywordResults.length,
+        last_new_count: existingIds.size > 0 ? newForKw : 0,
+      });
     }
   } finally {
     await browser.close();
@@ -134,14 +142,10 @@ async function crawl(queries: string[], mode: string) {
     console.log(`\n💾 ${saved}개 DB 저장`);
   }
 
-  const stats = await getStats();
-  console.log(`📊 DB 총: ${stats.total}개\n`);
-
-  // ── 텔레그램 알림 ──
+  // ── 신규 업체 텔레그램 알림 ──
   if (newRestaurants.length > 0 && existingIds.size > 0) {
     await notifyNewRestaurants(newRestaurants);
   }
-  await notifyDailySummary(deduped.length, existingIds.size > 0 ? newRestaurants.length : 0);
 
   return { newRestaurants, total: deduped.length };
 }
@@ -369,21 +373,45 @@ function inferTags(category: string, name: string): string[] {
 // ── 실행 모드 ────────────────────────────────────────────────
 
 const args = process.argv.slice(2);
-const mode = args.includes('--test') ? 'test'
-  : args.includes('--district') ? 'district'
-  : args.includes('--once') ? 'daily'
-  : 'scheduler';
+const keywordIdArg = args.find((a) => a.startsWith('--keyword-id='))?.split('=')[1];
+const isOnce = args.includes('--once');
 
-if (mode === 'test') {
-  crawl(TEST_QUERIES, 'district').catch(console.error);
-} else if (mode === 'district') {
-  crawl(DISTRICT_QUERIES, 'district').catch(console.error);
-} else if (mode === 'daily') {
-  crawl(DAILY_QUERIES, 'daily').catch(console.error);
+async function runWithKeywords(keywords: CrawlKeyword[]) {
+  if (!keywords.length) {
+    console.log('실행할 키워드가 없습니다.');
+    return;
+  }
+  const allNew: RestaurantData[] = [];
+  const existingBefore = await getExistingIds();
+
+  await crawl(keywords);
+
+  // 전체 신규 업체 집계 및 알림 (수동/스케줄러 공통)
+  const stats = await getStats();
+  // 간이 집계: 키워드 row의 last_new_count 합산
+  const { data: updated } = await (await import('@supabase/supabase-js')).createClient(
+    process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  ).from('crawl_keywords').select('last_new_count').in('id', keywords.map((k) => k.id));
+  const newCount = (updated ?? []).reduce((s, r: any) => s + (r.last_new_count ?? 0), 0);
+
+  await notifyDailySummary(stats.total, newCount);
+  console.log(`📊 DB 총: ${stats.total}개\n`);
+}
+
+if (keywordIdArg) {
+  // 수동 실행: 특정 키워드 하나만
+  const keywords = await getActiveKeywords({ id: keywordIdArg });
+  await runWithKeywords(keywords);
+  process.exit(0);
+} else if (isOnce) {
+  // 즉시 1회 실행: is_daily=true 모든 키워드
+  const keywords = await getActiveKeywords({ daily: true });
+  await runWithKeywords(keywords);
+  process.exit(0);
 } else {
-  // 하루 1회만 실행 (부팅/잠자기 해제 시 체크)
+  // 스케줄러: 하루 1회 (부팅/잠자기 해제 시 체크)
   const lockFile = new URL('../.last-crawl', import.meta.url).pathname;
-  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  const today = new Date().toISOString().slice(0, 10);
 
   let lastRun = '';
   try { lastRun = (await import('fs')).readFileSync(lockFile, 'utf-8').trim(); } catch {}
@@ -393,12 +421,12 @@ if (mode === 'test') {
     process.exit(0);
   }
 
-  const delayMin = Math.floor(Math.random() * 20) + 3; // 3~23분 랜덤
+  const delayMin = Math.floor(Math.random() * 20) + 3;
   console.log(`[${today}] ${delayMin}분 후 크롤링 시작 (봇 감지 회피)`);
 
   setTimeout(async () => {
-    await crawl(DAILY_QUERIES, 'daily').catch(console.error);
-    // 실행 완료 기록
+    const keywords = await getActiveKeywords({ daily: true });
+    await runWithKeywords(keywords);
     (await import('fs')).writeFileSync(lockFile, today);
     console.log('크롤링 완료. 프로세스 종료.');
     process.exit(0);

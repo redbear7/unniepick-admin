@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase';
 import {
   LayoutDashboard, Store, FileText, Music, Ticket,
   Users, LogOut, ChevronRight, ScrollText, MapPin, PlaySquare, Zap, Map, ListMusic, Tag, Building2, Megaphone, Film, Video, KeyRound, Bell,
-  GripVertical, Pencil, Check, X, Settings, ImagePlus, PanelBottom, ClipboardList, UtensilsCrossed, BarChart3,
+  GripVertical, Pencil, Check, X, Settings, ImagePlus, PanelBottom, ClipboardList, UtensilsCrossed, BarChart3, Search,
 } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 import {
@@ -36,7 +36,7 @@ import { CSS } from '@dnd-kit/utilities';
 
 const ICON_MAP: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
   LayoutDashboard, Store, FileText, Music, Ticket,
-  Users, ScrollText, MapPin, PlaySquare, Zap, Map, ListMusic, Tag, Building2, Megaphone, Film, Video, KeyRound, Bell, ImagePlus, PanelBottom, ClipboardList, UtensilsCrossed, BarChart3,
+  Users, ScrollText, MapPin, PlaySquare, Zap, Map, ListMusic, Tag, Building2, Megaphone, Film, Video, KeyRound, Bell, ImagePlus, PanelBottom, ClipboardList, UtensilsCrossed, BarChart3, Search,
 };
 
 interface NavItem {
@@ -69,8 +69,9 @@ const DEFAULT_GROUPS: NavGroup[] = [
       { id: 'applications', href: '/dashboard/applications', icon: 'ClipboardList', label: '가게 등록 신청' },
       { id: 'contexts',     href: '/dashboard/contexts',     icon: 'MapPin',        label: '매장 컨텍스트' },
       { id: 'brands',       href: '/dashboard/brands',       icon: 'Building2',         label: '브랜드관' },
-      { id: 'restaurants',  href: '/dashboard/restaurants',           icon: 'UtensilsCrossed', label: '창원 맛집' },
-      { id: 'restaurant-bi', href: '/dashboard/restaurants/analytics', icon: 'BarChart3',       label: '맛집 분석' },
+      { id: 'restaurants',     href: '/dashboard/restaurants',           icon: 'UtensilsCrossed', label: '창원 맛집' },
+      { id: 'crawl-keywords',  href: '/dashboard/restaurants/keywords',  icon: 'Search',          label: '크롤링 키워드' },
+      { id: 'restaurant-bi',   href: '/dashboard/restaurants/analytics', icon: 'BarChart3',       label: '맛집 분석' },
     ],
   },
   {

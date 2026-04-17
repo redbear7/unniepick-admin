@@ -6,8 +6,6 @@
   "scripts": {
     "start": "tsx src/main.ts",
     "crawl": "tsx src/main.ts --once",
-    "test": "tsx src/main.ts --test",
-    "district": "tsx src/main.ts --district",
     "build": "tsc",
     "start:prod": "node dist/main.js"
   },
