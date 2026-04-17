@@ -1,13 +1,18 @@
 import { NextResponse } from 'next/server';
 import { spawn } from 'child_process';
-import { openSync, existsSync, statSync } from 'fs';
+import { openSync, existsSync, statSync, writeFileSync, readFileSync, unlinkSync } from 'fs';
 import path from 'path';
 
 const VERIFY_LOG = 'verify.log';
+const VERIFY_PID = 'verify.pid';
 const RUNNING_THRESHOLD_MS = 5 * 60 * 1000; // 5분
 
 function logPath() {
   return path.join(process.cwd(), 'scripts', 'crawl-restaurants', 'logs', VERIFY_LOG);
+}
+
+function pidPath() {
+  return path.join(process.cwd(), 'scripts', 'crawl-restaurants', 'logs', VERIFY_PID);
 }
 
 /** 상태 조회 */
@@ -56,9 +61,37 @@ export async function POST() {
   });
   child.unref();
 
+  // PID 파일 저장
+  if (child.pid) {
+    try { writeFileSync(pidPath(), String(child.pid)); } catch {}
+  }
+
   return NextResponse.json({
     ok: true,
     pid: child.pid,
     logPath: `logs/${VERIFY_LOG}`,
   });
+}
+
+/** 검증 중지 */
+export async function DELETE() {
+  const pp = pidPath();
+  if (!existsSync(pp)) {
+    return NextResponse.json({ ok: true, killed: false, reason: 'PID 파일 없음' });
+  }
+
+  const pid = parseInt(readFileSync(pp, 'utf-8').trim());
+  if (!pid || Number.isNaN(pid)) {
+    try { unlinkSync(pp); } catch {}
+    return NextResponse.json({ ok: true, killed: false, reason: 'PID 값 오류' });
+  }
+
+  try {
+    try { process.kill(-pid, 'SIGTERM'); } catch {}
+    try { process.kill(pid, 'SIGTERM'); } catch {}
+    try { unlinkSync(pp); } catch {}
+    return NextResponse.json({ ok: true, killed: true, pid });
+  } catch (e) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 500 });
+  }
 }

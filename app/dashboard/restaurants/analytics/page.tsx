@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { BarChart3, Loader2, Check, AlertCircle, Play, ExternalLink } from 'lucide-react';
+import { BarChart3, Loader2, Check, AlertCircle, Play, ExternalLink, Square } from 'lucide-react';
 
 const METABASE_PUBLIC_URL = 'http://localhost:3100/public/dashboard/f5079417-b338-4c42-a3c1-7355b56e5c6e';
 
@@ -31,6 +31,17 @@ export default function RestaurantAnalyticsPage() {
       return data;
     } catch {
       return null;
+    }
+  }
+
+  async function stopContainers() {
+    if (!confirm('Metabase + Directus 컨테이너를 중지할까요?')) return;
+    try {
+      await fetch('/api/crawl-restaurants/bigdata/stop', { method: 'POST' });
+      setStarting(false);
+      setTimeout(checkStatus, 3000);
+    } catch (e) {
+      setError((e as Error).message);
     }
   }
 
@@ -166,6 +177,13 @@ export default function RestaurantAnalyticsPage() {
           >
             Directus <ExternalLink className="w-3 h-3" />
           </a>
+          <button
+            onClick={stopContainers}
+            className="px-3 py-1.5 bg-red-500/15 border border-red-500/30 rounded-lg text-xs text-red-400 hover:bg-red-500/25 flex items-center gap-1"
+            title="컨테이너 중지"
+          >
+            <Square className="w-3 h-3 fill-current" /> 중지
+          </button>
         </div>
       </div>
 

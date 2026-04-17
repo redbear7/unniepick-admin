@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import {
   Search, Plus, Play, Loader2, Trash2, Check, X,
   Calendar, MessageSquare, AlertCircle, Clock, Terminal, ChevronDown, ChevronUp,
-  ShieldCheck, Sparkles,
+  ShieldCheck, Sparkles, Square,
 } from 'lucide-react';
 
 interface CrawlKeyword {
@@ -173,6 +173,31 @@ export default function CrawlKeywordsPage() {
     load();
   }
 
+  async function stopManual(id: string) {
+    if (!confirm('실행 중인 크롤링을 중지할까요?')) return;
+    const res = await fetch('/api/crawl-restaurants/run', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ keyword_id: id }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      alert(err.error ?? '중지 실패');
+    }
+    load();
+  }
+
+  async function stopVerify() {
+    if (!confirm('폐업 검증을 중지할까요?')) return;
+    const res = await fetch('/api/crawl-restaurants/verify', { method: 'DELETE' });
+    if (!res.ok) {
+      const err = await res.json();
+      alert(err.error ?? '중지 실패');
+    }
+    setVerifyRunning(false);
+    fetchVerifyLog();
+  }
+
   return (
     <div className="space-y-6">
       {/* 헤더 */}
@@ -200,27 +225,25 @@ export default function CrawlKeywordsPage() {
             <Terminal className="w-4 h-4" />
             검증 로그
           </button>
-          <button
-            onClick={runVerify}
-            disabled={verifyRunning}
-            className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-1.5 ${
-              verifyRunning
-                ? 'bg-fill-subtle text-muted cursor-not-allowed border border-border-subtle'
-                : 'bg-red-500/15 text-red-400 border border-red-500/30 hover:bg-red-500/25'
-            }`}
-          >
-            {verifyRunning ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                검증 중...
-              </>
-            ) : (
-              <>
-                <ShieldCheck className="w-4 h-4" />
-                폐업 검증 테스트
-              </>
-            )}
-          </button>
+          {verifyRunning ? (
+            <button
+              onClick={stopVerify}
+              className="px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-1.5 bg-red-500/25 text-red-400 border border-red-500/50 hover:bg-red-500/40"
+              title="검증 중지"
+            >
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <Square className="w-3 h-3 fill-current" />
+              검증 중지
+            </button>
+          ) : (
+            <button
+              onClick={runVerify}
+              className="px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-1.5 bg-red-500/15 text-red-400 border border-red-500/30 hover:bg-red-500/25"
+            >
+              <ShieldCheck className="w-4 h-4" />
+              폐업 검증 테스트
+            </button>
+          )}
         </div>
       </div>
 
@@ -312,6 +335,7 @@ export default function CrawlKeywordsPage() {
               key={k.id}
               k={k}
               onRun={() => runManual(k.id)}
+              onStop={() => stopManual(k.id)}
               onToggle={(patch) => togglePatch(k.id, patch)}
               onDelete={() => removeKeyword(k.id, k.keyword)}
             />
@@ -323,10 +347,11 @@ export default function CrawlKeywordsPage() {
 }
 
 function KeywordRow({
-  k, onRun, onToggle, onDelete,
+  k, onRun, onStop, onToggle, onDelete,
 }: {
   k: CrawlKeyword;
   onRun: () => void;
+  onStop: () => void;
   onToggle: (patch: Partial<CrawlKeyword>) => void;
   onDelete: () => void;
 }) {
@@ -436,28 +461,26 @@ function KeywordRow({
           />
         </div>
 
-        {/* 실행 버튼 */}
-        <button
-          onClick={onRun}
-          disabled={running}
-          className={`px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1.5 ${
-            running
-              ? 'bg-fill-subtle text-muted cursor-not-allowed'
-              : 'bg-[#FF6F0F] text-white hover:bg-[#FF6F0F]/90'
-          }`}
-        >
-          {running ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              실행 중
-            </>
-          ) : (
-            <>
-              <Play className="w-4 h-4" />
-              실행
-            </>
-          )}
-        </button>
+        {/* 실행/중지 버튼 */}
+        {running ? (
+          <button
+            onClick={onStop}
+            className="px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1.5 bg-red-500/15 text-red-400 border border-red-500/30 hover:bg-red-500/25"
+            title="실행 중지"
+          >
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <Square className="w-3 h-3 fill-current" />
+            중지
+          </button>
+        ) : (
+          <button
+            onClick={onRun}
+            className="px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1.5 bg-[#FF6F0F] text-white hover:bg-[#FF6F0F]/90"
+          >
+            <Play className="w-4 h-4" />
+            실행
+          </button>
+        )}
 
         <button
           onClick={() => setLogOpen((v) => !v)}
