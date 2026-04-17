@@ -1,0 +1,2367 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>언니픽 — 앱 디자인 시안 v1.1</title>
+<style>
+/* ══ 글로벌 ══ */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap');
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --brand:    #FF6F0F;
+  --brand2:   #FF9A3D;
+  --brand-bg: #FFF3EB;
+  --g900: #191F28;
+  --g800: #333D4B;
+  --g700: #4E5968;
+  --g600: #6B7684;
+  --g500: #8B95A1;
+  --g400: #ADB5BD;
+  --g300: #D1D6DB;
+  --g200: #E5E8EB;
+  --g150: #EAECEF;
+  --g100: #F2F4F6;
+  --g50:  #F9FAFB;
+  --white: #FFFFFF;
+  --green: #0AC86E;
+  --red:   #E53935;
+}
+
+body {
+  font-family: 'Noto Sans KR', -apple-system, sans-serif;
+  background: #0f0f14;
+  color: var(--g900);
+  min-height: 100vh;
+  padding: 40px 24px 80px;
+}
+
+/* ══ 제목 섹션 ══ */
+.doc-header {
+  text-align: center;
+  margin-bottom: 56px;
+}
+.doc-header .badge {
+  display: inline-block;
+  background: var(--brand);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  margin-bottom: 16px;
+}
+.doc-header h1 {
+  font-size: 32px;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: -0.8px;
+  margin-bottom: 8px;
+}
+.doc-header p {
+  font-size: 14px;
+  color: #6b7684;
+}
+
+/* ══ 섹션 라벨 ══ */
+.section-label {
+  text-align: center;
+  margin: 64px 0 32px;
+}
+.section-label h2 {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 3px;
+  color: var(--brand);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.section-label p {
+  font-size: 20px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.4px;
+}
+.section-label small {
+  display: block;
+  margin-top: 6px;
+  font-size: 13px;
+  color: #4e5968;
+}
+
+/* ══ 화면 그리드 ══ */
+.screen-row {
+  display: flex;
+  gap: 28px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+/* ══ 폰 프레임 ══ */
+.phone {
+  width: 320px;
+  background: var(--white);
+  border-radius: 40px;
+  overflow: hidden;
+  box-shadow:
+    0 0 0 10px #1c1c26,
+    0 0 0 12px #2a2a38,
+    0 32px 80px rgba(0,0,0,0.7);
+  flex-shrink: 0;
+  position: relative;
+}
+.phone-label {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #4e5968;
+  margin-top: 14px;
+  letter-spacing: 0.5px;
+}
+
+/* ══ 상태바 ══ */
+.status-bar {
+  background: var(--white);
+  padding: 14px 24px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--g900);
+}
+.status-bar .notch {
+  width: 100px;
+  height: 20px;
+  background: #1c1c26;
+  border-radius: 0 0 14px 14px;
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.status-icons { display: flex; gap: 5px; align-items: center; }
+.status-icons svg { width: 14px; height: 14px; }
+
+/* ══ 앱 내용 공통 ══ */
+.screen-body {
+  background: var(--g100);
+  min-height: 580px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ══ 앱바 ══ */
+.app-bar {
+  background: var(--white);
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--g150);
+}
+.app-bar .logo {
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--brand);
+  letter-spacing: -0.5px;
+}
+.app-bar .title {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--g900);
+}
+.app-bar .icon-row { display: flex; gap: 12px; }
+.icon-btn {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: var(--g100);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px;
+}
+
+/* ══ 탭바 ══ */
+.tab-bar {
+  background: var(--white);
+  border-top: 1px solid var(--g150);
+  display: flex;
+  padding: 8px 0 20px;
+}
+.tab-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--g400);
+}
+.tab-item.active { color: var(--brand); }
+.tab-icon { font-size: 20px; }
+
+/* ══ 스크롤 영역 ══ */
+.scroll-area {
+  flex: 1;
+  overflow: hidden;
+  padding: 0;
+}
+
+/* ══ 피드 포스트 카드 ══ */
+.feed-card {
+  background: var(--white);
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--g150);
+}
+.feed-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.store-avatar {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+  font-weight: 900;
+  color: #fff;
+  flex-shrink: 0;
+}
+.store-name { font-size: 13px; font-weight: 800; color: var(--g900); }
+.store-meta { font-size: 11px; color: var(--g500); }
+.follow-btn {
+  margin-left: auto;
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1.5px solid var(--brand);
+  color: var(--brand);
+  font-size: 11px;
+  font-weight: 700;
+  background: none;
+}
+.follow-btn.following {
+  background: var(--brand);
+  color: #fff;
+  border-color: var(--brand);
+}
+
+/* 쿠폰 인라인 카드 */
+.coupon-inline {
+  background: var(--brand-bg);
+  border: 1.5px dashed var(--brand);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+}
+.coupon-inline-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.coupon-title { font-size: 14px; font-weight: 800; color: var(--g900); }
+.coupon-badge {
+  font-size: 10px; font-weight: 800;
+  padding: 2px 7px; border-radius: 10px;
+  flex-shrink: 0;
+}
+.badge-new { background: var(--brand); color: #fff; }
+.badge-hot { background: var(--red); color: #fff; }
+.badge-end { background: var(--g700); color: #fff; }
+.badge-day { background: #e53935; color: #fff; }
+.coupon-sub { font-size: 11px; color: var(--g600); margin-bottom: 8px; }
+.coupon-inline-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.coupon-expire { font-size: 10px; color: var(--g500); }
+.coupon-remain { font-size: 10px; font-weight: 700; color: var(--red); }
+.save-btn {
+  padding: 6px 14px;
+  border-radius: 20px;
+  background: var(--brand);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  border: none;
+}
+.save-btn.saved {
+  background: var(--g200);
+  color: var(--g600);
+}
+
+.feed-caption { font-size: 12px; color: var(--g700); margin-bottom: 8px; }
+.feed-action-row {
+  display: flex;
+  gap: 14px;
+  font-size: 11px;
+  color: var(--g500);
+}
+
+/* ══ 탐색 ══ */
+.explore-bar {
+  background: var(--white);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--g150);
+}
+.loc-chip {
+  display: flex; align-items: center; gap: 4px;
+  background: var(--g100); border-radius: 20px;
+  padding: 5px 12px;
+  font-size: 12px; font-weight: 700; color: var(--g800);
+  flex-shrink: 0;
+}
+.search-input {
+  flex: 1;
+  background: var(--g100);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 12px;
+  color: var(--g500);
+}
+.cat-scroll {
+  background: var(--white);
+  display: flex;
+  gap: 6px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--g150);
+  overflow-x: auto;
+}
+.cat-chip {
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  background: var(--g100);
+  color: var(--g700);
+  flex-shrink: 0;
+}
+.cat-chip.on {
+  background: var(--brand);
+  color: #fff;
+}
+.store-list-item {
+  background: var(--white);
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--g150);
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.store-thumb {
+  width: 52px; height: 52px;
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+.store-info { flex: 1; }
+.store-list-name { font-size: 14px; font-weight: 800; color: var(--g900); margin-bottom: 2px; }
+.store-list-tag { font-size: 11px; color: var(--g500); margin-bottom: 6px; }
+.coupon-count-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: var(--brand-bg);
+  color: var(--brand);
+  font-size: 11px; font-weight: 700;
+  padding: 3px 10px; border-radius: 20px;
+}
+.store-dist { font-size: 11px; color: var(--g500); }
+
+/* ══ 내 쿠폰함 ══ */
+.coupon-wallet-seg {
+  display: flex;
+  background: var(--white);
+  border-bottom: 1px solid var(--g150);
+}
+.seg-item {
+  flex: 1;
+  padding: 11px 0;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--g500);
+  border-bottom: 2px solid transparent;
+}
+.seg-item.active {
+  color: var(--brand);
+  border-bottom-color: var(--brand);
+}
+
+.wallet-card {
+  background: var(--white);
+  margin: 10px 14px 0;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+}
+.wallet-card-top {
+  background: linear-gradient(135deg, var(--brand), var(--brand2));
+  padding: 16px;
+  color: #fff;
+}
+.wallet-card-store { font-size: 11px; font-weight: 700; opacity: 0.85; margin-bottom: 4px; }
+.wallet-card-title { font-size: 16px; font-weight: 900; margin-bottom: 8px; }
+.wallet-card-expire { font-size: 10px; opacity: 0.8; }
+.wallet-card-bottom {
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.expire-bar-wrap { flex: 1; margin-right: 12px; }
+.expire-bar-label { font-size: 10px; color: var(--g500); margin-bottom: 4px; display: flex; justify-content: space-between; }
+.expire-bar { height: 5px; background: var(--g150); border-radius: 3px; overflow: hidden; }
+.expire-bar-fill { height: 100%; background: var(--brand); border-radius: 3px; }
+.use-btn {
+  padding: 8px 14px;
+  border-radius: 20px;
+  background: var(--brand);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  border: none;
+  white-space: nowrap;
+}
+
+/* ══ 쿠폰 사용 화면 ══ */
+.use-screen {
+  background: var(--g900);
+  min-height: 580px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  gap: 20px;
+}
+.use-screen-store { font-size: 12px; font-weight: 700; color: var(--g500); letter-spacing: 1px; }
+.use-screen-title { font-size: 20px; font-weight: 900; color: #fff; text-align: center; line-height: 1.3; }
+.use-coupon-box {
+  width: 100%;
+  background: var(--white);
+  border-radius: 20px;
+  padding: 24px;
+  text-align: center;
+}
+.use-coupon-emoji { font-size: 36px; margin-bottom: 8px; }
+.use-coupon-name { font-size: 18px; font-weight: 900; color: var(--g900); margin-bottom: 6px; }
+.use-coupon-desc { font-size: 12px; color: var(--g600); margin-bottom: 16px; }
+.use-coupon-num {
+  background: var(--g100);
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 4px;
+  color: var(--g900);
+  margin-bottom: 6px;
+}
+.use-coupon-hint { font-size: 11px; color: var(--g500); }
+.use-screen-guide {
+  background: rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 12px;
+  color: var(--g400);
+  text-align: center;
+  line-height: 1.6;
+}
+.use-expire { font-size: 11px; color: var(--g600); }
+
+/* ══ 가게 프로필 / 쿠폰북 ══ */
+.store-profile-header {
+  background: var(--white);
+  padding: 16px;
+}
+.store-profile-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.store-profile-avatar {
+  width: 56px; height: 56px;
+  border-radius: 16px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px;
+  flex-shrink: 0;
+}
+.store-profile-name { font-size: 17px; font-weight: 900; color: var(--g900); margin-bottom: 2px; }
+.store-profile-tag { font-size: 12px; color: var(--g500); }
+.store-stats {
+  display: flex;
+  gap: 20px;
+  padding: 10px 0;
+  border-top: 1px solid var(--g150);
+  border-bottom: 1px solid var(--g150);
+  margin-bottom: 10px;
+}
+.stat-item { text-align: center; flex: 1; }
+.stat-num { font-size: 16px; font-weight: 900; color: var(--g900); }
+.stat-label { font-size: 10px; color: var(--g500); }
+.follow-full-btn {
+  width: 100%;
+  padding: 10px;
+  border-radius: 12px;
+  background: var(--brand);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  text-align: center;
+}
+.follow-full-btn.following {
+  background: var(--g150);
+  color: var(--g700);
+}
+
+.coupon-book-section {
+  background: var(--white);
+  margin-top: 8px;
+  padding: 12px 16px 0;
+}
+.section-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.section-title { font-size: 14px; font-weight: 800; color: var(--g900); }
+.section-count { font-size: 12px; color: var(--brand); font-weight: 700; }
+
+.coupon-book-item {
+  border: 1.5px solid var(--g150);
+  border-radius: 14px;
+  padding: 13px 14px;
+  margin-bottom: 10px;
+}
+.coupon-book-item.featured {
+  border-color: var(--brand);
+  background: var(--brand-bg);
+}
+.cb-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 6px;
+}
+.cb-title { font-size: 14px; font-weight: 800; color: var(--g900); }
+.cb-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.cb-meta { font-size: 10px; color: var(--g500); }
+.cb-save-btn {
+  padding: 5px 14px;
+  border-radius: 20px;
+  background: var(--brand);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+}
+.cb-save-btn.saved {
+  background: var(--g150);
+  color: var(--g600);
+}
+
+/* ══ 사장님 화면 ══ */
+.owner-screen {
+  background: var(--g50);
+}
+.owner-dash {
+  background: linear-gradient(135deg, #191F28, #333D4B);
+  padding: 20px 18px 24px;
+  color: #fff;
+}
+.owner-dash-name { font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.6); margin-bottom: 6px; }
+.owner-dash-title { font-size: 18px; font-weight: 900; margin-bottom: 16px; }
+.owner-stats {
+  display: flex;
+  gap: 0;
+  background: rgba(255,255,255,0.08);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.owner-stat {
+  flex: 1;
+  padding: 12px 8px;
+  text-align: center;
+  border-right: 1px solid rgba(255,255,255,0.08);
+}
+.owner-stat:last-child { border-right: none; }
+.owner-stat-num { font-size: 18px; font-weight: 900; }
+.owner-stat-label { font-size: 10px; color: rgba(255,255,255,0.5); margin-top: 2px; }
+
+.owner-cta {
+  margin: 16px;
+  padding: 14px;
+  border-radius: 16px;
+  background: var(--brand);
+  color: #fff;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 900;
+  box-shadow: 0 6px 20px rgba(255,111,15,0.35);
+}
+
+.owner-coupon-list { padding: 0 16px; }
+.owner-coupon-header {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--g800);
+  margin-bottom: 10px;
+}
+.owner-coupon-item {
+  background: var(--white);
+  border-radius: 14px;
+  padding: 13px 14px;
+  margin-bottom: 10px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+}
+.oci-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.oci-title { font-size: 14px; font-weight: 800; color: var(--g900); }
+.oci-status {
+  font-size: 10px; font-weight: 800;
+  padding: 3px 9px; border-radius: 10px;
+}
+.status-active { background: #e6faf2; color: var(--green); }
+.status-end { background: var(--g100); color: var(--g500); }
+.oci-stats {
+  display: flex;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--g600);
+  margin-bottom: 8px;
+}
+.oci-stats span b { color: var(--g900); font-weight: 700; }
+.oci-actions { display: flex; gap: 8px; }
+.oci-action-btn {
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--g100);
+  color: var(--g700);
+}
+.oci-action-btn.primary {
+  background: var(--brand-bg);
+  color: var(--brand);
+}
+
+/* ══ 쿠폰 발행 화면 ══ */
+.create-screen {
+  background: var(--g50);
+}
+.create-step {
+  padding: 14px 16px 0;
+}
+.step-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--brand);
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+.step-title {
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--g900);
+  margin-bottom: 14px;
+}
+
+.type-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.type-card {
+  background: var(--white);
+  border: 2px solid var(--g200);
+  border-radius: 14px;
+  padding: 12px 8px;
+  text-align: center;
+  cursor: pointer;
+}
+.type-card.selected {
+  border-color: var(--brand);
+  background: var(--brand-bg);
+}
+.type-icon { font-size: 22px; margin-bottom: 4px; }
+.type-name { font-size: 11px; font-weight: 700; color: var(--g800); }
+
+.input-group { margin-bottom: 12px; }
+.input-label { font-size: 11px; font-weight: 700; color: var(--g600); margin-bottom: 5px; }
+.input-field {
+  width: 100%;
+  background: var(--white);
+  border: 1.5px solid var(--g200);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--g900);
+}
+.input-field.focused { border-color: var(--brand); }
+
+.option-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.option-pill {
+  padding: 7px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--white);
+  border: 1.5px solid var(--g200);
+  color: var(--g700);
+}
+.option-pill.on {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+}
+
+.preview-box {
+  margin: 14px 16px;
+  background: var(--brand-bg);
+  border: 1.5px dashed var(--brand);
+  border-radius: 14px;
+  padding: 14px;
+}
+.preview-label { font-size: 10px; font-weight: 700; color: var(--brand); margin-bottom: 6px; letter-spacing: 1px; }
+.preview-title { font-size: 15px; font-weight: 900; color: var(--g900); margin-bottom: 4px; }
+.preview-meta { font-size: 11px; color: var(--g600); }
+
+.publish-btn {
+  margin: 10px 16px 16px;
+  width: calc(100% - 32px);
+  padding: 14px;
+  border-radius: 16px;
+  background: var(--brand);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 900;
+  text-align: center;
+  box-shadow: 0 6px 20px rgba(255,111,15,0.35);
+}
+
+/* ══ 구분선 ══ */
+.divider {
+  height: 8px;
+  background: var(--g100);
+}
+
+/* ══ 인쇄 ══ */
+@media print {
+  body { background: #fff; padding: 0; }
+  .phone { box-shadow: 0 0 0 2px #ccc; border-radius: 20px; }
+  .doc-header h1, .section-label p { color: #000; }
+  .doc-header p, .section-label h2, .section-label small { color: #666; }
+  .phone-label { color: #333; }
+  .use-screen { background: #1c1c2e; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══ 헤더 ══ -->
+<div class="doc-header">
+  <div class="badge">DESIGN MOCKUP v1</div>
+  <h1>언니픽 앱 디자인 시안</h1>
+  <p>미니멀 쿠폰북 · 2026.04.16 · bangju</p>
+</div>
+
+
+<!-- ═══════════════════════════════════
+     A. 손님 화면
+════════════════════════════════════ -->
+<div class="section-label">
+  <h2>USER FLOW</h2>
+  <p>손님 화면</p>
+  <small>홈 피드 → 탐색 → 내 쿠폰함 → 쿠폰 사용</small>
+</div>
+
+<div class="screen-row">
+
+  <!-- ── A1. 홈 피드 ── -->
+  <div>
+    <div class="phone">
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="notch"></div>
+        <div class="status-icons">📶🔋</div>
+      </div>
+
+      <!-- 앱바 -->
+      <div class="app-bar">
+        <div class="logo">언니픽</div>
+        <div class="icon-row">
+          <div class="icon-btn">🔔</div>
+          <div class="icon-btn">🔍</div>
+        </div>
+      </div>
+
+      <!-- 피드 -->
+      <div class="screen-body">
+        <div class="scroll-area">
+
+          <!-- 포스트 1 -->
+          <div class="feed-card">
+            <div class="feed-card-header">
+              <div class="store-avatar" style="background:linear-gradient(135deg,#FF6F0F,#FF9A3D)">봄</div>
+              <div>
+                <div class="store-name">카페봄날</div>
+                <div class="store-meta">☕ 카페 · 방금</div>
+              </div>
+              <button class="follow-btn following">팔로잉</button>
+            </div>
+            <div class="feed-caption">⚡ 오늘 오후 2-5시 한정 쿠폰 발급 중!</div>
+            <div class="coupon-inline">
+              <div class="coupon-inline-top">
+                <div>
+                  <div class="coupon-title">아메리카노 1+1</div>
+                  <div class="coupon-sub">오후 2시~5시 · 선착순 50명</div>
+                </div>
+                <span class="coupon-badge badge-new">NEW</span>
+              </div>
+              <div class="coupon-inline-bottom">
+                <div>
+                  <div class="coupon-expire">⏰ 오늘 마감</div>
+                  <div class="coupon-remain">🔥 잔여 23장</div>
+                </div>
+                <button class="save-btn">받기</button>
+              </div>
+            </div>
+            <div class="feed-action-row">
+              <span>🎟 쿠폰 3개</span>
+              <span>❤️ 47</span>
+              <span>💬 12</span>
+            </div>
+          </div>
+
+          <!-- 포스트 2 -->
+          <div class="feed-card">
+            <div class="feed-card-header">
+              <div class="store-avatar" style="background:linear-gradient(135deg,#a855f7,#7c3aed)">언</div>
+              <div>
+                <div class="store-name">미용실언니</div>
+                <div class="store-meta">✂️ 미용 · 3시간 전</div>
+              </div>
+              <button class="follow-btn following">팔로잉</button>
+            </div>
+            <div class="coupon-inline">
+              <div class="coupon-inline-top">
+                <div>
+                  <div class="coupon-title">컷트+염색 20% 할인</div>
+                  <div class="coupon-sub">이번 주 한정 · 수량 무제한</div>
+                </div>
+                <span class="coupon-badge badge-hot">인기</span>
+              </div>
+              <div class="coupon-inline-bottom">
+                <div>
+                  <div class="coupon-expire">📅 D-3</div>
+                </div>
+                <button class="save-btn saved">저장됨</button>
+              </div>
+            </div>
+            <div class="feed-action-row">
+              <span>🎟 쿠폰 1개</span>
+              <span>❤️ 92</span>
+            </div>
+          </div>
+
+          <!-- 포스트 3 -->
+          <div class="feed-card">
+            <div class="feed-card-header">
+              <div class="store-avatar" style="background:linear-gradient(135deg,#0891b2,#0e7490)">치</div>
+              <div>
+                <div class="store-name">치킨공화국</div>
+                <div class="store-meta">🍗 치킨 · 어제</div>
+              </div>
+              <button class="follow-btn">+ 팔로우</button>
+            </div>
+            <div class="coupon-inline">
+              <div class="coupon-inline-top">
+                <div>
+                  <div class="coupon-title">후라이드 2마리 세트 특가</div>
+                  <div class="coupon-sub">35,000원 → 28,000원</div>
+                </div>
+                <span class="coupon-badge badge-day">오늘만</span>
+              </div>
+              <div class="coupon-inline-bottom">
+                <div>
+                  <div class="coupon-remain">🔥 잔여 5장</div>
+                </div>
+                <button class="save-btn">받기</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- 탭바 -->
+        <div class="tab-bar">
+          <div class="tab-item active">
+            <div class="tab-icon">🏠</div>
+            <div>홈</div>
+          </div>
+          <div class="tab-item">
+            <div class="tab-icon">🔍</div>
+            <div>탐색</div>
+          </div>
+          <div class="tab-item">
+            <div class="tab-icon">🎟</div>
+            <div>쿠폰함</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-label">A1 · 홈 피드</div>
+  </div>
+
+
+  <!-- ── A2. 탐색 ── -->
+  <div>
+    <div class="phone">
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="notch"></div>
+        <div class="status-icons">📶🔋</div>
+      </div>
+
+      <div class="app-bar">
+        <div class="title">가게 탐색</div>
+      </div>
+
+      <div class="screen-body">
+        <div class="scroll-area">
+          <!-- 위치 + 검색 -->
+          <div class="explore-bar">
+            <div class="loc-chip">📍 역삼동 ▾</div>
+            <div class="search-input">가게 이름 검색</div>
+          </div>
+
+          <!-- 카테고리 -->
+          <div class="cat-scroll">
+            <div class="cat-chip on">전체</div>
+            <div class="cat-chip">☕ 카페</div>
+            <div class="cat-chip">🍽 음식</div>
+            <div class="cat-chip">✂️ 미용</div>
+            <div class="cat-chip">💅 네일</div>
+            <div class="cat-chip">기타</div>
+          </div>
+
+          <!-- 정렬 -->
+          <div style="background:var(--white);padding:8px 16px;border-bottom:1px solid var(--g150);font-size:11px;color:var(--g600);display:flex;gap:12px;">
+            <span style="color:var(--brand);font-weight:700;">거리순 ▾</span>
+            <span>쿠폰 많은 순</span>
+            <span>인기순</span>
+            <span style="margin-left:auto;">🎟 쿠폰 있는 가게만</span>
+          </div>
+
+          <!-- 가게 목록 -->
+          <div class="store-list-item">
+            <div class="store-thumb" style="background:#fff3eb;">☕</div>
+            <div class="store-info">
+              <div class="store-list-name">카페봄날</div>
+              <div class="store-list-tag">카페 · 📍 120m</div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div class="coupon-count-chip">🎟 쿠폰 3개</div>
+                <div class="store-dist">팔로워 1,230</div>
+              </div>
+            </div>
+            <button class="follow-btn following" style="font-size:10px;padding:3px 10px;">팔로잉</button>
+          </div>
+
+          <div class="store-list-item">
+            <div class="store-thumb" style="background:#f3e8ff;">✂️</div>
+            <div class="store-info">
+              <div class="store-list-name">미용실언니</div>
+              <div class="store-list-tag">미용 · 📍 340m</div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div class="coupon-count-chip">🎟 쿠폰 1개</div>
+                <div class="store-dist">팔로워 880</div>
+              </div>
+            </div>
+            <button class="follow-btn following" style="font-size:10px;padding:3px 10px;">팔로잉</button>
+          </div>
+
+          <div class="store-list-item">
+            <div class="store-thumb" style="background:#fff0f0;">🍗</div>
+            <div class="store-info">
+              <div class="store-list-name">치킨공화국</div>
+              <div class="store-list-tag">치킨 · 📍 510m</div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div class="coupon-count-chip">🎟 쿠폰 2개</div>
+                <div class="store-dist">팔로워 2,140</div>
+              </div>
+            </div>
+            <button class="follow-btn" style="font-size:10px;padding:3px 10px;">+ 팔로우</button>
+          </div>
+
+          <div class="store-list-item">
+            <div class="store-thumb" style="background:#ffe8f0;">💅</div>
+            <div class="store-info">
+              <div class="store-list-name">네일살롱 핑크</div>
+              <div class="store-list-tag">네일 · 📍 720m</div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div class="coupon-count-chip">🎟 쿠폰 1개</div>
+                <div class="store-dist">팔로워 430</div>
+              </div>
+            </div>
+            <button class="follow-btn" style="font-size:10px;padding:3px 10px;">+ 팔로우</button>
+          </div>
+
+        </div>
+        <div class="tab-bar">
+          <div class="tab-item"><div class="tab-icon">🏠</div><div>홈</div></div>
+          <div class="tab-item active"><div class="tab-icon">🔍</div><div>탐색</div></div>
+          <div class="tab-item"><div class="tab-icon">🎟</div><div>쿠폰함</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-label">A2 · 가게 탐색</div>
+  </div>
+
+
+  <!-- ── A3. 내 쿠폰함 ── -->
+  <div>
+    <div class="phone">
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="notch"></div>
+        <div class="status-icons">📶🔋</div>
+      </div>
+
+      <div class="app-bar">
+        <div class="title">내 쿠폰함</div>
+        <div class="icon-row"><div class="icon-btn">📋</div></div>
+      </div>
+
+      <div class="screen-body">
+        <div class="coupon-wallet-seg">
+          <div class="seg-item active">사용 가능 (5)</div>
+          <div class="seg-item">사용 완료</div>
+          <div class="seg-item">만료</div>
+        </div>
+
+        <div class="scroll-area" style="padding-top:4px;">
+
+          <!-- 쿠폰 카드 1 -->
+          <div class="wallet-card">
+            <div class="wallet-card-top" style="background:linear-gradient(135deg,#FF6F0F,#FF9A3D)">
+              <div class="wallet-card-store">☕ 카페봄날</div>
+              <div class="wallet-card-title">아메리카노 1+1</div>
+              <div class="wallet-card-expire">⏰ 오늘 마감</div>
+            </div>
+            <div class="wallet-card-bottom">
+              <div class="expire-bar-wrap">
+                <div class="expire-bar-label">
+                  <span>만료까지</span><span style="color:var(--red);font-weight:700;">D-0</span>
+                </div>
+                <div class="expire-bar"><div class="expire-bar-fill" style="width:95%;background:var(--red)"></div></div>
+              </div>
+              <button class="use-btn">사용하기</button>
+            </div>
+          </div>
+
+          <!-- 쿠폰 카드 2 -->
+          <div class="wallet-card" style="margin-top:10px;">
+            <div class="wallet-card-top" style="background:linear-gradient(135deg,#a855f7,#7c3aed)">
+              <div class="wallet-card-store">✂️ 미용실언니</div>
+              <div class="wallet-card-title">컷트+염색 20% 할인</div>
+              <div class="wallet-card-expire">📅 ~2026.04.19</div>
+            </div>
+            <div class="wallet-card-bottom">
+              <div class="expire-bar-wrap">
+                <div class="expire-bar-label">
+                  <span>만료까지</span><span>D-3</span>
+                </div>
+                <div class="expire-bar"><div class="expire-bar-fill" style="width:55%"></div></div>
+              </div>
+              <button class="use-btn">사용하기</button>
+            </div>
+          </div>
+
+          <!-- 쿠폰 카드 3 -->
+          <div class="wallet-card" style="margin-top:10px;">
+            <div class="wallet-card-top" style="background:linear-gradient(135deg,#0891b2,#0e7490)">
+              <div class="wallet-card-store">🍗 치킨공화국</div>
+              <div class="wallet-card-title">후라이드 2마리 세트</div>
+              <div class="wallet-card-expire">📅 ~2026.04.23</div>
+            </div>
+            <div class="wallet-card-bottom">
+              <div class="expire-bar-wrap">
+                <div class="expire-bar-label">
+                  <span>만료까지</span><span>D-7</span>
+                </div>
+                <div class="expire-bar"><div class="expire-bar-fill" style="width:30%"></div></div>
+              </div>
+              <button class="use-btn">사용하기</button>
+            </div>
+          </div>
+
+        </div>
+        <div class="tab-bar">
+          <div class="tab-item"><div class="tab-icon">🏠</div><div>홈</div></div>
+          <div class="tab-item"><div class="tab-icon">🔍</div><div>탐색</div></div>
+          <div class="tab-item active"><div class="tab-icon">🎟</div><div>쿠폰함</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-label">A3 · 내 쿠폰함</div>
+  </div>
+
+</div><!-- /screen-row -->
+
+
+<!-- ═══════════════════════════════════
+     B. 쿠폰 사용 + 가게 프로필
+════════════════════════════════════ -->
+<div class="section-label">
+  <h2>COUPON FLOW</h2>
+  <p>쿠폰 사용 화면 · 가게 쿠폰북</p>
+  <small>화면을 보여주면 끝 — 핫페퍼와 동일한 방식</small>
+</div>
+
+<div class="screen-row">
+
+  <!-- ── B1. 쿠폰 사용 화면 ── -->
+  <div>
+    <div class="phone">
+      <div class="status-bar" style="background:#191F28;color:#fff;">
+        <span>9:41</span>
+        <div class="notch"></div>
+        <div class="status-icons">📶🔋</div>
+      </div>
+
+      <div class="use-screen">
+        <div class="use-screen-store">☕ 카페봄날</div>
+        <div class="use-screen-title">이 화면을<br>직원에게 보여주세요</div>
+
+        <div class="use-coupon-box">
+          <div class="use-coupon-emoji">☕</div>
+          <div class="use-coupon-name">아메리카노 1+1</div>
+          <div class="use-coupon-desc">오후 2시~5시 · 선착순 50명</div>
+          <div class="use-coupon-num">8 2 4 - 9 3 7</div>
+          <div class="use-coupon-hint">직원이 번호를 확인합니다</div>
+        </div>
+
+        <div class="use-expire">⏰ 2026년 4월 16일 오후 5시 만료</div>
+
+        <div class="use-screen-guide">
+          사용 후 자동으로 처리됩니다<br>
+          같은 쿠폰은 1회만 사용 가능합니다
+        </div>
+      </div>
+    </div>
+    <div class="phone-label" style="color:#9ca3af;">B1 · 쿠폰 사용 화면</div>
+  </div>
+
+
+  <!-- ── B2. 가게 프로필 (쿠폰북) ── -->
+  <div>
+    <div class="phone">
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="notch"></div>
+        <div class="status-icons">📶🔋</div>
+      </div>
+
+      <div style="background:var(--white);padding:12px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--g150);">
+        <span style="font-size:18px;">←</span>
+        <span style="font-size:15px;font-weight:800;color:var(--g900);">카페봄날</span>
+      </div>
+
+      <div class="screen-body" style="background:var(--g50);">
+        <div class="scroll-area">
+
+          <!-- 프로필 헤더 -->
+          <div class="store-profile-header">
+            <div class="store-profile-top">
+              <div class="store-profile-avatar" style="background:linear-gradient(135deg,#FF6F0F,#FF9A3D)">☕</div>
+              <div>
+                <div class="store-profile-name">카페봄날</div>
+                <div class="store-profile-tag">☕ 카페 · 📍 역삼동 · 120m</div>
+              </div>
+            </div>
+            <div class="store-stats">
+              <div class="stat-item">
+                <div class="stat-num">1,230</div>
+                <div class="stat-label">팔로워</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-num">3</div>
+                <div class="stat-label">쿠폰</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-num">★4.7</div>
+                <div class="stat-label">평점</div>
+              </div>
+            </div>
+            <div class="follow-full-btn following">✓ 팔로잉</div>
+          </div>
+
+          <!-- 쿠폰북 섹션 -->
+          <div class="coupon-book-section">
+            <div class="section-title-row">
+              <div class="section-title">🎟 쿠폰북</div>
+              <div class="section-count">3개 사용 가능</div>
+            </div>
+
+            <!-- 쿠폰 1 - 주력 쿠폰 -->
+            <div class="coupon-book-item featured">
+              <div class="cb-top">
+                <div>
+                  <div class="coupon-badge badge-new" style="margin-bottom:5px;display:inline-block;">NEW</div>
+                  <div class="cb-title">아메리카노 1+1</div>
+                  <div style="font-size:11px;color:var(--g600);margin-top:3px;">오후 2시~5시 · 선착순 50명</div>
+                </div>
+              </div>
+              <div class="cb-bottom">
+                <div class="cb-meta">⏰ 오늘 마감 &nbsp;🔥 잔여 23장</div>
+                <div class="cb-save-btn">받기</div>
+              </div>
+            </div>
+
+            <!-- 쿠폰 2 -->
+            <div class="coupon-book-item">
+              <div class="cb-top">
+                <div class="cb-title">런치 세트 20% 할인</div>
+              </div>
+              <div class="cb-bottom">
+                <div class="cb-meta">📅 D-7 &nbsp;· 수량 무제한</div>
+                <div class="cb-save-btn saved">저장됨</div>
+              </div>
+            </div>
+
+            <!-- 쿠폰 3 -->
+            <div class="coupon-book-item">
+              <div class="cb-top">
+                <div class="cb-title">생일 케이크 무료 증정</div>
+              </div>
+              <div class="cb-bottom">
+                <div class="cb-meta">📅 월말까지 &nbsp;· 요청 시</div>
+                <div class="cb-save-btn">받기</div>
+              </div>
+            </div>
+
+          </div><!-- /쿠폰북 -->
+
+          <!-- 공지 섹션 -->
+          <div style="background:var(--white);margin-top:8px;padding:12px 16px;">
+            <div class="section-title" style="margin-bottom:10px;">📢 최근 공지</div>
+            <div style="font-size:12px;color:var(--g700);line-height:1.7;padding:10px;background:var(--g50);border-radius:10px;">
+              ☕ 오늘 오후 2시부터 아메리카노 1+1 쿠폰 발급 시작합니다! 선착순 50명이니 서두르세요 🎟
+              <div style="font-size:10px;color:var(--g500);margin-top:4px;">방금</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+    <div class="phone-label">B2 · 가게 프로필 (쿠폰북)</div>
+  </div>
+
+
+  <!-- ── B3. 홈 피드 (팔로우 미적용 상태) ── -->
+  <div>
+    <div class="phone">
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="notch"></div>
+        <div class="status-icons">📶🔋</div>
+      </div>
+      <div class="app-bar">
+        <div class="logo">언니픽</div>
+        <div class="icon-row">
+          <div class="icon-btn">🔔</div>
+          <div class="icon-btn">🔍</div>
+        </div>
+      </div>
+
+      <div class="screen-body">
+        <div class="scroll-area">
+          <!-- 팔로우 없을 때 온보딩 -->
+          <div style="padding:32px 24px;text-align:center;background:var(--white);margin-bottom:8px;">
+            <div style="font-size:40px;margin-bottom:12px;">🎟</div>
+            <div style="font-size:16px;font-weight:900;color:var(--g900);margin-bottom:6px;">팔로우한 가게의<br>쿠폰이 여기 뜹니다</div>
+            <div style="font-size:12px;color:var(--g500);margin-bottom:16px;">가게를 팔로우하면<br>새 쿠폰을 즉시 알려드려요</div>
+            <div style="padding:12px 24px;background:var(--brand);color:#fff;border-radius:24px;font-size:13px;font-weight:800;display:inline-block;">
+              🔍 주변 가게 찾기
+            </div>
+          </div>
+
+          <!-- 추천 가게 -->
+          <div style="background:var(--white);padding:14px 16px;">
+            <div class="section-title" style="margin-bottom:10px;">📍 주변 추천 가게</div>
+            <div class="store-list-item" style="padding:10px 0;border-bottom:1px solid var(--g150);">
+              <div class="store-thumb" style="background:#fff3eb;width:40px;height:40px;border-radius:12px;font-size:18px;">☕</div>
+              <div class="store-info">
+                <div class="store-list-name" style="font-size:13px;">카페봄날</div>
+                <div class="coupon-count-chip" style="font-size:10px;margin-top:3px;">🎟 쿠폰 3개</div>
+              </div>
+              <button class="follow-btn" style="font-size:10px;padding:4px 10px;">+ 팔로우</button>
+            </div>
+            <div class="store-list-item" style="padding:10px 0;">
+              <div class="store-thumb" style="background:#f3e8ff;width:40px;height:40px;border-radius:12px;font-size:18px;">✂️</div>
+              <div class="store-info">
+                <div class="store-list-name" style="font-size:13px;">미용실언니</div>
+                <div class="coupon-count-chip" style="font-size:10px;margin-top:3px;">🎟 쿠폰 1개</div>
+              </div>
+              <button class="follow-btn" style="font-size:10px;padding:4px 10px;">+ 팔로우</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-bar">
+          <div class="tab-item active"><div class="tab-icon">🏠</div><div>홈</div></div>
+          <div class="tab-item"><div class="tab-icon">🔍</div><div>탐색</div></div>
+          <div class="tab-item"><div class="tab-icon">🎟</div><div>쿠폰함</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-label">B3 · 첫 방문 온보딩</div>
+  </div>
+
+</div><!-- /screen-row -->
+
+
+<!-- ═══════════════════════════════════
+     C. 사장님 화면
+════════════════════════════════════ -->
+<div class="section-label">
+  <h2>OWNER FLOW</h2>
+  <p>사장님 화면</p>
+  <small>대시보드 → 쿠폰 발행 → 쿠폰 관리</small>
+</div>
+
+<div class="screen-row">
+
+  <!-- ── C1. 사장님 대시보드 ── -->
+  <div>
+    <div class="phone">
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="notch"></div>
+        <div class="status-icons">📶🔋</div>
+      </div>
+
+      <div class="app-bar">
+        <div class="logo">언니픽 <span style="font-size:11px;font-weight:700;color:var(--g500);margin-left:4px;">사장님</span></div>
+        <div class="icon-row"><div class="icon-btn">🔔</div></div>
+      </div>
+
+      <div class="screen-body owner-screen">
+        <div class="scroll-area">
+
+          <!-- 대시보드 카드 -->
+          <div class="owner-dash">
+            <div class="owner-dash-name">☕ 카페봄날</div>
+            <div class="owner-dash-title">오늘의 현황 📊</div>
+            <div class="owner-stats">
+              <div class="owner-stat">
+                <div class="owner-stat-num">1,230</div>
+                <div class="owner-stat-label">팔로워</div>
+              </div>
+              <div class="owner-stat">
+                <div class="owner-stat-num">3</div>
+                <div class="owner-stat-label">쿠폰 발행</div>
+              </div>
+              <div class="owner-stat">
+                <div class="owner-stat-num">47</div>
+                <div class="owner-stat-label">오늘 사용</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 쿠폰 발행 CTA -->
+          <div class="owner-cta">
+            ⚡ 쿠폰 발행하기
+          </div>
+
+          <!-- 발행 중인 쿠폰 -->
+          <div class="owner-coupon-list">
+            <div class="owner-coupon-header">발행 중인 쿠폰 (3)</div>
+
+            <div class="owner-coupon-item">
+              <div class="oci-top">
+                <div class="oci-title">아메리카노 1+1</div>
+                <div class="oci-status status-active">진행 중</div>
+              </div>
+              <div class="oci-stats">
+                <span>저장 <b>128명</b></span>
+                <span>사용 <b>47명</b></span>
+                <span>사용률 <b style="color:var(--green)">36%</b></span>
+              </div>
+              <div class="oci-actions">
+                <div class="oci-action-btn primary">🔔 재알림</div>
+                <div class="oci-action-btn">수정</div>
+                <div class="oci-action-btn">삭제</div>
+              </div>
+            </div>
+
+            <div class="owner-coupon-item">
+              <div class="oci-top">
+                <div class="oci-title">런치 세트 20% 할인</div>
+                <div class="oci-status status-active">진행 중</div>
+              </div>
+              <div class="oci-stats">
+                <span>저장 <b>89명</b></span>
+                <span>사용 <b>21명</b></span>
+                <span>사용률 <b>23%</b></span>
+              </div>
+              <div class="oci-actions">
+                <div class="oci-action-btn primary">🔔 재알림</div>
+                <div class="oci-action-btn">수정</div>
+                <div class="oci-action-btn">삭제</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-label">C1 · 사장님 대시보드</div>
+  </div>
+
+
+  <!-- ── C2. 쿠폰 발행 ── -->
+  <div>
+    <div class="phone">
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="notch"></div>
+        <div class="status-icons">📶🔋</div>
+      </div>
+
+      <div style="background:var(--white);padding:12px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--g150);">
+        <span style="font-size:18px;">←</span>
+        <span style="font-size:15px;font-weight:800;color:var(--g900);">쿠폰 발행</span>
+      </div>
+
+      <div class="screen-body create-screen">
+        <div class="scroll-area">
+          <div class="create-step">
+            <!-- STEP 1: 유형 -->
+            <div class="step-label">STEP 1</div>
+            <div class="step-title">쿠폰 유형 선택</div>
+            <div class="type-grid">
+              <div class="type-card selected">
+                <div class="type-icon">%</div>
+                <div class="type-name">할인율</div>
+              </div>
+              <div class="type-card">
+                <div class="type-icon">💴</div>
+                <div class="type-name">금액 할인</div>
+              </div>
+              <div class="type-card">
+                <div class="type-icon">🎁</div>
+                <div class="type-name">무료 증정</div>
+              </div>
+            </div>
+
+            <!-- STEP 2: 내용 -->
+            <div class="step-label">STEP 2</div>
+            <div class="step-title">쿠폰 내용</div>
+            <div class="input-group">
+              <div class="input-label">대상 메뉴</div>
+              <div class="input-field">아메리카노</div>
+            </div>
+            <div class="input-group">
+              <div class="input-label">할인율</div>
+              <div class="input-field focused" style="color:var(--brand);">1+1 (100% 할인)</div>
+            </div>
+            <div class="input-group">
+              <div class="input-label">한 줄 메모 (선택)</div>
+              <div class="input-field" style="color:var(--g400);">오늘 오후만! 서두르세요</div>
+            </div>
+
+            <!-- STEP 3: 조건 -->
+            <div class="step-label">STEP 3</div>
+            <div class="step-title">쿠폰 조건</div>
+            <div style="margin-bottom:6px;font-size:11px;font-weight:700;color:var(--g600);">기간</div>
+            <div class="option-row">
+              <div class="option-pill on">오늘만</div>
+              <div class="option-pill">날짜 지정</div>
+              <div class="option-pill">기간 없음</div>
+            </div>
+            <div style="margin-bottom:6px;font-size:11px;font-weight:700;color:var(--g600);">수량</div>
+            <div class="option-row">
+              <div class="option-pill on">선착순 50명</div>
+              <div class="option-pill">무제한</div>
+            </div>
+          </div>
+
+          <!-- 미리보기 -->
+          <div class="preview-box">
+            <div class="preview-label">미리보기</div>
+            <div class="preview-title">아메리카노 1+1</div>
+            <div class="preview-meta">⏰ 오늘 마감 · 선착순 50명</div>
+          </div>
+
+          <!-- 발행 버튼 -->
+          <div class="publish-btn">
+            🔔 팔로워 1,230명에게 즉시 알림 발송
+          </div>
+
+        </div>
+      </div>
+    </div>
+    <div class="phone-label">C2 · 쿠폰 발행 (30초)</div>
+  </div>
+
+
+  <!-- ── C3. 쿠폰 관리 ── -->
+  <div>
+    <div class="phone">
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="notch"></div>
+        <div class="status-icons">📶🔋</div>
+      </div>
+
+      <div style="background:var(--white);padding:12px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--g150);">
+        <span style="font-size:18px;">←</span>
+        <span style="font-size:15px;font-weight:800;color:var(--g900);">쿠폰 관리</span>
+      </div>
+
+      <div class="screen-body owner-screen">
+        <div class="coupon-wallet-seg">
+          <div class="seg-item active">진행 중 (3)</div>
+          <div class="seg-item">종료됨</div>
+        </div>
+
+        <div class="scroll-area" style="padding:12px 14px 0;">
+
+          <!-- 쿠폰 관리 카드 1 -->
+          <div class="owner-coupon-item">
+            <div class="oci-top">
+              <div>
+                <div style="font-size:10px;color:var(--brand);font-weight:700;margin-bottom:2px;">🔥 인기 · 잔여 23장</div>
+                <div class="oci-title">아메리카노 1+1</div>
+              </div>
+              <div class="oci-status status-active">진행 중</div>
+            </div>
+            <div style="background:var(--g50);border-radius:10px;padding:10px;margin-bottom:10px;">
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;">
+                <div>
+                  <div style="font-size:16px;font-weight:900;color:var(--g900);">1,230</div>
+                  <div style="font-size:10px;color:var(--g500);">알림 발송</div>
+                </div>
+                <div>
+                  <div style="font-size:16px;font-weight:900;color:var(--brand);">128</div>
+                  <div style="font-size:10px;color:var(--g500);">쿠폰 저장</div>
+                </div>
+                <div>
+                  <div style="font-size:16px;font-weight:900;color:var(--green);">47</div>
+                  <div style="font-size:10px;color:var(--g500);">실제 사용</div>
+                </div>
+              </div>
+              <div style="margin-top:8px;font-size:11px;color:var(--g600);text-align:center;">
+                사용률 <strong style="color:var(--green)">36%</strong> &nbsp;·&nbsp; 저장률 <strong>10.4%</strong>
+              </div>
+            </div>
+            <div class="oci-actions">
+              <div class="oci-action-btn primary">🔔 재알림</div>
+              <div class="oci-action-btn">수정</div>
+              <div class="oci-action-btn" style="color:var(--red);">종료</div>
+            </div>
+          </div>
+
+          <!-- 쿠폰 2 -->
+          <div class="owner-coupon-item">
+            <div class="oci-top">
+              <div class="oci-title">런치 세트 20% 할인</div>
+              <div class="oci-status status-active">진행 중</div>
+            </div>
+            <div style="display:flex;gap:12px;font-size:12px;color:var(--g700);margin-bottom:10px;">
+              <span>저장 <b>89명</b></span>
+              <span>사용 <b>21명</b></span>
+              <span>사용률 <b>23%</b></span>
+            </div>
+            <div class="oci-actions">
+              <div class="oci-action-btn primary">🔔 재알림</div>
+              <div class="oci-action-btn">수정</div>
+              <div class="oci-action-btn" style="color:var(--red);">종료</div>
+            </div>
+          </div>
+
+          <!-- 쿠폰 3 -->
+          <div class="owner-coupon-item">
+            <div class="oci-top">
+              <div class="oci-title">생일 케이크 무료 증정</div>
+              <div class="oci-status status-active">진행 중</div>
+            </div>
+            <div style="display:flex;gap:12px;font-size:12px;color:var(--g700);margin-bottom:10px;">
+              <span>저장 <b>34명</b></span>
+              <span>사용 <b>6명</b></span>
+              <span>사용률 <b>17%</b></span>
+            </div>
+            <div class="oci-actions">
+              <div class="oci-action-btn primary">🔔 재알림</div>
+              <div class="oci-action-btn">수정</div>
+              <div class="oci-action-btn" style="color:var(--red);">종료</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+    <div class="phone-label">C3 · 쿠폰 관리 & 성과</div>
+  </div>
+
+</div><!-- /screen-row -->
+
+
+<!-- ═══════════════════════════════════
+     D. 핵심 플로우 요약
+════════════════════════════════════ -->
+<div class="section-label">
+  <h2>FLOW SUMMARY</h2>
+  <p>핵심 UX 플로우</p>
+</div>
+
+<div style="max-width:860px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:0 16px;">
+
+  <div style="background:#1c1c26;border-radius:20px;padding:24px;border:1px solid #2a2a38;">
+    <div style="font-size:11px;font-weight:800;letter-spacing:2px;color:var(--brand);margin-bottom:12px;">손님 플로우</div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:28px;height:28px;border-radius:50%;background:var(--brand);color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">1</div>
+        <div style="font-size:13px;color:#e5e8eb;">앱 설치 → 소셜 로그인</div>
+      </div>
+      <div style="width:1px;height:12px;background:#2a2a38;margin-left:13px;"></div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:28px;height:28px;border-radius:50%;background:var(--brand);color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">2</div>
+        <div style="font-size:13px;color:#e5e8eb;">주변 가게 탐색 → 팔로우</div>
+      </div>
+      <div style="width:1px;height:12px;background:#2a2a38;margin-left:13px;"></div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:28px;height:28px;border-radius:50%;background:var(--brand);color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">3</div>
+        <div style="font-size:13px;color:#e5e8eb;">새 쿠폰 알림 수신</div>
+      </div>
+      <div style="width:1px;height:12px;background:#2a2a38;margin-left:13px;"></div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:28px;height:28px;border-radius:50%;background:var(--brand);color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">4</div>
+        <div style="font-size:13px;color:#e5e8eb;">쿠폰 받기 (1탭) → 쿠폰함 저장</div>
+      </div>
+      <div style="width:1px;height:12px;background:#2a2a38;margin-left:13px;"></div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:28px;height:28px;border-radius:50%;background:var(--brand);color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">5</div>
+        <div style="font-size:13px;color:#e5e8eb;">가게 방문 → 화면 보여주기 → 완료</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="background:#1c1c26;border-radius:20px;padding:24px;border:1px solid #2a2a38;">
+    <div style="font-size:11px;font-weight:800;letter-spacing:2px;color:#0AC86E;margin-bottom:12px;">사장님 플로우</div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:28px;height:28px;border-radius:50%;background:#0AC86E;color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">1</div>
+        <div style="font-size:13px;color:#e5e8eb;">가게 등록 → 프로필 설정</div>
+      </div>
+      <div style="width:1px;height:12px;background:#2a2a38;margin-left:13px;"></div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:28px;height:28px;border-radius:50%;background:#0AC86E;color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">2</div>
+        <div style="font-size:13px;color:#e5e8eb;">유형 선택 → 내용 입력 (30초)</div>
+      </div>
+      <div style="width:1px;height:12px;background:#2a2a38;margin-left:13px;"></div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:28px;height:28px;border-radius:50%;background:#0AC86E;color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">3</div>
+        <div style="font-size:13px;color:#e5e8eb;">팔로워 전원에게 즉시 알림 발송</div>
+      </div>
+      <div style="width:1px;height:12px;background:#2a2a38;margin-left:13px;"></div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:28px;height:28px;border-radius:50%;background:#0AC86E;color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">4</div>
+        <div style="font-size:13px;color:#e5e8eb;">손님이 화면 보여주면 번호 확인</div>
+      </div>
+      <div style="width:1px;height:12px;background:#2a2a38;margin-left:13px;"></div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:28px;height:28px;border-radius:50%;background:#0AC86E;color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">5</div>
+        <div style="font-size:13px;color:#e5e8eb;">대시보드에서 저장·사용 수 확인</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- 제거된 기능 -->
+<div style="max-width:860px;margin:32px auto 0;padding:0 16px;">
+  <div style="background:#1c1c26;border-radius:20px;padding:20px 24px;border:1px solid #2a2a38;">
+    <div style="font-size:11px;font-weight:800;letter-spacing:2px;color:#4e5968;margin-bottom:12px;">이번 시안에서 제거/단순화한 것</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+      <div style="padding:5px 14px;background:#0f0f14;border-radius:20px;font-size:12px;color:#4e5968;">❌ 음악 기능</div>
+      <div style="padding:5px 14px;background:#0f0f14;border-radius:20px;font-size:12px;color:#4e5968;">❌ 채팅 탭</div>
+      <div style="padding:5px 14px;background:#0f0f14;border-radius:20px;font-size:12px;color:#4e5968;">❌ QR 스캔 (화면 보여주기로 대체)</div>
+      <div style="padding:5px 14px;background:#0f0f14;border-radius:20px;font-size:12px;color:#4e5968;">❌ 지도 탭</div>
+      <div style="padding:5px 14px;background:#0f0f14;border-radius:20px;font-size:12px;color:#4e5968;">❌ 스탬프 시스템 (v2로 이연)</div>
+      <div style="padding:5px 14px;background:#0f0f14;border-radius:20px;font-size:12px;color:#4e5968;">❌ 리뷰/댓글 (v2로 이연)</div>
+      <div style="padding:5px 14px;background:#0f0f14;border-radius:20px;font-size:12px;color:#4e5968;">❌ 복잡한 필터 (반경/정렬 단순화)</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     E. 로그인 / 회원가입 — 휴대폰 번호 인증
+════════════════════════════════════ -->
+<div class="section-label" style="margin-top:80px;">
+  <h2>AUTH FLOW</h2>
+  <p>로그인 · 회원가입</p>
+  <small>손님 · 사장님 동일 방식 — 휴대폰 번호 인증 (da24 SMS)</small>
+</div>
+
+<div class="screen-row">
+
+  <!-- ── E1. 스플래시 / 시작 ── -->
+  <div>
+    <div class="phone">
+      <div class="status-bar" style="background:#FF6F0F;color:#fff;">
+        <span>9:41</span>
+        <div class="notch" style="background:#e5620d;"></div>
+        <div class="status-icons">📶🔋</div>
+      </div>
+
+      <div style="
+        background: linear-gradient(160deg, #FF6F0F 0%, #FF9A3D 55%, #FFF3EB 100%);
+        min-height: 580px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-between;
+        padding: 60px 28px 40px;
+      ">
+        <!-- 로고 영역 -->
+        <div style="text-align:center;">
+          <div style="
+            width: 72px; height: 72px;
+            background: #fff;
+            border-radius: 22px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 36px;
+            margin: 0 auto 16px;
+            box-shadow: 0 8px 30px rgba(255,111,15,0.3);
+          ">🎟</div>
+          <div style="font-size: 30px; font-weight: 900; color: #fff; letter-spacing: -1px; margin-bottom: 6px;">언니픽</div>
+          <div style="font-size: 13px; color: rgba(255,255,255,0.85); font-weight: 500;">동네 가게 쿠폰 · 팔로우 · 즉시 알림</div>
+        </div>
+
+        <!-- 시작 버튼 영역 -->
+        <div style="width:100%;">
+          <div style="
+            width: 100%;
+            padding: 16px;
+            border-radius: 16px;
+            background: #fff;
+            color: var(--brand);
+            font-size: 16px;
+            font-weight: 900;
+            text-align: center;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+          ">📱 휴대폰 번호로 시작</div>
+
+          <div style="text-align:center; font-size:11px; color:rgba(255,255,255,0.65); line-height:1.6; margin-top:8px;">
+            로그인 · 회원가입이 한 번에 됩니다<br>
+            처음 오셨다면 자동으로 가입됩니다
+          </div>
+
+          <div style="text-align:center; font-size:10px; color:rgba(255,255,255,0.4); margin-top:12px;">
+            사장님이신가요?
+            <span style="color:rgba(255,255,255,0.75);font-weight:700;border-bottom:1px solid rgba(255,255,255,0.4);">사장님 가입</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-label" style="color:#9ca3af;">E1 · 시작 화면</div>
+  </div>
+
+
+  <!-- ── E2. 휴대폰 번호 입력 ── -->
+  <div>
+    <div class="phone">
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="notch"></div>
+        <div class="status-icons">📶🔋</div>
+      </div>
+
+      <div style="
+        background: var(--white);
+        min-height: 580px;
+        display: flex;
+        flex-direction: column;
+        padding: 0;
+      ">
+        <!-- 상단 네비 -->
+        <div style="padding: 14px 20px 0; display:flex; align-items:center; gap:10px;">
+          <span style="font-size:20px;color:var(--g700);">←</span>
+        </div>
+
+        <!-- 콘텐츠 -->
+        <div style="padding: 32px 28px; flex:1;">
+          <!-- 헤더 -->
+          <div style="margin-bottom:32px;">
+            <div style="
+              width: 44px; height: 44px;
+              background: var(--brand-bg);
+              border-radius: 14px;
+              display: flex; align-items: center; justify-content: center;
+              font-size: 22px;
+              margin-bottom: 16px;
+            ">📱</div>
+            <div style="font-size: 22px; font-weight: 900; color: var(--g900); letter-spacing: -0.5px; margin-bottom: 6px;">
+              휴대폰 번호를<br>입력해주세요
+            </div>
+            <div style="font-size: 13px; color: var(--g500); line-height: 1.6;">
+              인증번호를 문자로 보내드려요.<br>
+              처음이시면 자동으로 가입됩니다.
+            </div>
+          </div>
+
+          <!-- 입력 필드 -->
+          <div style="margin-bottom: 12px;">
+            <div style="font-size: 12px; font-weight: 700; color: var(--g600); margin-bottom: 8px;">휴대폰 번호</div>
+            <div style="
+              display: flex;
+              align-items: center;
+              border: 2px solid var(--brand);
+              border-radius: 14px;
+              overflow: hidden;
+              background: var(--white);
+            ">
+              <div style="
+                padding: 14px 14px;
+                font-size: 14px;
+                font-weight: 700;
+                color: var(--g700);
+                border-right: 1px solid var(--g200);
+                background: var(--g50);
+                white-space: nowrap;
+              ">🇰🇷 +82</div>
+              <div style="
+                flex: 1;
+                padding: 14px 16px;
+                font-size: 18px;
+                font-weight: 700;
+                color: var(--g900);
+                letter-spacing: 2px;
+              ">010 - 1234 - 5678</div>
+            </div>
+            <div style="font-size:11px;color:var(--g400);margin-top:6px;padding-left:4px;">
+              번호 형식: 010-XXXX-XXXX
+            </div>
+          </div>
+
+          <!-- 인증번호 받기 버튼 -->
+          <div style="
+            width: 100%;
+            padding: 16px;
+            border-radius: 14px;
+            background: var(--brand);
+            color: #fff;
+            font-size: 15px;
+            font-weight: 900;
+            text-align: center;
+            margin-top: 8px;
+            box-shadow: 0 6px 20px rgba(255,111,15,0.30);
+          ">인증번호 받기</div>
+
+          <!-- 안내 문구 -->
+          <div style="
+            margin-top: 20px;
+            padding: 14px;
+            background: var(--g50);
+            border-radius: 12px;
+            font-size: 11px;
+            color: var(--g500);
+            line-height: 1.7;
+          ">
+            📨 문자 메시지로 6자리 인증번호를 보내드립니다<br>
+            🔒 번호는 인증에만 사용되며 저장되지 않습니다
+          </div>
+        </div>
+
+        <!-- 숫자 키패드 (iOS 스타일) -->
+        <div style="
+          background: var(--g100);
+          padding: 8px 4px 12px;
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 2px;
+        ">
+          <div style="padding:14px;text-align:center;font-size:18px;font-weight:600;color:var(--g900);">1</div>
+          <div style="padding:14px;text-align:center;font-size:18px;font-weight:600;color:var(--g900);">2<div style="font-size:8px;letter-spacing:1px;color:var(--g400);">ABC</div></div>
+          <div style="padding:14px;text-align:center;font-size:18px;font-weight:600;color:var(--g900);">3<div style="font-size:8px;letter-spacing:1px;color:var(--g400);">DEF</div></div>
+          <div style="padding:14px;text-align:center;font-size:18px;font-weight:600;color:var(--g900);">4<div style="font-size:8px;letter-spacing:1px;color:var(--g400);">GHI</div></div>
+          <div style="padding:14px;text-align:center;font-size:18px;font-weight:600;color:var(--g900);">5<div style="font-size:8px;letter-spacing:1px;color:var(--g400);">JKL</div></div>
+          <div style="padding:14px;text-align:center;font-size:18px;font-weight:600;color:var(--g900);">6<div style="font-size:8px;letter-spacing:1px;color:var(--g400);">MNO</div></div>
+          <div style="padding:14px;text-align:center;font-size:18px;font-weight:600;color:var(--g900);">7<div style="font-size:8px;letter-spacing:1px;color:var(--g400);">PQRS</div></div>
+          <div style="padding:14px;text-align:center;font-size:18px;font-weight:600;color:var(--g900);">8<div style="font-size:8px;letter-spacing:1px;color:var(--g400);">TUV</div></div>
+          <div style="padding:14px;text-align:center;font-size:18px;font-weight:600;color:var(--g900);">9<div style="font-size:8px;letter-spacing:1px;color:var(--g400);">WXYZ</div></div>
+          <div style="padding:14px;text-align:center;font-size:16px;color:var(--g500);">*</div>
+          <div style="padding:14px;text-align:center;font-size:18px;font-weight:600;color:var(--g900);">0</div>
+          <div style="padding:14px;text-align:center;font-size:18px;color:var(--g700);">⌫</div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-label">E2 · 번호 입력</div>
+  </div>
+
+
+  <!-- ── E3. 인증번호 입력 ── -->
+  <div>
+    <div class="phone">
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="notch"></div>
+        <div class="status-icons">📶🔋</div>
+      </div>
+
+      <div style="
+        background: var(--white);
+        min-height: 580px;
+        display: flex;
+        flex-direction: column;
+        padding: 0;
+      ">
+        <div style="padding: 14px 20px 0; display:flex; align-items:center;">
+          <span style="font-size:20px;color:var(--g700);">←</span>
+        </div>
+
+        <div style="padding: 32px 28px; flex:1;">
+          <!-- 헤더 -->
+          <div style="margin-bottom:32px;">
+            <div style="
+              width: 44px; height: 44px;
+              background: #e6faf2;
+              border-radius: 14px;
+              display: flex; align-items: center; justify-content: center;
+              font-size: 22px;
+              margin-bottom: 16px;
+            ">✉️</div>
+            <div style="font-size: 22px; font-weight: 900; color: var(--g900); letter-spacing: -0.5px; margin-bottom: 6px;">
+              인증번호를<br>입력해주세요
+            </div>
+            <div style="font-size: 13px; color: var(--g500); line-height: 1.6;">
+              <span style="color:var(--g900);font-weight:700;">010-1234-5678</span> 로<br>
+              6자리 번호를 보내드렸어요.
+            </div>
+          </div>
+
+          <!-- 6칸 인증번호 입력 -->
+          <div style="display:flex; gap:8px; margin-bottom:16px; justify-content:center;">
+            <div style="
+              width: 44px; height: 52px;
+              border: 2px solid var(--brand);
+              border-radius: 12px;
+              display: flex; align-items: center; justify-content: center;
+              font-size: 22px; font-weight: 900; color: var(--g900);
+              background: var(--brand-bg);
+            ">3</div>
+            <div style="
+              width: 44px; height: 52px;
+              border: 2px solid var(--brand);
+              border-radius: 12px;
+              display: flex; align-items: center; justify-content: center;
+              font-size: 22px; font-weight: 900; color: var(--g900);
+              background: var(--brand-bg);
+            ">8</div>
+            <div style="
+              width: 44px; height: 52px;
+              border: 2px solid var(--brand);
+              border-radius: 12px;
+              display: flex; align-items: center; justify-content: center;
+              font-size: 22px; font-weight: 900; color: var(--g900);
+              background: var(--brand-bg);
+            ">5</div>
+            <div style="
+              width: 44px; height: 52px;
+              border: 2px solid var(--brand);
+              border-radius: 12px;
+              display: flex; align-items: center; justify-content: center;
+              font-size: 22px; font-weight: 900; color: var(--g900);
+              background: var(--brand-bg);
+            ">2</div>
+            <div style="
+              width: 44px; height: 52px;
+              border: 2px solid var(--g200);
+              border-radius: 12px;
+              display: flex; align-items: center; justify-content: center;
+              font-size: 22px; font-weight: 900;
+              background: var(--white);
+              position: relative;
+            ">
+              <div style="width:2px;height:24px;background:var(--brand);animation:none;opacity:1;"></div>
+            </div>
+            <div style="
+              width: 44px; height: 52px;
+              border: 1.5px solid var(--g200);
+              border-radius: 12px;
+              background: var(--white);
+            "></div>
+          </div>
+
+          <!-- 타이머 + 재발송 -->
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+            <div style="
+              display:flex; align-items:center; gap:6px;
+              font-size:13px; color:var(--g600);
+            ">
+              <span style="
+                width: 22px; height: 22px;
+                border: 2px solid var(--brand);
+                border-radius: 50%;
+                display:flex; align-items:center; justify-content:center;
+                font-size:10px; font-weight:800; color:var(--brand);
+              ">⏱</span>
+              <span style="font-weight:700;color:var(--brand);">02:47</span> 남음
+            </div>
+            <div style="font-size:12px;color:var(--g400);border-bottom:1px solid var(--g300);">번호 재발송</div>
+          </div>
+
+          <!-- 확인 버튼 (비활성) -->
+          <div style="
+            width: 100%;
+            padding: 16px;
+            border-radius: 14px;
+            background: var(--g200);
+            color: var(--g400);
+            font-size: 15px;
+            font-weight: 900;
+            text-align: center;
+          ">확인</div>
+
+          <!-- 안내 -->
+          <div style="margin-top:16px;font-size:11px;color:var(--g400);text-align:center;line-height:1.7;">
+            문자가 오지 않으면 스팸함을 확인해 주세요<br>
+            번호가 달라요? <span style="color:var(--brand);font-weight:700;">번호 다시 입력</span>
+          </div>
+        </div>
+
+        <!-- 숫자 키패드 -->
+        <div style="
+          background: var(--g100);
+          padding: 8px 4px 12px;
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 2px;
+        ">
+          <div style="padding:14px;text-align:center;font-size:18px;font-weight:600;color:var(--g900);">1</div>
+          <div style="padding:14px;text-align:center;font-size:18px;font-weight:600;color:var(--g900);">2</div>
+          <div style="padding:14px;text-align:center;font-size:18px;font-weight:600;color:var(--g900);">3</div>
+          <div style="padding:14px;text-align:center;font-size:18px;font-weight:600;color:var(--g900);">4</div>
+          <div style="padding:14px;text-align:center;font-size:18px;font-weight:600;color:var(--g900);">5</div>
+          <div style="padding:14px;text-align:center;font-size:18px;font-weight:600;color:var(--g900);">6</div>
+          <div style="padding:14px;text-align:center;font-size:18px;font-weight:600;color:var(--g900);">7</div>
+          <div style="padding:14px;text-align:center;font-size:18px;font-weight:600;color:var(--g900);">8</div>
+          <div style="padding:14px;text-align:center;font-size:18px;font-weight:600;color:var(--g900);">9</div>
+          <div style="padding:14px;"></div>
+          <div style="padding:14px;text-align:center;font-size:18px;font-weight:600;color:var(--g900);">0</div>
+          <div style="padding:14px;text-align:center;font-size:18px;color:var(--g700);">⌫</div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-label">E3 · 인증번호 입력</div>
+  </div>
+
+</div><!-- /screen-row -->
+
+
+<!-- 2행: 인증 완료 + 닉네임 설정 + 사장님 가입 -->
+<div class="screen-row" style="margin-top:28px;">
+
+  <!-- ── E4. 인증 완료 ── -->
+  <div>
+    <div class="phone">
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="notch"></div>
+        <div class="status-icons">📶🔋</div>
+      </div>
+
+      <div style="
+        background: var(--white);
+        min-height: 580px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 28px;
+        text-align: center;
+      ">
+        <!-- 성공 아이콘 -->
+        <div style="
+          width: 80px; height: 80px;
+          background: #e6faf2;
+          border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 36px;
+          margin-bottom: 20px;
+          box-shadow: 0 0 0 12px rgba(10,200,110,0.08);
+        ">✅</div>
+
+        <div style="font-size:22px;font-weight:900;color:var(--g900);margin-bottom:8px;letter-spacing:-0.5px;">
+          인증 완료!
+        </div>
+        <div style="font-size:13px;color:var(--g500);line-height:1.7;margin-bottom:32px;">
+          <span style="color:var(--g900);font-weight:700;">010-1234-5678</span><br>
+          로 로그인 됐어요
+        </div>
+
+        <!-- 닉네임 입력 -->
+        <div style="width:100%;text-align:left;margin-bottom:24px;">
+          <div style="font-size:13px;font-weight:700;color:var(--g700);margin-bottom:8px;">닉네임 (선택)</div>
+          <div style="
+            border: 2px solid var(--brand);
+            border-radius: 14px;
+            padding: 14px 16px;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--g900);
+            display:flex;
+            align-items:center;
+            gap:8px;
+          ">
+            <span>홍길동</span>
+            <span style="width:2px;height:20px;background:var(--brand);display:inline-block;"></span>
+          </div>
+          <div style="font-size:11px;color:var(--g400);margin-top:6px;padding-left:4px;">
+            나중에 언제든지 바꿀 수 있어요
+          </div>
+        </div>
+
+        <div style="
+          width: 100%;
+          padding: 16px;
+          border-radius: 14px;
+          background: var(--brand);
+          color: #fff;
+          font-size: 15px;
+          font-weight: 900;
+          text-align: center;
+          box-shadow: 0 6px 20px rgba(255,111,15,0.30);
+          margin-bottom: 12px;
+        ">언니픽 시작하기 🎟</div>
+
+        <div style="font-size:11px;color:var(--g400);line-height:1.7;">
+          시작하면 <span style="color:var(--g700);border-bottom:1px solid var(--g300);">이용약관</span>과 <span style="color:var(--g700);border-bottom:1px solid var(--g300);">개인정보처리방침</span>에<br>
+          동의한 것으로 간주합니다
+        </div>
+      </div>
+    </div>
+    <div class="phone-label">E4 · 인증 완료 · 닉네임</div>
+  </div>
+
+
+  <!-- ── E5. 사장님 가입 (추가 정보) ── -->
+  <div>
+    <div class="phone">
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="notch"></div>
+        <div class="status-icons">📶🔋</div>
+      </div>
+
+      <div style="background:var(--white);padding:12px 20px 0;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--g150);">
+        <span style="font-size:20px;color:var(--g700);">←</span>
+        <span style="font-size:15px;font-weight:800;color:var(--g900);">사장님 가입</span>
+        <span style="margin-left:auto;font-size:11px;color:var(--g500);">2 / 2</span>
+      </div>
+
+      <div style="background:var(--g100);height:3px;display:flex;overflow:hidden;">
+        <div style="width:100%;background:var(--brand);"></div>
+      </div>
+
+      <div style="
+        background: var(--white);
+        min-height: 540px;
+        display: flex;
+        flex-direction: column;
+        padding: 24px 24px 20px;
+      ">
+        <div style="font-size:18px;font-weight:900;color:var(--g900);margin-bottom:4px;">가게 정보를<br>입력해주세요</div>
+        <div style="font-size:12px;color:var(--g500);margin-bottom:24px;">나중에 수정할 수 있어요</div>
+
+        <!-- 가게명 -->
+        <div style="margin-bottom:14px;">
+          <div style="font-size:12px;font-weight:700;color:var(--g600);margin-bottom:6px;">가게 이름 *</div>
+          <div style="
+            border: 2px solid var(--brand);
+            border-radius: 12px;
+            padding: 12px 14px;
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--g900);
+          ">카페봄날</div>
+        </div>
+
+        <!-- 카테고리 -->
+        <div style="margin-bottom:14px;">
+          <div style="font-size:12px;font-weight:700;color:var(--g600);margin-bottom:8px;">카테고리 *</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <div style="padding:7px 14px;border-radius:20px;background:var(--brand);color:#fff;font-size:12px;font-weight:700;">☕ 카페</div>
+            <div style="padding:7px 14px;border-radius:20px;background:var(--g100);color:var(--g700);font-size:12px;font-weight:600;">🍽 음식</div>
+            <div style="padding:7px 14px;border-radius:20px;background:var(--g100);color:var(--g700);font-size:12px;font-weight:600;">✂️ 미용</div>
+            <div style="padding:7px 14px;border-radius:20px;background:var(--g100);color:var(--g700);font-size:12px;font-weight:600;">💅 네일</div>
+            <div style="padding:7px 14px;border-radius:20px;background:var(--g100);color:var(--g700);font-size:12px;font-weight:600;">기타</div>
+          </div>
+        </div>
+
+        <!-- 주소 -->
+        <div style="margin-bottom:14px;">
+          <div style="font-size:12px;font-weight:700;color:var(--g600);margin-bottom:6px;">가게 주소 *</div>
+          <div style="
+            border: 1.5px solid var(--g200);
+            border-radius: 12px;
+            padding: 12px 14px;
+            font-size: 13px;
+            color: var(--g900);
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+          ">
+            <span>서울 강남구 역삼동 123-4</span>
+            <span style="font-size:11px;color:var(--brand);font-weight:700;">변경</span>
+          </div>
+        </div>
+
+        <!-- 한 줄 소개 -->
+        <div style="margin-bottom:20px;">
+          <div style="font-size:12px;font-weight:700;color:var(--g600);margin-bottom:6px;">한 줄 소개 (선택)</div>
+          <div style="
+            border: 1.5px solid var(--g200);
+            border-radius: 12px;
+            padding: 12px 14px;
+            font-size: 13px;
+            color: var(--g500);
+          ">역삼동 감성 카페, 매일 신선한 원두</div>
+        </div>
+
+        <!-- 완료 버튼 -->
+        <div style="
+          width: 100%;
+          padding: 15px;
+          border-radius: 14px;
+          background: var(--brand);
+          color: #fff;
+          font-size: 15px;
+          font-weight: 900;
+          text-align: center;
+          box-shadow: 0 6px 20px rgba(255,111,15,0.30);
+          margin-top: auto;
+        ">가게 등록 완료 ✓</div>
+      </div>
+    </div>
+    <div class="phone-label">E5 · 사장님 가게 정보</div>
+  </div>
+
+
+  <!-- ── E6. 인증 플로우 요약 다이어그램 ── -->
+  <div>
+    <div class="phone">
+      <div class="status-bar" style="background:var(--g900);color:#fff;">
+        <span>9:41</span>
+        <div class="notch" style="background:#0d0d14;"></div>
+        <div class="status-icons">📶🔋</div>
+      </div>
+
+      <div style="
+        background: var(--g900);
+        min-height: 580px;
+        padding: 24px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      ">
+        <div style="font-size:11px;font-weight:800;letter-spacing:2px;color:var(--brand);margin-bottom:16px;">AUTH FLOW</div>
+
+        <!-- 공통 플로우 -->
+        <div style="font-size:12px;font-weight:800;color:#fff;margin-bottom:8px;">손님 · 사장님 공통</div>
+
+        <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:20px;">
+          <div style="background:#1c2030;border-radius:10px;padding:11px 14px;display:flex;align-items:center;gap:10px;">
+            <div style="width:24px;height:24px;border-radius:50%;background:var(--brand);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">1</div>
+            <div>
+              <div style="font-size:12px;font-weight:700;color:#fff;">휴대폰 번호 입력</div>
+              <div style="font-size:10px;color:#4e5968;">010-XXXX-XXXX</div>
+            </div>
+          </div>
+          <div style="width:2px;height:10px;background:#2a2a38;margin-left:11px;"></div>
+          <div style="background:#1c2030;border-radius:10px;padding:11px 14px;display:flex;align-items:center;gap:10px;">
+            <div style="width:24px;height:24px;border-radius:50%;background:var(--brand);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">2</div>
+            <div>
+              <div style="font-size:12px;font-weight:700;color:#fff;">SMS 인증번호 수신</div>
+              <div style="font-size:10px;color:#4e5968;">da24 Solapi · 13원/건 · 3분 유효</div>
+            </div>
+          </div>
+          <div style="width:2px;height:10px;background:#2a2a38;margin-left:11px;"></div>
+          <div style="background:#1c2030;border-radius:10px;padding:11px 14px;display:flex;align-items:center;gap:10px;">
+            <div style="width:24px;height:24px;border-radius:50%;background:var(--brand);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">3</div>
+            <div>
+              <div style="font-size:12px;font-weight:700;color:#fff;">6자리 입력 → 자동 확인</div>
+              <div style="font-size:10px;color:#4e5968;">Supabase Auth 세션 발급</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 분기점 -->
+        <div style="border:1px dashed #2a2a38;border-radius:12px;padding:12px;margin-bottom:4px;">
+          <div style="font-size:11px;font-weight:700;color:#4e5968;margin-bottom:10px;text-align:center;">신규 가입 여부 자동 판단</div>
+          <div style="display:flex;gap:8px;">
+            <div style="flex:1;background:#1c2030;border-radius:10px;padding:10px;">
+              <div style="font-size:10px;font-weight:800;color:var(--green);margin-bottom:4px;">기존 회원</div>
+              <div style="font-size:11px;color:#8b95a1;line-height:1.5;">바로 홈 피드로<br>이동</div>
+            </div>
+            <div style="flex:1;background:#1c2030;border-radius:10px;padding:10px;">
+              <div style="font-size:10px;font-weight:800;color:var(--brand);margin-bottom:4px;">신규 가입</div>
+              <div style="font-size:11px;color:#8b95a1;line-height:1.5;">닉네임 설정<br>→ 홈 피드</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 사장님 추가 -->
+        <div style="border:1px dashed #2a2a38;border-radius:12px;padding:12px;margin-top:4px;">
+          <div style="font-size:11px;font-weight:700;color:#4e5968;margin-bottom:8px;">사장님만 추가</div>
+          <div style="background:#1c2030;border-radius:10px;padding:10px;display:flex;align-items:center;gap:10px;">
+            <div style="width:24px;height:24px;border-radius:50%;background:#0AC86E;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">+</div>
+            <div>
+              <div style="font-size:12px;font-weight:700;color:#fff;">가게 정보 등록</div>
+              <div style="font-size:10px;color:#4e5968;">이름 · 카테고리 · 주소</div>
+            </div>
+          </div>
+          <div style="margin-top:8px;font-size:10px;color:#4e5968;text-align:center;">
+            role: 'owner' 로 Supabase profiles 테이블 저장
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <div class="phone-label" style="color:#9ca3af;">E6 · 인증 플로우 구조</div>
+  </div>
+
+</div><!-- /screen-row 2행 -->
+
+
+<div style="text-align:center;margin-top:48px;font-size:12px;color:#2a2a38;">
+  언니픽 디자인 시안 v1.1 · 2026.04.16
+</div>
+
+</body>
+</html>

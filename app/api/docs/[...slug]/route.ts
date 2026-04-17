@@ -32,6 +32,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
       date: data.date ? String(data.date).slice(0, 10) : '',
       author: data.author ?? '',
       status: data.status ?? '',
+      embed: data.embed ?? null,
       content,
     });
   } catch (e) {

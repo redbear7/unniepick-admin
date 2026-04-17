@@ -27,6 +27,7 @@ interface DocsIndex {
 
 interface DocDetail extends DocMeta {
   content: string;
+  embed?: string | null;
 }
 
 export default function DocsPage() {
@@ -221,6 +222,27 @@ export default function DocsPage() {
               </div>
 
               <DocViewer content={selectedDoc.content} />
+
+              {/* HTML 시안 임베드 */}
+              {selectedDoc.embed && (
+                <div className="mt-6 border border-border-main rounded-xl overflow-hidden">
+                  <div className="px-4 py-2 bg-fill-subtle border-b border-border-subtle flex items-center justify-between">
+                    <span className="text-xs text-muted">🖼️ HTML 시안 임베드</span>
+                    <a
+                      href={selectedDoc.embed}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-[#FF6F0F] hover:underline"
+                    >
+                      새 탭에서 열기 ↗
+                    </a>
+                  </div>
+                  <iframe
+                    src={selectedDoc.embed}
+                    style={{ width: '100%', height: '80vh', border: 'none', background: '#fff' }}
+                  />
+                </div>
+              )}
             </>
           ) : (
             <div className="flex items-center justify-center h-full text-muted">
