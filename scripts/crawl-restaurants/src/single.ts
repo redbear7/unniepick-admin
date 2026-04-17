@@ -196,6 +196,7 @@ try {
   if (!store) {
     console.log('검색 결과 없음');
     writeResult({ query, status: 'not_found', store: null, finishedAt: new Date().toISOString() });
+    await browser.close();
     process.exit(0);
   }
 
@@ -271,7 +272,11 @@ try {
     error: msg,
     finishedAt: new Date().toISOString(),
   });
+  await browser.close();
   process.exit(1);
 } finally {
-  await browser.close();
+  await browser.close().catch(() => {});
 }
+
+// Supabase 연결이 이벤트 루프를 붙잡지 않도록 강제 종료
+process.exit(0);
