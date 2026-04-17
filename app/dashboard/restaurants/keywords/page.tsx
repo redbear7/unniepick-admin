@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import {
   Search, Plus, Play, Loader2, Trash2, Check, X,
   Calendar, MessageSquare, AlertCircle, Clock, Terminal, ChevronDown, ChevronUp,
-  ShieldCheck, Sparkles, Square,
+  ShieldCheck, Sparkles, Square, Store, MapPin, Phone, Star, ExternalLink,
 } from 'lucide-react';
 
 interface CrawlKeyword {
@@ -23,6 +23,28 @@ interface CrawlKeyword {
   updated_at: string;
 }
 
+// ── 단일 업체 크롤링 결과 타입 ──────────────────────────────
+interface SingleResult {
+  query: string;
+  status: 'success' | 'failed' | 'not_found';
+  store?: {
+    naver_place_id: string;
+    name: string;
+    address?: string;
+    phone?: string;
+    category?: string;
+    rating?: number;
+    visitor_review_count?: number;
+    review_count?: number;
+    image_url?: string;
+    naver_place_url?: string;
+    review_keywords?: Array<{ keyword: string; count: number }>;
+    menu_keywords?: Array<{ menu: string; count: number }>;
+  } | null;
+  error?: string;
+  finishedAt: string;
+}
+
 export default function CrawlKeywordsPage() {
   const [items, setItems] = useState<CrawlKeyword[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,12 +57,87 @@ export default function CrawlKeywordsPage() {
   const [submitting, setSubmitting] = useState(false);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
 
+  // ── 단일 업체 크롤링 상태 ──
+  const [singleQuery, setSingleQuery] = useState('');
+  const [singleAnalyze, setSingleAnalyze] = useState(false);
+  const [singleRunning, setSingleRunning] = useState(false);
+  const [singleLog, setSingleLog] = useState('');
+  const [singleLogOpen, setSingleLogOpen] = useState(false);
+  const [singleResult, setSingleResult] = useState<SingleResult | null>(null);
+  const singlePollRef = useRef<NodeJS.Timeout | null>(null);
+  const singleLogPreRef = useRef<HTMLPreElement | null>(null);
+
   // 폐업 검증
   const [verifyRunning, setVerifyRunning] = useState(false);
   const [verifyLog, setVerifyLog] = useState('');
   const [verifyLogOpen, setVerifyLogOpen] = useState(false);
   const verifyPollRef = useRef<NodeJS.Timeout | null>(null);
   const verifyLogPreRef = useRef<HTMLPreElement | null>(null);
+
+  // ── 단일 업체 크롤링 함수들 ──
+
+  async function fetchSingleStatus() {
+    const res = await fetch('/api/crawl-restaurants/single');
+    const data = await res.json();
+    setSingleRunning(!!data.running);
+    if (data.log) {
+      setSingleLog(data.log);
+      setTimeout(() => {
+        if (singleLogPreRef.current)
+          singleLogPreRef.current.scrollTop = singleLogPreRef.current.scrollHeight;
+      }, 50);
+    }
+    if (data.result && data.result.status) {
+      setSingleResult(data.result);
+    }
+    return !!data.running;
+  }
+
+  async function runSingleCrawl() {
+    if (!singleQuery.trim()) return;
+    setSingleResult(null);
+    setSingleLog('');
+    setSingleLogOpen(true);
+
+    const res = await fetch('/api/crawl-restaurants/single', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: singleQuery.trim(), analyze_reviews: singleAnalyze }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      alert(data.error ?? '실행 실패');
+      return;
+    }
+    setSingleRunning(true);
+  }
+
+  async function stopSingleCrawl() {
+    if (!confirm('크롤링을 중지할까요?')) return;
+    await fetch('/api/crawl-restaurants/single', { method: 'DELETE' });
+    setSingleRunning(false);
+  }
+
+  // 단일 크롤링 중이면 폴링
+  useEffect(() => {
+    if (singleRunning || singleLogOpen) {
+      fetchSingleStatus();
+      singlePollRef.current = setInterval(async () => {
+        const running = await fetchSingleStatus();
+        if (!running && singlePollRef.current) {
+          clearInterval(singlePollRef.current);
+          singlePollRef.current = null;
+        }
+      }, 2000);
+    }
+    return () => {
+      if (singlePollRef.current) {
+        clearInterval(singlePollRef.current);
+        singlePollRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [singleRunning, singleLogOpen]);
 
   async function checkVerifyStatus() {
     const res = await fetch('/api/crawl-restaurants/verify');
@@ -277,6 +374,104 @@ export default function CrawlKeywordsPage() {
           </pre>
         </div>
       )}
+
+      {/* ── 단일 업체 크롤링 ── */}
+      <div className="bg-card border border-border-main rounded-xl overflow-hidden">
+        <div className="p-4 space-y-3">
+          <div className="flex items-center gap-2 mb-1">
+            <Store className="w-4 h-4 text-[#FF6F0F]" />
+            <h2 className="text-sm font-semibold text-primary">단일 업체 크롤링</h2>
+            <span className="text-xs text-muted">지역 + 가게이름 형식으로 특정 업체 1개 수집</span>
+          </div>
+
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder='예: 마산 불낙명가, 창원 돈까스 집'
+              value={singleQuery}
+              onChange={(e) => setSingleQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && !singleRunning && runSingleCrawl()}
+              className="flex-1 px-3 py-2 bg-fill-subtle border border-border-subtle rounded-lg text-sm text-primary placeholder:text-muted focus:outline-none focus:border-[#FF6F0F]"
+              disabled={singleRunning}
+            />
+            {singleRunning ? (
+              <button
+                onClick={stopSingleCrawl}
+                className="px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-1.5 bg-red-500/15 text-red-400 border border-red-500/30 hover:bg-red-500/25"
+              >
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <Square className="w-3 h-3 fill-current" />
+                중지
+              </button>
+            ) : (
+              <button
+                onClick={runSingleCrawl}
+                disabled={!singleQuery.trim()}
+                className="px-4 py-2 bg-[#FF6F0F] text-white rounded-lg text-sm font-medium hover:bg-[#FF6F0F]/90 disabled:opacity-40 flex items-center gap-1.5"
+              >
+                <Search className="w-4 h-4" />
+                크롤링
+              </button>
+            )}
+            <button
+              onClick={() => setSingleLogOpen((v) => !v)}
+              className={`p-2 rounded-lg ${singleLogOpen ? 'bg-[#FF6F0F]/15 text-[#FF6F0F]' : 'text-muted hover:bg-fill-subtle'}`}
+              title="로그 보기"
+            >
+              <Terminal className="w-4 h-4" />
+            </button>
+          </div>
+
+          <label className="flex items-center gap-2 cursor-pointer text-xs text-secondary">
+            <input
+              type="checkbox"
+              checked={singleAnalyze}
+              onChange={(e) => setSingleAnalyze(e.target.checked)}
+              className="accent-[#FF6F0F]"
+            />
+            리뷰 상세 분석 포함 (느림, 약 30초 추가)
+          </label>
+
+          {/* 결과 카드 */}
+          {singleResult && singleResult.status === 'success' && singleResult.store && (
+            <SingleResultCard store={singleResult.store} query={singleResult.query} finishedAt={singleResult.finishedAt} />
+          )}
+          {singleResult && singleResult.status === 'not_found' && (
+            <div className="flex items-center gap-2 text-sm text-muted bg-fill-subtle rounded-lg px-4 py-3">
+              <AlertCircle className="w-4 h-4 text-yellow-400" />
+              &quot;{singleResult.query}&quot; 검색 결과가 없습니다. 다른 키워드로 시도해보세요.
+            </div>
+          )}
+          {singleResult && singleResult.status === 'failed' && (
+            <div className="flex items-center gap-2 text-sm text-red-400 bg-red-500/10 rounded-lg px-4 py-3">
+              <AlertCircle className="w-4 h-4" />
+              에러: {singleResult.error}
+            </div>
+          )}
+        </div>
+
+        {/* 로그 뷰어 */}
+        {singleLogOpen && (
+          <div className="border-t border-border-subtle bg-sidebar">
+            <div className="px-4 py-2 flex items-center justify-between">
+              <span className="text-xs text-muted flex items-center gap-1.5">
+                <Terminal className="w-3 h-3" />
+                실시간 로그
+                {singleRunning && <Loader2 className="w-3 h-3 animate-spin text-[#FF6F0F]" />}
+              </span>
+              <button onClick={() => setSingleLogOpen(false)} className="text-xs text-muted hover:text-primary">
+                닫기
+              </button>
+            </div>
+            <pre
+              ref={singleLogPreRef}
+              className="text-[11px] leading-5 px-4 pb-4 overflow-y-auto max-h-[280px] font-mono text-secondary whitespace-pre-wrap break-all"
+            >
+              {singleLog || '(대기 중...)'}
+            </pre>
+          </div>
+        )}
+      </div>
 
       {/* 추가 폼 */}
       <form
@@ -550,5 +745,94 @@ function IconToggle({ active, onClick, icon, title }: { active: boolean; onClick
     >
       {icon}
     </button>
+  );
+}
+
+// ── 단일 업체 결과 카드 ──────────────────────────────────────
+function SingleResultCard({
+  store, query, finishedAt,
+}: {
+  store: NonNullable<SingleResult['store']>;
+  query: string;
+  finishedAt: string;
+}) {
+  return (
+    <div className="border border-green-500/30 bg-green-500/5 rounded-xl overflow-hidden">
+      <div className="flex gap-3 p-4">
+        {/* 썸네일 */}
+        {store.image_url ? (
+          <img
+            src={store.image_url}
+            alt={store.name}
+            className="w-20 h-20 object-cover rounded-lg flex-shrink-0 bg-fill-subtle"
+          />
+        ) : (
+          <div className="w-20 h-20 rounded-lg bg-fill-subtle flex items-center justify-center flex-shrink-0">
+            <Store className="w-8 h-8 text-muted" />
+          </div>
+        )}
+
+        {/* 정보 */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <p className="font-semibold text-primary text-base leading-tight">{store.name}</p>
+              <p className="text-xs text-muted mt-0.5">{store.category}</p>
+            </div>
+            <span className="px-2 py-0.5 bg-green-500/20 text-green-400 text-[10px] rounded-full border border-green-500/30 flex-shrink-0">
+              ✓ 저장됨
+            </span>
+          </div>
+
+          <div className="mt-2 space-y-1">
+            {store.address && (
+              <p className="text-xs text-secondary flex items-center gap-1.5">
+                <MapPin className="w-3 h-3 text-muted flex-shrink-0" />
+                {store.address}
+              </p>
+            )}
+            {store.phone && (
+              <p className="text-xs text-secondary flex items-center gap-1.5">
+                <Phone className="w-3 h-3 text-muted flex-shrink-0" />
+                {store.phone}
+              </p>
+            )}
+            <p className="text-xs text-secondary flex items-center gap-1.5">
+              <Star className="w-3 h-3 text-muted flex-shrink-0" />
+              방문자 리뷰 {(store.visitor_review_count ?? 0).toLocaleString()}건
+              {(store.review_count ?? 0) > 0 && ` · 블로그 ${store.review_count!.toLocaleString()}건`}
+            </p>
+          </div>
+
+          {/* 리뷰 키워드 */}
+          {store.review_keywords && store.review_keywords.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {store.review_keywords.slice(0, 5).map((kw) => (
+                <span key={kw.keyword} className="px-2 py-0.5 bg-fill-subtle text-secondary text-[10px] rounded-full">
+                  {kw.keyword} {kw.count}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 푸터 */}
+      <div className="px-4 py-2 border-t border-green-500/20 flex items-center justify-between">
+        <p className="text-[10px] text-muted">
+          쿼리: &quot;{query}&quot; · {new Date(finishedAt).toLocaleString('ko-KR')}
+        </p>
+        {store.naver_place_url && (
+          <a
+            href={store.naver_place_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[10px] text-[#FF6F0F] hover:underline flex items-center gap-1"
+          >
+            네이버 플레이스 <ExternalLink className="w-3 h-3" />
+          </a>
+        )}
+      </div>
+    </div>
   );
 }
