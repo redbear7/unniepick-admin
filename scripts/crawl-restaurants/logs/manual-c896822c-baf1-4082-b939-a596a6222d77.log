@@ -1,0 +1,25 @@
+
+==================================================
+[2026. 4. 17. 오후 5:12:14] 크롤링 시작 (1개 키워드)
+==================================================
+기존 DB: 50개
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+browserType.launch: Executable doesn't exist at /Users/bangju/Library/Caches/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-mac-arm64/chrome-headless-shell
+╔════════════════════════════════════════════════════════════╗
+║ Looks like Playwright was just installed or updated.       ║
+║ Please run the following command to download new browsers: ║
+║                                                            ║
+║     npx playwright install                                 ║
+║                                                            ║
+║ <3 Playwright Team                                         ║
+╚════════════════════════════════════════════════════════════╝
+    at crawl (/Users/bangju/Documents/PROGRAM/unniepick-admin/scripts/crawl-restaurants/src/main.ts:22:34)
+    at async runWithKeywords (/Users/bangju/Documents/PROGRAM/unniepick-admin/scripts/crawl-restaurants/src/main.ts:387:3)
+    at async <anonymous> (/Users/bangju/Documents/PROGRAM/unniepick-admin/scripts/crawl-restaurants/src/main.ts:404:3) {
+  name: 'Error'
+}
+
+Node.js v25.6.1
