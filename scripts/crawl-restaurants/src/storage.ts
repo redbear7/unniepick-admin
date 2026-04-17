@@ -59,13 +59,22 @@ export interface CrawlKeyword {
   last_crawled_at?: string;
 }
 
-/** 활성 키워드 조회 */
+/**
+ * 키워드 조회
+ * - id가 주어지면 enabled 여부 상관없이 해당 키워드 반환 (수동 실행용)
+ * - id가 없으면 enabled=true만 반환 (스케줄러용)
+ */
 export async function getActiveKeywords(opts: {
   daily?: boolean; id?: string;
 } = {}): Promise<CrawlKeyword[]> {
-  let query = supabase.from('crawl_keywords').select('*').eq('enabled', true);
-  if (opts.daily) query = query.eq('is_daily', true);
-  if (opts.id) query = query.eq('id', opts.id);
+  let query = supabase.from('crawl_keywords').select('*');
+
+  if (opts.id) {
+    query = query.eq('id', opts.id);
+  } else {
+    query = query.eq('enabled', true);
+    if (opts.daily) query = query.eq('is_daily', true);
+  }
 
   const { data, error } = await query.order('created_at');
   if (error) {
