@@ -36,6 +36,11 @@ export interface RestaurantData {
   naver_place_url?: string;
   menu_items?: Array<{ name: string; price?: string }>;
   tags?: string[];
+  // 상세 정보 (홈 탭)
+  business_hours?: string;          // 영업시간 (예: "월-금 11:00-22:00")
+  business_hours_detail?: string;   // 요일별 상세 (JSON 문자열)
+  website_url?: string;             // 홈페이지
+  instagram_url?: string;           // 인스타그램
   // 리뷰 분석
   review_keywords?: ReviewKeyword[];
   menu_keywords?: MenuKeyword[];

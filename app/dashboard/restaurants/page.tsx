@@ -32,6 +32,11 @@ interface Restaurant {
   menu_items: Array<{ name: string; price?: string }>;
   tags: string[];
   custom_tags: string[];
+  // 상세 정보
+  business_hours: string | null;
+  website_url: string | null;
+  instagram_url: string | null;
+  // 리뷰 분석
   review_keywords: ReviewKeyword[];
   menu_keywords: MenuKeyword[];
   review_summary: Record<string, number>;
@@ -447,6 +452,38 @@ function RestaurantCard({ r, onClick }: { r: Restaurant; onClick: () => void }) 
           {r.review_count > 0 && <span className="text-muted">블로그 {r.review_count.toLocaleString()}</span>}
         </div>
 
+        {/* 영업시간 */}
+        {r.business_hours && (
+          <p className="text-xs text-secondary flex items-center gap-1.5">
+            <Clock className="w-3 h-3 text-muted flex-shrink-0" />
+            {r.business_hours}
+          </p>
+        )}
+
+        {/* 인스타 / 홈페이지 */}
+        {(r.instagram_url || r.website_url) && (
+          <div className="flex gap-2 flex-wrap">
+            {r.instagram_url && (
+              <a
+                href={r.instagram_url} target="_blank" rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="text-[11px] text-pink-400 hover:text-pink-300 flex items-center gap-1"
+              >
+                📸 인스타그램
+              </a>
+            )}
+            {r.website_url && (
+              <a
+                href={r.website_url} target="_blank" rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="text-[11px] text-blue-400 hover:text-blue-300 flex items-center gap-1"
+              >
+                🔗 홈페이지
+              </a>
+            )}
+          </div>
+        )}
+
         {r.address && (
           <div className="flex items-start gap-1.5 text-sm text-muted">
             <MapPin className="w-3.5 h-3.5 mt-0.5 shrink-0" />
@@ -534,6 +571,7 @@ function DetailModal({ r, onClose }: { r: Restaurant; onClose: () => void }) {
           <div className="grid grid-cols-2 gap-3 text-sm">
             <Info label="주소" value={r.address} />
             <Info label="전화" value={r.phone} />
+            {r.business_hours && <Info label="영업시간" value={r.business_hours} className="col-span-2" />}
             <Info label="좌표" value={r.latitude && r.longitude ? `${r.latitude}, ${r.longitude}` : null} />
           </div>
 
@@ -559,7 +597,41 @@ function DetailModal({ r, onClose }: { r: Restaurant; onClose: () => void }) {
                 📞 전화
               </a>
             )}
+            {r.instagram_url && (
+              <a
+                href={r.instagram_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-pink-500/10 hover:bg-pink-500/20 border border-pink-500/30 rounded-lg text-sm font-medium text-pink-400 transition"
+              >
+                📸 인스타그램
+              </a>
+            )}
+            {r.website_url && (
+              <a
+                href={r.website_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 rounded-lg text-sm font-medium text-blue-400 transition"
+              >
+                🔗 홈페이지
+              </a>
+            )}
           </div>
+
+          {/* 메뉴판 */}
+          {r.menu_items?.length > 0 && (
+            <Section title="메뉴판" icon={<UtensilsCrossed className="w-4 h-4" />}>
+              <div className="grid grid-cols-2 gap-1.5">
+                {r.menu_items.map((m, i) => (
+                  <div key={i} className="flex items-center justify-between bg-fill-subtle rounded-lg px-3 py-2">
+                    <span className="text-sm text-primary font-medium">{m.name}</span>
+                    {m.price && <span className="text-xs text-[#FF6F0F] font-semibold">{m.price}</span>}
+                  </div>
+                ))}
+              </div>
+            </Section>
+          )}
 
           {/* 키워드 리뷰 */}
           {r.review_keywords?.length > 0 && (
@@ -650,10 +722,10 @@ function Section({ title, icon, children }: { title: string; icon: React.ReactNo
   );
 }
 
-function Info({ label, value }: { label: string; value: React.ReactNode }) {
+function Info({ label, value, className }: { label: string; value: React.ReactNode; className?: string }) {
   if (!value) return null;
   return (
-    <div>
+    <div className={className}>
       <p className="text-xs text-muted">{label}</p>
       <p className="text-primary">{typeof value === 'string' ? value : value}</p>
     </div>

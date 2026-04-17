@@ -10,6 +10,7 @@
 import 'dotenv/config';
 import { chromium, type Page } from 'playwright';
 import { upsertRestaurants, type RestaurantData, type ReviewKeyword, type MenuKeyword, type BlogReview } from './storage.js';
+import { crawlDetailInfo } from './main.js';
 import { processImage } from './image.js';
 import { writeFileSync, mkdirSync } from 'fs';
 import path from 'path';
@@ -207,7 +208,20 @@ try {
 
   store.tags = [query];
 
-  // 2. 리뷰 분석 (옵션)
+  // 2. 홈 탭 상세 정보 (영업시간·홈페이지·메뉴판) — 항상 수집
+  console.log('\n📋 상세 정보 수집 중...');
+  try {
+    const detail = await crawlDetailInfo(page, store.naver_place_id);
+    if (detail.business_hours)        { store.business_hours = detail.business_hours; console.log(`  영업시간: ${detail.business_hours}`); }
+    if (detail.business_hours_detail) store.business_hours_detail = detail.business_hours_detail;
+    if (detail.website_url)           { store.website_url = detail.website_url; console.log(`  홈페이지: ${detail.website_url}`); }
+    if (detail.instagram_url)         { store.instagram_url = detail.instagram_url; console.log(`  인스타: ${detail.instagram_url}`); }
+    if (detail.menu_items?.length)    { store.menu_items = detail.menu_items; console.log(`  메뉴: ${detail.menu_items.length}개`); }
+  } catch (e) {
+    console.log(`  상세 정보 에러: ${(e as Error).message}`);
+  }
+
+  // 3. 리뷰 분석 (옵션)
   if (analyzeReviews) {
     console.log('\n리뷰 분석 중...');
     try {
@@ -222,7 +236,7 @@ try {
     }
   }
 
-  // 3. 이미지 처리
+  // 4. 이미지 처리
   if (store.image_url) {
     console.log('\n📷 이미지 처리 중...');
     try {
@@ -234,12 +248,12 @@ try {
     }
   }
 
-  // 4. DB 저장
+  // 5. DB 저장
   console.log('\n💾 DB 저장 중...');
   const saved = await upsertRestaurants([store]);
   console.log(`  ${saved > 0 ? '✓ 저장 완료' : '(이미 존재 — 업데이트)'}`);
 
-  // 5. 결과 파일 저장
+  // 6. 결과 파일 저장
   writeResult({
     query,
     status: 'success',

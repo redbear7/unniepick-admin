@@ -37,20 +37,30 @@ async function crawl(keywords: CrawlKeyword[]) {
         const restaurants = await collectFromApollo(page, kw.keyword);
         console.log(`     ${restaurants.length}개 업체 수집`);
 
-        // ── 2. analyze_reviews=true인 경우만 상세 리뷰 분석 ──
+        // ── 2. analyze_reviews=true인 경우: 상세 정보 + 리뷰 분석 ──
         if (kw.analyze_reviews) {
           for (let i = 0; i < restaurants.length; i++) {
             const r = restaurants[i];
             r.is_new_open = true;
             try {
-              console.log(`     [${i + 1}/${restaurants.length}] ${r.name} 리뷰 분석...`);
+              console.log(`     [${i + 1}/${restaurants.length}] ${r.name} 상세+리뷰 분석...`);
+
+              // 홈 탭 상세 정보 (영업시간·홈페이지·메뉴판)
+              const detail = await crawlDetailInfo(page, r.naver_place_id);
+              if (detail.business_hours)        r.business_hours = detail.business_hours;
+              if (detail.business_hours_detail) r.business_hours_detail = detail.business_hours_detail;
+              if (detail.website_url)           r.website_url = detail.website_url;
+              if (detail.instagram_url)         r.instagram_url = detail.instagram_url;
+              if (detail.menu_items?.length)    r.menu_items = detail.menu_items;
+
+              // 방문자 리뷰 분석
               const reviews = await crawlReviews(page, r.naver_place_id);
               r.review_keywords = reviews.keywords;
               r.menu_keywords = reviews.menuKeywords;
               r.review_summary = reviews.summary;
               r.blog_reviews = reviews.blogReviews;
             } catch (e) {
-              console.log(`       리뷰 에러: ${(e as Error).message}`);
+              console.log(`       분석 에러: ${(e as Error).message}`);
             }
             await page.waitForTimeout(500 + Math.random() * 500);
           }
@@ -239,6 +249,152 @@ async function collectFromApollo(page: Page, query: string): Promise<RestaurantD
   }
 
   return allResults;
+}
+
+// ── 홈 탭 상세 정보 수집 (영업시간·홈페이지·메뉴판) ────────
+
+export async function crawlDetailInfo(page: Page, placeId: string): Promise<{
+  business_hours?: string;
+  business_hours_detail?: string;
+  website_url?: string;
+  instagram_url?: string;
+  menu_items?: Array<{ name: string; price?: string }>;
+}> {
+  // ── 1. 홈 탭 ──
+  await page.goto(`https://pcmap.place.naver.com/restaurant/${placeId}/home`, {
+    waitUntil: 'networkidle', timeout: 20_000,
+  });
+  await page.waitForTimeout(2000);
+
+  const homeData = await page.evaluate(() => {
+    const body = document.body.innerText;
+    const lines = body.split('\n').map((l) => l.trim()).filter(Boolean);
+
+    // ── 영업시간 ──
+    // Apollo state에서 직접 추출
+    const apollo = (window as any).__APOLLO_STATE__ ?? {};
+    let businessHours = '';
+    const hoursByDay: Record<string, string> = {};
+
+    // BusinessHour:xxx 키 파싱
+    const dayMap: Record<string, string> = {
+      MONDAY: '월', TUESDAY: '화', WEDNESDAY: '수',
+      THURSDAY: '목', FRIDAY: '금', SATURDAY: '토', SUNDAY: '일',
+    };
+    for (const [, val] of Object.entries(apollo) as [string, any][]) {
+      if (val?.startTime && val?.endTime && val?.businessHourType === 'NORMAL') {
+        const day = dayMap[val.day] ?? val.day;
+        if (day) hoursByDay[day] = `${val.startTime}~${val.endTime}`;
+      }
+    }
+
+    if (Object.keys(hoursByDay).length > 0) {
+      // 같은 시간대 묶기
+      const grouped: Record<string, string[]> = {};
+      for (const [day, time] of Object.entries(hoursByDay)) {
+        if (!grouped[time]) grouped[time] = [];
+        grouped[time].push(day);
+      }
+      businessHours = Object.entries(grouped)
+        .map(([time, days]) => `${days.join('·')} ${time}`)
+        .join(' / ');
+    }
+
+    // Fallback: body text에서 파싱
+    if (!businessHours) {
+      const idx = lines.findIndex((l) =>
+        l.includes('영업') && (l.includes(':') || l.includes('시간')),
+      );
+      if (idx >= 0) {
+        // 다음 몇 줄 합치기
+        const hourLines: string[] = [];
+        for (let i = idx; i < Math.min(idx + 10, lines.length); i++) {
+          const l = lines[i];
+          if (i > idx && (l.startsWith('http') || l.includes('전화') || l.includes('주소'))) break;
+          hourLines.push(l);
+        }
+        businessHours = hourLines.join(' | ').slice(0, 200);
+      }
+    }
+
+    // ── 홈페이지·인스타그램 ──
+    let websiteUrl = '';
+    let instagramUrl = '';
+
+    // Apollo에서 URL 추출
+    for (const [, val] of Object.entries(apollo) as [string, any][]) {
+      const url: string = val?.url ?? val?.homepageUrl ?? '';
+      if (!url.startsWith('http')) continue;
+      if (url.includes('instagram.com') && !instagramUrl) instagramUrl = url;
+      else if (!url.includes('naver') && !url.includes('kakao') && !websiteUrl) websiteUrl = url;
+    }
+
+    // Fallback: body text에서 URL 추출
+    if (!instagramUrl || !websiteUrl) {
+      const urlRegex = /https?:\/\/[^\s\n\)'"]+/g;
+      const found = body.match(urlRegex) ?? [];
+      for (const u of found) {
+        if (u.includes('instagram.com') && !instagramUrl) instagramUrl = u.replace(/[,.]+$/, '');
+        else if (!u.includes('naver') && !u.includes('kakao') && !u.includes('map.') && !websiteUrl) {
+          websiteUrl = u.replace(/[,.]+$/, '');
+        }
+      }
+    }
+
+    return {
+      business_hours: businessHours || undefined,
+      business_hours_detail: Object.keys(hoursByDay).length > 0
+        ? JSON.stringify(hoursByDay)
+        : undefined,
+      website_url: websiteUrl || undefined,
+      instagram_url: instagramUrl || undefined,
+    };
+  });
+
+  // ── 2. 메뉴 탭 ──
+  await page.goto(`https://pcmap.place.naver.com/restaurant/${placeId}/menu/list`, {
+    waitUntil: 'networkidle', timeout: 15_000,
+  });
+  await page.waitForTimeout(1500);
+
+  const menuItems: Array<{ name: string; price?: string }> = await page.evaluate(() => {
+    const apollo = (window as any).__APOLLO_STATE__ ?? {};
+    const items: Array<{ name: string; price?: string }> = [];
+    const seen = new Set<string>();
+
+    // Apollo에서 Menu:xxx 키 파싱
+    for (const [key, val] of Object.entries(apollo) as [string, any][]) {
+      if (!key.startsWith('Menu:')) continue;
+      const name: string = val?.name ?? '';
+      if (!name || seen.has(name)) continue;
+      seen.add(name);
+      const price = val?.price ? `${Number(val.price).toLocaleString()}원` : undefined;
+      items.push({ name, price });
+    }
+
+    // Fallback: body text에서 "메뉴명 N,NNN원" 패턴
+    if (items.length === 0) {
+      const body = document.body.innerText;
+      const lines = body.split('\n').map((l) => l.trim()).filter(Boolean);
+      for (let i = 0; i < lines.length - 1; i++) {
+        const name = lines[i];
+        const next = lines[i + 1];
+        if (name.length < 2 || name.length > 30) continue;
+        const priceMatch = next.match(/^[\d,]+원$/);
+        if (priceMatch) {
+          if (!seen.has(name)) {
+            seen.add(name);
+            items.push({ name, price: next });
+            i++; // 가격 줄 건너뜀
+          }
+        }
+      }
+    }
+
+    return items.slice(0, 30);
+  });
+
+  return { ...homeData, menu_items: menuItems.length > 0 ? menuItems : undefined };
 }
 
 // ── 리뷰 상세 분석 (새로오픈 전용) ─────────────────────────
