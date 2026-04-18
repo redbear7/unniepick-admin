@@ -115,6 +115,15 @@ export default function ChatWidget() {
             <Bot size={16} className="text-[#FF6F0F]" />
             <span className="text-sm font-semibold text-primary">AI 어시스턴트</span>
             <span className="ml-auto text-[10px] text-dim bg-[#FF6F0F]/15 px-2 py-0.5 rounded-full">시샵 전용</span>
+            {messages.length > 0 && (
+              <button
+                onClick={() => setMessages([])}
+                className="text-[10px] text-dim hover:text-primary transition ml-1"
+                title="대화 초기화"
+              >
+                초기화
+              </button>
+            )}
           </div>
 
           {/* 메시지 목록 */}

@@ -118,12 +118,18 @@ export async function POST(req: NextRequest) {
 
   const ai = new GoogleGenAI({ apiKey });
 
+  // 컨텍스트 한도 초과 방지: 최근 40개 메시지만 유지 (약 20턴)
+  const MAX_HISTORY = 40;
+  const trimmed = messages.length > MAX_HISTORY
+    ? messages.slice(messages.length - MAX_HISTORY)
+    : messages;
+
   // Gemini history 형식으로 변환 (마지막 user 메시지 제외)
-  const history = messages.slice(0, -1).map(m => ({
+  const history = trimmed.slice(0, -1).map(m => ({
     role: m.role === 'assistant' ? 'model' : 'user',
     parts: [{ text: m.content }],
   }));
-  const lastMessage = messages[messages.length - 1].content;
+  const lastMessage = trimmed[trimmed.length - 1].content;
 
   const stream = new ReadableStream({
     async start(controller) {
