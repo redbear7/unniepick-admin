@@ -37,6 +37,17 @@ const ROLE_COLOR: Record<string, string> = {
   superadmin: 'bg-purple-500/15 text-purple-400',
 };
 
+// ── 전화번호 포맷 (+821012345678 / 01012345678 → 010-1234-5678) ────────
+function formatPhone(phone: string | null): string {
+  if (!phone) return '-';
+  let digits = phone.replace(/\D/g, '');            // 숫자만 추출
+  if (digits.startsWith('82') && digits.length === 12) {
+    digits = '0' + digits.slice(2);                 // +82 → 0
+  }
+  const m = digits.match(/^(\d{3})(\d{4})(\d{4})$/);
+  return m ? `${m[1]}-${m[2]}-${m[3]}` : phone;    // 매칭 실패 시 원본
+}
+
 // ── 날짜 포맷 (YYYY. M. D. HH:mm) ────────────────────────────────────
 function fmtDate(iso: string) {
   const d = new Date(iso);
@@ -82,7 +93,7 @@ function DeleteModal({
             </div>
             <div>
               <p className="font-semibold text-primary text-sm">{user.name}</p>
-              <p className="text-xs text-muted">{user.phone ?? '전화번호 없음'}</p>
+              <p className="text-xs text-muted">{user.phone ? formatPhone(user.phone) : '전화번호 없음'}</p>
             </div>
           </div>
         </div>
@@ -365,7 +376,7 @@ export default function UsersPage() {
                   {/* 전화번호 */}
                   <td className="px-4 py-3.5 text-tertiary font-mono text-xs">
                     {user.phone
-                      ? user.phone.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3')
+                      ? formatPhone(user.phone)
                       : <span className="text-dim">-</span>}
                   </td>
 

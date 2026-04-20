@@ -14,6 +14,16 @@ function adminClient() {
   );
 }
 
+/** E.164 → 한국 로컬 번호 (예: +821012345678 → 01012345678) */
+function normalizePhone(phone: string | undefined | null): string | undefined {
+  if (!phone) return undefined;
+  const digits = phone.replace(/\D/g, '');
+  if (digits.startsWith('82') && digits.length === 12) {
+    return '0' + digits.slice(2);
+  }
+  return digits || undefined;
+}
+
 export async function GET() {
   const sb = adminClient();
 
@@ -27,14 +37,16 @@ export async function GET() {
       if (error || !data?.users?.length) break;
       for (const u of data.users) {
         authUsers[u.id] = {
-          phone:           u.phone        || undefined,
+          phone:           normalizePhone(u.phone),
           last_sign_in_at: u.last_sign_in_at || undefined,
         };
       }
       if (data.users.length < perPage) break;
       page++;
     }
-  } catch { /* service role 없으면 무시 */ }
+  } catch (e) {
+    console.error('[admin/users] listUsers error:', e);
+  }
 
   // 2) push_tokens — 유저별 opt_in 여부
   const pushMap: Record<string, boolean> = {};
