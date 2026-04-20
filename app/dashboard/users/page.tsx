@@ -2,16 +2,22 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase';
-import { Search, User, Store, Shield, Trash2, AlertTriangle, X } from 'lucide-react';
+import {
+  Search, User, Store, Shield, Trash2, AlertTriangle, X,
+  Bell, BellOff, MapPin, Ticket,
+} from 'lucide-react';
 
 // ── 타입 ─────────────────────────────────────────────────────────────
 interface UserRow {
-  id:         string;
-  name:       string;
-  phone:      string | null;
-  role:       string;
-  created_at: string;
-  source:     'users' | 'profiles' | 'both'; // 어느 테이블 출처인지
+  id:              string;
+  name:            string;
+  phone:           string | null;
+  role:            string;
+  created_at:      string;
+  source:          'users' | 'profiles' | 'both';
+  push_enabled:    boolean | null;   // null = 알 수 없음
+  gps_granted:     boolean | null;   // follows 여부로 추론
+  coupon_count:    number;
 }
 
 // ── 상수 ─────────────────────────────────────────────────────────────
@@ -30,6 +36,14 @@ const ROLE_COLOR: Record<string, string> = {
   owner:      'bg-[#FF6F0F]/15 text-[#FF6F0F]',
   superadmin: 'bg-purple-500/15 text-purple-400',
 };
+
+// ── 날짜 포맷 (YYYY. M. D. HH:mm) ────────────────────────────────────
+function fmtDate(iso: string) {
+  const d = new Date(iso);
+  const ymd = d.toLocaleDateString('ko-KR'); // "2026. 4. 20."
+  const hm  = d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
+  return `${ymd} ${hm}`;
+}
 
 // ── 삭제 확인 모달 ───────────────────────────────────────────────────
 function DeleteModal({
@@ -105,18 +119,19 @@ function DeleteModal({
 
 // ── 메인 페이지 ──────────────────────────────────────────────────────
 export default function UsersPage() {
-  const [users,       setUsers]       = useState<UserRow[]>([]);
-  const [loading,     setLoading]     = useState(true);
-  const [query,       setQuery]       = useState('');
-  const [filter,      setFilter]      = useState<'all' | 'customer' | 'owner' | 'profiles'>('all');
+  const [users,        setUsers]        = useState<UserRow[]>([]);
+  const [loading,      setLoading]      = useState(true);
+  const [query,        setQuery]        = useState('');
+  const [filter,       setFilter]       = useState<'all' | 'customer' | 'owner' | 'profiles'>('all');
   const [deleteTarget, setDeleteTarget] = useState<UserRow | null>(null);
-  const [deleting,    setDeleting]    = useState(false);
-  const [toast,       setToast]       = useState('');
+  const [deleting,     setDeleting]     = useState(false);
+  const [toast,        setToast]        = useState('');
 
-  // ── 데이터 로드: users + profiles 병합 ──────────────────────────────
+  // ── 데이터 로드 ──────────────────────────────────────────────────────
   const load = useCallback(async () => {
     const sb = createClient();
 
+    // 기본 유저 데이터
     const [usersRes, profilesRes] = await Promise.all([
       sb.from('users')
         .select('id, name, phone, role, created_at')
@@ -129,30 +144,34 @@ export default function UsersPage() {
 
     const usersMap = new Map<string, UserRow>();
 
-    // users 테이블 (기존 플로우)
     for (const u of usersRes.data ?? []) {
       usersMap.set(u.id, {
-        id:         u.id,
-        name:       u.name || '(이름 없음)',
-        phone:      u.phone,
-        role:       u.role,
-        created_at: u.created_at,
-        source:     'users',
+        id:           u.id,
+        name:         u.name || '(이름 없음)',
+        phone:        u.phone,
+        role:         u.role,
+        created_at:   u.created_at,
+        source:       'users',
+        push_enabled: null,
+        gps_granted:  null,
+        coupon_count: 0,
       });
     }
 
-    // profiles 테이블 (신규 인증 플로우) — 병합
     for (const p of profilesRes.data ?? []) {
       if (usersMap.has(p.id)) {
         usersMap.get(p.id)!.source = 'both';
       } else {
         usersMap.set(p.id, {
-          id:         p.id,
-          name:       p.nickname || '(닉네임 없음)',
-          phone:      null,
-          role:       'customer',
-          created_at: p.created_at,
-          source:     'profiles',
+          id:           p.id,
+          name:         p.nickname || '(닉네임 없음)',
+          phone:        null,
+          role:         'customer',
+          created_at:   p.created_at,
+          source:       'profiles',
+          push_enabled: null,
+          gps_granted:  null,
+          coupon_count: 0,
         });
       }
     }
@@ -161,9 +180,25 @@ export default function UsersPage() {
     const merged = [...usersMap.values()].sort(
       (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
     );
-
     setUsers(merged);
     setLoading(false);
+
+    // 서비스롤 기반 추가 데이터 (별도 API)
+    try {
+      const res  = await fetch('/api/admin/users');
+      const json = await res.json();
+
+      const { authUsers = {}, pushMap = {}, followSet = [], couponCount = {} } = json;
+      const followSetObj = new Set<string>(followSet as string[]);
+
+      setUsers(prev => prev.map(u => ({
+        ...u,
+        phone:        authUsers[u.id]?.phone ?? u.phone,
+        push_enabled: pushMap[u.id] === true ? true : null,
+        gps_granted:  followSetObj.has(u.id) ? true : null,
+        coupon_count: couponCount[u.id] ?? 0,
+      })));
+    } catch { /* 무시 */ }
   }, []);
 
   useEffect(() => {
@@ -205,7 +240,6 @@ export default function UsersPage() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? '삭제 실패');
 
-      // 낙관적 업데이트
       setUsers(prev => prev.filter(u => u.id !== deleteTarget.id));
       setToast(`${deleteTarget.name} 삭제 완료`);
       setTimeout(() => setToast(''), 3000);
@@ -220,13 +254,12 @@ export default function UsersPage() {
 
   // ── 소스 배지 ────────────────────────────────────────────────────────
   const SourceBadge = ({ source }: { source: UserRow['source'] }) => {
-    if (source === 'both')     return null;
-    if (source === 'profiles') return (
+    if (source !== 'profiles') return null;
+    return (
       <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-yellow-500/15 text-yellow-400 ml-1.5">
         NEW
       </span>
     );
-    return null;
   };
 
   return (
@@ -282,7 +315,16 @@ export default function UsersPage() {
               <th className="text-left px-5 py-3.5 text-xs font-semibold text-muted">이름</th>
               <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">전화번호</th>
               <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">역할</th>
-              <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">가입일</th>
+              <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">가입일시</th>
+              <th className="text-center px-3 py-3.5 text-xs font-semibold text-muted">
+                <MapPin size={12} className="inline-block mr-0.5 -mt-0.5" />GPS
+              </th>
+              <th className="text-center px-3 py-3.5 text-xs font-semibold text-muted">
+                <Bell size={12} className="inline-block mr-0.5 -mt-0.5" />푸쉬
+              </th>
+              <th className="text-center px-3 py-3.5 text-xs font-semibold text-muted">
+                <Ticket size={12} className="inline-block mr-0.5 -mt-0.5" />쿠폰
+              </th>
               <th className="w-12 px-4 py-3.5" />
             </tr>
           </thead>
@@ -290,7 +332,7 @@ export default function UsersPage() {
             {loading ? (
               [...Array(6)].map((_, i) => (
                 <tr key={i} className="border-b border-border-main">
-                  {[...Array(5)].map((_, j) => (
+                  {[...Array(8)].map((_, j) => (
                     <td key={j} className="px-5 py-4">
                       <div className="h-4 bg-fill-subtle rounded animate-pulse" />
                     </td>
@@ -299,7 +341,7 @@ export default function UsersPage() {
               ))
             ) : filtered.length === 0 ? (
               <tr>
-                <td colSpan={5} className="text-center py-12 text-dim">회원이 없어요</td>
+                <td colSpan={8} className="text-center py-12 text-dim">회원이 없어요</td>
               </tr>
             ) : (
               filtered.map(user => (
@@ -307,7 +349,8 @@ export default function UsersPage() {
                   key={user.id}
                   className="border-b border-border-main hover:bg-white/[0.02] transition group"
                 >
-                  <td className="px-5 py-4">
+                  {/* 이름 */}
+                  <td className="px-5 py-3.5">
                     <div className="flex items-center gap-2.5">
                       <div className="w-8 h-8 rounded-full bg-fill-medium flex items-center justify-center text-xs font-bold text-tertiary flex-shrink-0">
                         {user.name.charAt(0)}
@@ -318,19 +361,54 @@ export default function UsersPage() {
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-4 text-tertiary font-mono text-xs">
-                    {user.phone ?? <span className="text-dim">-</span>}
+
+                  {/* 전화번호 */}
+                  <td className="px-4 py-3.5 text-tertiary font-mono text-xs">
+                    {user.phone
+                      ? user.phone.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3')
+                      : <span className="text-dim">-</span>}
                   </td>
-                  <td className="px-4 py-4">
+
+                  {/* 역할 */}
+                  <td className="px-4 py-3.5">
                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold ${ROLE_COLOR[user.role] ?? 'bg-fill-subtle text-tertiary'}`}>
                       {ROLE_ICON[user.role]}
                       {ROLE_LABEL[user.role] ?? user.role}
                     </span>
                   </td>
-                  <td className="px-4 py-4 text-muted text-xs">
-                    {new Date(user.created_at).toLocaleDateString('ko-KR')}
+
+                  {/* 가입일시 */}
+                  <td className="px-4 py-3.5 text-muted text-xs whitespace-nowrap">
+                    {fmtDate(user.created_at)}
                   </td>
-                  <td className="px-4 py-4">
+
+                  {/* GPS */}
+                  <td className="px-3 py-3.5 text-center">
+                    {user.gps_granted === true
+                      ? <MapPin size={14} className="inline text-green-400" />
+                      : <MapPin size={14} className="inline text-white/15" />}
+                  </td>
+
+                  {/* 푸쉬 */}
+                  <td className="px-3 py-3.5 text-center">
+                    {user.push_enabled === true
+                      ? <Bell size={14} className="inline text-[#FF6F0F]" />
+                      : <BellOff size={14} className="inline text-white/15" />}
+                  </td>
+
+                  {/* 쿠폰 */}
+                  <td className="px-3 py-3.5 text-center">
+                    {user.coupon_count > 0
+                      ? (
+                        <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-[#FF6F0F]/20 text-[#FF6F0F] text-[10px] font-bold">
+                          {user.coupon_count}
+                        </span>
+                      )
+                      : <span className="text-dim text-xs">-</span>}
+                  </td>
+
+                  {/* 삭제 */}
+                  <td className="px-4 py-3.5">
                     <button
                       onClick={() => setDeleteTarget(user)}
                       className="opacity-0 group-hover:opacity-100 transition p-1.5 rounded-lg hover:bg-red-500/15 text-muted hover:text-red-400"
