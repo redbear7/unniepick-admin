@@ -42,9 +42,10 @@ export async function POST(req: NextRequest) {
   }
 
   // 2. 배치 처리
-  let processed = 0;
-  let failed    = 0;
-  const now     = new Date().toISOString();
+  let processed  = 0;
+  let failed     = 0;
+  let firstError = '';
+  const now      = new Date().toISOString();
 
   for (let i = 0; i < ids.length; i += BATCH) {
     const chunk = ids.slice(i, i + BATCH);
@@ -60,6 +61,7 @@ export async function POST(req: NextRequest) {
       .in('naver_place_id', chunk);
 
     if (fetchErr) {
+      if (!firstError) firstError = `[fetch] ${fetchErr.message}`;
       console.error('[batch-extract-tags] fetch error:', fetchErr.message);
       failed += chunk.length;
       continue;
@@ -83,6 +85,7 @@ export async function POST(req: NextRequest) {
 
       if (restErr) {
         failed++;
+        if (!firstError) firstError = restErr.message;
         console.error('[batch-extract-tags] update error:', r.naver_place_id, restErr.message);
         continue;
       }
@@ -99,10 +102,12 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({
-    ok:        true,
+    ok:         true,
     processed,
     failed,
-    total:     ids.length,
-    summary:   `총 ${ids.length}건 중 ${processed}건 처리, ${failed}건 실패`,
+    total:      ids.length,
+    firstError: firstError || null,
+    _ts:        Date.now(),
+    summary:    `총 ${ids.length}건 중 ${processed}건 처리, ${failed}건 실패`,
   });
 }
