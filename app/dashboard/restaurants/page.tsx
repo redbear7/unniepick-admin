@@ -524,8 +524,6 @@ export default function RestaurantsPage() {
                 registered={registeredIds.has(r.naver_place_id)}
                 selected={selectedIds.has(r.naver_place_id)}
                 onSelect={() => toggleSelect(r.naver_place_id)}
-                onQuickRegister={() => quickRegister(r)}
-                registering={registeringId === r.naver_place_id}
               />
             ))}
           </div>
@@ -669,15 +667,13 @@ function SelectFilter({ value, onChange, options, placeholder, icon }: {
 
 function RestaurantCard({
   r, onClick,
-  registered, selected, onSelect, onQuickRegister, registering,
+  registered, selected, onSelect,
 }: {
   r: Restaurant;
   onClick: () => void;
   registered?: boolean;
   selected?: boolean;
   onSelect?: () => void;
-  onQuickRegister?: () => void;
-  registering?: boolean;
 }) {
   const topKeyword = r.review_keywords?.[0];
   return (
@@ -846,26 +842,14 @@ function RestaurantCard({
               </Link>
             </>
           ) : (
-            <>
-              <button
-                onClick={() => onQuickRegister?.()}
-                disabled={registering}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#FF6F0F] hover:bg-[#e85e00] disabled:opacity-50 text-white rounded-lg text-xs font-bold transition"
-              >
-                {registering
-                  ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  : <PlusCircle className="w-3.5 h-3.5" />
-                }
-                {registering ? '등록 중...' : '가게 등록'}
-              </button>
-              <Link
-                href={`/dashboard/restaurants/register?naver_place_id=${r.naver_place_id}`}
-                className="flex items-center justify-center gap-1.5 px-3 py-2 bg-fill-subtle hover:bg-fill-medium border border-border-subtle rounded-lg text-xs font-semibold text-muted hover:text-primary transition"
-              >
-                <Pencil className="w-3 h-3" />
-                편집
-              </Link>
-            </>
+            <Link
+              href={`/dashboard/restaurants/register?naver_place_id=${r.naver_place_id}`}
+              onClick={(e) => e.stopPropagation()}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#FF6F0F] hover:bg-[#e85e00] text-white rounded-lg text-xs font-bold transition"
+            >
+              <PlusCircle className="w-3.5 h-3.5" />
+              가게 등록
+            </Link>
           )}
         </div>
 
