@@ -212,6 +212,12 @@ export default function UsersPage() {
         console.warn('[users] listUsers 실패:', _listUsersError, '| SERVICE_ROLE_KEY:', _hasServiceRole);
       }
 
+      // 디버그: auth.users에서 가져온 전화번호 확인
+      console.log('[users] authUsers 수:', Object.keys(authUsers).length);
+      const phoneEntries = Object.entries(authUsers as Record<string, {phone?:string}>)
+        .filter(([, v]) => v.phone);
+      console.log('[users] 전화번호 있는 auth유저:', phoneEntries.length, phoneEntries.slice(0, 5));
+
       const followSetObj = new Set<string>(followSet as string[]);
 
       setUsers(prev => prev.map(u => ({
