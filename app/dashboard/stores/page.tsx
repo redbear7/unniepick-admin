@@ -105,6 +105,7 @@ export default function StoresPage() {
   const [editModal,   setEditModal]   = useState<Store | null | 'new'>(null);
   const [form,        setForm]        = useState<StoreForm>(EMPTY_FORM);
   const [saving,      setSaving]      = useState(false);
+  const [saveError,   setSaveError]   = useState('');
   const [deleteId,    setDeleteId]    = useState<string | null>(null);
   const [naverUrl,    setNaverUrl]    = useState('');
   const [autoFilling, setAutoFilling] = useState(false);
@@ -230,7 +231,7 @@ export default function StoresPage() {
     setToggling(null);
   };
 
-  const openNew  = () => { setForm(EMPTY_FORM); setNaverUrl(''); setAutoFillErr(''); setEditModal('new'); };
+  const openNew  = () => { setForm(EMPTY_FORM); setNaverUrl(''); setAutoFillErr(''); setSaveError(''); setEditModal('new'); };
   const openEdit = (store: Store) => {
     setForm({
       name: store.name, address: store.address ?? '', phone: store.phone ?? '',
@@ -239,7 +240,7 @@ export default function StoresPage() {
       subscription_expires_at: store.subscription_expires_at ?? null,
       latitude: null, longitude: null,
     });
-    setNaverUrl(''); setAutoFillErr('');
+    setNaverUrl(''); setAutoFillErr(''); setSaveError('');
     setEditModal(store);
   };
 
@@ -270,6 +271,7 @@ export default function StoresPage() {
   const saveStore = async () => {
     if (!form.name.trim()) return;
     setSaving(true);
+    setSaveError('');
     const payload: Record<string, unknown> = {
       name:                    form.name.trim(),
       address:                 form.address       || null,
@@ -283,18 +285,30 @@ export default function StoresPage() {
       ...(form.latitude  != null ? { latitude:  form.latitude  } : {}),
       ...(form.longitude != null ? { longitude: form.longitude } : {}),
     };
+
+    let res: Response;
     if (editModal === 'new') {
-      await fetch('/api/admin/stores', {
+      res = await fetch('/api/admin/stores', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-    } else if (editModal) {
-      await fetch('/api/admin/stores', {
+    } else {
+      res = await fetch('/api/admin/stores', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: (editModal as Store).id, ...payload }),
       });
+    }
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setSaveError(data.error || '저장 중 오류가 발생했습니다.');
+      setSaving(false);
+      return;
+    }
+
+    if (editModal !== 'new' && editModal) {
       pushStoreHistory((editModal as Store).id, {
         changed_at: new Date().toISOString(),
         label: '정보 수정',
@@ -647,6 +661,14 @@ export default function StoresPage() {
             </div>
 
             <div className="space-y-3">
+              {/* 저장 오류 */}
+              {saveError && (
+                <div className="flex items-center gap-2 px-3 py-2.5 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-400">
+                  <X size={13} className="shrink-0" />
+                  {saveError}
+                </div>
+              )}
+
               {/* 네이버 자동 입력 */}
               <div>
                 <label className="block text-xs text-muted mb-1">네이버 업체 URL로 자동 입력</label>
