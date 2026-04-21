@@ -1,35 +1,26 @@
-[2026-04-17] 14분 후 크롤링 시작 (봇 감지 회피)
+[2026-04-21] 21분 후 크롤링 시작 (봇 감지 회피)
 
 ──────────────────────────────────────────────────
 단일 업체 크롤링
-쿼리: "마산 캠랑바베큐"
+쿼리: "원조김할머니의령소바 창원스마트업타워점"
 리뷰분석: ✓
 ──────────────────────────────────────────────────
 
-🔍 네이버 플레이스 검색: "마산 캠랑바베큐"
-   검색 결과: 1개
-✓ 발견: 캠랑바베큐 마산본점
-  카테고리: 육류,고기요리
-  주소: 창원 마산합포구 가포동 가포신항북로 40 캠랑바베큐 마산본점
-  전화: 0507-1303-7893
-  방문리뷰: 2건
-  URL: https://map.naver.com/p/entry/place/1521458198
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
 
-📋 상세 정보 수집 중...
-  영업시간: 영업시간 | 영업 종료 | 11:30에 영업 시작 | 11시 30분에 영업 시작 | 펼쳐보기
-  인스타: https://www.instagram.com/camrang_bbq
-  메뉴: 12개
+browserType.launch: Executable doesn't exist at /Users/bangju/Library/Caches/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-mac-arm64/chrome-headless-shell
+╔════════════════════════════════════════════════════════════╗
+║ Looks like Playwright was just installed or updated.       ║
+║ Please run the following command to download new browsers: ║
+║                                                            ║
+║     npx playwright install                                 ║
+║                                                            ║
+║ <3 Playwright Team                                         ║
+╚════════════════════════════════════════════════════════════╝
+    at <anonymous> (/Users/bangju/Documents/PROGRAM/unniepick-admin/scripts/crawl-restaurants/src/single.ts:191:32) {
+  name: 'Error'
+}
 
-리뷰 분석 중...
-  키워드 5개, 메뉴 15개, 블로그리뷰 5개
-
-📷 이미지 처리 중...
-  ✓ 최적화 완료
-
-🏷️  태그 자동 분류 중...
-  20개 태그: 고기구이, 찌개·전골, 면요리, 디저트, 주점, 데이트, 가족모임, 단체모임 ...
-
-💾 DB 저장 중...
-  ✓ 저장 완료
-
-✅ 완료: 캠랑바베큐 마산본점
+Node.js v25.6.1
