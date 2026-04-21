@@ -199,27 +199,7 @@ export default function UsersPage() {
       const res  = await fetch('/api/admin/users');
       const json = await res.json();
 
-      const {
-        authUsers = {},
-        pushMap = {},
-        followSet = [],
-        couponCount = {},
-        _listUsersError,
-        _hasServiceRole,
-      } = json;
-
-      // 항상 출력: 서비스롤 키 인식 여부 + 에러
-      console.log('[users] _hasServiceRole:', _hasServiceRole, '| _listUsersError:', _listUsersError);
-
-      if (_listUsersError) {
-        console.warn('[users] listUsers 실패:', _listUsersError);
-      }
-
-      // 디버그: auth.users에서 가져온 전화번호 확인
-      console.log('[users] authUsers 수:', Object.keys(authUsers).length);
-      const phoneEntries = Object.entries(authUsers as Record<string, {phone?:string}>)
-        .filter(([, v]) => v.phone);
-      console.log('[users] 전화번호 있는 auth유저:', phoneEntries.length, phoneEntries.slice(0, 5));
+      const { authUsers = {}, pushMap = {}, followSet = [], couponCount = {} } = json;
 
       const followSetObj = new Set<string>(followSet as string[]);
 
