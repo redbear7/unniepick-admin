@@ -3,9 +3,10 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase';
 import {
-  Search, Star, MapPin, ExternalLink, Clock, X,
+  Search, MapPin, ExternalLink, Clock, X,
   ChevronDown, UtensilsCrossed, Filter, BarChart3,
   MessageSquare, TrendingUp, Tag, Newspaper, PlusCircle,
+  CheckSquare, Square, Check, Loader2, Pencil,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -41,6 +42,8 @@ interface Restaurant {
   menu_keywords: MenuKeyword[];
   review_summary: Record<string, number>;
   blog_reviews: BlogReview[];
+  latitude: number | null;
+  longitude: number | null;
   is_new_open: boolean;
   operating_status: 'active' | 'suspected' | 'inactive' | 'relocated' | 'unknown' | null;
   last_verified_at: string | null;
@@ -92,9 +95,96 @@ export default function RestaurantsPage() {
   const [categories, setCategories] = useState<string[]>([]);
   const [selected, setSelected] = useState<Restaurant | null>(null);
 
+  // ── 가게 등록 관련 state ──────────────────────────────────────────
+  const [registeredIds,   setRegisteredIds]   = useState<Set<string>>(new Set());
+  const [selectedIds,     setSelectedIds]     = useState<Set<string>>(new Set());
+  const [bulkRegistering, setBulkRegistering] = useState(false);
+  const [registeringId,   setRegisteringId]   = useState<string | null>(null);
+  const [registerMsg,     setRegisterMsg]     = useState('');
+
   const supabase = createClient();
 
-  useEffect(() => { fetchRestaurants(); }, [sortBy, categoryFilter]);
+  useEffect(() => {
+    fetchRestaurants();
+    fetchRegisteredIds();
+  }, [sortBy, categoryFilter]);
+
+  // 이미 stores에 등록된 naver_place_id 세트 조회
+  async function fetchRegisteredIds() {
+    const { data } = await supabase
+      .from('stores')
+      .select('naver_place_id')
+      .not('naver_place_id', 'is', null);
+    setRegisteredIds(new Set((data ?? []).map((s: any) => s.naver_place_id).filter(Boolean)));
+  }
+
+  // 단일 업체 즉시 등록
+  async function quickRegister(r: Restaurant) {
+    setRegisteringId(r.naver_place_id);
+    setRegisterMsg('');
+    try {
+      const res = await fetch('/api/restaurants/batch-register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ naver_place_ids: [r.naver_place_id] }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error ?? '등록 실패');
+      setRegisteredIds(prev => new Set([...prev, r.naver_place_id]));
+      setRegisterMsg(`✅ "${r.name}" 가게 등록 완료`);
+      setTimeout(() => setRegisterMsg(''), 3000);
+    } catch (e) {
+      alert(`등록 실패: ${(e as Error).message}`);
+    } finally {
+      setRegisteringId(null);
+    }
+  }
+
+  // 체크박스 토글
+  function toggleSelect(naverPlaceId: string) {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      next.has(naverPlaceId) ? next.delete(naverPlaceId) : next.add(naverPlaceId);
+      return next;
+    });
+  }
+
+  // 전체 선택 / 해제
+  function toggleSelectAll() {
+    const unregistered = filtered
+      .filter(r => !registeredIds.has(r.naver_place_id))
+      .map(r => r.naver_place_id);
+    if (selectedIds.size === unregistered.length && unregistered.length > 0) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(unregistered));
+    }
+  }
+
+  // 선택 업체 일괄 등록
+  async function bulkRegister() {
+    if (!selectedIds.size) return;
+    setBulkRegistering(true);
+    setRegisterMsg('');
+    try {
+      const ids = [...selectedIds];
+      const res = await fetch('/api/restaurants/batch-register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ naver_place_ids: ids }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? '등록 실패');
+      setRegisteredIds(prev => new Set([...prev, ...data.registered]));
+      setSelectedIds(new Set());
+      setRegisterMsg(`✅ ${data.registered.length}개 가게 등록 완료${data.failed.length ? ` · ${data.failed.length}개 실패` : ''}`);
+      setTimeout(() => setRegisterMsg(''), 4000);
+    } catch (e) {
+      alert(`일괄 등록 실패: ${(e as Error).message}`);
+    } finally {
+      setBulkRegistering(false);
+    }
+  }
 
   async function fetchRestaurants() {
     setLoading(true);
@@ -184,13 +274,15 @@ export default function RestaurantsPage() {
             {lastCrawled && <> · 마지막 크롤링: {lastCrawled.toLocaleString('ko-KR')}</>}
           </p>
         </div>
-        <Link
-          href="/dashboard/restaurants/register"
-          className="flex items-center gap-2 px-4 py-2 bg-[#FF6F0F] hover:bg-[#FF6F0F]/90 text-white rounded-xl text-sm font-semibold transition shadow-sm"
-        >
-          <PlusCircle className="w-4 h-4" />
-          가게 등록
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/dashboard/restaurants/register"
+            className="flex items-center gap-2 px-4 py-2 bg-[#FF6F0F] hover:bg-[#FF6F0F]/90 text-white rounded-xl text-sm font-semibold transition shadow-sm"
+          >
+            <PlusCircle className="w-4 h-4" />
+            가게 등록
+          </Link>
+        </div>
       </div>
 
       {/* 통계 카드 */}
@@ -304,21 +396,88 @@ export default function RestaurantsPage() {
         </p>
       )}
 
+      {/* 등록 완료 메시지 */}
+      {registerMsg && (
+        <div className="px-4 py-2.5 bg-green-500/15 border border-green-500/30 rounded-xl text-sm text-green-400 font-semibold">
+          {registerMsg}
+        </div>
+      )}
+
       {/* 맛집 리스트 */}
       {loading ? (
         <div className="text-center py-20 text-muted">로딩 중...</div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-20 text-muted">{search ? '검색 결과 없음' : '크롤링된 맛집이 없습니다'}</div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filtered.map((r) => (
-            <RestaurantCard key={r.id} r={r} onClick={() => setSelected(r)} />
-          ))}
-        </div>
+        <>
+          {/* 선택 컨트롤 바 */}
+          <div className="flex items-center justify-between px-1">
+            <button
+              onClick={toggleSelectAll}
+              className="flex items-center gap-2 text-sm text-muted hover:text-primary transition"
+            >
+              {selectedIds.size > 0 && selectedIds.size === filtered.filter(r => !registeredIds.has(r.naver_place_id)).length
+                ? <CheckSquare className="w-4 h-4 text-[#FF6F0F]" />
+                : <Square className="w-4 h-4" />
+              }
+              {selectedIds.size > 0 ? `${selectedIds.size}개 선택됨` : '미등록 전체 선택'}
+            </button>
+            <p className="text-xs text-muted">
+              등록됨 {[...registeredIds].filter(id => filtered.some(r => r.naver_place_id === id)).length}
+              / {filtered.length}개
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {filtered.map((r) => (
+              <RestaurantCard
+                key={r.id}
+                r={r}
+                onClick={() => setSelected(r)}
+                registered={registeredIds.has(r.naver_place_id)}
+                selected={selectedIds.has(r.naver_place_id)}
+                onSelect={() => toggleSelect(r.naver_place_id)}
+                onQuickRegister={() => quickRegister(r)}
+                registering={registeringId === r.naver_place_id}
+              />
+            ))}
+          </div>
+        </>
       )}
 
       {/* 상세 모달 */}
-      {selected && <DetailModal r={selected} onClose={() => setSelected(null)} />}
+      {selected && (
+        <DetailModal
+          r={selected}
+          onClose={() => setSelected(null)}
+          registered={registeredIds.has(selected.naver_place_id)}
+        />
+      )}
+
+      {/* 일괄 등록 sticky 바 */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 px-5 py-3.5 bg-sidebar border border-border-main rounded-2xl shadow-2xl">
+          <span className="text-sm text-primary font-semibold">
+            {selectedIds.size}개 선택됨
+          </span>
+          <button
+            onClick={() => setSelectedIds(new Set())}
+            className="text-xs text-muted hover:text-primary transition"
+          >
+            취소
+          </button>
+          <button
+            onClick={bulkRegister}
+            disabled={bulkRegistering}
+            className="flex items-center gap-2 px-4 py-2 bg-[#FF6F0F] hover:bg-[#e85e00] disabled:opacity-50 text-white text-sm font-bold rounded-xl transition"
+          >
+            {bulkRegistering
+              ? <><Loader2 className="w-4 h-4 animate-spin" /> 등록 중...</>
+              : <><PlusCircle className="w-4 h-4" /> {selectedIds.size}개 가게 등록</>
+            }
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -413,11 +572,47 @@ function SelectFilter({ value, onChange, options, placeholder, icon }: {
   );
 }
 
-function RestaurantCard({ r, onClick }: { r: Restaurant; onClick: () => void }) {
+function RestaurantCard({
+  r, onClick,
+  registered, selected, onSelect, onQuickRegister, registering,
+}: {
+  r: Restaurant;
+  onClick: () => void;
+  registered?: boolean;
+  selected?: boolean;
+  onSelect?: () => void;
+  onQuickRegister?: () => void;
+  registering?: boolean;
+}) {
   const topKeyword = r.review_keywords?.[0];
   return (
     <div onClick={onClick}
-      className="bg-card border border-border-main rounded-xl overflow-hidden hover:border-[#FF6F0F]/50 transition-colors cursor-pointer">
+      className={`bg-card border rounded-xl overflow-hidden transition-colors cursor-pointer relative ${
+        selected
+          ? 'border-[#FF6F0F] ring-1 ring-[#FF6F0F]/30'
+          : 'border-border-main hover:border-[#FF6F0F]/50'
+      }`}
+    >
+      {/* 체크박스 (이미지 위 절대 위치) */}
+      {!registered && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onSelect?.(); }}
+          className="absolute top-2 left-2 z-10 w-6 h-6 flex items-center justify-center rounded-md bg-black/50 hover:bg-black/70 transition backdrop-blur-sm"
+        >
+          {selected
+            ? <CheckSquare className="w-4 h-4 text-[#FF6F0F]" />
+            : <Square className="w-4 h-4 text-white" />
+          }
+        </button>
+      )}
+      {/* 등록됨 배지 */}
+      {registered && (
+        <div className="absolute top-2 left-2 z-10 flex items-center gap-1 px-2 py-1 bg-green-500/90 rounded-lg backdrop-blur-sm">
+          <Check className="w-3 h-3 text-white" />
+          <span className="text-[10px] font-bold text-white">등록됨</span>
+        </div>
+      )}
+
       {r.image_url && (
         <div className="h-36 overflow-hidden bg-fill-subtle">
           <img src={r.image_url} alt={r.name} className="w-full h-full object-cover" loading="lazy" />
@@ -522,6 +717,46 @@ function RestaurantCard({ r, onClick }: { r: Restaurant; onClick: () => void }) 
           </span>
         </div>
 
+        {/* 가게 등록 / 등록됨 버튼 */}
+        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+          {registered ? (
+            <>
+              <div className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-green-500/10 border border-green-500/30 rounded-lg text-xs font-semibold text-green-400">
+                <Check className="w-3.5 h-3.5" />
+                가게 등록됨
+              </div>
+              <Link
+                href={`/dashboard/restaurants/register?naver_place_id=${r.naver_place_id}`}
+                className="flex items-center justify-center gap-1.5 px-3 py-2 bg-fill-subtle hover:bg-fill-medium border border-border-subtle rounded-lg text-xs font-semibold text-muted hover:text-primary transition"
+              >
+                <Pencil className="w-3 h-3" />
+                수정
+              </Link>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => onQuickRegister?.()}
+                disabled={registering}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#FF6F0F] hover:bg-[#e85e00] disabled:opacity-50 text-white rounded-lg text-xs font-bold transition"
+              >
+                {registering
+                  ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  : <PlusCircle className="w-3.5 h-3.5" />
+                }
+                {registering ? '등록 중...' : '가게 등록'}
+              </button>
+              <Link
+                href={`/dashboard/restaurants/register?naver_place_id=${r.naver_place_id}`}
+                className="flex items-center justify-center gap-1.5 px-3 py-2 bg-fill-subtle hover:bg-fill-medium border border-border-subtle rounded-lg text-xs font-semibold text-muted hover:text-primary transition"
+              >
+                <Pencil className="w-3 h-3" />
+                편집
+              </Link>
+            </>
+          )}
+        </div>
+
         {/* 네이버 지도 이동 버튼 */}
         {r.naver_place_url && (
           <a
@@ -529,7 +764,7 @@ function RestaurantCard({ r, onClick }: { r: Restaurant; onClick: () => void }) 
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="mt-1 flex items-center justify-center gap-1.5 w-full py-2 bg-[#03C75A]/10 hover:bg-[#03C75A]/20 border border-[#03C75A]/30 rounded-lg text-xs font-semibold text-[#03C75A] transition"
+            className="flex items-center justify-center gap-1.5 w-full py-2 bg-[#03C75A]/10 hover:bg-[#03C75A]/20 border border-[#03C75A]/30 rounded-lg text-xs font-semibold text-[#03C75A] transition"
           >
             <span className="font-black text-sm">N</span>
             네이버 지도에서 보기
@@ -545,7 +780,7 @@ function RestaurantCard({ r, onClick }: { r: Restaurant; onClick: () => void }) 
 /* Detail Modal                                                         */
 /* ------------------------------------------------------------------ */
 
-function DetailModal({ r, onClose }: { r: Restaurant; onClose: () => void }) {
+function DetailModal({ r, onClose, registered }: { r: Restaurant; onClose: () => void; registered?: boolean }) {
   return (
     <div className="fixed inset-0 z-50 bg-black/60 flex items-start justify-center pt-10 overflow-y-auto" onClick={onClose}>
       <div className="bg-sidebar border border-border-main rounded-2xl w-full max-w-2xl mx-4 mb-10 overflow-hidden" onClick={(e) => e.stopPropagation()}>
@@ -558,13 +793,28 @@ function DetailModal({ r, onClose }: { r: Restaurant; onClose: () => void }) {
         <div className="p-6 space-y-5">
           <div className="flex items-start justify-between">
             <div>
-              <h2 className="text-xl font-bold text-primary flex items-center gap-2">
+              <h2 className="text-xl font-bold text-primary flex items-center gap-2 flex-wrap">
                 {r.name}
                 {r.is_new_open && <span className="px-2 py-0.5 bg-green-500/15 text-green-400 text-xs rounded-full">NEW</span>}
+                {registered && (
+                  <span className="flex items-center gap-1 px-2 py-0.5 bg-green-500/15 text-green-400 text-xs rounded-full border border-green-500/25">
+                    <Check className="w-3 h-3" /> 등록됨
+                  </span>
+                )}
               </h2>
               <p className="text-sm text-muted mt-1">{r.category} · 리뷰 {r.visitor_review_count?.toLocaleString()}건</p>
             </div>
-            <button onClick={onClose} className="text-muted hover:text-primary"><X className="w-5 h-5" /></button>
+            <div className="flex items-center gap-2">
+              <Link
+                href={`/dashboard/restaurants/register?naver_place_id=${r.naver_place_id}`}
+                onClick={onClose}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FF6F0F] hover:bg-[#e85e00] text-white text-xs font-bold rounded-lg transition"
+              >
+                <PlusCircle className="w-3.5 h-3.5" />
+                {registered ? '가게 수정' : '가게 등록'}
+              </Link>
+              <button onClick={onClose} className="text-muted hover:text-primary"><X className="w-5 h-5" /></button>
+            </div>
           </div>
 
           {/* 기본 정보 */}
