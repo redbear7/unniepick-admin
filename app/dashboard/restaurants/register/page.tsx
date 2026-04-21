@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
 import {
-  ArrowLeft, Save, Loader2, Check, ExternalLink,
+  ArrowLeft, Save, Loader2, ExternalLink,
   MapPin, Phone, Globe, Store, Camera, Link2,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -31,11 +31,11 @@ interface RestaurantRow {
 
 export default function RestaurantRegisterPage() {
   const params = useSearchParams();
+  const router = useRouter();
   const naverPlaceId = params.get('naver_place_id') ?? '';
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
   const [notFound, setNotFound] = useState(false);
 
@@ -202,9 +202,9 @@ export default function RestaurantRegisterPage() {
       return;
     }
 
-    setSaved(true);
     setSaving(false);
-    setTimeout(() => setSaved(false), 3000);
+    // 저장 완료 → 가게 관리 페이지로 이동
+    router.push('/dashboard/stores');
   }
 
   // ── 렌더 ──────────────────────────────────────────
@@ -464,8 +464,6 @@ export default function RestaurantRegisterPage() {
           >
             {saving ? (
               <><Loader2 className="w-4 h-4 animate-spin" /> 저장 중...</>
-            ) : saved ? (
-              <><Check className="w-4 h-4" /> 저장됨</>
             ) : (
               <><Save className="w-4 h-4" /> 저장</>
             )}
