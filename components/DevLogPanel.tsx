@@ -194,7 +194,7 @@ export default function DevLogPanel() {
       <button
         onClick={() => setOpen(v => !v)}
         title="개발자 로그 (Ctrl+`)"
-        className={`fixed bottom-[72px] right-4 z-[9998] flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono font-semibold shadow-lg border transition-all ${
+        className={`fixed bottom-[16px] right-4 z-[9998] flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono font-semibold shadow-lg border transition-all ${
           isVisible
             ? 'bg-[#1a1d24] border-[#FF6F0F]/60 text-[#FF6F0F]'
             : 'bg-[#1a1d24] border-white/10 text-[var(--text-muted)] hover:border-white/20 hover:text-[var(--text-primary)]'
@@ -215,7 +215,7 @@ export default function DevLogPanel() {
       {isVisible && (
         <div
           style={{ height }}
-          className="fixed bottom-[72px] right-0 w-[520px] z-[9997] flex flex-col bg-[#0d1117] border border-white/10 border-b-0 rounded-tl-xl shadow-2xl font-mono text-xs overflow-hidden"
+          className="fixed bottom-[16px] right-0 w-[520px] z-[9997] flex flex-col bg-[#0d1117] border border-white/10 border-b-0 rounded-tl-xl shadow-2xl font-mono text-xs overflow-hidden"
         >
           {/* resize handle */}
           <div
