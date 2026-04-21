@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase';
 import {
   Search, ToggleLeft, ToggleRight, MapPin, Phone,
   Plus, Pencil, Trash2, X,
-  ExternalLink, User, FlaskConical, History, Calendar,
+  ExternalLink, User, FlaskConical, History, Calendar, AlertTriangle,
 } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
@@ -106,6 +106,8 @@ export default function StoresPage() {
   const [form,        setForm]        = useState<StoreForm>(EMPTY_FORM);
   const [saving,      setSaving]      = useState(false);
   const [deleteId,    setDeleteId]    = useState<string | null>(null);
+  const [cleaningAll, setCleaningAll] = useState(false);
+  const [showCleanConfirm, setShowCleanConfirm] = useState(false);
   const [naverUrl,    setNaverUrl]    = useState('');
   const [autoFilling, setAutoFilling] = useState(false);
   const [autoFillErr, setAutoFillErr] = useState('');
@@ -221,7 +223,11 @@ export default function StoresPage() {
 
   const toggleActive = async (store: Store) => {
     setToggling(store.id);
-    await sb.from('stores').update({ is_active: !store.is_active }).eq('id', store.id);
+    await fetch('/api/admin/stores', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: store.id, is_active: !store.is_active }),
+    });
     setStores(prev => prev.map(s => s.id === store.id ? { ...s, is_active: !s.is_active } : s));
     setToggling(null);
   };
@@ -266,7 +272,7 @@ export default function StoresPage() {
   const saveStore = async () => {
     if (!form.name.trim()) return;
     setSaving(true);
-    const payload = {
+    const payload: Record<string, unknown> = {
       name:                    form.name.trim(),
       address:                 form.address       || null,
       phone:                   form.phone         || null,
@@ -280,9 +286,17 @@ export default function StoresPage() {
       ...(form.longitude != null ? { longitude: form.longitude } : {}),
     };
     if (editModal === 'new') {
-      await sb.from('stores').insert(payload);
+      await fetch('/api/admin/stores', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
     } else if (editModal) {
-      await sb.from('stores').update(payload).eq('id', (editModal as Store).id);
+      await fetch('/api/admin/stores', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: (editModal as Store).id, ...payload }),
+      });
       pushStoreHistory((editModal as Store).id, {
         changed_at: new Date().toISOString(),
         label: '정보 수정',
@@ -294,8 +308,34 @@ export default function StoresPage() {
     setSaving(false);
   };
 
+  const cleanAllStores = async () => {
+    setCleaningAll(true);
+    try {
+      const res = await fetch('/api/dev/clean-stores', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(`초기화 실패: ${data.error ?? '알 수 없는 오류'}`);
+        return;
+      }
+      console.info('[clean-stores]', data.log?.join(' | '));
+      await loadStores();
+      setShowCleanConfirm(false);
+    } finally {
+      setCleaningAll(false);
+    }
+  };
+
   const deleteStore = async (id: string) => {
-    await sb.from('stores').delete().eq('id', id);
+    const res = await fetch('/api/admin/stores', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert(`삭제 실패: ${data.error ?? '알 수 없는 오류'}`);
+      return;
+    }
     setStores(prev => prev.filter(s => s.id !== id));
     setDeleteId(null);
   };
@@ -346,12 +386,20 @@ export default function StoresPage() {
             전체 {stores.length}개 · 활성 {stores.filter(s => s.is_active).length}개
           </p>
         </div>
-        <button
-          onClick={openNew}
-          className="flex items-center gap-2 px-4 py-2 bg-[#FF6F0F] hover:bg-[#e66000] text-primary text-sm font-semibold rounded-xl transition"
-        >
-          <Plus size={15} /> 가게 등록
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowCleanConfirm(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-red-500/15 hover:bg-red-500/25 text-red-400 text-sm font-semibold rounded-xl border border-red-500/25 transition"
+          >
+            <Trash2 size={15} /> 전체 초기화
+          </button>
+          <button
+            onClick={openNew}
+            className="flex items-center gap-2 px-4 py-2 bg-[#FF6F0F] hover:bg-[#e66000] text-primary text-sm font-semibold rounded-xl transition"
+          >
+            <Plus size={15} /> 가게 등록
+          </button>
+        </div>
       </div>
 
       {/* 검색 + 필터 */}
@@ -727,6 +775,38 @@ export default function StoresPage() {
               <button onClick={() => deleteStore(deleteId)}
                 className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-primary bg-red-500 hover:bg-red-600 transition">
                 삭제
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: 전체 초기화 확인 */}
+      {showCleanConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-sm bg-card border border-red-500/30 rounded-2xl p-6 shadow-2xl">
+            <div className="flex items-center gap-2 mb-3">
+              <AlertTriangle size={20} className="text-red-400 shrink-0" />
+              <h2 className="text-base font-bold text-primary">가게 데이터 전체 초기화</h2>
+            </div>
+            <div className="text-sm text-tertiary mb-5 space-y-1.5">
+              <p>다음 데이터가 <span className="text-red-400 font-semibold">영구 삭제</span>됩니다:</p>
+              <ul className="list-disc list-inside text-xs text-muted space-y-0.5 ml-1">
+                <li>전체 가게 ({stores.length}개)</li>
+                <li>연결된 쿠폰 데이터</li>
+                <li>가게 게시물 / 공지사항</li>
+                <li>더미 사장님 계정 (@test.unnipick.dev)</li>
+              </ul>
+              <p className="text-xs text-amber-400 mt-2">크롤링 원본(restaurants)은 삭제되지 않습니다.</p>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => setShowCleanConfirm(false)}
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-tertiary bg-fill-subtle hover:bg-fill-medium transition">
+                취소
+              </button>
+              <button onClick={cleanAllStores} disabled={cleaningAll}
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-500 hover:bg-red-600 transition disabled:opacity-50">
+                {cleaningAll ? '초기화 중...' : '전체 삭제'}
               </button>
             </div>
           </div>
