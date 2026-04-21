@@ -60,20 +60,25 @@ export default function OwnerStorePage() {
     if (!storeId || !form.name.trim()) return;
     setSaving(true);
     setError('');
-    const sb = createClient();
-    const { error: err } = await sb
-      .from('stores')
-      .update({
+
+    // service role API 경유 — RLS 우회
+    const res = await fetch('/api/owner/store', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        store_id:      storeId,
+        owner_user_id: session!.user_id,
         name:      form.name.trim(),
         address:   form.address.trim()   || null,
         phone:     form.phone.trim()     || null,
         category:  form.category.trim()  || null,
         image_url: form.image_url.trim() || null,
-      })
-      .eq('id', storeId);
+      }),
+    });
 
-    if (err) {
-      setError('저장 중 오류가 발생했습니다. 다시 시도해주세요.');
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error || '저장 중 오류가 발생했습니다. 다시 시도해주세요.');
     } else {
       setOriginal({ ...form });
       setSaved(true);
