@@ -316,8 +316,10 @@ export async function crawlDetailInfo(page: Page, placeId: string): Promise<{
       const hourLines: string[] = [];
       for (const l of lines) {
         if (NOISE.some(n => l.includes(n))) continue;           // UI 텍스트 제외
-        if (!timePattern.test(l) && !dayPattern.test(l)) continue; // 시간/요일 없으면 제외
+        if (!timePattern.test(l)) continue;                     // 실제 시간 범위(~) 없으면 제외
+        if (!dayPattern.test(l) && !/매일|평일|주말/.test(l) && !/\d/.test(l.slice(0, 3))) continue; // 요일/시간 맥락 없으면 제외
         if (l.startsWith('http') || l.includes('전화') || l.includes('주소')) continue;
+        if (l.length > 100) continue;                           // 너무 긴 줄 제외 (UI 노이즈)
         if (!hourLines.includes(l)) hourLines.push(l);          // 중복 제거
         if (hourLines.length >= 5) break;
       }
