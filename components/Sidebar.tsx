@@ -94,8 +94,9 @@ const DEFAULT_GROUPS: NavGroup[] = [
     label: '고객 & 마케팅',
     items: [
       { id: 'users',   href: '/dashboard/users',   icon: 'Users',    label: '회원 관리' },
+      { id: 'push',    href: '/dashboard/push',    icon: 'Bell',     label: '푸쉬 알림' },
       { id: 'owners',  href: '/dashboard/owners',  icon: 'KeyRound', label: '사장님 PIN 관리' },
-      { id: 'notices', href: '/dashboard/notices', icon: 'Bell',     label: '공지사항' },
+      { id: 'notices', href: '/dashboard/notices', icon: 'ScrollText', label: '공지사항' },
       { id: 'posts',   href: '/dashboard/posts',   icon: 'FileText', label: '게시물 관리' },
       { id: 'coupons',   href: '/dashboard/coupons',   icon: 'Ticket',      label: '쿠폰 관리' },
       { id: 'banners',   href: '/dashboard/banners',   icon: 'PanelBottom', label: '배너 관리' },
