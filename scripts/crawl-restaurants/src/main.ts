@@ -305,20 +305,24 @@ export async function crawlDetailInfo(page: Page, placeId: string): Promise<{
         .join(' / ');
     }
 
-    // Fallback: body text에서 파싱
+    // Fallback: body text에서 실제 시간 패턴(HH:MM~HH:MM)만 추출
     if (!businessHours) {
-      const idx = lines.findIndex((l) =>
-        l.includes('영업') && (l.includes(':') || l.includes('시간')),
-      );
-      if (idx >= 0) {
-        // 다음 몇 줄 합치기
-        const hourLines: string[] = [];
-        for (let i = idx; i < Math.min(idx + 10, lines.length); i++) {
-          const l = lines[i];
-          if (i > idx && (l.startsWith('http') || l.includes('전화') || l.includes('주소'))) break;
-          hourLines.push(l);
-        }
-        businessHours = hourLines.join(' | ').slice(0, 200);
+      // UI 노이즈 제거 키워드
+      const NOISE = ['영업 중', '영업종료', '펼쳐보기', '접기', '라스트오더', '브레이크타임', '임시휴업', '정기휴무'];
+      // HH:MM~HH:MM 또는 HH시~HH시 패턴이 있는 줄만 수집
+      const timePattern = /\d{1,2}[:시]\d{0,2}[분]?\s*~\s*\d{1,2}[:시]\d{0,2}/;
+      const dayPattern  = /[월화수목금토일]|매일|평일|주말/;
+
+      const hourLines: string[] = [];
+      for (const l of lines) {
+        if (NOISE.some(n => l.includes(n))) continue;           // UI 텍스트 제외
+        if (!timePattern.test(l) && !dayPattern.test(l)) continue; // 시간/요일 없으면 제외
+        if (l.startsWith('http') || l.includes('전화') || l.includes('주소')) continue;
+        if (!hourLines.includes(l)) hourLines.push(l);          // 중복 제거
+        if (hourLines.length >= 5) break;
+      }
+      if (hourLines.length > 0) {
+        businessHours = hourLines.join(' / ').slice(0, 200);
       }
     }
 
