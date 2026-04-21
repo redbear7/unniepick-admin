@@ -613,11 +613,20 @@ function RestaurantCard({
         </div>
       )}
 
-      {r.image_url && (
-        <div className="h-36 overflow-hidden bg-fill-subtle">
-          <img src={r.image_url} alt={r.name} className="w-full h-full object-cover" loading="lazy" />
-        </div>
-      )}
+      {/* 정사각형 썸네일 */}
+      <div className="aspect-square overflow-hidden bg-fill-subtle relative">
+        {r.image_url
+          ? <img src={r.image_url} alt={r.name} className="w-full h-full object-cover" loading="lazy" />
+          : <div className="w-full h-full flex items-center justify-center text-4xl">
+              {r.category?.includes('카페') ? '☕'
+               : r.category?.includes('미용') ? '✂️'
+               : r.category?.includes('네일') ? '💅'
+               : r.category?.includes('편의점') ? '🏪'
+               : r.category?.includes('베이커리') || r.category?.includes('빵') ? '🥐'
+               : '🍜'}
+            </div>
+        }
+      </div>
       <div className="p-4 space-y-2.5">
         <div className="flex items-start justify-between">
           <div>

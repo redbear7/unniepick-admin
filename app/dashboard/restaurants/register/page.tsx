@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
 import {
   ArrowLeft, Save, Loader2, Check, ExternalLink,
-  MapPin, Phone, Clock, Globe, Store,
+  MapPin, Phone, Clock, Globe, Store, Camera, Link2,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -52,6 +52,12 @@ export default function RestaurantRegisterPage() {
   const [businessHours, setBusinessHours] = useState('');
   const [isActive, setIsActive] = useState(true);
 
+  // 사진 업로드
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [showUrlInput, setShowUrlInput] = useState(false);
+  const [urlInputVal, setUrlInputVal] = useState('');
+
   // 원본 row
   const [row, setRow] = useState<RestaurantRow | null>(null);
 
@@ -96,6 +102,46 @@ export default function RestaurantRegisterPage() {
     setBusinessHours(data.business_hours ?? '');
     setIsActive(data.is_active ?? true);
     setLoading(false);
+  }
+
+  // ── 파일 업로드 ──────────────────────────────────────
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !naverPlaceId) return;
+
+    const ext = file.name.split('.').pop() ?? 'jpg';
+    const path = `${naverPlaceId}/${Date.now()}.${ext}`;
+
+    setUploading(true);
+    setError('');
+    const supabase = createClient();
+
+    const { error: upErr } = await supabase.storage
+      .from('store-images')
+      .upload(path, file, { upsert: true, contentType: file.type });
+
+    if (upErr) {
+      setError(`이미지 업로드 실패: ${upErr.message}`);
+      setUploading(false);
+      return;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('store-images')
+      .getPublicUrl(path);
+
+    setImageUrl(publicUrl);
+    setUploading(false);
+    // reset input so same file can be re-selected
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }
+
+  function applyUrlInput() {
+    if (urlInputVal.trim()) {
+      setImageUrl(urlInputVal.trim());
+    }
+    setShowUrlInput(false);
+    setUrlInputVal('');
   }
 
   async function handleSave() {
@@ -211,16 +257,92 @@ export default function RestaurantRegisterPage() {
         </div>
       </div>
 
-      {/* 썸네일 미리보기 */}
-      {imageUrl && (
-        <div className="mb-6">
-          <img
-            src={imageUrl}
-            alt={name}
-            className="w-full h-48 object-cover rounded-xl bg-fill-subtle"
-          />
+      {/* 썸네일 — 정사각형 + 교체 버튼 */}
+      <div className="mb-6">
+        {/* hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleFileChange}
+        />
+
+        <div className="relative w-full aspect-square rounded-xl overflow-hidden bg-fill-subtle border border-border-main">
+          {/* 이미지 or 빈 상태 */}
+          {imageUrl ? (
+            <img
+              src={imageUrl}
+              alt={name}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-muted">
+              <Camera className="w-10 h-10 opacity-30" />
+              <span className="text-sm">사진 없음</span>
+            </div>
+          )}
+
+          {/* 오버레이: 업로드 중 */}
+          {uploading && (
+            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+              <Loader2 className="w-8 h-8 text-white animate-spin" />
+            </div>
+          )}
+
+          {/* 오버레이: 교체 버튼들 (업로드 중 아닐 때) */}
+          {!uploading && (
+            <div className="absolute bottom-3 right-3 flex gap-2">
+              {/* 파일 선택 */}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-black/60 hover:bg-black/75 text-white text-xs font-medium rounded-lg backdrop-blur-sm transition-colors"
+              >
+                <Camera className="w-3.5 h-3.5" />
+                이미지 교체
+              </button>
+              {/* URL 입력 */}
+              <button
+                type="button"
+                onClick={() => { setUrlInputVal(imageUrl); setShowUrlInput(v => !v); }}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-black/60 hover:bg-black/75 text-white text-xs font-medium rounded-lg backdrop-blur-sm transition-colors"
+              >
+                <Link2 className="w-3.5 h-3.5" />
+                URL
+              </button>
+            </div>
+          )}
         </div>
-      )}
+
+        {/* URL 입력 패널 */}
+        {showUrlInput && (
+          <div className="mt-2 flex gap-2">
+            <input
+              type="url"
+              value={urlInputVal}
+              onChange={(e) => setUrlInputVal(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && applyUrlInput()}
+              placeholder="https://..."
+              className="flex-1 px-3 py-2 bg-fill-subtle border border-border-subtle rounded-lg text-sm text-primary placeholder:text-muted focus:outline-none focus:border-[#FF6F0F]"
+            />
+            <button
+              type="button"
+              onClick={applyUrlInput}
+              className="px-3 py-2 bg-[#FF6F0F] hover:bg-[#e85e00] text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              적용
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowUrlInput(false)}
+              className="px-3 py-2 text-sm text-muted hover:text-secondary transition-colors"
+            >
+              취소
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* 폼 */}
       <div className="space-y-5">
