@@ -27,6 +27,7 @@ function normalizePhone(phone: string | undefined | null): string | undefined {
 export async function GET() {
   const sb = adminClient();
   const hasServiceRole = !!(process.env.SUPABASE_SERVICE_ROLE_KEY);
+  console.log('[admin/users] SERVICE_ROLE_KEY 존재:', hasServiceRole);
 
   // 1) auth.admin.listUsers — 전화번호 포함 (최대 1000명)
   const authUsers: Record<string, { phone?: string; last_sign_in_at?: string }> = {};
@@ -41,6 +42,7 @@ export async function GET() {
         console.error('[admin/users] listUsers error:', error.message);
         break;
       }
+      console.log('[admin/users] listUsers page', page, '결과:', data?.users?.length ?? 0, '명');
       if (!data?.users?.length) break;
       for (const u of data.users) {
         authUsers[u.id] = {

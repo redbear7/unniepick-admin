@@ -208,8 +208,11 @@ export default function UsersPage() {
         _hasServiceRole,
       } = json;
 
+      // 항상 출력: 서비스롤 키 인식 여부 + 에러
+      console.log('[users] _hasServiceRole:', _hasServiceRole, '| _listUsersError:', _listUsersError);
+
       if (_listUsersError) {
-        console.warn('[users] listUsers 실패:', _listUsersError, '| SERVICE_ROLE_KEY:', _hasServiceRole);
+        console.warn('[users] listUsers 실패:', _listUsersError);
       }
 
       // 디버그: auth.users에서 가져온 전화번호 확인
