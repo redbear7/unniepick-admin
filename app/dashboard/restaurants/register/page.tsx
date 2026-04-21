@@ -60,6 +60,13 @@ export default function RestaurantRegisterPage() {
 
   // 원본 row
   const [row, setRow] = useState<RestaurantRow | null>(null);
+  const [businessHoursWarning, setBusinessHoursWarning] = useState(false);
+
+  // 유효한 영업시간인지 검사 (HH:MM~HH:MM 또는 HH시~HH시 형태의 ~ 포함)
+  function isValidBusinessHours(val: string): boolean {
+    if (!val) return true;
+    return /\d{1,2}[:시]\d{0,2}[분]?\s*~\s*\d{1,2}[:시]\d{0,2}/.test(val);
+  }
 
   useEffect(() => {
     if (!naverPlaceId) {
@@ -99,7 +106,14 @@ export default function RestaurantRegisterPage() {
     setNaverUrl(data.naver_place_url ?? '');
     setWebsiteUrl(data.website_url ?? '');
     setInstagramUrl(data.instagram_url ?? '');
-    setBusinessHours(data.business_hours ?? '');
+    const rawHours = data.business_hours ?? '';
+    if (rawHours && !isValidBusinessHours(rawHours)) {
+      // 메뉴명 등 잘못된 데이터가 저장된 경우 자동 초기화
+      setBusinessHours('');
+      setBusinessHoursWarning(true);
+    } else {
+      setBusinessHours(rawHours);
+    }
     setIsActive(data.is_active ?? true);
     setLoading(false);
   }
@@ -396,10 +410,18 @@ export default function RestaurantRegisterPage() {
           <Field label="영업시간" icon={<Clock className="w-3.5 h-3.5" />}>
             <input
               value={businessHours}
-              onChange={(e) => setBusinessHours(e.target.value)}
+              onChange={(e) => {
+                setBusinessHours(e.target.value);
+                setBusinessHoursWarning(false);
+              }}
               className="w-full px-3 py-2 bg-fill-subtle border border-border-subtle rounded-lg text-sm text-primary placeholder:text-muted focus:outline-none focus:border-[#FF6F0F]"
               placeholder="예: 월~금 11:00~22:00"
             />
+            {businessHoursWarning && (
+              <p className="mt-1.5 text-xs text-amber-500 flex items-center gap-1">
+                ⚠️ 크롤링 오류로 잘못된 값이 저장되어 있었습니다. 영업시간을 직접 입력하거나 비워두세요.
+              </p>
+            )}
           </Field>
 
           <Field label="홈페이지" icon={<Globe className="w-3.5 h-3.5" />}>
