@@ -46,6 +46,30 @@ interface SingleResult {
   finishedAt: string;
 }
 
+// ── 단일 크롤링 히스토리 아이템 ──────────────────────────────
+interface SingleHistoryItem {
+  id: string;
+  query: string;
+  status: 'success' | 'failed' | 'not_found';
+  storeName?: string;
+  storeCategory?: string;
+  naver_place_id?: string;
+  finishedAt: string;
+}
+
+const SINGLE_HISTORY_KEY = 'unniepick_single_crawl_history';
+const SINGLE_HISTORY_MAX = 50;
+
+function loadSingleHistory(): SingleHistoryItem[] {
+  try {
+    return JSON.parse(localStorage.getItem(SINGLE_HISTORY_KEY) ?? '[]');
+  } catch { return []; }
+}
+
+function saveSingleHistory(items: SingleHistoryItem[]) {
+  localStorage.setItem(SINGLE_HISTORY_KEY, JSON.stringify(items.slice(0, SINGLE_HISTORY_MAX)));
+}
+
 export default function CrawlKeywordsPage() {
   const [items, setItems] = useState<CrawlKeyword[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,6 +89,7 @@ export default function CrawlKeywordsPage() {
   const [singleLog, setSingleLog] = useState('');
   const [singleLogOpen, setSingleLogOpen] = useState(false);
   const [singleResult, setSingleResult] = useState<SingleResult | null>(null);
+  const [singleHistory, setSingleHistory] = useState<SingleHistoryItem[]>([]);
   const singlePollRef = useRef<NodeJS.Timeout | null>(null);
   const singleLogPreRef = useRef<HTMLPreElement | null>(null);
 
@@ -74,6 +99,42 @@ export default function CrawlKeywordsPage() {
   const [verifyLogOpen, setVerifyLogOpen] = useState(false);
   const verifyPollRef = useRef<NodeJS.Timeout | null>(null);
   const verifyLogPreRef = useRef<HTMLPreElement | null>(null);
+
+  // 히스토리 초기 로드
+  useEffect(() => {
+    setSingleHistory(loadSingleHistory());
+  }, []);
+
+  function addToHistory(result: SingleResult) {
+    const item: SingleHistoryItem = {
+      id: Date.now().toString(),
+      query: result.query,
+      status: result.status,
+      storeName: result.store?.name,
+      storeCategory: result.store?.category,
+      naver_place_id: result.store?.naver_place_id,
+      finishedAt: result.finishedAt,
+    };
+    setSingleHistory(prev => {
+      const next = [item, ...prev].slice(0, SINGLE_HISTORY_MAX);
+      saveSingleHistory(next);
+      return next;
+    });
+  }
+
+  function deleteHistoryItem(id: string) {
+    setSingleHistory(prev => {
+      const next = prev.filter(h => h.id !== id);
+      saveSingleHistory(next);
+      return next;
+    });
+  }
+
+  function clearHistory() {
+    if (!confirm('단일 크롤링 히스토리를 모두 삭제할까요?')) return;
+    setSingleHistory([]);
+    saveSingleHistory([]);
+  }
 
   // ── 단일 업체 크롤링 함수들 ──
 
@@ -90,6 +151,10 @@ export default function CrawlKeywordsPage() {
     }
     if (data.result && data.result.status) {
       setSingleResult(data.result);
+      // 완료 시 히스토리에 추가 (running → done 전환 시점)
+      if (!data.running && data.result.finishedAt) {
+        addToHistory(data.result);
+      }
     }
     return !!data.running;
   }
@@ -473,6 +538,98 @@ export default function CrawlKeywordsPage() {
           </div>
         )}
       </div>
+
+      {/* ── 단일 크롤링 히스토리 ── */}
+      {singleHistory.length > 0 && (
+        <div className="bg-card border border-border-main rounded-xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-border-subtle flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-muted" />
+              <span className="text-sm font-semibold text-primary">단일 크롤링 히스토리</span>
+              <span className="text-xs text-muted">{singleHistory.length}건</span>
+            </div>
+            <button
+              onClick={clearHistory}
+              className="text-xs text-muted hover:text-red-400 flex items-center gap-1 transition"
+            >
+              <Trash2 className="w-3 h-3" />
+              전체 삭제
+            </button>
+          </div>
+          <div className="divide-y divide-border-subtle">
+            {singleHistory.map(h => (
+              <div key={h.id} className="flex items-center gap-3 px-4 py-3 hover:bg-fill-subtle/50 transition group">
+                {/* 상태 아이콘 */}
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
+                  h.status === 'success'   ? 'bg-green-500/20' :
+                  h.status === 'not_found' ? 'bg-yellow-500/20' :
+                  'bg-red-500/20'
+                }`}>
+                  {h.status === 'success'   ? <Check className="w-3 h-3 text-green-400" /> :
+                   h.status === 'not_found' ? <AlertCircle className="w-3 h-3 text-yellow-400" /> :
+                   <X className="w-3 h-3 text-red-400" />}
+                </div>
+
+                {/* 정보 */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm font-medium text-primary truncate">
+                      {h.storeName ?? h.query}
+                    </span>
+                    {h.storeCategory && (
+                      <span className="text-[10px] text-muted bg-fill-subtle px-1.5 py-0.5 rounded">
+                        {h.storeCategory}
+                      </span>
+                    )}
+                    {h.status === 'not_found' && (
+                      <span className="text-[10px] text-yellow-400">검색결과 없음</span>
+                    )}
+                    {h.status === 'failed' && (
+                      <span className="text-[10px] text-red-400">실패</span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-muted mt-0.5 flex items-center gap-1.5">
+                    <Clock className="w-2.5 h-2.5" />
+                    {new Date(h.finishedAt).toLocaleString('ko-KR')}
+                    <span className="text-muted/50">·</span>
+                    <span className="text-muted/70">&quot;{h.query}&quot;</span>
+                  </p>
+                </div>
+
+                {/* 액션 */}
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
+                  {/* 재실행 */}
+                  <button
+                    onClick={() => { setSingleQuery(h.query); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                    className="p-1.5 rounded text-muted hover:text-[#FF6F0F] hover:bg-[#FF6F0F]/10 transition"
+                    title="쿼리 다시 사용"
+                  >
+                    <Play className="w-3.5 h-3.5" />
+                  </button>
+                  {/* 가게 추가 링크 (성공 시) */}
+                  {h.status === 'success' && h.naver_place_id && (
+                    <Link
+                      href={`/dashboard/restaurants/register?naver_place_id=${encodeURIComponent(h.naver_place_id)}`}
+                      className="p-1.5 rounded text-muted hover:text-[#FF6F0F] hover:bg-[#FF6F0F]/10 transition"
+                      title="가게 추가"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </Link>
+                  )}
+                  {/* 삭제 */}
+                  <button
+                    onClick={() => deleteHistoryItem(h.id)}
+                    className="p-1.5 rounded text-muted hover:text-red-400 hover:bg-red-500/10 transition"
+                    title="히스토리 삭제"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* 추가 폼 */}
       <form
