@@ -270,13 +270,16 @@ export default function OwnersPage() {
 
         {/* ── 더미 사장님 생성 (테스트용) ── */}
         <div className="bg-yellow-500/8 border border-yellow-500/25 rounded-xl overflow-hidden">
-          <button
+          <div
+            role="button"
+            tabIndex={0}
             onClick={() => {
               setShowSeed(v => !v);
               if (!showSeed && stores.length === 0) loadStores();
               setSeedResults([]);
             }}
-            className="w-full flex items-center justify-between px-4 py-3 hover:bg-yellow-500/10 transition"
+            onKeyDown={e => e.key === 'Enter' && (setShowSeed(v => !v))}
+            className="w-full flex items-center justify-between px-4 py-3 hover:bg-yellow-500/10 transition cursor-pointer"
           >
             <div className="flex items-center gap-2 text-yellow-400">
               <FlaskConical size={15} />
@@ -294,7 +297,7 @@ export default function OwnersPage() {
               </button>
               {showSeed ? <ChevronUp size={14} className="text-yellow-400/60" /> : <ChevronDown size={14} className="text-yellow-400/60" />}
             </div>
-          </button>
+          </div>
 
           {showSeed && (
             <div className="px-4 pb-4 space-y-3 border-t border-yellow-500/20">
