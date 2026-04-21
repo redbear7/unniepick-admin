@@ -1,11 +1,11 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
 import {
   ArrowLeft, Save, Loader2, Check, ExternalLink,
-  MapPin, Phone, Clock, Globe, Store, Camera, Link2,
+  MapPin, Phone, Globe, Store, Camera, Link2,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -31,7 +31,6 @@ interface RestaurantRow {
 
 export default function RestaurantRegisterPage() {
   const params = useSearchParams();
-  const router = useRouter();
   const naverPlaceId = params.get('naver_place_id') ?? '';
 
   const [loading, setLoading] = useState(true);
@@ -49,7 +48,6 @@ export default function RestaurantRegisterPage() {
   const [naverUrl, setNaverUrl] = useState('');
   const [websiteUrl, setWebsiteUrl] = useState('');
   const [instagramUrl, setInstagramUrl] = useState('');
-  const [businessHours, setBusinessHours] = useState('');
   const [isActive, setIsActive] = useState(true);
 
   // 사진 업로드
@@ -60,13 +58,6 @@ export default function RestaurantRegisterPage() {
 
   // 원본 row
   const [row, setRow] = useState<RestaurantRow | null>(null);
-  const [businessHoursWarning, setBusinessHoursWarning] = useState(false);
-
-  // 유효한 영업시간인지 검사 (HH:MM~HH:MM 또는 HH시~HH시 형태의 ~ 포함)
-  function isValidBusinessHours(val: string): boolean {
-    if (!val) return true;
-    return /\d{1,2}[:시]\d{0,2}[분]?\s*~\s*\d{1,2}[:시]\d{0,2}/.test(val);
-  }
 
   useEffect(() => {
     if (!naverPlaceId) {
@@ -106,14 +97,6 @@ export default function RestaurantRegisterPage() {
     setNaverUrl(data.naver_place_url ?? '');
     setWebsiteUrl(data.website_url ?? '');
     setInstagramUrl(data.instagram_url ?? '');
-    const rawHours = data.business_hours ?? '';
-    if (rawHours && !isValidBusinessHours(rawHours)) {
-      // 메뉴명 등 잘못된 데이터가 저장된 경우 자동 초기화
-      setBusinessHours('');
-      setBusinessHoursWarning(true);
-    } else {
-      setBusinessHours(rawHours);
-    }
     setIsActive(data.is_active ?? true);
     setLoading(false);
   }
@@ -168,17 +151,18 @@ export default function RestaurantRegisterPage() {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        id:             row.id,
+        id:              row.id,
         name,
         category,
         address,
         phone,
-        image_url:      imageUrl || null,
+        image_url:       imageUrl || null,
         naver_place_url: naverUrl || null,
-        website_url:    websiteUrl || null,
-        instagram_url:  instagramUrl || null,
-        business_hours: businessHours || null,
-        is_active:      isActive,
+        website_url:     websiteUrl || null,
+        instagram_url:   instagramUrl || null,
+        latitude:        row.latitude  ?? null,
+        longitude:       row.longitude ?? null,
+        is_active:       isActive,
       }),
     });
 
@@ -222,11 +206,6 @@ export default function RestaurantRegisterPage() {
     setSaving(false);
     setTimeout(() => setSaved(false), 3000);
   }
-
-  // ── 메뉴 아이템 파싱 ──────────────────────────────
-  const menuItems: Array<{ name: string; price?: string }> = (() => {
-    try { return JSON.parse(row?.menu_items ?? '[]'); } catch { return []; }
-  })();
 
   // ── 렌더 ──────────────────────────────────────────
   if (loading) {
@@ -404,26 +383,9 @@ export default function RestaurantRegisterPage() {
           </Field>
         </section>
 
-        {/* 영업 정보 */}
+        {/* 링크 정보 */}
         <section className="bg-card border border-border-main rounded-xl p-5 space-y-4">
-          <h2 className="text-sm font-semibold text-primary border-b border-border pb-2">영업 정보</h2>
-
-          <Field label="영업시간" icon={<Clock className="w-3.5 h-3.5" />}>
-            <input
-              value={businessHours}
-              onChange={(e) => {
-                setBusinessHours(e.target.value);
-                setBusinessHoursWarning(false);
-              }}
-              className="w-full px-3 py-2 bg-fill-subtle border border-border-subtle rounded-lg text-sm text-primary placeholder:text-muted focus:outline-none focus:border-[#FF6F0F]"
-              placeholder="예: 월~금 11:00~22:00"
-            />
-            {businessHoursWarning && (
-              <p className="mt-1.5 text-xs text-amber-500 flex items-center gap-1">
-                ⚠️ 크롤링 오류로 잘못된 값이 저장되어 있었습니다. 영업시간을 직접 입력하거나 비워두세요.
-              </p>
-            )}
-          </Field>
+          <h2 className="text-sm font-semibold text-primary border-b border-border pb-2">링크</h2>
 
           <Field label="홈페이지" icon={<Globe className="w-3.5 h-3.5" />}>
             <input
@@ -443,23 +405,6 @@ export default function RestaurantRegisterPage() {
             />
           </Field>
         </section>
-
-        {/* 메뉴 (읽기 전용) */}
-        {menuItems.length > 0 && (
-          <section className="bg-card border border-border-main rounded-xl p-5">
-            <h2 className="text-sm font-semibold text-primary border-b border-border pb-2 mb-3">
-              메뉴 <span className="text-muted font-normal">({menuItems.length}개)</span>
-            </h2>
-            <div className="grid grid-cols-2 gap-2">
-              {menuItems.slice(0, 12).map((item, i) => (
-                <div key={i} className="flex items-center justify-between text-xs py-1">
-                  <span className="text-secondary">{item.name}</span>
-                  {item.price && <span className="text-muted">{item.price}</span>}
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
 
         {/* 네이버 플레이스 */}
         <section className="bg-card border border-border-main rounded-xl p-5 space-y-4">
