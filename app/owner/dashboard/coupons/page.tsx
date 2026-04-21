@@ -5,7 +5,14 @@ import { createClient } from '@/lib/supabase';
 import { useOwnerSession } from '@/components/OwnerShell';
 import {
   Ticket, Plus, X, Check, Loader2, AlertCircle, Trash2,
+  Star, UserCheck, RefreshCcw,
 } from 'lucide-react';
+
+/* ------------------------------------------------------------------ */
+/* Types                                                                */
+/* ------------------------------------------------------------------ */
+
+type TargetSegment = 'all' | 'new' | 'returning';
 
 interface Coupon {
   id: string;
@@ -19,6 +26,8 @@ interface Coupon {
   is_active: boolean;
   expires_at: string;
   created_at: string;
+  target_segment: TargetSegment | null;
+  min_visit_count: number | null;
   used_count?: number;
 }
 
@@ -29,6 +38,8 @@ interface CouponForm {
   discount_value: string;
   total_quantity: string;
   expires_at: string;
+  target_segment: TargetSegment;
+  min_visit_count: string;
 }
 
 const EMPTY_FORM: CouponForm = {
@@ -38,7 +49,55 @@ const EMPTY_FORM: CouponForm = {
   discount_value: '',
   total_quantity: '',
   expires_at: '',
+  target_segment: 'all',
+  min_visit_count: '2',
 };
+
+/* ------------------------------------------------------------------ */
+/* 대상 고객 세그먼트 설정                                                 */
+/* ------------------------------------------------------------------ */
+
+const SEGMENT_CONFIG: Record<TargetSegment, {
+  label: string;
+  shortLabel: string;
+  desc: string;
+  icon: React.ReactNode;
+  badgeBg: string;
+  badgeText: string;
+  badgeBorder: string;
+}> = {
+  all: {
+    label: '전체 고객',
+    shortLabel: '전체',
+    desc: '모든 고객에게 발급되는 일반 쿠폰입니다.',
+    icon: <Ticket size={14} />,
+    badgeBg: 'bg-fill-subtle',
+    badgeText: 'text-muted',
+    badgeBorder: 'border-border-subtle',
+  },
+  new: {
+    label: '신규 고객 전용',
+    shortLabel: '신규',
+    desc: '가게를 처음 방문한 신규 고객에게만 발급됩니다.',
+    icon: <Star size={14} />,
+    badgeBg: 'bg-emerald-500/15',
+    badgeText: 'text-emerald-400',
+    badgeBorder: 'border-emerald-500/25',
+  },
+  returning: {
+    label: '재방문 고객 전용',
+    shortLabel: '재방문',
+    desc: '설정한 방문 횟수를 충족한 단골 고객에게만 발급됩니다.',
+    icon: <RefreshCcw size={14} />,
+    badgeBg: 'bg-blue-500/15',
+    badgeText: 'text-blue-400',
+    badgeBorder: 'border-blue-500/25',
+  },
+};
+
+/* ------------------------------------------------------------------ */
+/* 유틸                                                                  */
+/* ------------------------------------------------------------------ */
 
 function dDay(iso: string): string {
   const diff = new Date(iso).setHours(23, 59, 59, 999) - Date.now();
@@ -54,29 +113,31 @@ function fmtDate(iso: string): string {
 }
 
 function fmtDiscount(type: 'percent' | 'amount', value: number): string {
-  return type === 'percent'
-    ? `${value}%`
-    : `${value.toLocaleString()}원`;
+  return type === 'percent' ? `${value}%` : `${value.toLocaleString()}원`;
 }
+
+/* ------------------------------------------------------------------ */
+/* 컴포넌트                                                              */
+/* ------------------------------------------------------------------ */
 
 export default function OwnerCouponsPage() {
   const { session } = useOwnerSession();
-  const [storeId,   setStoreId]   = useState<string | null>(null);
-  const [coupons,   setCoupons]   = useState<Coupon[]>([]);
-  const [loading,   setLoading]   = useState(true);
-  const [error,     setError]     = useState('');
-  const [showModal, setShowModal] = useState(false);
-  const [form,      setForm]      = useState<CouponForm>(EMPTY_FORM);
-  const [saving,    setSaving]    = useState(false);
-  const [saveError, setSaveError] = useState('');
-  const [toggling,  setToggling]  = useState<string | null>(null);
-  const [deleting,  setDeleting]  = useState<string | null>(null);
+  const [storeId,      setStoreId]      = useState<string | null>(null);
+  const [coupons,      setCoupons]      = useState<Coupon[]>([]);
+  const [loading,      setLoading]      = useState(true);
+  const [error,        setError]        = useState('');
+  const [showModal,    setShowModal]    = useState(false);
+  const [form,         setForm]         = useState<CouponForm>(EMPTY_FORM);
+  const [saving,       setSaving]       = useState(false);
+  const [saveError,    setSaveError]    = useState('');
+  const [toggling,     setToggling]     = useState<string | null>(null);
+  const [deleting,     setDeleting]     = useState<string | null>(null);
+  const [filterSeg,    setFilterSeg]    = useState<'all' | TargetSegment>('all');
 
-  /* ── 가게 ID 조회 후 쿠폰 목록 로드 ── */
+  /* ── 데이터 로드 ── */
   const loadData = async (uid: string) => {
     const sb = createClient();
 
-    // storeId 조회
     const { data: storeData } = await sb
       .from('stores')
       .select('id')
@@ -86,7 +147,6 @@ export default function OwnerCouponsPage() {
     if (!storeData) { setLoading(false); return; }
     setStoreId(storeData.id);
 
-    // 쿠폰 조회
     const { data: couponData, error: couponErr } = await sb
       .from('coupons')
       .select('*')
@@ -94,11 +154,15 @@ export default function OwnerCouponsPage() {
       .order('is_active', { ascending: false })
       .order('expires_at', { ascending: true });
 
-    if (couponErr) { setError('쿠폰 목록을 불러오지 못했습니다.'); setLoading(false); return; }
+    if (couponErr) {
+      setError('쿠폰 목록을 불러오지 못했습니다.');
+      setLoading(false);
+      return;
+    }
 
     const list: Coupon[] = couponData || [];
 
-    // 각 쿠폰의 사용 완료 수 집계
+    // 사용 완료 수 집계
     if (list.length > 0) {
       const ids = list.map(c => c.id);
       const { data: usedData } = await sb
@@ -106,7 +170,6 @@ export default function OwnerCouponsPage() {
         .select('coupon_id')
         .in('coupon_id', ids)
         .eq('status', 'used');
-      // TODO: service role API route 필요 (RLS가 user_coupons 조회를 막을 경우)
 
       const usedMap: Record<string, number> = {};
       (usedData || []).forEach((r: { coupon_id: string }) => {
@@ -122,6 +185,7 @@ export default function OwnerCouponsPage() {
   useEffect(() => {
     if (!session) return;
     loadData(session.user_id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session]);
 
   /* ── 활성/비활성 토글 ── */
@@ -146,9 +210,7 @@ export default function OwnerCouponsPage() {
     setDeleting(couponId);
     const sb = createClient();
     const { error: err } = await sb.from('coupons').delete().eq('id', couponId);
-    if (!err) {
-      setCoupons(prev => prev.filter(c => c.id !== couponId));
-    }
+    if (!err) setCoupons(prev => prev.filter(c => c.id !== couponId));
     setDeleting(null);
   };
 
@@ -159,19 +221,32 @@ export default function OwnerCouponsPage() {
       setSaveError('모든 필수 항목을 입력해주세요.');
       return;
     }
+    if (form.target_segment === 'returning') {
+      const n = parseInt(form.min_visit_count, 10);
+      if (!n || n < 2) {
+        setSaveError('재방문 기준 횟수는 2회 이상이어야 합니다.');
+        return;
+      }
+    }
+
     setSaving(true);
     setSaveError('');
     const sb = createClient();
+
     const { error: err } = await sb.from('coupons').insert({
-      store_id:       storeId,
-      title:          form.title.trim(),
-      description:    form.description.trim() || null,
-      discount_type:  form.discount_type,
-      discount_value: parseFloat(form.discount_value),
-      total_quantity: parseInt(form.total_quantity, 10),
-      issued_count:   0,
-      is_active:      true,
-      expires_at:     new Date(form.expires_at).toISOString(),
+      store_id:        storeId,
+      title:           form.title.trim(),
+      description:     form.description.trim() || null,
+      discount_type:   form.discount_type,
+      discount_value:  parseFloat(form.discount_value),
+      total_quantity:  parseInt(form.total_quantity, 10),
+      issued_count:    0,
+      is_active:       true,
+      expires_at:      new Date(form.expires_at).toISOString(),
+      target_segment:  form.target_segment,
+      min_visit_count: form.target_segment === 'returning'
+        ? parseInt(form.min_visit_count, 10)
+        : null,
     });
 
     if (err) {
@@ -189,8 +264,15 @@ export default function OwnerCouponsPage() {
 
   /* ── 통계 요약 ── */
   const activeCnt  = coupons.filter(c => c.is_active).length;
+  const newCnt     = coupons.filter(c => c.target_segment === 'new').length;
+  const retCnt     = coupons.filter(c => c.target_segment === 'returning').length;
   const totalIssue = coupons.reduce((s, c) => s + c.issued_count, 0);
   const totalUsed  = coupons.reduce((s, c) => s + (c.used_count || 0), 0);
+
+  /* ── 필터링 ── */
+  const visibleCoupons = filterSeg === 'all'
+    ? coupons
+    : coupons.filter(c => (c.target_segment ?? 'all') === filterSeg);
 
   /* ── 로딩 스켈레톤 ── */
   if (loading) {
@@ -201,7 +283,7 @@ export default function OwnerCouponsPage() {
         </div>
         <div className="p-6 grid grid-cols-2 gap-4">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="bg-card border border-border-main rounded-xl h-36 animate-pulse" />
+            <div key={i} className="bg-card border border-border-main rounded-xl h-40 animate-pulse" />
           ))}
         </div>
       </div>
@@ -237,15 +319,46 @@ export default function OwnerCouponsPage() {
         {coupons.length > 0 && (
           <div className="flex gap-3 mb-5 flex-wrap">
             {[
-              { label: '활성 쿠폰',  value: `${activeCnt}개` },
-              { label: '총 발급',    value: `${totalIssue.toLocaleString()}장` },
-              { label: '사용 완료',  value: `${totalUsed.toLocaleString()}장` },
+              { label: '활성 쿠폰',     value: `${activeCnt}개` },
+              { label: '신규 전용',     value: `${newCnt}개`,   color: 'text-emerald-400' },
+              { label: '재방문 전용',   value: `${retCnt}개`,   color: 'text-blue-400' },
+              { label: '총 발급',       value: `${totalIssue.toLocaleString()}장` },
+              { label: '사용 완료',     value: `${totalUsed.toLocaleString()}장` },
             ].map(stat => (
-              <div key={stat.label} className="bg-card border border-border-main rounded-xl px-4 py-3 flex items-center gap-3">
+              <div key={stat.label} className="bg-card border border-border-main rounded-xl px-4 py-3 flex items-center gap-2">
                 <span className="text-xs text-muted">{stat.label}</span>
-                <span className="text-sm font-bold text-primary">{stat.value}</span>
+                <span className={`text-sm font-bold ${(stat as any).color ?? 'text-primary'}`}>{stat.value}</span>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* 세그먼트 필터 탭 */}
+        {coupons.length > 0 && (
+          <div className="flex gap-2 mb-5">
+            {([
+              { key: 'all',       label: '전체' },
+              { key: 'all',       label: '일반',     seg: 'all' as TargetSegment },
+              { key: 'new',       label: '신규',     seg: 'new' as TargetSegment },
+              { key: 'returning', label: '재방문',   seg: 'returning' as TargetSegment },
+            ] as { key: string; label: string; seg?: TargetSegment }[]).map((item, idx) => {
+              const isActive = idx === 0
+                ? filterSeg === 'all'
+                : filterSeg === item.seg;
+              return (
+                <button
+                  key={idx}
+                  onClick={() => setFilterSeg(idx === 0 ? 'all' : item.seg as any)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                    isActive
+                      ? 'bg-[#FF6F0F] text-white'
+                      : 'bg-card border border-border-subtle text-muted hover:text-primary'
+                  }`}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
           </div>
         )}
 
@@ -262,15 +375,21 @@ export default function OwnerCouponsPage() {
               첫 쿠폰 만들기
             </button>
           </div>
+        ) : visibleCoupons.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-2 text-muted">
+            <p className="text-sm">해당 조건의 쿠폰이 없어요</p>
+          </div>
         ) : (
-          /* 쿠폰 카드 그리드 2열 */
+          /* 쿠폰 카드 그리드 */
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-3xl">
-            {coupons.map(coupon => {
-              const expired = new Date(coupon.expires_at) < new Date();
-              const dday    = dDay(coupon.expires_at);
+            {visibleCoupons.map(coupon => {
+              const expired  = new Date(coupon.expires_at) < new Date();
+              const dday     = dDay(coupon.expires_at);
               const progress = coupon.total_quantity > 0
                 ? Math.min(coupon.issued_count / coupon.total_quantity, 1)
                 : 0;
+              const seg      = coupon.target_segment ?? 'all';
+              const segConf  = SEGMENT_CONFIG[seg];
 
               return (
                 <div
@@ -279,16 +398,38 @@ export default function OwnerCouponsPage() {
                     coupon.is_active && !expired ? 'border-border-main' : 'border-border-subtle opacity-60'
                   }`}
                 >
-                  {/* 제목 & 할인 */}
+                  {/* 제목 & 세그먼트 뱃지 */}
                   <div className="flex items-start gap-2">
                     <Ticket size={16} className="text-[#FF6F0F] shrink-0 mt-0.5" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-primary leading-tight truncate">{coupon.title}</p>
-                      <p className="text-xs text-[#FF6F0F] font-semibold mt-0.5">
+                      <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
+                        <p className="text-sm font-bold text-primary leading-tight truncate">{coupon.title}</p>
+                        {/* 세그먼트 뱃지 */}
+                        {seg !== 'all' && (
+                          <span className={`shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold border
+                            ${segConf.badgeBg} ${segConf.badgeText} ${segConf.badgeBorder}`}>
+                            {segConf.icon}
+                            {segConf.shortLabel}
+                            {seg === 'returning' && coupon.min_visit_count
+                              ? ` ${coupon.min_visit_count}회↑`
+                              : ''}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-[#FF6F0F] font-semibold">
                         {fmtDiscount(coupon.discount_type, coupon.discount_value)} 할인
                       </p>
                     </div>
                   </div>
+
+                  {/* 세그먼트 안내 문구 */}
+                  {seg !== 'all' && (
+                    <p className={`text-[10px] px-2 py-1 rounded-lg ${segConf.badgeBg} ${segConf.badgeText}`}>
+                      {seg === 'new'
+                        ? '첫 방문 고객에게만 발급됩니다'
+                        : `${coupon.min_visit_count}회 이상 방문 고객에게만 발급됩니다`}
+                    </p>
+                  )}
 
                   {/* 진행 바 */}
                   <div>
@@ -308,23 +449,20 @@ export default function OwnerCouponsPage() {
                   <div className="flex items-center gap-2 text-xs text-muted">
                     <span>사용 {(coupon.used_count || 0).toLocaleString()}장</span>
                     <span className="text-border-main">·</span>
-                    <span className={expired ? 'text-red-400 font-semibold' : ''}>
-                      {expired ? (
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-red-500/10 border border-red-500/20 rounded text-red-400 text-[10px] font-semibold">
-                          만료됨
-                        </span>
-                      ) : (
-                        dday
-                      )}
-                    </span>
-                    {!expired && (
-                      <span className="text-dim">{fmtDate(coupon.expires_at)}</span>
+                    {expired ? (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-red-500/10 border border-red-500/20 rounded text-red-400 text-[10px] font-semibold">
+                        만료됨
+                      </span>
+                    ) : (
+                      <>
+                        <span>{dday}</span>
+                        <span className="text-dim">{fmtDate(coupon.expires_at)}</span>
+                      </>
                     )}
                   </div>
 
                   {/* 액션 */}
                   <div className="flex items-center gap-2 pt-1 border-t border-border-subtle">
-                    {/* 활성 토글 */}
                     <button
                       onClick={() => handleToggle(coupon)}
                       disabled={toggling === coupon.id}
@@ -334,9 +472,7 @@ export default function OwnerCouponsPage() {
                         <Loader2 size={13} className="animate-spin" />
                       ) : (
                         <div
-                          className={`relative w-8 h-4.5 rounded-full transition-colors ${
-                            coupon.is_active ? 'bg-[#FF6F0F]' : 'bg-fill-subtle'
-                          }`}
+                          className={`relative rounded-full transition-colors ${coupon.is_active ? 'bg-[#FF6F0F]' : 'bg-fill-subtle'}`}
                           style={{ height: '18px', width: '32px' }}
                         >
                           <div
@@ -351,18 +487,13 @@ export default function OwnerCouponsPage() {
 
                     <span className="flex-1" />
 
-                    {/* 삭제 버튼 — 비활성 쿠폰만 */}
                     {!coupon.is_active && (
                       <button
                         onClick={() => handleDelete(coupon.id)}
                         disabled={deleting === coupon.id}
                         className="flex items-center gap-1 text-xs text-muted hover:text-red-400 transition px-2 py-1 rounded-lg hover:bg-red-500/10"
                       >
-                        {deleting === coupon.id ? (
-                          <Loader2 size={12} className="animate-spin" />
-                        ) : (
-                          <Trash2 size={12} />
-                        )}
+                        {deleting === coupon.id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
                         삭제
                       </button>
                     )}
@@ -398,6 +529,94 @@ export default function OwnerCouponsPage() {
                 </div>
               )}
 
+              {/* ── 대상 고객 ── */}
+              <div>
+                <label className="text-xs font-semibold text-tertiary block mb-2">
+                  대상 고객 <span className="text-red-400">*</span>
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(['all', 'new', 'returning'] as TargetSegment[]).map(seg => {
+                    const conf   = SEGMENT_CONFIG[seg];
+                    const active = form.target_segment === seg;
+                    return (
+                      <button
+                        key={seg}
+                        type="button"
+                        onClick={() => setForm(f => ({ ...f, target_segment: seg }))}
+                        className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border text-center transition ${
+                          active
+                            ? `${conf.badgeBg} ${conf.badgeText} ${conf.badgeBorder} ring-1 ring-current`
+                            : 'bg-surface border-border-main text-muted hover:border-border-main hover:text-secondary'
+                        }`}
+                      >
+                        <span className={active ? conf.badgeText : 'text-muted'}>
+                          {conf.icon}
+                        </span>
+                        <span className="text-[11px] font-semibold leading-tight">{conf.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="mt-2 text-[10px] text-dim">{SEGMENT_CONFIG[form.target_segment].desc}</p>
+              </div>
+
+              {/* 재방문 기준 횟수 (재방문 선택 시만 표시) */}
+              {form.target_segment === 'returning' && (
+                <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+                  <label className="text-xs font-semibold text-blue-400 block mb-2">
+                    <RefreshCcw size={11} className="inline mr-1" />
+                    최소 방문 횟수 <span className="text-red-400">*</span>
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <div className="relative flex-1">
+                      <input
+                        type="number"
+                        value={form.min_visit_count}
+                        onChange={e => setForm(f => ({ ...f, min_visit_count: e.target.value }))}
+                        placeholder="예) 3"
+                        min={2}
+                        max={99}
+                        className="w-full px-3 py-2 pr-8 text-sm bg-surface border border-blue-500/30 rounded-xl outline-none focus:border-blue-400 text-primary transition"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-blue-400">회</span>
+                    </div>
+                    <span className="text-xs text-blue-300 shrink-0">이상 방문 시 발급</span>
+                  </div>
+                  {/* 빠른 선택 버튼 */}
+                  <div className="flex gap-1.5 mt-2">
+                    {[2, 3, 5, 10].map(n => (
+                      <button
+                        key={n}
+                        type="button"
+                        onClick={() => setForm(f => ({ ...f, min_visit_count: String(n) }))}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition ${
+                          form.min_visit_count === String(n)
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-blue-500/15 text-blue-400 hover:bg-blue-500/30'
+                        }`}
+                      >
+                        {n}회
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 신규 고객 안내 */}
+              {form.target_segment === 'new' && (
+                <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+                  <div className="flex items-start gap-2">
+                    <UserCheck size={13} className="text-emerald-400 shrink-0 mt-0.5" />
+                    <p className="text-[11px] text-emerald-300 leading-relaxed">
+                      가게를 처음 방문한 신규 고객에게만 발급됩니다.<br />
+                      한 번 쿠폰을 사용한 고객에게는 이후 발급되지 않습니다.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div className="border-t border-border-subtle" />
+
               {/* 쿠폰 제목 */}
               <div>
                 <label className="text-xs font-semibold text-tertiary block mb-1.5">
@@ -406,7 +625,7 @@ export default function OwnerCouponsPage() {
                 <input
                   value={form.title}
                   onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-                  placeholder="예) 봄맞이 10% 할인"
+                  placeholder="예) 첫 방문 감사 10% 할인"
                   className="w-full px-3 py-2.5 text-sm bg-surface border border-border-main rounded-xl outline-none focus:border-[#FF6F0F] text-primary transition"
                 />
               </div>
@@ -513,11 +732,7 @@ export default function OwnerCouponsPage() {
                 disabled={saving || !form.title.trim()}
                 className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold bg-[#FF6F0F] text-white hover:bg-[#e56500] transition disabled:opacity-40"
               >
-                {saving ? (
-                  <Loader2 size={15} className="animate-spin" />
-                ) : (
-                  <Check size={15} />
-                )}
+                {saving ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}
                 {saving ? '저장 중...' : '쿠폰 만들기'}
               </button>
             </div>
