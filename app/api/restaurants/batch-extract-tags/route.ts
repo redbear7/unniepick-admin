@@ -59,46 +59,43 @@ export async function POST(req: NextRequest) {
       )
       .in('naver_place_id', chunk);
 
-    if (fetchErr) { failed += chunk.length; continue; }
-
-    // 태그 추출 + upsert 페이로드 생성
-    const restaurantUpdates = (rows ?? []).map((r: any) => {
-      const tags = extractTagsV2(r as RestaurantForTagging);
-      return {
-        naver_place_id: r.naver_place_id,
-        tags_v2:        tags,
-        tag_source:     'auto' as const,
-        tag_confidence: tags.신뢰도 ?? 0,
-        tags_updated_at: now,
-      };
-    });
-
-    // restaurants 일괄 업데이트 (upsert 사용)
-    const { error: restErr } = await sb
-      .from('restaurants')
-      .upsert(restaurantUpdates, { onConflict: 'naver_place_id', ignoreDuplicates: false });
-
-    if (restErr) {
+    if (fetchErr) {
+      console.error('[batch-extract-tags] fetch error:', fetchErr.message);
       failed += chunk.length;
-      console.error('[batch-extract-tags] restaurants upsert error:', restErr.message);
       continue;
     }
 
-    // stores도 동기화 (존재하는 것만)
-    const { data: storeRows } = await sb
-      .from('stores')
-      .select('naver_place_id')
-      .in('naver_place_id', chunk);
+    // 태그 추출 + 개별 UPDATE
+    let chunkProcessed = 0;
+    for (const r of (rows ?? [])) {
+      const tags = extractTagsV2(r as RestaurantForTagging);
+      const tagPayload = {
+        tags_v2:         tags,
+        tag_source:      'auto',
+        tag_confidence:  tags.신뢰도 ?? 0,
+        tags_updated_at: now,
+      };
 
-    if (storeRows?.length) {
-      const storeIds = new Set(storeRows.map((s: any) => s.naver_place_id));
-      const storeUpdates = restaurantUpdates.filter(u => storeIds.has(u.naver_place_id));
+      const { error: restErr } = await sb
+        .from('restaurants')
+        .update(tagPayload)
+        .eq('naver_place_id', r.naver_place_id);
+
+      if (restErr) {
+        failed++;
+        console.error('[batch-extract-tags] update error:', r.naver_place_id, restErr.message);
+        continue;
+      }
+
+      // stores도 동기화 (존재하는 경우만, 에러 무시)
       await sb
         .from('stores')
-        .upsert(storeUpdates, { onConflict: 'naver_place_id', ignoreDuplicates: false });
-    }
+        .update(tagPayload)
+        .eq('naver_place_id', r.naver_place_id);
 
-    processed += restaurantUpdates.length;
+      chunkProcessed++;
+    }
+    processed += chunkProcessed;
   }
 
   return NextResponse.json({
