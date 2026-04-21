@@ -198,7 +198,16 @@ export default function RestaurantsPage() {
     const { data, error } = await query.limit(200);
     if (error) { console.error(error.message); setLoading(false); return; }
 
-    setRestaurants(data ?? []);
+    const parsed = (data ?? []).map((r: any) => ({
+      ...r,
+      menu_items: (() => {
+        if (Array.isArray(r.menu_items)) return r.menu_items;
+        try { return JSON.parse(r.menu_items ?? '[]'); } catch { return []; }
+      })(),
+      tags:        Array.isArray(r.tags)        ? r.tags        : [],
+      custom_tags: Array.isArray(r.custom_tags) ? r.custom_tags : [],
+    }));
+    setRestaurants(parsed);
     if (!categories.length && data?.length) {
       const cats = [...new Set(data.map((r) => r.category).filter(Boolean))] as string[];
       setCategories(cats.sort());
