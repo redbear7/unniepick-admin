@@ -1,4 +1,4 @@
-[2026-04-21] 21분 후 크롤링 시작 (봇 감지 회피)
+[2026-04-21] 12분 후 크롤링 시작 (봇 감지 회피)
 
 ──────────────────────────────────────────────────
 단일 업체 크롤링
@@ -6,21 +6,29 @@
 리뷰분석: ✓
 ──────────────────────────────────────────────────
 
-node:internal/modules/run_main:107
-    triggerUncaughtException(
-    ^
+🔍 네이버 플레이스 검색: "원조김할머니의령소바 창원스마트업타워점"
+   검색 결과: 1개
+✓ 발견: 원조김할머니의령소바 창원스마트업타워점
+  카테고리: 한식
+  주소: 창원 의창구 팔용동 차룡로48번길 44 창원스마트업타워 R202호
+  전화: 055-294-1233
+  방문리뷰: 89건
+  URL: https://map.naver.com/p/entry/place/1898019048
 
-browserType.launch: Executable doesn't exist at /Users/bangju/Library/Caches/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-mac-arm64/chrome-headless-shell
-╔════════════════════════════════════════════════════════════╗
-║ Looks like Playwright was just installed or updated.       ║
-║ Please run the following command to download new browsers: ║
-║                                                            ║
-║     npx playwright install                                 ║
-║                                                            ║
-║ <3 Playwright Team                                         ║
-╚════════════════════════════════════════════════════════════╝
-    at <anonymous> (/Users/bangju/Documents/PROGRAM/unniepick-admin/scripts/crawl-restaurants/src/single.ts:191:32) {
-  name: 'Error'
-}
+📋 상세 정보 수집 중...
+  영업시간: 영업시간 | 영업 중 | 20:15에 라스트오더 | 20시 15분에 라스트오더 | 펼쳐보기
+  메뉴: 2개
 
-Node.js v25.6.1
+리뷰 분석 중...
+  키워드 5개, 메뉴 15개, 블로그리뷰 5개
+
+📷 이미지 처리 중...
+  ✓ 최적화 완료
+
+🏷️  태그 자동 분류 중...
+  16개 태그: 한식, 분식, 고기구이, 국밥·탕, 면요리, 혼밥, 회식, 친절한 ...
+
+💾 DB 저장 중...
+  ✓ 저장 완료
+
+✅ 완료: 원조김할머니의령소바 창원스마트업타워점
