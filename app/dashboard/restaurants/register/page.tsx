@@ -247,7 +247,7 @@ export default function RestaurantRegisterPage() {
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div>
-          <h1 className="text-xl font-bold text-primary">가게 추가</h1>
+          <h1 className="text-xl font-bold text-primary">가게 등록</h1>
           <p className="text-sm text-muted mt-0.5">크롤링 데이터를 확인하고 저장합니다</p>
         </div>
       </div>
