@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase';
 import {
   Search, ToggleLeft, ToggleRight, MapPin, Phone,
-  Plus, Pencil, Trash2, X,
-  ExternalLink, User, FlaskConical, History, Calendar, AlertTriangle,
+  Plus, Pencil, Trash2, X, ImageIcon,
+  ExternalLink, User, FlaskConical, History, Calendar,
 } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
@@ -106,8 +106,6 @@ export default function StoresPage() {
   const [form,        setForm]        = useState<StoreForm>(EMPTY_FORM);
   const [saving,      setSaving]      = useState(false);
   const [deleteId,    setDeleteId]    = useState<string | null>(null);
-  const [cleaningAll, setCleaningAll] = useState(false);
-  const [showCleanConfirm, setShowCleanConfirm] = useState(false);
   const [naverUrl,    setNaverUrl]    = useState('');
   const [autoFilling, setAutoFilling] = useState(false);
   const [autoFillErr, setAutoFillErr] = useState('');
@@ -308,23 +306,6 @@ export default function StoresPage() {
     setSaving(false);
   };
 
-  const cleanAllStores = async () => {
-    setCleaningAll(true);
-    try {
-      const res = await fetch('/api/dev/clean-stores', { method: 'POST' });
-      const data = await res.json();
-      if (!res.ok) {
-        alert(`초기화 실패: ${data.error ?? '알 수 없는 오류'}`);
-        return;
-      }
-      console.info('[clean-stores]', data.log?.join(' | '));
-      await loadStores();
-      setShowCleanConfirm(false);
-    } finally {
-      setCleaningAll(false);
-    }
-  };
-
   const deleteStore = async (id: string) => {
     const res = await fetch('/api/admin/stores', {
       method: 'DELETE',
@@ -387,12 +368,6 @@ export default function StoresPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowCleanConfirm(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-red-500/15 hover:bg-red-500/25 text-red-400 text-sm font-semibold rounded-xl border border-red-500/25 transition"
-          >
-            <Trash2 size={15} /> 전체 초기화
-          </button>
           <button
             onClick={openNew}
             className="flex items-center gap-2 px-4 py-2 bg-[#FF6F0F] hover:bg-[#e66000] text-primary text-sm font-semibold rounded-xl transition"
@@ -740,6 +715,40 @@ export default function StoresPage() {
                   {form.is_active ? '활성' : '비활성'}
                 </button>
               </div>
+
+              {/* 가게 사진 */}
+              <div className="border-t border-border-main pt-3">
+                <label className="flex items-center gap-1.5 text-xs text-muted mb-2">
+                  <ImageIcon size={12} /> 가게 사진
+                </label>
+                {form.image_url ? (
+                  <div className="flex items-start gap-3 mb-2">
+                    <img
+                      src={form.image_url}
+                      alt="가게 사진"
+                      className="w-20 h-20 object-cover rounded-xl border border-border-subtle shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] text-muted break-all line-clamp-2 mb-2">{form.image_url}</p>
+                      <button
+                        onClick={() => setForm(f => ({ ...f, image_url: null }))}
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500/15 text-red-400 text-xs font-semibold hover:bg-red-500/25 transition"
+                      >
+                        <Trash2 size={11} /> 사진 삭제
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-dim mb-2">등록된 사진이 없습니다</p>
+                )}
+                <input
+                  type="url"
+                  value={form.image_url ?? ''}
+                  onChange={e => setForm(f => ({ ...f, image_url: e.target.value || null }))}
+                  placeholder="https://... 이미지 URL 직접 입력"
+                  className="w-full bg-sidebar border border-border-subtle rounded-xl px-4 py-2.5 text-sm text-primary placeholder-gray-600 focus:outline-none focus:border-[#FF6F0F] transition"
+                />
+              </div>
             </div>
 
             <div className="flex gap-2 mt-6">
@@ -775,38 +784,6 @@ export default function StoresPage() {
               <button onClick={() => deleteStore(deleteId)}
                 className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-primary bg-red-500 hover:bg-red-600 transition">
                 삭제
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal: 전체 초기화 확인 */}
-      {showCleanConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-sm bg-card border border-red-500/30 rounded-2xl p-6 shadow-2xl">
-            <div className="flex items-center gap-2 mb-3">
-              <AlertTriangle size={20} className="text-red-400 shrink-0" />
-              <h2 className="text-base font-bold text-primary">가게 데이터 전체 초기화</h2>
-            </div>
-            <div className="text-sm text-tertiary mb-5 space-y-1.5">
-              <p>다음 데이터가 <span className="text-red-400 font-semibold">영구 삭제</span>됩니다:</p>
-              <ul className="list-disc list-inside text-xs text-muted space-y-0.5 ml-1">
-                <li>전체 가게 ({stores.length}개)</li>
-                <li>연결된 쿠폰 데이터</li>
-                <li>가게 게시물 / 공지사항</li>
-                <li>더미 사장님 계정 (@test.unnipick.dev)</li>
-              </ul>
-              <p className="text-xs text-amber-400 mt-2">크롤링 원본(restaurants)은 삭제되지 않습니다.</p>
-            </div>
-            <div className="flex gap-2">
-              <button onClick={() => setShowCleanConfirm(false)}
-                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-tertiary bg-fill-subtle hover:bg-fill-medium transition">
-                취소
-              </button>
-              <button onClick={cleanAllStores} disabled={cleaningAll}
-                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-500 hover:bg-red-600 transition disabled:opacity-50">
-                {cleaningAll ? '초기화 중...' : '전체 삭제'}
               </button>
             </div>
           </div>
