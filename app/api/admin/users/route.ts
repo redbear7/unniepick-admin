@@ -1,7 +1,8 @@
 /**
  * GET /api/admin/users
  *
- * service_role 키로 auth.admin.listUsers를 호출해 전화번호 포함
+ * admin_get_user_phones() RPC로 auth.users 직접 조회 (전화번호 포함)
+ * auth.admin.listUsers는 "Database error finding users" 버그로 우회
  * 추가 데이터: push_tokens, follows(GPS 여부), user_coupons(쿠폰 수)
  */
 import { NextResponse } from 'next/server';
@@ -26,36 +27,30 @@ function normalizePhone(phone: string | undefined | null): string | undefined {
 
 export async function GET() {
   const sb = adminClient();
-  const hasServiceRole = !!(process.env.SUPABASE_SERVICE_ROLE_KEY);
-  console.log('[admin/users] SERVICE_ROLE_KEY 존재:', hasServiceRole);
 
-  // 1) auth.admin.listUsers — 전화번호 포함 (최대 1000명)
+  // 1) auth.users 전화번호 조회 — RPC(SECURITY DEFINER) 사용
+  //    auth.admin.listUsers는 "Database error finding users" 버그로 우회
   const authUsers: Record<string, { phone?: string; last_sign_in_at?: string }> = {};
-  let listUsersError: string | null = null;
+  let phonesError: string | null = null;
   try {
-    let page = 1;
-    const perPage = 1000;
-    while (true) {
-      const { data, error } = await sb.auth.admin.listUsers({ page, perPage });
-      if (error) {
-        listUsersError = error.message;
-        console.error('[admin/users] listUsers error:', error.message);
-        break;
-      }
-      console.log('[admin/users] listUsers page', page, '결과:', data?.users?.length ?? 0, '명');
-      if (!data?.users?.length) break;
-      for (const u of data.users) {
+    const { data, error } = await sb.rpc('admin_get_user_phones');
+    if (error) {
+      phonesError = error.message;
+      console.error('[admin/users] admin_get_user_phones error:', error.message);
+    } else {
+      for (const u of (data ?? []) as Array<{
+        id: string; phone: string | null; last_sign_in_at: string | null;
+      }>) {
         authUsers[u.id] = {
           phone:           normalizePhone(u.phone),
-          last_sign_in_at: u.last_sign_in_at || undefined,
+          last_sign_in_at: u.last_sign_in_at ?? undefined,
         };
       }
-      if (data.users.length < perPage) break;
-      page++;
+      console.log('[admin/users] auth users 조회:', Object.keys(authUsers).length, '명');
     }
   } catch (e) {
-    listUsersError = String(e);
-    console.error('[admin/users] listUsers exception:', e);
+    phonesError = String(e);
+    console.error('[admin/users] admin_get_user_phones exception:', e);
   }
 
   // 2) push_tokens — 유저별 opt_in 여부
@@ -91,11 +86,9 @@ export async function GET() {
   return NextResponse.json({
     authUsers,
     pushMap,
-    followSet:      [...followSet],
+    followSet:   [...followSet],
     couponCount,
-    // 디버그 정보
-    _hasServiceRole: hasServiceRole,
-    _listUsersError: listUsersError,
-    _authUserCount:  Object.keys(authUsers).length,
+    _phonesError: phonesError,
+    _authUserCount: Object.keys(authUsers).length,
   });
 }
