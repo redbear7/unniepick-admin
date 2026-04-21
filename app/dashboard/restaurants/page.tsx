@@ -964,7 +964,7 @@ function DetailModal({ r, onClose, registered }: { r: Restaurant; onClose: () =>
           {r.review_keywords?.length > 0 && (
             <Section title="키워드 리뷰" icon={<MessageSquare className="w-4 h-4" />}>
               <div className="flex flex-wrap gap-2">
-                {r.review_keywords.map((kw, i) => (
+                {r.review_keywords.filter((kw: any) => kw.keyword?.trim()).map((kw, i) => (
                   <span key={i} className="px-3 py-1.5 bg-amber-500/10 text-amber-400 text-sm rounded-full border border-amber-500/20">
                     "{kw.keyword}" <span className="text-muted ml-1">{kw.count}</span>
                   </span>
@@ -977,7 +977,7 @@ function DetailModal({ r, onClose, registered }: { r: Restaurant; onClose: () =>
           {r.menu_keywords?.length > 0 && (
             <Section title="인기 메뉴" icon={<UtensilsCrossed className="w-4 h-4" />}>
               <div className="flex flex-wrap gap-2">
-                {r.menu_keywords.slice(0, 10).map((mk, i) => (
+                {r.menu_keywords.filter((mk: any) => mk.menu?.trim()).slice(0, 10).map((mk, i) => (
                   <span key={i} className="px-2.5 py-1 bg-fill-subtle text-secondary text-sm rounded">
                     {mk.menu} <span className="text-muted">{mk.count}</span>
                   </span>
