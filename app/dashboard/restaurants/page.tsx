@@ -222,14 +222,23 @@ export default function RestaurantsPage() {
     const { data, error } = await query.limit(200);
     if (error) { console.error(error.message); setLoading(false); return; }
 
+    const parseArr = (v: any) => {
+      if (Array.isArray(v)) return v;
+      try { return JSON.parse(v ?? '[]'); } catch { return []; }
+    };
+    const parseObj = (v: any) => {
+      if (v && typeof v === 'object' && !Array.isArray(v)) return v;
+      try { return JSON.parse(v ?? '{}'); } catch { return {}; }
+    };
     const parsed = (data ?? []).map((r: any) => ({
       ...r,
-      menu_items: (() => {
-        if (Array.isArray(r.menu_items)) return r.menu_items;
-        try { return JSON.parse(r.menu_items ?? '[]'); } catch { return []; }
-      })(),
-      tags:        Array.isArray(r.tags)        ? r.tags        : [],
-      custom_tags: Array.isArray(r.custom_tags) ? r.custom_tags : [],
+      menu_items:      parseArr(r.menu_items),
+      tags:            parseArr(r.tags),
+      custom_tags:     parseArr(r.custom_tags),
+      review_keywords: parseArr(r.review_keywords),
+      menu_keywords:   parseArr(r.menu_keywords),
+      blog_reviews:    parseArr(r.blog_reviews),
+      review_summary:  parseObj(r.review_summary),
     }));
     setRestaurants(parsed);
     if (!categories.length && data?.length) {
