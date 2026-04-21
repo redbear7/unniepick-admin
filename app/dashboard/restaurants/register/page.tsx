@@ -252,7 +252,7 @@ export default function RestaurantRegisterPage() {
         </div>
       </div>
 
-      {/* 썸네일 — 정사각형 + 교체 버튼 */}
+      {/* 썸네일 — 원본 비율 · 절반 크기 */}
       <div className="mb-6">
         {/* hidden file input */}
         <input
@@ -263,49 +263,63 @@ export default function RestaurantRegisterPage() {
           onChange={handleFileChange}
         />
 
-        <div className="relative w-full aspect-square rounded-xl overflow-hidden bg-fill-subtle border border-border-main">
-          {/* 이미지 or 빈 상태 */}
+        <div className="w-1/2">
           {imageUrl ? (
-            <img
-              src={imageUrl}
-              alt={name}
-              className="w-full h-full object-cover"
-            />
+            /* 이미지 있음: 원본 비율 유지 */
+            <div className="relative rounded-xl overflow-hidden border border-border-main">
+              <img
+                src={imageUrl}
+                alt={name}
+                className="block w-full h-auto"
+              />
+              {/* 업로드 중 */}
+              {uploading && (
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                  <Loader2 className="w-6 h-6 text-white animate-spin" />
+                </div>
+              )}
+              {/* 교체 버튼 */}
+              {!uploading && (
+                <div className="absolute bottom-2 right-2 flex gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex items-center gap-1 px-2 py-1 bg-black/60 hover:bg-black/75 text-white text-xs font-medium rounded-md backdrop-blur-sm transition-colors"
+                  >
+                    <Camera className="w-3 h-3" />
+                    교체
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setUrlInputVal(imageUrl); setShowUrlInput(v => !v); }}
+                    className="flex items-center gap-1 px-2 py-1 bg-black/60 hover:bg-black/75 text-white text-xs font-medium rounded-md backdrop-blur-sm transition-colors"
+                  >
+                    <Link2 className="w-3 h-3" />
+                    URL
+                  </button>
+                </div>
+              )}
+            </div>
           ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-muted">
-              <Camera className="w-10 h-10 opacity-30" />
-              <span className="text-sm">사진 없음</span>
-            </div>
-          )}
-
-          {/* 오버레이: 업로드 중 */}
-          {uploading && (
-            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-              <Loader2 className="w-8 h-8 text-white animate-spin" />
-            </div>
-          )}
-
-          {/* 오버레이: 교체 버튼들 (업로드 중 아닐 때) */}
-          {!uploading && (
-            <div className="absolute bottom-3 right-3 flex gap-2">
-              {/* 파일 선택 */}
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-black/60 hover:bg-black/75 text-white text-xs font-medium rounded-lg backdrop-blur-sm transition-colors"
-              >
-                <Camera className="w-3.5 h-3.5" />
-                이미지 교체
-              </button>
-              {/* URL 입력 */}
-              <button
-                type="button"
-                onClick={() => { setUrlInputVal(imageUrl); setShowUrlInput(v => !v); }}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-black/60 hover:bg-black/75 text-white text-xs font-medium rounded-lg backdrop-blur-sm transition-colors"
-              >
-                <Link2 className="w-3.5 h-3.5" />
-                URL
-              </button>
+            /* 이미지 없음: 고정 플레이스홀더 */
+            <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-fill-subtle border border-border-main flex flex-col items-center justify-center gap-2 text-muted">
+              <Camera className="w-8 h-8 opacity-30" />
+              <span className="text-xs">사진 없음</span>
+              {uploading && (
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                  <Loader2 className="w-6 h-6 text-white animate-spin" />
+                </div>
+              )}
+              {!uploading && (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="absolute bottom-2 right-2 flex items-center gap-1 px-2 py-1 bg-black/60 hover:bg-black/75 text-white text-xs font-medium rounded-md backdrop-blur-sm transition-colors"
+                >
+                  <Camera className="w-3 h-3" />
+                  업로드
+                </button>
+              )}
             </div>
           )}
         </div>
