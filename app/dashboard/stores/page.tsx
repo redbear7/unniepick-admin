@@ -381,14 +381,6 @@ export default function StoresPage() {
             전체 {stores.length}개 · 활성 {stores.filter(s => s.is_active).length}개
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={openNew}
-            className="flex items-center gap-2 px-4 py-2 bg-[#FF6F0F] hover:bg-[#e66000] text-primary text-sm font-semibold rounded-xl transition"
-          >
-            <Plus size={15} /> 가게 등록
-          </button>
-        </div>
       </div>
 
       {/* 검색 + 필터 */}
