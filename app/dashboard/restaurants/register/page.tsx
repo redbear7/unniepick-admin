@@ -25,6 +25,8 @@ interface RestaurantRow {
   review_count: number;
   menu_items: string; // JSON
   is_active: boolean;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 export default function RestaurantRegisterPage() {
@@ -101,7 +103,9 @@ export default function RestaurantRegisterPage() {
     setSaving(true);
     setError('');
     const supabase = createClient();
-    const { error: err } = await supabase
+
+    // 1) restaurants 테이블 업데이트 (크롤링 원본 보관)
+    const { error: restErr } = await supabase
       .from('restaurants')
       .update({
         name,
@@ -118,11 +122,40 @@ export default function RestaurantRegisterPage() {
       })
       .eq('id', row.id);
 
-    if (err) {
-      setError(err.message);
+    if (restErr) {
+      setError(restErr.message);
       setSaving(false);
       return;
     }
+
+    // 2) stores 테이블 upsert (앱에서 실제 사용하는 테이블)
+    const { error: storeErr } = await supabase
+      .from('stores')
+      .upsert(
+        {
+          name,
+          category,
+          address,
+          phone,
+          naver_place_id:  naverPlaceId,
+          naver_place_url: naverUrl || null,
+          naver_thumbnail: imageUrl || null,
+          instagram_url:   instagramUrl || null,
+          latitude:        row.latitude  ?? null,
+          longitude:       row.longitude ?? null,
+          review_count:    row.visitor_review_count ?? 0,
+          is_active:       isActive,
+          is_closed:       false,
+        },
+        { onConflict: 'naver_place_id', ignoreDuplicates: false },
+      );
+
+    if (storeErr) {
+      setError(`stores 저장 실패: ${storeErr.message}`);
+      setSaving(false);
+      return;
+    }
+
     setSaved(true);
     setSaving(false);
     setTimeout(() => setSaved(false), 3000);
