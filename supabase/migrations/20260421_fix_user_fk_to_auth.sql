@@ -20,15 +20,7 @@ ALTER TABLE stamp_history
 
 -- stamp_history는 stamp_card_id로 연결되므로 직접 FK 없을 수 있음 (무시)
 
--- ── follows ──────────────────────────────────────────────────
-ALTER TABLE follows
-  DROP CONSTRAINT IF EXISTS follows_user_id_fkey;
-
-ALTER TABLE follows
-  ADD CONSTRAINT follows_user_id_fkey
-  FOREIGN KEY (user_id)
-  REFERENCES auth.users(id)
-  ON DELETE CASCADE;
+-- ── follows: 테이블 없음 (스킵) ──────────────────────────────
 
 -- ── user_coupons ──────────────────────────────────────────────
 ALTER TABLE user_coupons
