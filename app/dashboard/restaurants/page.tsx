@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase';
 import {
   Search, MapPin, ExternalLink, Clock, X,
@@ -108,12 +108,39 @@ export default function RestaurantsPage() {
   const [tagging,    setTagging]    = useState(false);
   const [tagMsg,     setTagMsg]     = useState('');
 
+  // ── 무한 스크롤 ───────────────────────────────────────────────
+  const COLS        = 3;   // xl:grid-cols-3 기준 1줄 = 3개
+  const INITIAL     = 24;  // 초기 표시 (8줄)
+  const [visibleCount, setVisibleCount] = useState(INITIAL);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
   const supabase = createClient();
 
   useEffect(() => {
     fetchRestaurants();
     fetchRegisteredIds();
   }, [sortBy, categoryFilter]);
+
+  // 필터/검색 변경 시 visibleCount 리셋
+  useEffect(() => {
+    setVisibleCount(INITIAL);
+  }, [search, categoryFilter, guFilter, dongFilter, statusFilter, sortBy]);
+
+  // IntersectionObserver — sentinel 보이면 1줄(3개) 추가
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setVisibleCount(prev => prev + COLS);
+        }
+      },
+      { rootMargin: '200px' },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   // 이미 stores에 등록된 naver_place_id 세트 조회
   async function fetchRegisteredIds() {
@@ -219,7 +246,7 @@ export default function RestaurantsPage() {
 
     if (categoryFilter) query = query.eq('category', categoryFilter);
 
-    const { data, error } = await query.limit(200);
+    const { data, error } = await query.limit(1000);
     if (error) { console.error(error.message); setLoading(false); return; }
 
     const parseArr = (v: any) => {
@@ -489,7 +516,7 @@ export default function RestaurantsPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {filtered.map((r) => (
+            {filtered.slice(0, visibleCount).map((r) => (
               <RestaurantCard
                 key={r.id}
                 r={r}
@@ -502,6 +529,14 @@ export default function RestaurantsPage() {
               />
             ))}
           </div>
+
+          {/* 무한 스크롤 sentinel */}
+          {visibleCount < filtered.length && (
+            <div ref={sentinelRef} className="flex items-center justify-center py-4 text-xs text-muted gap-2">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              {filtered.length - visibleCount}개 더 있음
+            </div>
+          )}
         </>
       )}
 
