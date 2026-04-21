@@ -183,9 +183,10 @@ export default function RestaurantRegisterPage() {
           category,
           address,
           phone,
+          image_url:       imageUrl || null,   // 앱·어드민에서 사용하는 사진 컬럼
           naver_place_id:  naverPlaceId,
           naver_place_url: naverUrl || null,
-          naver_thumbnail: imageUrl || null,
+          naver_thumbnail: imageUrl || null,   // 네이버 원본 썸네일 백업용
           instagram_url:   instagramUrl || null,
           latitude:        row.latitude  ?? null,
           longitude:       row.longitude ?? null,
