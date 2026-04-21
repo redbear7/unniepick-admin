@@ -199,7 +199,19 @@ export default function UsersPage() {
       const res  = await fetch('/api/admin/users');
       const json = await res.json();
 
-      const { authUsers = {}, pushMap = {}, followSet = [], couponCount = {} } = json;
+      const {
+        authUsers = {},
+        pushMap = {},
+        followSet = [],
+        couponCount = {},
+        _listUsersError,
+        _hasServiceRole,
+      } = json;
+
+      if (_listUsersError) {
+        console.warn('[users] listUsers 실패:', _listUsersError, '| SERVICE_ROLE_KEY:', _hasServiceRole);
+      }
+
       const followSetObj = new Set<string>(followSet as string[]);
 
       setUsers(prev => prev.map(u => ({
@@ -209,7 +221,9 @@ export default function UsersPage() {
         gps_granted:  followSetObj.has(u.id) ? true : null,
         coupon_count: couponCount[u.id] ?? 0,
       })));
-    } catch { /* 무시 */ }
+    } catch (e) {
+      console.error('[users] /api/admin/users fetch 실패:', e);
+    }
   }, []);
 
   useEffect(() => {

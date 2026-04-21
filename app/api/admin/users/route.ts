@@ -26,15 +26,22 @@ function normalizePhone(phone: string | undefined | null): string | undefined {
 
 export async function GET() {
   const sb = adminClient();
+  const hasServiceRole = !!(process.env.SUPABASE_SERVICE_ROLE_KEY);
 
   // 1) auth.admin.listUsers — 전화번호 포함 (최대 1000명)
   const authUsers: Record<string, { phone?: string; last_sign_in_at?: string }> = {};
+  let listUsersError: string | null = null;
   try {
     let page = 1;
     const perPage = 1000;
     while (true) {
       const { data, error } = await sb.auth.admin.listUsers({ page, perPage });
-      if (error || !data?.users?.length) break;
+      if (error) {
+        listUsersError = error.message;
+        console.error('[admin/users] listUsers error:', error.message);
+        break;
+      }
+      if (!data?.users?.length) break;
       for (const u of data.users) {
         authUsers[u.id] = {
           phone:           normalizePhone(u.phone),
@@ -45,7 +52,8 @@ export async function GET() {
       page++;
     }
   } catch (e) {
-    console.error('[admin/users] listUsers error:', e);
+    listUsersError = String(e);
+    console.error('[admin/users] listUsers exception:', e);
   }
 
   // 2) push_tokens — 유저별 opt_in 여부
@@ -81,7 +89,11 @@ export async function GET() {
   return NextResponse.json({
     authUsers,
     pushMap,
-    followSet: [...followSet],
+    followSet:      [...followSet],
     couponCount,
+    // 디버그 정보
+    _hasServiceRole: hasServiceRole,
+    _listUsersError: listUsersError,
+    _authUserCount:  Object.keys(authUsers).length,
   });
 }
