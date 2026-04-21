@@ -174,31 +174,31 @@ export default function RestaurantRegisterPage() {
       return;
     }
 
-    // 2) stores 테이블 upsert (앱에서 실제 사용하는 테이블)
-    const { error: storeErr } = await supabase
-      .from('stores')
-      .upsert(
-        {
-          name,
-          category,
-          address,
-          phone,
-          image_url:       imageUrl || null,   // 앱·어드민에서 사용하는 사진 컬럼
-          naver_place_id:  naverPlaceId,
-          naver_place_url: naverUrl || null,
-          naver_thumbnail: imageUrl || null,   // 네이버 원본 썸네일 백업용
-          instagram_url:   instagramUrl || null,
-          latitude:        row.latitude  ?? null,
-          longitude:       row.longitude ?? null,
-          review_count:    row.visitor_review_count ?? 0,
-          is_active:       isActive,
-          is_closed:       false,
-        },
-        { onConflict: 'naver_place_id', ignoreDuplicates: false },
-      );
+    // 2) stores 테이블 upsert — service role API 경유 (RLS 우회)
+    const storeRes = await fetch('/api/admin/stores/upsert', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name,
+        category,
+        address,
+        phone,
+        image_url:       imageUrl || null,
+        naver_place_id:  naverPlaceId,
+        naver_place_url: naverUrl || null,
+        naver_thumbnail: imageUrl || null,
+        instagram_url:   instagramUrl || null,
+        latitude:        row.latitude  ?? null,
+        longitude:       row.longitude ?? null,
+        review_count:    row.visitor_review_count ?? 0,
+        is_active:       isActive,
+        is_closed:       false,
+      }),
+    });
 
-    if (storeErr) {
-      setError(`stores 저장 실패: ${storeErr.message}`);
+    if (!storeRes.ok) {
+      const d = await storeRes.json().catch(() => ({}));
+      setError(`stores 저장 실패: ${d.error ?? storeRes.statusText}`);
       setSaving(false);
       return;
     }
