@@ -50,6 +50,8 @@ interface Restaurant {
   closed_at: string | null;
   crawled_at: string;
   created_at: string;
+  tags_v2: Record<string, unknown> | null;
+  tag_confidence: number | null;
 }
 
 /** 카드에 표기할 대표 태그 3개 (custom_tags 우선, 부족하면 review_keywords 보완) */
@@ -101,6 +103,10 @@ export default function RestaurantsPage() {
   const [bulkRegistering, setBulkRegistering] = useState(false);
   const [registeringId,   setRegisteringId]   = useState<string | null>(null);
   const [registerMsg,     setRegisterMsg]     = useState('');
+
+  // ── 태그 추출 관련 state ──────────────────────────────────────────
+  const [tagging,    setTagging]    = useState(false);
+  const [tagMsg,     setTagMsg]     = useState('');
 
   const supabase = createClient();
 
@@ -183,6 +189,24 @@ export default function RestaurantsPage() {
       alert(`일괄 등록 실패: ${(e as Error).message}`);
     } finally {
       setBulkRegistering(false);
+    }
+  }
+
+  // 태그 일괄 추출
+  async function batchExtractTags() {
+    setTagging(true);
+    setTagMsg('');
+    try {
+      const res  = await fetch('/api/restaurants/batch-extract-tags', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? '태그 추출 실패');
+      setTagMsg(`🏷 ${data.summary}`);
+      fetchRestaurants();
+      setTimeout(() => setTagMsg(''), 5000);
+    } catch (e) {
+      alert(`태그 추출 실패: ${(e as Error).message}`);
+    } finally {
+      setTagging(false);
     }
   }
 
@@ -283,7 +307,18 @@ export default function RestaurantsPage() {
             {lastCrawled && <> · 마지막 크롤링: {lastCrawled.toLocaleString('ko-KR')}</>}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* 태그 일괄 추출 */}
+          <button
+            onClick={batchExtractTags}
+            disabled={tagging}
+            className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white rounded-xl text-sm font-semibold transition shadow-sm"
+          >
+            {tagging
+              ? <><Loader2 className="w-4 h-4 animate-spin" />태그 추출 중...</>
+              : <><Tag className="w-4 h-4" />태그 일괄 추출</>
+            }
+          </button>
           <Link
             href="/dashboard/restaurants/register"
             className="flex items-center gap-2 px-4 py-2 bg-[#FF6F0F] hover:bg-[#FF6F0F]/90 text-white rounded-xl text-sm font-semibold transition shadow-sm"
@@ -403,6 +438,13 @@ export default function RestaurantsPage() {
         <p className="text-xs text-muted">
           필터 적용: {filtered.length}개 / {restaurants.length}개
         </p>
+      )}
+
+      {/* 태그 추출 완료 메시지 */}
+      {tagMsg && (
+        <div className="px-4 py-2.5 bg-violet-500/15 border border-violet-500/30 rounded-xl text-sm text-violet-400 font-semibold">
+          {tagMsg}
+        </div>
       )}
 
       {/* 등록 완료 메시지 */}
@@ -729,10 +771,18 @@ function RestaurantCard({
               </span>
             ))}
           </div>
-          <span className="flex items-center gap-1 shrink-0">
-            <Clock className="w-3 h-3" />
-            {new Date(r.crawled_at).toLocaleDateString('ko-KR')}
-          </span>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {/* 태그 신뢰도 배지 */}
+            {r.tags_v2 && r.tag_confidence != null && (
+              <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-violet-500/15 text-violet-400 border border-violet-500/20">
+                🏷 {Math.round(r.tag_confidence * 100)}%
+              </span>
+            )}
+            <span className="flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              {new Date(r.crawled_at).toLocaleDateString('ko-KR')}
+            </span>
+          </div>
         </div>
 
         {/* 가게 등록 / 등록됨 버튼 */}
@@ -967,11 +1017,57 @@ function DetailModal({ r, onClose, registered }: { r: Restaurant; onClose: () =>
 
           {/* 태그 */}
           {r.tags?.length > 0 && (
-            <Section title="태그" icon={<Tag className="w-4 h-4" />}>
+            <Section title="크롤링 태그" icon={<Tag className="w-4 h-4" />}>
               <div className="flex flex-wrap gap-1.5">
                 {r.tags.map((tag) => (
                   <span key={tag} className="px-2 py-1 bg-fill-subtle text-muted text-xs rounded">#{tag}</span>
                 ))}
+              </div>
+            </Section>
+          )}
+
+          {/* 빅데이터 태그 v2 */}
+          {r.tags_v2 && Object.keys(r.tags_v2).length > 0 && (
+            <Section
+              title={`빅데이터 태그 v2${r.tag_confidence != null ? ` · 신뢰도 ${Math.round(r.tag_confidence * 100)}%` : ''}`}
+              icon={<span className="text-base">🏷</span>}
+            >
+              <div className="space-y-2">
+                {Object.entries(r.tags_v2)
+                  .filter(([k]) => k !== '신뢰도')
+                  .map(([cat, val]) => {
+                    const values = Array.isArray(val) ? val : [String(val)];
+                    const catColors: Record<string, string> = {
+                      업종: 'bg-blue-500/15 text-blue-400 border-blue-500/25',
+                      세부업종: 'bg-sky-500/15 text-sky-400 border-sky-500/25',
+                      메뉴특성: 'bg-amber-500/15 text-amber-400 border-amber-500/25',
+                      주재료: 'bg-orange-500/15 text-orange-400 border-orange-500/25',
+                      요리방식: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/25',
+                      가격대: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25',
+                      분위기: 'bg-pink-500/15 text-pink-400 border-pink-500/25',
+                      방문목적: 'bg-purple-500/15 text-purple-400 border-purple-500/25',
+                      동행: 'bg-indigo-500/15 text-indigo-400 border-indigo-500/25',
+                      연령대: 'bg-teal-500/15 text-teal-400 border-teal-500/25',
+                      운영: 'bg-cyan-500/15 text-cyan-400 border-cyan-500/25',
+                      시설: 'bg-lime-500/15 text-lime-400 border-lime-500/25',
+                      음식특성: 'bg-green-500/15 text-green-400 border-green-500/25',
+                      위치특성: 'bg-rose-500/15 text-rose-400 border-rose-500/25',
+                      트렌드: 'bg-violet-500/15 text-violet-400 border-violet-500/25',
+                    };
+                    const cls = catColors[cat] ?? 'bg-fill-subtle text-muted border-border-subtle';
+                    return (
+                      <div key={cat} className="flex items-start gap-2">
+                        <span className="text-xs text-muted w-16 shrink-0 pt-0.5 text-right">{cat}</span>
+                        <div className="flex flex-wrap gap-1">
+                          {values.map((v, i) => (
+                            <span key={i} className={`px-2 py-0.5 rounded-full text-[11px] font-semibold border ${cls}`}>
+                              {String(v)}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
               </div>
             </Section>
           )}
