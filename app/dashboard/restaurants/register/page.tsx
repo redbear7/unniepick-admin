@@ -162,28 +162,29 @@ export default function RestaurantRegisterPage() {
     if (!row) return;
     setSaving(true);
     setError('');
-    const supabase = createClient();
 
-    // 1) restaurants 테이블 업데이트 (크롤링 원본 보관)
-    const { error: restErr } = await supabase
-      .from('restaurants')
-      .update({
+    // 1) restaurants 테이블 업데이트 — service role API 경유 (RLS 우회)
+    const restRes = await fetch('/api/restaurants/register', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id:             row.id,
         name,
         category,
         address,
         phone,
-        image_url: imageUrl,
-        naver_place_url: naverUrl,
-        website_url: websiteUrl || null,
-        instagram_url: instagramUrl || null,
+        image_url:      imageUrl || null,
+        naver_place_url: naverUrl || null,
+        website_url:    websiteUrl || null,
+        instagram_url:  instagramUrl || null,
         business_hours: businessHours || null,
-        is_active: isActive,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', row.id);
+        is_active:      isActive,
+      }),
+    });
 
-    if (restErr) {
-      setError(restErr.message);
+    if (!restRes.ok) {
+      const d = await restRes.json().catch(() => ({}));
+      setError(`restaurants 저장 실패: ${d.error ?? restRes.statusText}`);
       setSaving(false);
       return;
     }

@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
+function adminSb() {
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!key) throw new Error('SUPABASE_SERVICE_ROLE_KEY 환경변수가 없습니다.');
+  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, key);
+}
+
+// 하위 호환용
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -89,5 +96,31 @@ export async function POST(req: NextRequest) {
     const msg = (e as Error).message;
     console.error('[restaurants/register]', msg);
     return NextResponse.json({ error: msg }, { status: 500 });
+  }
+}
+
+/** 기존 restaurants 레코드 수정 (service role — RLS 우회) */
+export async function PATCH(req: NextRequest) {
+  try {
+    const body = await req.json() as Record<string, unknown>;
+    const { id, ...fields } = body;
+
+    if (!id || typeof id !== 'string') {
+      return NextResponse.json({ error: 'id 필수' }, { status: 400 });
+    }
+
+    const { error } = await adminSb()
+      .from('restaurants')
+      .update({ ...fields, updated_at: new Date().toISOString() })
+      .eq('id', id);
+
+    if (error) {
+      console.error('[restaurants/register PATCH]', error.message);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 500 });
   }
 }
