@@ -108,6 +108,7 @@ const DEFAULT_GROUPS: NavGroup[] = [
     items: [
       { id: 'docs',        href: '/dashboard/docs',        icon: 'BookOpen',   label: '문서 Wiki' },
       { id: 'propagation', href: '/dashboard/propagation', icon: 'Zap',        label: '학습 & 전파' },
+      { id: 'opensource',  href: '/dashboard/opensource',  icon: 'ScrollText', label: '오픈소스' },
     ],
   },
 ];
