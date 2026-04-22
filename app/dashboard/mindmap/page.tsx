@@ -376,6 +376,11 @@ export default function MindmapPage() {
               </div>
             )}
 
+            {/* 모델명 */}
+            <span className="text-[10px] text-muted bg-fill-subtle border border-border-subtle px-2 py-0.5 rounded-full font-mono tracking-tight select-none">
+              Gemini 2.5 Flash
+            </span>
+
             {/* 정리 버튼 */}
             {session && msgs.length > 0 && (
               <button
