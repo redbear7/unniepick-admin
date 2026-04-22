@@ -794,17 +794,19 @@ export default function MindmapPage() {
               )}
               {msgs.map((m, i) => {
                 const isUser = m.role === 'user';
-                // 말풍선 정렬: 유저는 bubbleAlign, AI는 반대편
-                const align = isUser ? bubbleAlign : (bubbleAlign === 'end' ? 'start' : 'end');
+                const align  = isUser ? bubbleAlign : (bubbleAlign === 'end' ? 'start' : 'end');
                 const isRight = align === 'end';
+                const tail = isRight ? 'rounded-br-sm' : 'rounded-bl-sm';
                 return (
                   <div key={i} className={`flex ${isRight ? 'justify-end' : 'justify-start'}`}>
                     <div
                       style={{ fontSize: `${fontSize}px` }}
-                      className={`max-w-[80%] rounded-2xl px-4 py-2.5 whitespace-pre-wrap leading-relaxed ${
+                      className={`max-w-[80%] rounded-2xl px-4 py-3 whitespace-pre-wrap leading-relaxed ${tail} ${
                         isUser
-                          ? `bg-[#FF6F0F] text-white ${isRight ? 'rounded-br-sm' : 'rounded-bl-sm'}`
-                          : `bg-card border border-border-main text-primary ${isRight ? 'rounded-br-sm' : 'rounded-bl-sm'}`
+                          /* 유저: 카드 배경 + 왼쪽 오렌지 강조선 — 눈 부담 최소화 */
+                          ? 'bg-card border border-border-main border-l-2 border-l-[#FF6F0F] text-primary'
+                          /* AI: 미묘한 채움 */
+                          : 'bg-fill-subtle border border-border-subtle text-primary'
                       }`}
                     >
                       {m.content}

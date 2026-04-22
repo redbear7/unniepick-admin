@@ -179,10 +179,10 @@ function PopupContent() {
           <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div
               style={{ fontSize: `${fontSize}px` }}
-              className={`max-w-[88%] rounded-2xl px-3 py-2 whitespace-pre-wrap leading-relaxed ${
+              className={`max-w-[88%] rounded-2xl px-3 py-2.5 whitespace-pre-wrap leading-relaxed ${
                 m.role === 'user'
-                  ? 'bg-[#FF6F0F] text-white rounded-br-sm'
-                  : 'bg-card border border-border-main text-primary rounded-bl-sm'
+                  ? 'bg-card border border-border-main border-l-2 border-l-[#FF6F0F] text-primary rounded-br-sm'
+                  : 'bg-fill-subtle border border-border-subtle text-primary rounded-bl-sm'
               }`}
             >
               {m.content}
