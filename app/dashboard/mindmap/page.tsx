@@ -1,11 +1,31 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { useTheme } from 'next-themes';
 import {
   Plus, Trash2, Loader2, Sparkles,
   ChevronRight, Calendar, MessageSquare, Lightbulb,
   ArrowRight, X, Pencil, Check, ExternalLink, Save, Printer,
+  AlignRight, AlignLeft,
 } from 'lucide-react';
+
+/* ── 테마 헬퍼: 라이트/다크 판별 ──────────────────────────────── */
+const DARK_THEMES = new Set(['dark', 'supabase', 'linear']);
+function useMindTheme() {
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const isDark = !mounted ? true : DARK_THEMES.has(resolvedTheme ?? 'dark');
+  return {
+    isDark,
+    nodeBg:     (c: string) => isDark ? `${c}1a` : `${c}22`,
+    nodeBorder: (c: string) => isDark ? `${c}45` : `${c}65`,
+    childColor: isDark ? 'var(--text-secondary)' : 'var(--text-primary)',
+    connColor:  (c: string) => isDark ? `${c}50` : `${c}70`,
+    branchLine: (c: string) => isDark ? `${c}30` : `${c}50`,
+    branchDash: (c: string) => isDark ? `${c}28` : `${c}40`,
+  };
+}
 
 /* ── 상수 ─────────────────────────────────────────────────────── */
 const BRANCH_COLORS = ['#FF6F0F', '#3B82F6', '#10B981', '#8B5CF6', '#F59E0B'];
@@ -73,26 +93,40 @@ interface Session {
 }
 
 // ── 뷰용 MindNode ───────────────────────────────────────────────
-function MindNode({ node, color, depth = 0 }: { node: MindmapNode; color: string; depth?: number }) {
+function MindNode({
+  node, color, depth = 0, th,
+}: {
+  node: MindmapNode; color: string; depth?: number;
+  th: ReturnType<typeof useMindTheme>;
+}) {
   const [open, setOpen] = useState(true);
   const hasChildren = node.children?.length > 0;
   const size = depth === 0 ? 'text-sm font-semibold' : 'text-xs font-medium';
   return (
     <div className="flex flex-col items-start">
       <div className="flex items-center gap-1.5">
-        {depth > 0 && <div className="w-4 h-px opacity-30" style={{ backgroundColor: color }} />}
+        {depth > 0 && (
+          <div className="w-4 h-px shrink-0" style={{ backgroundColor: th.connColor(color) }} />
+        )}
         <button
           onClick={() => hasChildren && setOpen(v => !v)}
           className={`px-2.5 py-1 rounded-lg border transition-all ${size} ${hasChildren ? 'cursor-pointer hover:opacity-80' : 'cursor-default'}`}
-          style={{ backgroundColor: `${color}18`, borderColor: `${color}40`, color: depth === 0 ? color : '#E0E0E0' }}
+          style={{
+            backgroundColor: th.nodeBg(color),
+            borderColor:     th.nodeBorder(color),
+            color: depth === 0 ? color : th.childColor,
+          }}
         >
           {hasChildren && <span className="mr-1 opacity-60">{open ? '▾' : '▸'}</span>}
           {node.idea}
         </button>
       </div>
       {open && hasChildren && (
-        <div className="ml-6 mt-1.5 flex flex-col gap-1.5 border-l border-dashed pl-2" style={{ borderColor: `${color}25` }}>
-          {node.children.map((c, i) => <MindNode key={i} node={c} color={color} depth={depth + 1} />)}
+        <div className="ml-6 mt-1.5 flex flex-col gap-1.5 border-l border-dashed pl-2"
+          style={{ borderColor: th.branchDash(color) }}>
+          {node.children.map((c, i) => (
+            <MindNode key={i} node={c} color={color} depth={depth + 1} th={th} />
+          ))}
         </div>
       )}
     </div>
@@ -109,6 +143,7 @@ function MindmapView({
   const [editMode, setEditMode] = useState(false);
   const [draft,    setDraft]    = useState<Mindmap>(() => dc(initMindmap));
   const [saving,   setSaving]   = useState(false);
+  const th = useMindTheme();
 
   useEffect(() => { if (!editMode) setDraft(dc(initMindmap)); }, [initMindmap, editMode]);
 
@@ -254,7 +289,7 @@ function MindmapView({
                 <>
                   <span className="text-xl">{branch.emoji}</span>
                   <span className="font-bold text-sm" style={{ color: branch.color }}>{branch.topic}</span>
-                  <div className="flex-1 h-px" style={{ backgroundColor: `${branch.color}30` }} />
+                  <div className="flex-1 h-px" style={{ backgroundColor: th.branchLine(branch.color) }} />
                 </>
               )}
             </div>
@@ -282,7 +317,7 @@ function MindmapView({
                       {/* 2단계 자식 */}
                       {(node.children ?? []).map((child, ci) => (
                         <div key={ci} className="flex items-center gap-1.5 pl-4">
-                          <div className="w-3 h-px shrink-0 opacity-30" style={{ backgroundColor: branch.color }} />
+                          <div className="w-3 h-px shrink-0" style={{ backgroundColor: th.connColor(branch.color) }} />
                           <input value={child.idea} onChange={e => updChild(bi, ni, ci, e.target.value)}
                             className="flex-1 text-xs bg-fill-subtle border border-border-subtle rounded px-2 py-1 focus:outline-none focus:border-[#FF6F0F] text-secondary" />
                           <button onClick={() => removeChild(bi, ni, ci)}
@@ -300,7 +335,7 @@ function MindmapView({
                 </>
               ) : (
                 branch.children.map((node, j) => (
-                  <MindNode key={j} node={node} color={branch.color} depth={0} />
+                  <MindNode key={j} node={node} color={branch.color} depth={0} th={th} />
                 ))
               )}
             </div>
@@ -405,6 +440,7 @@ export default function MindmapPage() {
   const [view, setView]               = useState<'chat' | 'map'>('chat');
 
   const [fontSize, setFontSize]           = useState(14);
+  const [bubbleAlign, setBubbleAlign]     = useState<'end' | 'start'>('end'); // 말풍선 정렬: end=오른쪽, start=왼쪽
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef    = useRef<HTMLTextAreaElement>(null);
@@ -756,41 +792,66 @@ export default function MindmapPage() {
                   </div>
                 </div>
               )}
-              {msgs.map((m, i) => (
-                <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div
-                    style={{ fontSize: `${fontSize}px` }}
-                    className={`max-w-[80%] rounded-2xl px-4 py-2.5 whitespace-pre-wrap leading-relaxed ${
-                      m.role === 'user'
-                        ? 'bg-[#FF6F0F] text-white rounded-br-sm'
-                        : 'bg-card border border-border-main text-primary rounded-bl-sm'
-                    }`}
-                  >
-                    {m.content}
+              {msgs.map((m, i) => {
+                const isUser = m.role === 'user';
+                // 말풍선 정렬: 유저는 bubbleAlign, AI는 반대편
+                const align = isUser ? bubbleAlign : (bubbleAlign === 'end' ? 'start' : 'end');
+                const isRight = align === 'end';
+                return (
+                  <div key={i} className={`flex ${isRight ? 'justify-end' : 'justify-start'}`}>
+                    <div
+                      style={{ fontSize: `${fontSize}px` }}
+                      className={`max-w-[80%] rounded-2xl px-4 py-2.5 whitespace-pre-wrap leading-relaxed ${
+                        isUser
+                          ? `bg-[#FF6F0F] text-white ${isRight ? 'rounded-br-sm' : 'rounded-bl-sm'}`
+                          : `bg-card border border-border-main text-primary ${isRight ? 'rounded-br-sm' : 'rounded-bl-sm'}`
+                      }`}
+                    >
+                      {m.content}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
               <div ref={messagesEndRef} />
             </div>
 
             {/* 입력 */}
             <div className="border-t border-border-main p-3">
-              {/* 폰트 크기 조절 */}
-              <div className="flex items-center gap-1 mb-2 justify-end">
-                <span className="text-[10px] text-muted mr-1">글자 크기</span>
+              {/* 입력창 툴바: 말풍선 위치 + 폰트 크기 */}
+              <div className="flex items-center gap-3 mb-2">
+                {/* 말풍선 위치 토글 */}
                 <button
-                  onClick={() => setFontSize(s => Math.max(10, s - 2))}
-                  className="w-6 h-6 rounded flex items-center justify-center bg-fill-subtle hover:bg-fill-medium text-muted hover:text-primary text-xs font-bold transition"
-                >−</button>
-                <button
-                  onClick={() => setFontSize(14)}
-                  className="px-2 h-6 rounded bg-fill-subtle hover:bg-fill-medium text-muted hover:text-primary text-[10px] font-semibold transition"
-                >기본</button>
-                <button
-                  onClick={() => setFontSize(s => Math.min(26, s + 2))}
-                  className="w-6 h-6 rounded flex items-center justify-center bg-fill-subtle hover:bg-fill-medium text-muted hover:text-primary text-xs font-bold transition"
-                >+</button>
-                <span className="text-[10px] text-muted w-7 text-center">{fontSize}px</span>
+                  onClick={() => setBubbleAlign(a => a === 'end' ? 'start' : 'end')}
+                  title={bubbleAlign === 'end' ? '말풍선 왼쪽으로' : '말풍선 오른쪽으로'}
+                  className={`flex items-center gap-1 px-2 h-6 rounded border text-[10px] font-semibold transition ${
+                    bubbleAlign === 'end'
+                      ? 'bg-[#FF6F0F]/10 border-[#FF6F0F]/30 text-[#FF6F0F]'
+                      : 'bg-fill-subtle border-border-subtle text-muted hover:text-primary'
+                  }`}
+                >
+                  {bubbleAlign === 'end'
+                    ? <><AlignRight className="w-3 h-3" /> 오른쪽</>
+                    : <><AlignLeft  className="w-3 h-3" /> 왼쪽</>
+                  }
+                </button>
+
+                {/* 폰트 크기 */}
+                <div className="flex items-center gap-1 ml-auto">
+                  <span className="text-[10px] text-muted mr-0.5">크기</span>
+                  <button
+                    onClick={() => setFontSize(s => Math.max(10, s - 2))}
+                    className="w-6 h-6 rounded flex items-center justify-center bg-fill-subtle hover:bg-fill-medium text-muted hover:text-primary text-xs font-bold transition"
+                  >−</button>
+                  <button
+                    onClick={() => setFontSize(14)}
+                    className="px-2 h-6 rounded bg-fill-subtle hover:bg-fill-medium text-muted hover:text-primary text-[10px] font-semibold transition"
+                  >기본</button>
+                  <button
+                    onClick={() => setFontSize(s => Math.min(26, s + 2))}
+                    className="w-6 h-6 rounded flex items-center justify-center bg-fill-subtle hover:bg-fill-medium text-muted hover:text-primary text-xs font-bold transition"
+                  >+</button>
+                  <span className="text-[10px] text-muted w-7 text-center">{fontSize}px</span>
+                </div>
               </div>
 
               <div className="flex gap-2 items-end">
