@@ -9,10 +9,12 @@ import {
 
 // ── 타입 ──────────────────────────────────────────────────────────────
 interface PointSetting {
-  enabled:               boolean;
-  amount:                number;
-  max_per_day:           number;
-  receipt_max_age_hours: number;
+  enabled:                    boolean;
+  amount:                     number;
+  max_per_day:                number;
+  receipt_max_age_hours:      number;
+  max_consecutive_per_store:  number;
+  max_total_per_store:        number;
 }
 
 interface TxRow {
@@ -48,6 +50,7 @@ export default function PointsPage() {
   const [tab,       setTab]       = useState<MainTab>('reviews');
   const [setting,   setSetting]   = useState<PointSetting>({
     enabled: true, amount: 500, max_per_day: 1, receipt_max_age_hours: 48,
+    max_consecutive_per_store: 1, max_total_per_store: 1,
   });
   const [loading,   setLoading]   = useState(true);
   const [saving,    setSaving]    = useState(false);
@@ -338,12 +341,44 @@ export default function PointsPage() {
                   <span className="text-sm text-muted">시간 이내</span>
                 </div>
               </div>
+              {/* 동일 매장 연속 리뷰 */}
+              <div className="flex items-center justify-between p-4 rounded-xl bg-surface border border-border-main">
+                <div className="flex items-center gap-3">
+                  <Repeat size={16} className="text-orange-400" />
+                  <div>
+                    <p className="font-semibold text-primary text-sm">동일 매장 연속 리뷰 제한</p>
+                    <p className="text-xs text-muted">같은 매장에 연속으로 작성 가능한 최대 횟수<br/>초과 시 다른 매장 후기 작성 후 재등록 가능</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {numInput(setting.max_consecutive_per_store, v => setSetting(p => ({ ...p, max_consecutive_per_store: v })))}
+                  <span className="text-sm text-muted">회</span>
+                </div>
+              </div>
+
+              {/* 동일 매장 총 리뷰 */}
+              <div className="flex items-center justify-between p-4 rounded-xl bg-surface border border-border-main">
+                <div className="flex items-center gap-3">
+                  <Star size={16} className="text-yellow-400" />
+                  <div>
+                    <p className="font-semibold text-primary text-sm">동일 매장 최대 리뷰 수</p>
+                    <p className="text-xs text-muted">한 사용자가 같은 매장에 작성할 수 있는 전체 최대 횟수</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {numInput(setting.max_total_per_store, v => setSetting(p => ({ ...p, max_total_per_store: v })))}
+                  <span className="text-sm text-muted">회</span>
+                </div>
+              </div>
+
               {/* 요약 */}
               <div className="px-4 py-3 rounded-xl bg-[#FF6F0F]/8 border border-[#FF6F0F]/20 text-sm text-primary">
                 <span className="font-semibold text-[#FF6F0F]">현재 설정: </span>
                 {setting.enabled ? '✅ 활성' : '❌ 비활성'} —
-                영수증 발행 <strong>{setting.receipt_max_age_hours}시간</strong> 이내,
-                하루 최대 <strong>{setting.max_per_day}회</strong>,
+                영수증 발행 <strong>{setting.receipt_max_age_hours}시간</strong> 이내 ·
+                하루 최대 <strong>{setting.max_per_day}회</strong> ·
+                동일 매장 연속 <strong>{setting.max_consecutive_per_store}회</strong> ·
+                동일 매장 총 <strong>{setting.max_total_per_store}회</strong> →
                 <strong className="text-[#FF6F0F]"> {setting.amount.toLocaleString()}P</strong> 지급
               </div>
               <div className="flex items-center gap-3">
