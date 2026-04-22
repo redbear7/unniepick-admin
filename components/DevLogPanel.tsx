@@ -74,7 +74,9 @@ const MAX_ENTRIES = 300;
 /* Component                                                           */
 /* ------------------------------------------------------------------ */
 
-export default function DevLogPanel() {
+export default function DevLogPanel({ onVisibilityChange }: {
+  onVisibilityChange?: (visible: boolean) => void;
+}) {
   const [entries,  setEntries]  = useState<LogEntry[]>([]);
   const [open,     setOpen]     = useState(false);
   const [pinned,   setPinned]   = useState(false);
@@ -84,6 +86,9 @@ export default function DevLogPanel() {
 
   // pinned 이면 항상 열린 상태
   const isVisible = open || pinned;
+
+  // 가시성 변경 시 부모에게 알림
+  useEffect(() => { onVisibilityChange?.(isVisible); }, [isVisible, onVisibilityChange]);
 
   const idRef       = useRef(0);
   const bodyRef     = useRef<HTMLDivElement>(null);

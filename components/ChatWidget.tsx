@@ -9,7 +9,14 @@ interface Message {
   content: string;
 }
 
-export default function ChatWidget() {
+// DevLog 패널 상수 (DevLogPanel.tsx 와 맞춤)
+const DEVLOG_PANEL_WIDTH = 520; // w-[520px]
+const DEVLOG_BTN_RIGHT   = 16;  // right-4
+const DEVLOG_BTN_WIDTH   = 112; // DEV LOG 버튼 예상 너비 (px-3 + 텍스트)
+const AI_BTN_SIZE        = 36;  // AI 버튼 w-9 h-9
+const GAP                = 8;   // 버튼 사이 여백
+
+export default function ChatWidget({ devLogOpen = false }: { devLogOpen?: boolean }) {
   const [isSuperadmin, setIsSuperadmin] = useState(false);
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -99,17 +106,29 @@ export default function ChatWidget() {
 
   return (
     <>
-      {/* 플로팅 버튼 — DEV LOG 창 왼쪽 하단 */}
-      <button
-        onClick={() => setOpen(v => !v)}
-        className="fixed bottom-[10px] right-[532px] z-[9999] w-9 h-9 rounded-full bg-[#FF6F0F] text-white shadow-lg flex items-center justify-center hover:bg-[#e55c00] transition"
-        title="AI 어시스턴트">
-        {open ? <X size={16} /> : <MessageCircle size={16} />}
-      </button>
+      {/* 플로팅 버튼 — DevLog 상태에 따라 위치 이동 */}
+      {(() => {
+        // DevLog 닫힘: DEV LOG 버튼 바로 왼쪽에 붙음
+        // DevLog 열림: 520px 패널 왼쪽에 붙음
+        const btnRight = devLogOpen
+          ? DEVLOG_PANEL_WIDTH + GAP
+          : DEVLOG_BTN_RIGHT + DEVLOG_BTN_WIDTH + GAP;
+        const chatRight = btnRight;
+        return (
+          <>
+            <button
+              onClick={() => setOpen(v => !v)}
+              style={{ right: btnRight, bottom: 10, transition: 'right 0.2s ease' }}
+              className="fixed z-[9999] w-9 h-9 rounded-full bg-[#FF6F0F] text-white shadow-lg flex items-center justify-center hover:bg-[#e55c00]"
+              title="AI 어시스턴트"
+            >
+              {open ? <X size={16} /> : <MessageCircle size={16} />}
+            </button>
 
-      {/* 채팅 창 */}
-      {open && (
-        <div className="fixed bottom-[56px] right-[532px] z-[9999] w-80 h-[460px] flex flex-col rounded-2xl border border-border-main bg-surface shadow-2xl overflow-hidden">
+            {open && (
+              <div
+                style={{ right: chatRight, bottom: 56, transition: 'right 0.2s ease' }}
+                className="fixed z-[9999] w-80 h-[460px] flex flex-col rounded-2xl border border-border-main bg-surface shadow-2xl overflow-hidden">
           {/* 헤더 */}
           <div className="flex items-center gap-2 px-4 py-3 bg-[#FF6F0F]/10 border-b border-border-main shrink-0">
             <Bot size={16} className="text-[#FF6F0F]" />
@@ -170,8 +189,11 @@ export default function ChatWidget() {
               {streaming ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
             </button>
           </div>
-        </div>
-      )}
+              </div>
+            )}
+          </>
+        );
+      })()}
     </>
   );
 }

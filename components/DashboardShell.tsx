@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { PlayerProvider } from '@/contexts/PlayerContext';
 import Sidebar from '@/components/Sidebar';
 import BottomPlayer from '@/components/BottomPlayer';
@@ -20,6 +20,10 @@ function useServiceWorker() {
 export default function DashboardShell({ children }: { children: React.ReactNode }) {
   useServiceWorker();
 
+  // DevLogPanel 펼침 상태를 공유 — ChatWidget 위치 연동에 사용
+  const [devLogOpen, setDevLogOpen] = useState(false);
+  const handleDevLogVisibility = useCallback((v: boolean) => setDevLogOpen(v), []);
+
   return (
     <PlayerProvider>
       <div className="flex flex-col h-screen bg-surface overflow-hidden">
@@ -36,10 +40,10 @@ export default function DashboardShell({ children }: { children: React.ReactNode
       </div>
 
       {/* 개발자 로그 패널 */}
-      <DevLogPanel />
+      <DevLogPanel onVisibilityChange={handleDevLogVisibility} />
 
-      {/* AI 어시스턴트 (시샵 전용) */}
-      <ChatWidget />
+      {/* AI 어시스턴트 (시샵 전용) — DevLog 상태 연동 */}
+      <ChatWidget devLogOpen={devLogOpen} />
     </PlayerProvider>
   );
 }
