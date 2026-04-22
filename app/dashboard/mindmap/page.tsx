@@ -6,7 +6,7 @@ import {
   Plus, Trash2, Loader2, Sparkles,
   ChevronRight, Calendar, MessageSquare, Lightbulb,
   ArrowRight, X, Pencil, Check, ExternalLink, Save, Printer,
-  AlignRight, AlignLeft,
+  AlignRight, AlignLeft, AlignCenter,
 } from 'lucide-react';
 
 /* ── 테마 헬퍼: 라이트/다크 판별 ──────────────────────────────── */
@@ -440,7 +440,7 @@ export default function MindmapPage() {
   const [view, setView]               = useState<'chat' | 'map'>('chat');
 
   const [fontSize, setFontSize]           = useState(14);
-  const [bubbleAlign, setBubbleAlign]     = useState<'end' | 'start'>('end'); // 말풍선 정렬: end=오른쪽, start=왼쪽
+  const [bubbleAlign, setBubbleAlign]     = useState<'end' | 'start' | 'center'>('end');
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef    = useRef<HTMLTextAreaElement>(null);
@@ -805,31 +805,60 @@ export default function MindmapPage() {
                 </div>
               )}
               {msgs.map((m, i) => {
-                const isUser  = m.role === 'user';
-                const align   = isUser ? bubbleAlign : (bubbleAlign === 'end' ? 'start' : 'end');
+                const isUser = m.role === 'user';
+
+                // 가운데: 모두 center, 좌/우: user↔ai 대칭
+                const isCenter = bubbleAlign === 'center';
+                const align = isCenter
+                  ? 'center'
+                  : isUser ? bubbleAlign : (bubbleAlign === 'end' ? 'start' : 'end');
                 const isRight = align === 'end';
-                const tail    = isRight ? 'rounded-br-sm' : 'rounded-bl-sm';
+                const tail = isCenter ? '' : isRight ? 'rounded-br-sm' : 'rounded-bl-sm';
+
                 return (
-                  <div key={i} className={`flex items-start gap-1.5 group/bubble ${isRight ? 'flex-row-reverse' : 'flex-row'}`}>
+                  <div
+                    key={i}
+                    className={`flex items-start gap-1.5 group/bubble ${
+                      isCenter ? 'justify-center' : isRight ? 'flex-row-reverse' : 'flex-row'
+                    }`}
+                  >
+                    {/* 삭제 버튼 (가운데 모드: 왼쪽 고정) */}
+                    {isCenter && (
+                      <button
+                        onClick={() => deleteMessage(i)}
+                        className="opacity-0 group-hover/bubble:opacity-100 mt-1 shrink-0 w-5 h-5 rounded-full bg-fill-medium hover:bg-red-500/20 flex items-center justify-center text-muted hover:text-red-400 transition-all"
+                        title="삭제"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
+
                     {/* 말풍선 */}
                     <div
                       style={{ fontSize: `${fontSize}px` }}
-                      className={`max-w-[78%] rounded-2xl px-4 py-3 whitespace-pre-wrap leading-relaxed ${tail} ${
+                      className={`rounded-2xl px-4 py-3 whitespace-pre-wrap leading-relaxed ${
+                        isCenter ? 'max-w-[85%] text-center' : 'max-w-[78%]'
+                      } ${tail} ${
                         isUser
-                          ? 'bg-card border border-border-main border-l-2 border-l-[#FF6F0F] text-primary'
+                          ? isCenter
+                            ? 'bg-card border border-border-main border-t-2 border-t-[#FF6F0F] text-primary'
+                            : 'bg-card border border-border-main border-l-2 border-l-[#FF6F0F] text-primary'
                           : 'bg-fill-subtle border border-border-subtle text-primary'
                       }`}
                     >
                       {m.content}
                     </div>
-                    {/* 삭제 버튼 — 호버 시 표시 */}
-                    <button
-                      onClick={() => deleteMessage(i)}
-                      className="opacity-0 group-hover/bubble:opacity-100 mt-1 shrink-0 w-5 h-5 rounded-full bg-fill-medium hover:bg-red-500/20 flex items-center justify-center text-muted hover:text-red-400 transition-all"
-                      title="삭제"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
+
+                    {/* 삭제 버튼 (좌/우 모드) */}
+                    {!isCenter && (
+                      <button
+                        onClick={() => deleteMessage(i)}
+                        className="opacity-0 group-hover/bubble:opacity-100 mt-1 shrink-0 w-5 h-5 rounded-full bg-fill-medium hover:bg-red-500/20 flex items-center justify-center text-muted hover:text-red-400 transition-all"
+                        title="삭제"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
                   </div>
                 );
               })}
@@ -840,21 +869,29 @@ export default function MindmapPage() {
             <div className="border-t border-border-main p-3">
               {/* 입력창 툴바: 말풍선 위치 + 폰트 크기 */}
               <div className="flex items-center gap-3 mb-2">
-                {/* 말풍선 위치 토글 */}
-                <button
-                  onClick={() => setBubbleAlign(a => a === 'end' ? 'start' : 'end')}
-                  title={bubbleAlign === 'end' ? '말풍선 왼쪽으로' : '말풍선 오른쪽으로'}
-                  className={`flex items-center gap-1 px-2 h-6 rounded border text-[10px] font-semibold transition ${
-                    bubbleAlign === 'end'
-                      ? 'bg-[#FF6F0F]/10 border-[#FF6F0F]/30 text-[#FF6F0F]'
-                      : 'bg-fill-subtle border-border-subtle text-muted hover:text-primary'
-                  }`}
-                >
-                  {bubbleAlign === 'end'
-                    ? <><AlignRight className="w-3 h-3" /> 오른쪽</>
-                    : <><AlignLeft  className="w-3 h-3" /> 왼쪽</>
-                  }
-                </button>
+                {/* 말풍선 위치 — 오른쪽 → 왼쪽 → 가운데 순환 */}
+                <div className="flex items-center rounded-lg border border-border-subtle overflow-hidden text-[10px] font-semibold">
+                  {(['end', 'start', 'center'] as const).map(opt => {
+                    const active = bubbleAlign === opt;
+                    const label = opt === 'end' ? '오른쪽' : opt === 'start' ? '왼쪽' : '가운데';
+                    const Icon  = opt === 'end' ? AlignRight : opt === 'start' ? AlignLeft : AlignCenter;
+                    return (
+                      <button
+                        key={opt}
+                        onClick={() => setBubbleAlign(opt)}
+                        title={`말풍선 ${label}`}
+                        className={`flex items-center gap-1 px-2 h-6 transition ${
+                          active
+                            ? 'bg-[#FF6F0F]/15 text-[#FF6F0F]'
+                            : 'text-muted hover:text-primary hover:bg-fill-subtle'
+                        }`}
+                      >
+                        <Icon className="w-3 h-3" />
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
 
                 {/* 폰트 크기 */}
                 <div className="flex items-center gap-1 ml-auto">
