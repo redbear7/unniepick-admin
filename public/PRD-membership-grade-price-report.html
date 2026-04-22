@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PRD — 언니픽 회원등급제 + 가격제보 보상 시스템</title>
+  <style>
+    :root {
+      --orange: #FF6B35;
+      --orange-light: #FFF3EE;
+      --orange-mid: #FFD4C2;
+      --gray-50: #F9FAFB;
+      --gray-100: #F3F4F6;
+      --gray-200: #E5E7EB;
+      --gray-400: #9CA3AF;
+      --gray-600: #4B5563;
+      --gray-800: #1F2937;
+      --gray-900: #111827;
+      --green: #10B981;
+      --blue: #3B82F6;
+      --purple: #8B5CF6;
+      --radius: 12px;
+      --shadow: 0 2px 8px rgba(0,0,0,0.08);
+      --shadow-md: 0 4px 20px rgba(0,0,0,0.12);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', -apple-system, sans-serif;
+      background: var(--gray-50);
+      color: var(--gray-800);
+      line-height: 1.7;
+    }
+
+    /* ── 헤더 ── */
+    .hero {
+      background: linear-gradient(135deg, #FF6B35 0%, #FF9A6C 50%, #FFB547 100%);
+      color: white;
+      padding: 60px 24px 48px;
+      text-align: center;
+    }
+    .hero-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.25);
+      border: 1px solid rgba(255,255,255,0.4);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      margin-bottom: 16px;
+    }
+    .hero h1 {
+      font-size: clamp(22px, 5vw, 36px);
+      font-weight: 800;
+      line-height: 1.3;
+      margin-bottom: 12px;
+    }
+    .hero-meta {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+      font-size: 13px;
+      opacity: 0.85;
+      margin-top: 16px;
+    }
+    .hero-meta span { display: flex; align-items: center; gap: 4px; }
+
+    /* ── 네비게이션 ── */
+    .toc-wrapper {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: white;
+      border-bottom: 1px solid var(--gray-200);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .toc {
+      max-width: 900px;
+      margin: 0 auto;
+      display: flex;
+      gap: 0;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .toc::-webkit-scrollbar { display: none; }
+    .toc a {
+      display: block;
+      padding: 14px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--gray-600);
+      text-decoration: none;
+      white-space: nowrap;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+    .toc a:hover {
+      color: var(--orange);
+      border-bottom-color: var(--orange);
+    }
+
+    /* ── 레이아웃 ── */
+    .page {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+
+    /* ── 섹션 ── */
+    .section {
+      margin-bottom: 48px;
+    }
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--gray-900);
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--gray-200);
+    }
+    .section-title .num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      background: var(--orange);
+      color: white;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    /* ── 카드 ── */
+    .card {
+      background: white;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 24px;
+      margin-bottom: 16px;
+    }
+    .card-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--gray-900);
+      margin-bottom: 12px;
+    }
+
+    /* ── 테이블 ── */
+    .table-wrap { overflow-x: auto; border-radius: var(--radius); box-shadow: var(--shadow); }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      font-size: 14px;
+    }
+    th {
+      background: var(--gray-800);
+      color: white;
+      padding: 12px 14px;
+      text-align: left;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    th:first-child { border-radius: var(--radius) 0 0 0; }
+    th:last-child  { border-radius: 0 var(--radius) 0 0; }
+    td {
+      padding: 11px 14px;
+      border-bottom: 1px solid var(--gray-100);
+      vertical-align: middle;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:nth-child(even) td { background: var(--gray-50); }
+    tr:hover td { background: var(--orange-light); }
+
+    /* ── 레벨 테이블 특수 스타일 ── */
+    .level-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .lv-1  { background: #EDF2FF; color: #4C6EF5; }
+    .lv-2  { background: #F0FDF4; color: #16A34A; }
+    .lv-3  { background: #FFF7ED; color: #EA580C; }
+    .lv-4  { background: #FDF4FF; color: #9333EA; }
+    .lv-5  { background: #FFF1F2; color: #E11D48; }
+    .lv-6  { background: #F0F9FF; color: #0369A1; }
+    .lv-7  { background: #FFFBEB; color: #B45309; }
+    .lv-8  { background: #F0FDF4; color: #059669; }
+    .lv-9  { background: #FDF4FF; color: #7C3AED; }
+    .lv-10 { background: linear-gradient(135deg, #FFF3EE, #FFF0FF); color: #C026D3; border: 1px solid #E879F9; }
+
+    /* ── OKR 카드 ── */
+    .okr-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .okr-card {
+      background: white;
+      border: 2px solid var(--gray-200);
+      border-radius: var(--radius);
+      padding: 16px;
+      transition: border-color 0.2s;
+    }
+    .okr-card:hover { border-color: var(--orange); }
+    .okr-card .kr-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--orange);
+      letter-spacing: 0.05em;
+      margin-bottom: 6px;
+    }
+    .okr-card .kr-value {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--gray-900);
+      margin-bottom: 4px;
+    }
+    .okr-card .kr-desc {
+      font-size: 12px;
+      color: var(--gray-600);
+    }
+
+    /* ── 플로우 다이어그램 ── */
+    .flow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      background: white;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 28px 24px;
+    }
+    .flow-step {
+      background: var(--orange-light);
+      border: 2px solid var(--orange-mid);
+      border-radius: 10px;
+      padding: 12px 28px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--orange);
+      text-align: center;
+      width: 100%;
+      max-width: 360px;
+    }
+    .flow-arrow {
+      color: var(--orange);
+      font-size: 22px;
+      margin: 2px 0;
+      line-height: 1;
+    }
+
+    /* ── 배지 그리드 ── */
+    .badge-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .badge-card {
+      background: white;
+      border: 1.5px solid var(--gray-200);
+      border-radius: var(--radius);
+      padding: 16px 12px;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    .badge-card:hover {
+      border-color: var(--orange);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+    .badge-emoji { font-size: 28px; display: block; margin-bottom: 6px; }
+    .badge-name { font-size: 13px; font-weight: 700; color: var(--gray-900); margin-bottom: 4px; }
+    .badge-cond { font-size: 11px; color: var(--gray-400); }
+
+    /* ── 보상 2단계 ── */
+    .reward-flow {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 12px;
+      align-items: center;
+      background: white;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 24px;
+      margin-bottom: 16px;
+    }
+    .reward-stage {
+      background: var(--gray-50);
+      border: 2px solid var(--gray-200);
+      border-radius: 10px;
+      padding: 16px;
+      text-align: center;
+    }
+    .reward-stage.approved { border-color: var(--green); background: #F0FDF4; }
+    .reward-stage h4 { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+    .reward-stage .reward-val { font-size: 20px; font-weight: 800; color: var(--orange); }
+    .reward-arrow { font-size: 28px; color: var(--gray-400); text-align: center; }
+    @media (max-width: 520px) {
+      .reward-flow { grid-template-columns: 1fr; }
+      .reward-arrow { transform: rotate(90deg); }
+    }
+
+    /* ── 포인트 사용처 ── */
+    .redeem-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .redeem-card {
+      background: white;
+      border: 1.5px solid var(--gray-200);
+      border-radius: var(--radius);
+      padding: 18px 16px;
+      transition: all 0.2s;
+    }
+    .redeem-card:hover { border-color: var(--orange); box-shadow: var(--shadow); }
+    .redeem-points {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--orange);
+      margin-bottom: 4px;
+    }
+    .redeem-name { font-size: 14px; font-weight: 700; color: var(--gray-900); margin-bottom: 4px; }
+    .redeem-desc { font-size: 12px; color: var(--gray-600); }
+
+    /* ── 릴리즈 타임라인 ── */
+    .timeline { position: relative; padding-left: 32px; }
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 12px; top: 8px; bottom: 8px;
+      width: 2px;
+      background: var(--gray-200);
+    }
+    .tl-item { position: relative; margin-bottom: 28px; }
+    .tl-dot {
+      position: absolute;
+      left: -25px;
+      top: 4px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--orange);
+      border: 2px solid white;
+      box-shadow: 0 0 0 2px var(--orange);
+    }
+    .tl-phase {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--orange);
+      letter-spacing: 0.08em;
+      margin-bottom: 4px;
+    }
+    .tl-title { font-size: 16px; font-weight: 800; color: var(--gray-900); margin-bottom: 8px; }
+    .tl-items { list-style: none; }
+    .tl-items li {
+      font-size: 13px;
+      color: var(--gray-600);
+      padding: 3px 0;
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+    }
+    .tl-items li::before {
+      content: '☐';
+      color: var(--gray-400);
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* ── DB 스키마 ── */
+    .code-block {
+      background: var(--gray-900);
+      color: #E2E8F0;
+      border-radius: var(--radius);
+      padding: 20px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      overflow-x: auto;
+      margin: 12px 0;
+    }
+    .code-block .kw  { color: #93C5FD; }
+    .code-block .ty  { color: #6EE7B7; }
+    .code-block .cm  { color: #6B7280; }
+    .code-block .st  { color: #FCA5A5; }
+
+    /* ── 가정 테이블 ── */
+    .assumption-tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      background: var(--orange-light);
+      color: var(--orange);
+    }
+
+    /* ── 요약 박스 ── */
+    .summary-box {
+      background: linear-gradient(135deg, var(--orange-light), #FFF9F0);
+      border-left: 4px solid var(--orange);
+      border-radius: 0 var(--radius) var(--radius) 0;
+      padding: 20px 24px;
+      font-size: 15px;
+      line-height: 1.75;
+      color: var(--gray-800);
+    }
+
+    /* ── 세그먼트 카드 ── */
+    .segment-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+    }
+    .segment-card {
+      background: white;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px;
+      border-top: 3px solid var(--orange);
+    }
+    .segment-title { font-size: 15px; font-weight: 800; color: var(--gray-900); margin-bottom: 6px; }
+    .segment-desc  { font-size: 13px; color: var(--gray-600); margin-bottom: 8px; }
+    .segment-need  {
+      font-size: 13px;
+      color: var(--orange);
+      font-weight: 600;
+      background: var(--orange-light);
+      padding: 6px 10px;
+      border-radius: 6px;
+    }
+
+    /* ── 푸터 ── */
+    footer {
+      background: var(--gray-800);
+      color: var(--gray-400);
+      text-align: center;
+      padding: 24px;
+      font-size: 13px;
+    }
+    footer strong { color: white; }
+
+    /* ── 반응형 ── */
+    @media (max-width: 640px) {
+      .page { padding: 24px 16px 60px; }
+      .hero { padding: 40px 16px 32px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── 히어로 ── -->
+<div class="hero">
+  <div class="hero-badge">📋 PRD v1.0 · Draft</div>
+  <h1>언니픽 회원등급제 (레벨 1~10)<br>+ 가격제보 보상 시스템</h1>
+  <div class="hero-meta">
+    <span>📅 2026-04-22</span>
+    <span>👤 bangju (1인 개발)</span>
+    <span>🟡 초안 (Draft)</span>
+  </div>
+</div>
+
+<!-- ── 네비게이션 ── -->
+<div class="toc-wrapper">
+  <nav class="toc">
+    <a href="#summary">1. Summary</a>
+    <a href="#contacts">2. Contacts</a>
+    <a href="#background">3. Background</a>
+    <a href="#objective">4. Objective</a>
+    <a href="#segment">5. Market</a>
+    <a href="#value">6. Value</a>
+    <a href="#solution">7. Solution</a>
+    <a href="#release">8. Release</a>
+  </nav>
+</div>
+
+<div class="page">
+
+  <!-- ── 1. Summary ── -->
+  <section class="section" id="summary">
+    <h2 class="section-title"><span class="num">1</span>Summary</h2>
+    <div class="summary-box">
+      언니픽 앱에 현재 브론즈/실버/골드 3단계 레벨을 <strong>10단계 세분화 등급제</strong>로 개편하고, 사용자가 가게 메뉴 가격을 직접 제보하면 포인트·배지·혜택으로 보상하는 시스템을 도입한다. 이를 통해 사용자의 <strong>앱 재방문율</strong>과 <strong>콘텐츠 품질(가격 정확도)</strong>을 동시에 높인다.
+    </div>
+  </section>
+
+  <!-- ── 2. Contacts ── -->
+  <section class="section" id="contacts">
+    <h2 class="section-title"><span class="num">2</span>Contacts</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>이름</th><th>역할</th><th>비고</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>bangju</strong></td><td>1인 개발자 · 기획자 · PM</td><td>모든 의사결정 권한 보유</td></tr>
+          <tr><td><strong>언니픽 초기 사용자</strong></td><td>핵심 사용자 그룹 (창원 여성)</td><td>인터뷰 및 피드백 대상</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── 3. Background ── -->
+  <section class="section" id="background">
+    <h2 class="section-title"><span class="num">3</span>Background</h2>
+    <div class="card">
+      <div class="card-title">🏪 지금 무슨 상황인가?</div>
+      <p>언니픽은 창원 지역 뷰티·식음료 가맹점의 쿠폰과 혜택을 모아주는 앱이다. 지금은 브론즈 / 실버 / 골드, <strong>3가지 레벨</strong>만 있다. 레벨이 3개뿐이라 사용자가 빨리 골드에 도달하고 더 이상 성장하는 느낌을 받지 못한다. 앱에 오래 머물 이유가 약하다.</p>
+      <br/>
+      <p>최근 <strong>가격 제보 기능(PriceReportScreen)</strong>이 개발 완료되었다. 사용자가 직접 가게 메뉴 가격을 입력할 수 있다. 그러나 현재 제보에 대한 <strong>보상이 없다.</strong> 보상 없이는 제보 참여율이 낮아 데이터 품질이 나빠진다.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">⏰ 왜 지금인가?</div>
+      <ul style="list-style:none; display:flex; flex-direction:column; gap:8px;">
+        <li>✅ 가격 제보 기능이 막 출시되어 사용자 보상 설계가 시급하다.</li>
+        <li>✅ Supabase <code style="background:var(--gray-100);padding:2px 6px;border-radius:4px;">profiles</code> 테이블에 <code style="background:var(--gray-100);padding:2px 6px;border-radius:4px;">level, level_progress, point_to_next</code> 컬럼이 이미 준비되어 있다. DB 인프라는 갖춰진 상태다.</li>
+        <li>✅ 초기 사용자를 락인(lock-in)할 최적의 시점이다. 초기에 성장 루프를 만들어야 나중에 MAU를 높이기 쉽다.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ── 4. Objective ── -->
+  <section class="section" id="objective">
+    <h2 class="section-title"><span class="num">4</span>Objective</h2>
+    <div class="summary-box" style="margin-bottom:20px; font-size:18px; font-weight:800; text-align:center;">
+      "언니픽 사용자가 앱을 꾸준히 쓸 이유를 만든다."
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:24px;">
+      <div class="card">
+        <div class="card-title">🏢 회사에게 주는 이익</div>
+        <ul style="list-style:none;display:flex;flex-direction:column;gap:6px;font-size:14px;">
+          <li>📈 재방문율 상승 → 광고·쿠폰 노출 기회 증가</li>
+          <li>📊 가격 데이터 품질 향상 → 가게 입점 영업 시 신뢰 자료</li>
+          <li>🤝 커뮤니티 느낌 강화 → 경쟁 앱 대비 차별화</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title">👩 사용자에게 주는 이익</div>
+        <ul style="list-style:none;display:flex;flex-direction:column;gap:6px;font-size:14px;">
+          <li>🎁 활동할수록 더 좋은 쿠폰·혜택을 받는다</li>
+          <li>🏆 내 레벨과 배지를 보며 성취감을 느낀다</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3 style="font-size:16px;font-weight:800;color:var(--gray-900);margin-bottom:12px;">📐 Key Results (OKR · 출시 후 3개월)</h3>
+    <div class="okr-grid">
+      <div class="okr-card">
+        <div class="kr-label">KR1 · 재방문율</div>
+        <div class="kr-value">40%+</div>
+        <div class="kr-desc">2주 내 재방문 비율</div>
+      </div>
+      <div class="okr-card">
+        <div class="kr-label">KR2 · 월간 제보</div>
+        <div class="kr-value">200건+</div>
+        <div class="kr-desc">월간 가격 제보 수</div>
+      </div>
+      <div class="okr-card">
+        <div class="kr-label">KR3 · 레벨 3+</div>
+        <div class="kr-value">30%+</div>
+        <div class="kr-desc">전체 가입자 대비</div>
+      </div>
+      <div class="okr-card">
+        <div class="kr-label">KR4 · 투표 참여</div>
+        <div class="kr-value">5표+</div>
+        <div class="kr-desc">제보 1건당 평균 투표</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 5. Market Segment ── -->
+  <section class="section" id="segment">
+    <h2 class="section-title"><span class="num">5</span>Market Segment</h2>
+    <div class="segment-grid">
+      <div class="segment-card">
+        <div class="segment-title">🛍 일상 소비자</div>
+        <div class="segment-desc">창원에서 카페·맛집·뷰티샵을 자주 이용하는 20~40대 여성</div>
+        <div class="segment-need">"더 싸게, 더 좋은 혜택으로 쓰고 싶다"</div>
+      </div>
+      <div class="segment-card">
+        <div class="segment-title">📝 정보 제공자</div>
+        <div class="segment-desc">가게를 자주 다니며 실제 가격을 아는 사람</div>
+        <div class="segment-need">"내가 아는 정보가 도움이 됐으면 좋겠다"</div>
+      </div>
+      <div class="segment-card">
+        <div class="segment-title">🎮 성취 추구자</div>
+        <div class="segment-desc">게임·앱에서 레벨업이나 배지 모으기를 좋아하는 사람</div>
+        <div class="segment-need">"뭔가 쌓이는 느낌이 좋다"</div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px; border-left:3px solid var(--orange); border-radius:0 var(--radius) var(--radius) 0;">
+      <div class="card-title">⚠️ 제약 조건</div>
+      <ul style="list-style:none;display:flex;flex-direction:column;gap:6px;font-size:14px;color:var(--gray-600);">
+        <li>🗺 현재 서비스 지역: <strong>창원시</strong> (마산·진해 포함) 한정</li>
+        <li>👤 1인 개발 → 복잡한 기능은 단계적으로 출시해야 함</li>
+        <li>⚖️ 포인트 현금화(출금)는 법적 이슈로 <strong>이번 범위 외</strong></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ── 6. Value Proposition ── -->
+  <section class="section" id="value">
+    <h2 class="section-title"><span class="num">6</span>Value Proposition</h2>
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-title">💼 Jobs to be done</div>
+      <ol style="display:flex;flex-direction:column;gap:10px;padding-left:18px;font-size:14px;">
+        <li><strong>"이 가게 진짜 가격이 얼마인지 알고 싶다"</strong> → 직접 제보하면 실제 가격 정보가 쌓인다</li>
+        <li><strong>"쿠폰만 받고 끝인 앱은 재미없다"</strong> → 레벨·배지·보상으로 게임 같은 재미 추가</li>
+        <li><strong>"나는 앱을 많이 쓰는데 혜택이 더 있어야 한다"</strong> → 고레벨 전용 쿠폰·배지로 충성도 보상</li>
+      </ol>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>비교 항목</th><th>일반 쿠폰 앱</th><th>언니픽</th></tr></thead>
+        <tbody>
+          <tr><td>가격 정보</td><td>가게가 직접 입력</td><td>사용자+가게 공동 입력 → 신뢰도↑</td></tr>
+          <tr><td>레벨 시스템</td><td>없거나 단순 3단계</td><td>10단계 세분화 + 배지</td></tr>
+          <tr><td>지역 특화</td><td>전국 단위</td><td>창원 집중 → 밀착감↑</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── 7. Solution ── -->
+  <section class="section" id="solution">
+    <h2 class="section-title"><span class="num">7</span>Solution</h2>
+
+    <!-- 7.1 플로우 -->
+    <h3 style="font-size:16px;font-weight:800;margin-bottom:12px;">7.1 사용자 흐름</h3>
+    <div class="flow">
+      <div class="flow-step">🎯 앱 사용 행동<br><small style="font-weight:400;font-size:12px;">쿠폰 다운, 제보, 투표 등</small></div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-step">⚡ 포인트 적립 + 경험치(XP) 누적</div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-step">📊 레벨 바(level_progress) 채워짐</div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-step">🎉 레벨업 → 축하 애니메이션 + 배지 + 혜택 해금</div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-step">👤 마이페이지에서 내 등급·배지·혜택 확인</div>
+    </div>
+
+    <!-- 7.2.1 레벨표 -->
+    <h3 style="font-size:16px;font-weight:800;margin:28px 0 12px;">7.2.1 레벨 1~10 등급표</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>레벨</th><th>등급명</th><th>누적 XP</th><th>주요 혜택</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="level-badge lv-1">Lv.1 🌸</span></td><td><strong>새내기 언니</strong></td><td>0 XP</td><td>기본 쿠폰 접근</td></tr>
+          <tr><td><span class="level-badge lv-2">Lv.2 ☕</span></td><td><strong>단골 언니</strong></td><td>100 XP</td><td>단골 전용 쿠폰 +1장/월</td></tr>
+          <tr><td><span class="level-badge lv-3">Lv.3 🔥</span></td><td><strong>핫플 언니</strong></td><td>300 XP</td><td>신규 가게 쿠폰 우선 알림</td></tr>
+          <tr><td><span class="level-badge lv-4">Lv.4 🔍</span></td><td><strong>탐정 언니</strong></td><td>600 XP</td><td>가격 제보 보너스 XP +20%</td></tr>
+          <tr><td><span class="level-badge lv-5">Lv.5 💅</span></td><td><strong>인싸 언니</strong></td><td>1,000 XP</td><td>월 특별 쿠폰 팩 제공</td></tr>
+          <tr><td><span class="level-badge lv-6">Lv.6 ✍️</span></td><td><strong>리뷰 언니</strong></td><td>1,500 XP</td><td>리뷰 작성 시 추가 포인트</td></tr>
+          <tr><td><span class="level-badge lv-7">Lv.7 ⚡</span></td><td><strong>파워 언니</strong></td><td>2,200 XP</td><td>생일 쿠폰 2배</td></tr>
+          <tr><td><span class="level-badge lv-8">Lv.8 🎓</span></td><td><strong>전문가 언니</strong></td><td>3,000 XP</td><td>가격 제보 즉시 반영 권한</td></tr>
+          <tr><td><span class="level-badge lv-9">Lv.9 👑</span></td><td><strong>레전드 언니</strong></td><td>4,000 XP</td><td>VIP 전용 한정 쿠폰</td></tr>
+          <tr><td><span class="level-badge lv-10">Lv.10 💎</span></td><td><strong>언니픽 마스터</strong></td><td>5,500 XP</td><td>전 가게 10% 추가 할인 / 어드민 직접 연락</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:12px;color:var(--gray-400);margin-top:8px;">⚠️ XP 감소 정책: 6개월 비활동 시 레벨 1 강등 (유예 알림 1회 발송)</p>
+
+    <!-- 7.2.2 XP 획득표 -->
+    <h3 style="font-size:16px;font-weight:800;margin:28px 0 12px;">7.2.2 XP 획득 행동표</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>행동</th><th>XP</th><th>포인트</th><th>1일 최대</th><th>비고</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>쿠폰 다운로드</td><td>5 XP</td><td>5P</td><td>10회</td><td></td></tr>
+          <tr><td>쿠폰 사용 (인증)</td><td>20 XP</td><td>20P</td><td>5회</td><td>★ 가장 중요한 행동</td></tr>
+          <tr><td>가게 팔로우</td><td>3 XP</td><td>3P</td><td>10회</td><td></td></tr>
+          <tr><td>가격 제보 (신규)</td><td>30 XP</td><td>30P</td><td>5회</td><td>관리자 승인 후 지급</td></tr>
+          <tr><td>가격 제보 (업데이트)</td><td>15 XP</td><td>15P</td><td>5회</td><td>기존 가격 수정 제보</td></tr>
+          <tr><td>투표 참여 (맞아요/틀려요)</td><td>3 XP</td><td>3P</td><td>20회</td><td></td></tr>
+          <tr><td>영수증 인증</td><td>40 XP</td><td>40P</td><td>3회</td><td>★ 신뢰도 높은 행동</td></tr>
+          <tr><td>스탬프 적립</td><td>10 XP</td><td>10P</td><td>5회</td><td></td></tr>
+          <tr><td>친구 초대 (가입 완료)</td><td>100 XP</td><td>100P</td><td>월 5회</td><td>★ 성장 레버</td></tr>
+          <tr><td>출석 체크 (연속 7일)</td><td>50 XP</td><td>50P</td><td>주 1회</td><td>연속 출석 보너스</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 7.2.3 가격 제보 보상 -->
+    <h3 style="font-size:16px;font-weight:800;margin:28px 0 12px;">7.2.3 가격 제보 보상 (2단계)</h3>
+    <div class="reward-flow">
+      <div class="reward-stage">
+        <h4>1단계 — 제보 즉시</h4>
+        <div class="reward-val">+30P</div>
+        <p style="font-size:12px;color:var(--gray-400);margin-top:4px;">임시 포인트<br>'검토 중' 표시</p>
+      </div>
+      <div class="reward-arrow">→</div>
+      <div class="reward-stage approved">
+        <h4>2단계 — 승인 후 ✅</h4>
+        <div class="reward-val">+30P + 30XP</div>
+        <p style="font-size:12px;color:var(--green);margin-top:4px;">확정 지급<br>거절 시 임시 포인트 취소</p>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>추가 보상 조건</th><th>추가 보상</th></tr></thead>
+        <tbody>
+          <tr><td>제보한 가격에 '맞아요' 10표 이상</td><td>보너스 XP +20</td></tr>
+          <tr><td>한 달 내 제보 20건 이상</td><td>'이달의 제보왕' 배지 + XP +200</td></tr>
+          <tr><td>처음 제보한 메뉴인 경우</td><td>'퍼스트 제보' 배지 + XP +50</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 7.2.4 배지 -->
+    <h3 style="font-size:16px;font-weight:800;margin:28px 0 12px;">7.2.4 배지(Badge) 시스템</h3>
+    <div class="badge-grid">
+      <div class="badge-card"><span class="badge-emoji">🥇</span><div class="badge-name">퍼스트 제보</div><div class="badge-cond">최초 가격 제보 완료</div></div>
+      <div class="badge-card"><span class="badge-emoji">📋</span><div class="badge-name">제보왕</div><div class="badge-cond">월 20건 제보 승인</div></div>
+      <div class="badge-card"><span class="badge-emoji">🧾</span><div class="badge-name">영수증 마스터</div><div class="badge-cond">영수증 인증 10회</div></div>
+      <div class="badge-card"><span class="badge-emoji">📅</span><div class="badge-name">출석 여왕</div><div class="badge-cond">30일 연속 출석</div></div>
+      <div class="badge-card"><span class="badge-emoji">🎫</span><div class="badge-name">쿠폰 헌터</div><div class="badge-cond">쿠폰 50장 다운로드</div></div>
+      <div class="badge-card"><span class="badge-emoji">📍</span><div class="badge-name">핫플 발굴자</div><div class="badge-cond">신규 가게 팔로우 20곳</div></div>
+      <div class="badge-card"><span class="badge-emoji">🗳️</span><div class="badge-name">투표 달인</div><div class="badge-cond">투표 100회 참여</div></div>
+      <div class="badge-card"><span class="badge-emoji">👯</span><div class="badge-name">친구 대장</div><div class="badge-cond">친구 초대 5명</div></div>
+      <div class="badge-card"><span class="badge-emoji">💎</span><div class="badge-name">VIP</div><div class="badge-cond">레벨 9~10 달성</div></div>
+    </div>
+
+    <!-- 7.2.5 포인트 사용처 -->
+    <h3 style="font-size:16px;font-weight:800;margin:28px 0 12px;">7.2.5 포인트 사용처 (리딤)</h3>
+    <p style="font-size:13px;color:var(--gray-600);margin-bottom:12px;">포인트는 <strong>앱 내에서만 사용 가능</strong> (현금 전환 없음)</p>
+    <div class="redeem-grid">
+      <div class="redeem-card">
+        <div class="redeem-points">50P</div>
+        <div class="redeem-name">추가 쿠폰 슬롯</div>
+        <div class="redeem-desc">하루 쿠폰 다운로드 한도 +2 (당일)</div>
+      </div>
+      <div class="redeem-card">
+        <div class="redeem-points">100P</div>
+        <div class="redeem-name">스탬프 카드 부스터</div>
+        <div class="redeem-desc">다음 스탬프 2배로 적립</div>
+      </div>
+      <div class="redeem-card">
+        <div class="redeem-points">200P</div>
+        <div class="redeem-name">랜덤 쿠폰 뽑기</div>
+        <div class="redeem-desc">가맹점 쿠폰 1장 랜덤 지급</div>
+      </div>
+      <div class="redeem-card">
+        <div class="redeem-points">300P</div>
+        <div class="redeem-name">레벨업 부스터</div>
+        <div class="redeem-desc">24시간 XP 획득 +50%</div>
+      </div>
+    </div>
+
+    <!-- 7.3 기술 스펙 -->
+    <h3 style="font-size:16px;font-weight:800;margin:28px 0 12px;">7.3 기술 스펙 (DB)</h3>
+    <div class="card">
+      <div class="card-title">profiles 테이블 — 신규 추가 컬럼</div>
+      <div class="code-block"><span class="kw">ALTER TABLE</span> profiles <span class="kw">ADD COLUMN</span>
+  total_xp       <span class="ty">integer</span>   <span class="kw">DEFAULT</span> <span class="st">0</span>,   <span class="cm">-- 전체 누적 XP</span>
+  point_balance  <span class="ty">integer</span>   <span class="kw">DEFAULT</span> <span class="st">0</span>,   <span class="cm">-- 현재 포인트 잔액</span>
+  badge_ids      <span class="ty">text[]</span>    <span class="kw">DEFAULT</span> <span class="st">'{}'</span>   <span class="cm">-- 획득한 배지 ID 목록</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">신규 테이블: xp_logs</div>
+      <div class="code-block"><span class="kw">CREATE TABLE</span> xp_logs (
+  id           <span class="ty">uuid</span>         <span class="kw">PRIMARY KEY DEFAULT</span> gen_random_uuid(),
+  user_id      <span class="ty">uuid</span>         <span class="kw">REFERENCES</span> profiles(id),
+  action       <span class="ty">text</span>,         <span class="cm">-- 'price_report' | 'coupon_use' | 'vote' …</span>
+  xp_amount    <span class="ty">integer</span>,
+  point_amount <span class="ty">integer</span>,
+  created_at   <span class="ty">timestamptz</span>  <span class="kw">DEFAULT</span> now()
+);</div>
+    </div>
+    <div class="card">
+      <div class="card-title">신규 테이블: price_reports</div>
+      <div class="code-block"><span class="kw">CREATE TABLE</span> price_reports (
+  id            <span class="ty">uuid</span>   <span class="kw">PRIMARY KEY DEFAULT</span> gen_random_uuid(),
+  user_id       <span class="ty">uuid</span>   <span class="kw">REFERENCES</span> profiles(id),
+  store_id      <span class="ty">uuid</span>   <span class="kw">REFERENCES</span> stores(id),
+  menu_name     <span class="ty">text</span>,
+  price         <span class="ty">integer</span>,
+  status        <span class="ty">text</span>   <span class="kw">DEFAULT</span> <span class="st">'pending'</span>,  <span class="cm">-- 'pending' | 'approved' | 'rejected'</span>
+  reject_reason <span class="ty">text</span>,
+  created_at    <span class="ty">timestamptz</span> <span class="kw">DEFAULT</span> now()
+);</div>
+    </div>
+
+    <!-- 7.4 가정 -->
+    <h3 style="font-size:16px;font-weight:800;margin:28px 0 12px;">7.4 가정 (Assumptions)</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>가정</th><th>검증 방법</th></tr></thead>
+        <tbody>
+          <tr><td><span class="assumption-tag">A1</span></td><td>사용자는 레벨업 알림에 반응하여 앱을 재방문할 것이다</td><td>푸시 클릭률 측정</td></tr>
+          <tr><td><span class="assumption-tag">A2</span></td><td>포인트 사용처(쿠폰 슬롯 등)가 매력적으로 느껴질 것이다</td><td>포인트 소진율 추적</td></tr>
+          <tr><td><span class="assumption-tag">A3</span></td><td>제보 승인률이 70% 이상일 것이다 (허위 제보 최소화)</td><td>어드민 승인/거절 비율 모니터링</td></tr>
+          <tr><td><span class="assumption-tag">A4</span></td><td>레벨 5 이상 달성 시 이탈률이 낮아질 것이다</td><td>코호트 분석</td></tr>
+          <tr><td><span class="assumption-tag">A5</span></td><td>10레벨이 6개월 내 달성 가능한 난이도다</td><td>XP 시뮬레이션 후 조정</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── 8. Release ── -->
+  <section class="section" id="release">
+    <h2 class="section-title"><span class="num">8</span>Release</h2>
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-phase">PHASE 1 · 약 3~4주</div>
+        <div class="tl-title">핵심 MVP — 레벨 시스템 기반 + 가격 제보 보상 연동</div>
+        <ul class="tl-items">
+          <li>DB 스키마 추가 (xp_logs, price_reports, profiles 컬럼)</li>
+          <li>XP 적립 로직 (Supabase Edge Function 또는 앱 내 처리)</li>
+          <li>레벨 계산 함수 (total_xp → level, level_progress, point_to_next)</li>
+          <li>마이페이지: 레벨 바 + 포인트 잔액 표시</li>
+          <li>가격 제보 승인 시 XP + 포인트 지급 (어드민 승인 액션)</li>
+          <li>레벨업 푸시 알림</li>
+        </ul>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-phase">PHASE 2 · 약 2~3주</div>
+        <div class="tl-title">배지 + 투표 보상</div>
+        <ul class="tl-items">
+          <li>배지 지급 로직 (조건 달성 시 자동 지급)</li>
+          <li>마이페이지 배지 그리드 UI</li>
+          <li>투표 참여 XP 반영</li>
+          <li>제보왕 배지 자동 판정 (월말 집계)</li>
+        </ul>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-phase">PHASE 3 · 약 2~3주</div>
+        <div class="tl-title">포인트 사용처 + 레벨업 애니메이션</div>
+        <ul class="tl-items">
+          <li>포인트 리딤 기능 (쿠폰 슬롯, 랜덤 뽑기 등)</li>
+          <li>레벨업 축하 애니메이션 (Lottie / Reanimated)</li>
+          <li>XP 로그 히스토리 화면</li>
+          <li>6개월 비활동 강등 자동화 (Cron)</li>
+        </ul>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot" style="background:var(--purple);box-shadow:0 0 0 2px var(--purple);"></div>
+        <div class="tl-phase" style="color:var(--purple);">PHASE 4 · 출시 후 피드백 반영</div>
+        <div class="tl-title">고도화</div>
+        <ul class="tl-items">
+          <li>레벨 난이도 조정 (XP 기준값 튜닝)</li>
+          <li>시즌 이벤트 (기간 한정 배지, XP 2배 이벤트)</li>
+          <li>친구 초대 보상 강화</li>
+          <li>등급별 전용 쿠폰 큐레이션 자동화</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  <p>🩷 <strong>언니픽</strong> 내부 PRD — bangju 단독 기획·개발 · v1.0 · 2026-04-22</p>
+</footer>
+
+</body>
+</html>
