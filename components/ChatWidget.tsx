@@ -11,18 +11,17 @@ interface Message {
 
 // DevLog 패널 상수 (DevLogPanel.tsx 와 맞춤)
 const DEVLOG_PANEL_WIDTH = 520; // w-[520px]
-const DEVLOG_BTN_RIGHT   = 16;  // right-4
-const DEVLOG_BTN_WIDTH   = 112; // DEV LOG 버튼 예상 너비 (px-3 + 텍스트)
-const AI_BTN_SIZE        = 36;  // AI 버튼 w-9 h-9
-const GAP                = 8;   // 버튼 사이 여백
+const DEVLOG_BTN_RIGHT   = 16;  // right-4 (px)
+const DEVLOG_BTN_WIDTH   = 112; // DEV LOG 버튼 너비 추정 (px)
+const GAP                = 8;   // 버튼 사이 여백 (px)
 
 export default function ChatWidget({ devLogOpen = false }: { devLogOpen?: boolean }) {
   const [isSuperadmin, setIsSuperadmin] = useState(false);
-  const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState('');
-  const [streaming, setStreaming] = useState(false);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const [open,         setOpen]         = useState(false);
+  const [messages,     setMessages]     = useState<Message[]>([]);
+  const [input,        setInput]        = useState('');
+  const [streaming,    setStreaming]     = useState(false);
+  const bottomRef   = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -40,6 +39,14 @@ export default function ChatWidget({ devLogOpen = false }: { devLogOpen?: boolea
 
   if (!isSuperadmin) return null;
 
+  // ── 위치 계산 ──────────────────────────────────────────────────
+  // DevLog 닫힘: DEV LOG 토글 버튼 바로 왼쪽
+  // DevLog 열림: 520px 패널 왼쪽 끝에 붙음
+  const rightPx = devLogOpen
+    ? DEVLOG_PANEL_WIDTH + GAP
+    : DEVLOG_BTN_RIGHT + DEVLOG_BTN_WIDTH + GAP;
+
+  // ── 전송 ───────────────────────────────────────────────────────
   async function send() {
     const text = input.trim();
     if (!text || streaming) return;
@@ -49,17 +56,13 @@ export default function ChatWidget({ devLogOpen = false }: { devLogOpen?: boolea
     setMessages(next);
     setInput('');
     setStreaming(true);
-
-    const assistantMsg: Message = { role: 'assistant', content: '' };
-    setMessages(prev => [...prev, assistantMsg]);
+    setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
 
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: next.map(m => ({ role: m.role, content: m.content })),
-        }),
+        body: JSON.stringify({ messages: next.map(m => ({ role: m.role, content: m.content })) }),
       });
 
       if (!res.ok || !res.body) {
@@ -72,10 +75,9 @@ export default function ChatWidget({ devLogOpen = false }: { devLogOpen?: boolea
         return;
       }
 
-      const reader = res.body.getReader();
+      const reader  = res.body.getReader();
       const decoder = new TextDecoder();
       let full = '';
-
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -98,37 +100,28 @@ export default function ChatWidget({ devLogOpen = false }: { devLogOpen?: boolea
   }
 
   function onKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      send();
-    }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
   }
 
+  // ── 렌더 ───────────────────────────────────────────────────────
   return (
     <>
-      {/* 플로팅 버튼 — DevLog 상태에 따라 위치 이동 */}
-      {(() => {
-        // DevLog 닫힘: DEV LOG 버튼 바로 왼쪽에 붙음
-        // DevLog 열림: 520px 패널 왼쪽에 붙음
-        const btnRight = devLogOpen
-          ? DEVLOG_PANEL_WIDTH + GAP
-          : DEVLOG_BTN_RIGHT + DEVLOG_BTN_WIDTH + GAP;
-        const chatRight = btnRight;
-        return (
-          <>
-            <button
-              onClick={() => setOpen(v => !v)}
-              style={{ right: btnRight, bottom: 10, transition: 'right 0.2s ease' }}
-              className="fixed z-[9999] w-9 h-9 rounded-full bg-[#FF6F0F] text-white shadow-lg flex items-center justify-center hover:bg-[#e55c00]"
-              title="AI 어시스턴트"
-            >
-              {open ? <X size={16} /> : <MessageCircle size={16} />}
-            </button>
+      {/* 플로팅 버튼 */}
+      <button
+        onClick={() => setOpen(v => !v)}
+        style={{ right: rightPx, bottom: 10, transition: 'right 0.2s ease' }}
+        className="fixed z-[9999] w-9 h-9 rounded-full bg-[#FF6F0F] text-white shadow-lg flex items-center justify-center hover:bg-[#e55c00]"
+        title="AI 어시스턴트"
+      >
+        {open ? <X size={16} /> : <MessageCircle size={16} />}
+      </button>
 
-            {open && (
-              <div
-                style={{ right: chatRight, bottom: 56, transition: 'right 0.2s ease' }}
-                className="fixed z-[9999] w-80 h-[460px] flex flex-col rounded-2xl border border-border-main bg-surface shadow-2xl overflow-hidden">
+      {/* 채팅 창 */}
+      {open && (
+        <div
+          style={{ right: rightPx, bottom: 56, transition: 'right 0.2s ease' }}
+          className="fixed z-[9999] w-80 h-[460px] flex flex-col rounded-2xl border border-border-main bg-surface shadow-2xl overflow-hidden"
+        >
           {/* 헤더 */}
           <div className="flex items-center gap-2 px-4 py-3 bg-[#FF6F0F]/10 border-b border-border-main shrink-0">
             <Bot size={16} className="text-[#FF6F0F]" />
@@ -185,15 +178,13 @@ export default function ChatWidget({ devLogOpen = false }: { devLogOpen?: boolea
             <button
               onClick={send}
               disabled={!input.trim() || streaming}
-              className="shrink-0 w-8 h-8 rounded-lg bg-[#FF6F0F] text-white flex items-center justify-center hover:bg-[#e55c00] transition disabled:opacity-40 disabled:cursor-not-allowed">
+              className="shrink-0 w-8 h-8 rounded-lg bg-[#FF6F0F] text-white flex items-center justify-center hover:bg-[#e55c00] transition disabled:opacity-40 disabled:cursor-not-allowed"
+            >
               {streaming ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
             </button>
           </div>
-              </div>
-            )}
-          </>
-        );
-      })()}
+        </div>
+      )}
     </>
   );
 }
