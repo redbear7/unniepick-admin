@@ -150,8 +150,11 @@ export default function MindmapPage() {
   const [titleInput, setTitleInput]   = useState('');
   const [view, setView]               = useState<'chat' | 'map'>('chat');
 
+  const [fontSize, setFontSize]           = useState(14);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef    = useRef<HTMLTextAreaElement>(null);
+  const composingRef   = useRef(false);
 
   // ── 세션 목록 로드 ─────────────────────────────────────────
   const loadSessions = useCallback(async () => {
@@ -435,17 +438,41 @@ export default function MindmapPage() {
 
             {/* 입력 */}
             <div className="border-t border-border-main p-3">
+              {/* 폰트 크기 조절 */}
+              <div className="flex items-center gap-1 mb-2 justify-end">
+                <span className="text-[10px] text-muted mr-1">글자 크기</span>
+                <button
+                  onClick={() => setFontSize(s => Math.max(10, s - 2))}
+                  className="w-6 h-6 rounded flex items-center justify-center bg-fill-subtle hover:bg-fill-medium text-muted hover:text-primary text-xs font-bold transition"
+                >−</button>
+                <button
+                  onClick={() => setFontSize(14)}
+                  className="px-2 h-6 rounded bg-fill-subtle hover:bg-fill-medium text-muted hover:text-primary text-[10px] font-semibold transition"
+                >기본</button>
+                <button
+                  onClick={() => setFontSize(s => Math.min(26, s + 2))}
+                  className="w-6 h-6 rounded flex items-center justify-center bg-fill-subtle hover:bg-fill-medium text-muted hover:text-primary text-xs font-bold transition"
+                >+</button>
+                <span className="text-[10px] text-muted w-7 text-center">{fontSize}px</span>
+              </div>
+
               <div className="flex gap-2 items-end">
                 <textarea
                   ref={textareaRef}
                   value={input}
                   onChange={e => setInput(e.target.value)}
+                  onCompositionStart={() => { composingRef.current = true; }}
+                  onCompositionEnd={() => { composingRef.current = false; }}
                   onKeyDown={e => {
-                    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+                    if (e.key === 'Enter' && !e.shiftKey && !composingRef.current) {
+                      e.preventDefault();
+                      sendMessage();
+                    }
                   }}
                   placeholder="아이디어를 입력하세요... (Shift+Enter로 줄바꿈)"
                   rows={3}
-                  className="flex-1 bg-fill-subtle border border-border-subtle rounded-xl px-4 py-3 text-sm text-primary placeholder:text-muted focus:outline-none focus:border-[#FF6F0F] resize-none leading-relaxed"
+                  style={{ fontSize: `${fontSize}px` }}
+                  className="flex-1 bg-fill-subtle border border-border-subtle rounded-xl px-4 py-3 text-primary placeholder:text-muted focus:outline-none focus:border-[#FF6F0F] resize-none leading-relaxed"
                 />
                 <button
                   onClick={sendMessage}
