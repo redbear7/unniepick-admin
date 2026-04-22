@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import {
   Plus, Trash2, Loader2, Sparkles, ChevronDown,
   ChevronRight, Calendar, MessageSquare, Lightbulb,
-  ArrowRight, X, Pencil, Check,
+  ArrowRight, X, Pencil, Check, ExternalLink,
 } from 'lucide-react';
 
 // ── 타입 ────────────────────────────────────────────────────────
@@ -183,6 +183,18 @@ export default function MindmapPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [session?.messages]);
 
+  // ── 팝업 → 메인 BroadcastChannel 동기화 ──────────────────
+  useEffect(() => {
+    if (!activeId) return;
+    const ch = new BroadcastChannel(`mindmap_${activeId}`);
+    ch.onmessage = (e) => {
+      if (e.data?.type === 'messages_updated') {
+        setSession(s => s ? { ...s, messages: e.data.messages } : s);
+      }
+    };
+    return () => ch.close();
+  }, [activeId]);
+
   // ── 새 세션 생성 ───────────────────────────────────────────
   async function createSession() {
     setCreating(true);
@@ -232,8 +244,15 @@ export default function MindmapPage() {
 
     if (res.ok) {
       const { mindmap } = await res.json();
-      setSession(s => s ? { ...s, mindmap } : s);
-      await loadSessions();
+      // seed를 제목으로 추출
+      const newTitle = mindmap.seed?.trim() || session.title;
+      await fetch(`/api/mindmap/sessions/${session.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: newTitle }),
+      });
+      setSession(s => s ? { ...s, mindmap, title: newTitle } : s);
+      setSessions(ss => ss.map(s => s.id === session!.id ? { ...s, title: newTitle, mindmap } : s));
     } else {
       alert('마인드맵 생성 실패');
       setView('chat');
@@ -381,6 +400,21 @@ export default function MindmapPage() {
               Gemini 2.5 Flash
             </span>
 
+            {/* 새창 열기 */}
+            {session && (
+              <button
+                onClick={() => {
+                  const url = `/mindmap-popup?session=${activeId}`;
+                  window.open(url, 'mindmap_popup',
+                    'width=420,height=620,top=60,left=60,resizable=yes,scrollbars=no');
+                }}
+                className="p-1.5 rounded-lg hover:bg-fill-subtle text-muted hover:text-primary transition"
+                title="새창으로 열기"
+              >
+                <ExternalLink className="w-4 h-4" />
+              </button>
+            )}
+
             {/* 정리 버튼 */}
             {session && msgs.length > 0 && (
               <button
@@ -429,11 +463,14 @@ export default function MindmapPage() {
               )}
               {msgs.map((m, i) => (
                 <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap leading-relaxed ${
-                    m.role === 'user'
-                      ? 'bg-[#FF6F0F] text-white rounded-br-sm'
-                      : 'bg-card border border-border-main text-primary rounded-bl-sm'
-                  }`}>
+                  <div
+                    style={{ fontSize: `${fontSize}px` }}
+                    className={`max-w-[80%] rounded-2xl px-4 py-2.5 whitespace-pre-wrap leading-relaxed ${
+                      m.role === 'user'
+                        ? 'bg-[#FF6F0F] text-white rounded-br-sm'
+                        : 'bg-card border border-border-main text-primary rounded-bl-sm'
+                    }`}
+                  >
                     {m.content}
                   </div>
                 </div>

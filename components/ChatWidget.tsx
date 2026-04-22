@@ -99,17 +99,17 @@ export default function ChatWidget() {
 
   return (
     <>
-      {/* 플로팅 버튼 */}
+      {/* 플로팅 버튼 — DEV LOG 창 왼쪽 하단 */}
       <button
         onClick={() => setOpen(v => !v)}
-        className="fixed bottom-[72px] right-5 z-50 w-12 h-12 rounded-full bg-[#FF6F0F] text-white shadow-lg flex items-center justify-center hover:bg-[#e55c00] transition"
+        className="fixed bottom-[10px] right-[532px] z-[9999] w-9 h-9 rounded-full bg-[#FF6F0F] text-white shadow-lg flex items-center justify-center hover:bg-[#e55c00] transition"
         title="AI 어시스턴트">
-        {open ? <X size={20} /> : <MessageCircle size={20} />}
+        {open ? <X size={16} /> : <MessageCircle size={16} />}
       </button>
 
       {/* 채팅 창 */}
       {open && (
-        <div className="fixed bottom-[136px] right-5 z-50 w-80 h-[460px] flex flex-col rounded-2xl border border-border-main bg-surface shadow-2xl overflow-hidden">
+        <div className="fixed bottom-[56px] right-[532px] z-[9999] w-80 h-[460px] flex flex-col rounded-2xl border border-border-main bg-surface shadow-2xl overflow-hidden">
           {/* 헤더 */}
           <div className="flex items-center gap-2 px-4 py-3 bg-[#FF6F0F]/10 border-b border-border-main shrink-0">
             <Bot size={16} className="text-[#FF6F0F]" />
