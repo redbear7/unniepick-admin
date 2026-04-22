@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, Suspense, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Loader2, Pin, PinOff } from 'lucide-react';
+import { Loader2, Pin, PinOff, X } from 'lucide-react';
 
 interface Msg { role: 'user' | 'ai'; content: string; ts: string }
 interface Session {
@@ -106,12 +106,24 @@ function PopupContent() {
       body: JSON.stringify({ messages: newMsgs }),
     });
 
-    // 메인창에 변경 알림
     const ch = new BroadcastChannel(`mindmap_${session.id}`);
     ch.postMessage({ type: 'messages_updated', messages: newMsgs });
     ch.close();
-
     setSaving(false);
+  }
+
+  async function deleteMessage(index: number) {
+    if (!session) return;
+    const newMsgs = session.messages.filter((_, i) => i !== index);
+    setSession(s => s ? { ...s, messages: newMsgs } : s);
+    await fetch(`/api/mindmap/sessions/${session.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: newMsgs }),
+    });
+    const ch = new BroadcastChannel(`mindmap_${session.id}`);
+    ch.postMessage({ type: 'messages_updated', messages: newMsgs });
+    ch.close();
   }
 
   if (!session) return (
@@ -175,20 +187,32 @@ function PopupContent() {
             </div>
           </div>
         )}
-        {msgs.map((m, i) => (
-          <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div
-              style={{ fontSize: `${fontSize}px` }}
-              className={`max-w-[88%] rounded-2xl px-3 py-2.5 whitespace-pre-wrap leading-relaxed ${
-                m.role === 'user'
-                  ? 'bg-card border border-border-main border-l-2 border-l-[#FF6F0F] text-primary rounded-br-sm'
-                  : 'bg-fill-subtle border border-border-subtle text-primary rounded-bl-sm'
-              }`}
-            >
-              {m.content}
+        {msgs.map((m, i) => {
+          const isRight = m.role === 'user';
+          return (
+            <div key={i} className={`flex items-start gap-1 group/bubble ${isRight ? 'flex-row-reverse' : 'flex-row'}`}>
+              {/* 말풍선 */}
+              <div
+                style={{ fontSize: `${fontSize}px` }}
+                className={`max-w-[85%] rounded-2xl px-3 py-2.5 whitespace-pre-wrap leading-relaxed ${
+                  isRight
+                    ? 'bg-card border border-border-main border-l-2 border-l-[#FF6F0F] text-primary rounded-br-sm'
+                    : 'bg-fill-subtle border border-border-subtle text-primary rounded-bl-sm'
+                }`}
+              >
+                {m.content}
+              </div>
+              {/* 삭제 버튼 */}
+              <button
+                onClick={() => deleteMessage(i)}
+                className="opacity-0 group-hover/bubble:opacity-100 mt-1 shrink-0 w-4 h-4 rounded-full bg-fill-medium hover:bg-red-500/20 flex items-center justify-center text-muted hover:text-red-400 transition-all"
+                title="삭제"
+              >
+                <X className="w-2.5 h-2.5" />
+              </button>
             </div>
-          </div>
-        ))}
+          );
+        })}
         <div ref={messagesEndRef} />
       </div>
 

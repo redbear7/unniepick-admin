@@ -521,6 +521,18 @@ export default function MindmapPage() {
     setSaving(false);
   }
 
+  // ── 말풍선 개별 삭제 ───────────────────────────────────────
+  async function deleteMessage(index: number) {
+    if (!session) return;
+    const newMsgs = session.messages.filter((_, i) => i !== index);
+    setSession(s => s ? { ...s, messages: newMsgs } : s);
+    await fetch(`/api/mindmap/sessions/${session.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: newMsgs }),
+    });
+  }
+
   // ── 마인드맵 정리 ──────────────────────────────────────────
   async function organize() {
     if (!session || !session.messages?.length) return;
@@ -793,24 +805,31 @@ export default function MindmapPage() {
                 </div>
               )}
               {msgs.map((m, i) => {
-                const isUser = m.role === 'user';
-                const align  = isUser ? bubbleAlign : (bubbleAlign === 'end' ? 'start' : 'end');
+                const isUser  = m.role === 'user';
+                const align   = isUser ? bubbleAlign : (bubbleAlign === 'end' ? 'start' : 'end');
                 const isRight = align === 'end';
-                const tail = isRight ? 'rounded-br-sm' : 'rounded-bl-sm';
+                const tail    = isRight ? 'rounded-br-sm' : 'rounded-bl-sm';
                 return (
-                  <div key={i} className={`flex ${isRight ? 'justify-end' : 'justify-start'}`}>
+                  <div key={i} className={`flex items-start gap-1.5 group/bubble ${isRight ? 'flex-row-reverse' : 'flex-row'}`}>
+                    {/* 말풍선 */}
                     <div
                       style={{ fontSize: `${fontSize}px` }}
-                      className={`max-w-[80%] rounded-2xl px-4 py-3 whitespace-pre-wrap leading-relaxed ${tail} ${
+                      className={`max-w-[78%] rounded-2xl px-4 py-3 whitespace-pre-wrap leading-relaxed ${tail} ${
                         isUser
-                          /* 유저: 카드 배경 + 왼쪽 오렌지 강조선 — 눈 부담 최소화 */
                           ? 'bg-card border border-border-main border-l-2 border-l-[#FF6F0F] text-primary'
-                          /* AI: 미묘한 채움 */
                           : 'bg-fill-subtle border border-border-subtle text-primary'
                       }`}
                     >
                       {m.content}
                     </div>
+                    {/* 삭제 버튼 — 호버 시 표시 */}
+                    <button
+                      onClick={() => deleteMessage(i)}
+                      className="opacity-0 group-hover/bubble:opacity-100 mt-1 shrink-0 w-5 h-5 rounded-full bg-fill-medium hover:bg-red-500/20 flex items-center justify-center text-muted hover:text-red-400 transition-all"
+                      title="삭제"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
                   </div>
                 );
               })}
