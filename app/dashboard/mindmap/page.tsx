@@ -409,6 +409,7 @@ export default function MindmapPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef    = useRef<HTMLTextAreaElement>(null);
   const composingRef   = useRef(false);
+  const organizeAbort  = useRef<AbortController | null>(null);
 
   // ── 세션 목록 로드 ─────────────────────────────────────────
   const loadSessions = useCallback(async () => {
@@ -487,31 +488,60 @@ export default function MindmapPage() {
   // ── 마인드맵 정리 ──────────────────────────────────────────
   async function organize() {
     if (!session || !session.messages?.length) return;
+
+    // 이전 요청 취소
+    organizeAbort.current?.abort();
+    const ctrl = new AbortController();
+    organizeAbort.current = ctrl;
+
     setOrganizing(true);
     setView('map');
 
-    const res = await fetch('/api/mindmap/organize', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: session.messages, sessionId: session.id }),
-    });
-
-    if (res.ok) {
-      const { mindmap } = await res.json();
-      // seed를 제목으로 추출
-      const newTitle = mindmap.seed?.trim() || session.title;
-      await fetch(`/api/mindmap/sessions/${session.id}`, {
-        method: 'PATCH',
+    try {
+      const res = await fetch('/api/mindmap/organize', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: newTitle }),
+        body: JSON.stringify({ messages: session.messages, sessionId: session.id }),
+        signal: ctrl.signal,
       });
-      setSession(s => s ? { ...s, mindmap, title: newTitle } : s);
-      setSessions(ss => ss.map(s => s.id === session!.id ? { ...s, title: newTitle, mindmap } : s));
-    } else {
-      alert('마인드맵 생성 실패');
-      setView('chat');
+
+      if (res.ok) {
+        const { mindmap } = await res.json();
+        const newTitle = mindmap.seed?.trim() || session.title;
+        await fetch(`/api/mindmap/sessions/${session.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: newTitle }),
+          signal: ctrl.signal,
+        });
+        setSession(s => s ? { ...s, mindmap, title: newTitle } : s);
+        setSessions(ss => ss.map(s => s.id === session!.id ? { ...s, title: newTitle, mindmap } : s));
+      } else {
+        // 중지가 아닌 실제 오류
+        if (!ctrl.signal.aborted) {
+          alert('마인드맵 생성 실패');
+          if (!session.mindmap) setView('chat');
+        }
+      }
+    } catch (e) {
+      // AbortError: 사용자가 중지 → 이전 마인드맵 유지, 뷰 유지
+      if ((e as Error).name !== 'AbortError') {
+        alert(`오류: ${(e as Error).message}`);
+        if (!session.mindmap) setView('chat');
+      }
+      // 중지된 경우: 기존 mindmap이 있으면 map뷰 유지, 없으면 chat으로
+      else if (!session.mindmap) {
+        setView('chat');
+      }
+    } finally {
+      setOrganizing(false);
+      organizeAbort.current = null;
     }
-    setOrganizing(false);
+  }
+
+  // ── 마인드맵 정리 중지 ─────────────────────────────────────
+  function stopOrganize() {
+    organizeAbort.current?.abort();
   }
 
   // ── 제목 수정 ──────────────────────────────────────────────
@@ -669,18 +699,29 @@ export default function MindmapPage() {
               </button>
             )}
 
-            {/* 정리 버튼 */}
+            {/* 정리 버튼 / 중지 버튼 */}
             {session && msgs.length > 0 && (
-              <button
-                onClick={organize}
-                disabled={organizing}
-                className="flex items-center gap-1.5 px-4 py-1.5 bg-[#FF6F0F] hover:bg-[#e85e00] disabled:opacity-50 text-white text-xs font-bold rounded-lg transition"
-              >
-                {organizing
-                  ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> 정리 중...</>
-                  : <><Sparkles className="w-3.5 h-3.5" /> 마인드맵 정리</>
-                }
-              </button>
+              organizing ? (
+                <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1.5 px-4 py-1.5 bg-[#FF6F0F]/20 border border-[#FF6F0F]/30 text-[#FF6F0F] text-xs font-bold rounded-lg">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" /> 정리 중...
+                  </div>
+                  <button
+                    onClick={stopOrganize}
+                    className="flex items-center gap-1 px-3 py-1.5 bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-red-400 text-xs font-bold rounded-lg transition"
+                    title="정리 중지"
+                  >
+                    <X className="w-3.5 h-3.5" /> 중지
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={organize}
+                  className="flex items-center gap-1.5 px-4 py-1.5 bg-[#FF6F0F] hover:bg-[#e85e00] text-white text-xs font-bold rounded-lg transition"
+                >
+                  <Sparkles className="w-3.5 h-3.5" /> 마인드맵 정리
+                </button>
+              )
             )}
           </div>
         </div>
@@ -791,6 +832,15 @@ export default function MindmapPage() {
                 <Loader2 className="w-10 h-10 animate-spin text-[#FF6F0F]" />
                 <p className="text-sm font-semibold text-primary">AI가 마인드맵을 정리하고 있어요...</p>
                 <p className="text-xs">아이디어를 분석하고 트리를 구성 중입니다</p>
+                <button
+                  onClick={stopOrganize}
+                  className="mt-2 flex items-center gap-1.5 px-5 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 text-sm font-bold rounded-xl transition"
+                >
+                  <X className="w-4 h-4" /> 정리 중지
+                </button>
+                {session.mindmap && (
+                  <p className="text-[10px] text-muted">중지하면 이전 마인드맵이 유지됩니다</p>
+                )}
               </div>
             ) : session.mindmap ? (
               <div className="max-w-2xl mx-auto">
