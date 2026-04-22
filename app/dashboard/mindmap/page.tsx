@@ -869,9 +869,9 @@ export default function MindmapPage() {
             <div className="border-t border-border-main p-3">
               {/* 입력창 툴바: 말풍선 위치 + 폰트 크기 */}
               <div className="flex items-center gap-3 mb-2">
-                {/* 말풍선 위치 — 오른쪽 → 왼쪽 → 가운데 순환 */}
+                {/* 말풍선 위치 — 왼쪽 → 가운데 → 오른쪽 */}
                 <div className="flex items-center rounded-lg border border-border-subtle overflow-hidden text-[10px] font-semibold">
-                  {(['end', 'start', 'center'] as const).map(opt => {
+                  {(['start', 'center', 'end'] as const).map(opt => {
                     const active = bubbleAlign === opt;
                     const label = opt === 'end' ? '오른쪽' : opt === 'start' ? '왼쪽' : '가운데';
                     const Icon  = opt === 'end' ? AlignRight : opt === 'start' ? AlignLeft : AlignCenter;
