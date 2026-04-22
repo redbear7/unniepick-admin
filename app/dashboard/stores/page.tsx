@@ -24,6 +24,9 @@ interface Store {
   image_url:               string | null;
   tts_policy_id:           string | null;
   subscription_expires_at: string | null;
+  representative_price:    number | null;
+  price_label:             string | null;
+  price_range:             string | null;
 }
 
 interface TtsPolicy {
@@ -43,6 +46,7 @@ const EMPTY_FORM: StoreForm = {
   name: '', address: '', phone: '', category: '', is_active: true,
   owner_id: null, image_url: null, tts_policy_id: null,
   subscription_expires_at: null, latitude: null, longitude: null,
+  representative_price: null, price_label: null, price_range: null,
 };
 
 // TTS 정책 색상 맵
@@ -119,7 +123,7 @@ export default function StoresPage() {
     let rows: Store[] = [];
     const { data, error } = await sb
       .from('stores')
-      .select('id, name, address, phone, category, is_active, created_at, owner_id, image_url, tts_policy_id, subscription_expires_at')
+      .select('id, name, address, phone, category, is_active, created_at, owner_id, image_url, tts_policy_id, subscription_expires_at, representative_price, price_label, price_range')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -239,6 +243,9 @@ export default function StoresPage() {
       image_url: store.image_url, tts_policy_id: store.tts_policy_id,
       subscription_expires_at: store.subscription_expires_at ?? null,
       latitude: null, longitude: null,
+      representative_price: store.representative_price ?? null,
+      price_label:          store.price_label ?? null,
+      price_range:          store.price_range ?? null,
     });
     setNaverUrl(''); setAutoFillErr(''); setSaveError('');
     setEditModal(store);
@@ -282,6 +289,8 @@ export default function StoresPage() {
       image_url:               form.image_url,
       tts_policy_id:           form.tts_policy_id || null,
       subscription_expires_at: form.subscription_expires_at || null,
+      representative_price:    form.representative_price,
+      price_label:             form.price_label   || null,
       ...(form.latitude  != null ? { latitude:  form.latitude  } : {}),
       ...(form.longitude != null ? { longitude: form.longitude } : {}),
     };
@@ -763,6 +772,38 @@ export default function StoresPage() {
                   className="w-full bg-sidebar border border-border-subtle rounded-xl px-4 py-2.5 text-sm text-primary placeholder-gray-600 focus:outline-none focus:border-[#FF6F0F] transition"
                 />
               </div>
+            </div>
+
+            {/* 가격 정보 */}
+            <div className="space-y-3 pt-2 border-t border-border-subtle">
+              <p className="text-xs font-bold text-[#FF6F0F] flex items-center gap-1">💰 가격 정보 <span className="font-normal text-dim">(지도 핀 · 가성비 픽 표시)</span></p>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <label className="text-[10px] text-dim mb-1 block">대표 메뉴 가격 (원)</label>
+                  <input
+                    type="number"
+                    value={form.representative_price ?? ''}
+                    onChange={e => setForm(f => ({ ...f, representative_price: e.target.value ? Number(e.target.value) : null }))}
+                    placeholder="예) 8000"
+                    className="w-full bg-sidebar border border-border-subtle rounded-xl px-3 py-2 text-sm text-primary placeholder-gray-600 focus:outline-none focus:border-[#FF6F0F] transition"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="text-[10px] text-dim mb-1 block">가격 라벨 (선택)</label>
+                  <input
+                    value={form.price_label ?? ''}
+                    onChange={e => setForm(f => ({ ...f, price_label: e.target.value || null }))}
+                    placeholder="런치 8,000원~"
+                    className="w-full bg-sidebar border border-border-subtle rounded-xl px-3 py-2 text-sm text-primary placeholder-gray-600 focus:outline-none focus:border-[#FF6F0F] transition"
+                  />
+                </div>
+              </div>
+              {form.representative_price != null && (
+                <p className="text-[10px] text-[#FF6F0F]">
+                  지도 핀 표시: {form.price_label || `${form.representative_price.toLocaleString()}원~`}
+                  {' '}· 가격대: {form.representative_price <= 6000 ? '~6천원' : form.representative_price <= 8000 ? '~8천원' : form.representative_price <= 12000 ? '~1.2만원' : '~2만원'}
+                </p>
+              )}
             </div>
 
             <div className="flex gap-2 mt-6">

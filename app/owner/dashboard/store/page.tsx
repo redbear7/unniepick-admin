@@ -4,16 +4,26 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase';
 import { useOwnerSession } from '@/components/OwnerShell';
 import {
-  Store, MapPin, Phone, Tag, Check, Loader2, AlertCircle, Camera,
+  Store, MapPin, Phone, Tag, Check, Loader2, AlertCircle, Camera, Banknote,
 } from 'lucide-react';
 
 interface StoreForm {
-  name:      string;
-  address:   string;
-  phone:     string;
-  category:  string;
-  image_url: string;
+  name:                 string;
+  address:              string;
+  phone:                string;
+  category:             string;
+  image_url:            string;
+  representative_price: string;   // 입력은 문자열로 받아 저장 시 숫자 변환
+  price_label:          string;
 }
+
+// 가격대 프리셋
+const PRICE_PRESETS = [
+  { label: '~6,000원', value: 5500, hint: '런치 5,500원~' },
+  { label: '~8,000원', value: 7500, hint: '런치 7,500원~' },
+  { label: '~12,000원', value: 10000, hint: '메뉴 10,000원~' },
+  { label: '~20,000원', value: 15000, hint: '코스 15,000원~' },
+];
 
 const CATEGORIES = [
   '한식', '중식', '일식', '양식', '분식', '카페', '베이커리',
@@ -22,9 +32,10 @@ const CATEGORIES = [
 
 export default function OwnerStorePage() {
   const { session } = useOwnerSession();
+  const EMPTY_FORM: StoreForm = { name: '', address: '', phone: '', category: '', image_url: '', representative_price: '', price_label: '' };
   const [storeId,  setStoreId]  = useState<string | null>(null);
-  const [form,     setForm]     = useState<StoreForm>({ name: '', address: '', phone: '', category: '', image_url: '' });
-  const [original, setOriginal] = useState<StoreForm>({ name: '', address: '', phone: '', category: '', image_url: '' });
+  const [form,     setForm]     = useState<StoreForm>(EMPTY_FORM);
+  const [original, setOriginal] = useState<StoreForm>(EMPTY_FORM);
   const [loading,  setLoading]  = useState(true);
   const [saving,   setSaving]   = useState(false);
   const [saved,    setSaved]    = useState(false);
@@ -34,17 +45,19 @@ export default function OwnerStorePage() {
     if (!session) return;
     const sb = createClient();
     sb.from('stores')
-      .select('id, name, address, phone, category, image_url')
+      .select('id, name, address, phone, category, image_url, representative_price, price_label')
       .eq('owner_id', session.user_id)
       .maybeSingle()
       .then(({ data }) => {
         if (data) {
           const f: StoreForm = {
-            name:      data.name      || '',
-            address:   data.address   || '',
-            phone:     data.phone     || '',
-            category:  data.category  || '',
-            image_url: data.image_url || '',
+            name:                 data.name      || '',
+            address:              data.address   || '',
+            phone:                data.phone     || '',
+            category:             data.category  || '',
+            image_url:            data.image_url || '',
+            representative_price: data.representative_price != null ? String(data.representative_price) : '',
+            price_label:          data.price_label || '',
           };
           setForm(f);
           setOriginal(f);
@@ -66,13 +79,15 @@ export default function OwnerStorePage() {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        store_id:      storeId,
-        owner_user_id: session!.user_id,
-        name:      form.name.trim(),
-        address:   form.address.trim()   || null,
-        phone:     form.phone.trim()     || null,
-        category:  form.category.trim()  || null,
-        image_url: form.image_url.trim() || null,
+        store_id:             storeId,
+        owner_user_id:        session!.user_id,
+        name:                 form.name.trim(),
+        address:              form.address.trim()   || null,
+        phone:                form.phone.trim()     || null,
+        category:             form.category.trim()  || null,
+        image_url:            form.image_url.trim() || null,
+        representative_price: form.representative_price ? Number(form.representative_price.replace(/,/g, '')) : null,
+        price_label:          form.price_label.trim() || null,
       }),
     });
 
@@ -230,6 +245,84 @@ export default function OwnerStorePage() {
               placeholder="예) 02-1234-5678"
               className="w-full px-3 py-2.5 text-sm bg-card border border-border-main rounded-xl outline-none focus:border-[#FF6F0F] text-primary transition"
             />
+          </div>
+
+          {/* ── 가격 정보 (거지맵 벤치마킹) ── */}
+          <div className="border border-border-main rounded-xl p-4 space-y-4 bg-card">
+            <div className="flex items-center gap-2">
+              <Banknote size={15} className="text-[#FF6F0F]" />
+              <p className="text-sm font-bold text-primary">가격 정보</p>
+              <span className="ml-auto text-[10px] text-dim bg-fill-subtle px-2 py-0.5 rounded-full">
+                지도 핀 · 가성비 픽 노출
+              </span>
+            </div>
+
+            {/* 프리셋 빠른 선택 */}
+            <div>
+              <p className="text-xs text-muted mb-2">빠른 선택</p>
+              <div className="flex flex-wrap gap-2">
+                {PRICE_PRESETS.map(p => {
+                  const active = form.representative_price === String(p.value);
+                  return (
+                    <button
+                      key={p.value}
+                      type="button"
+                      onClick={() => setForm(f => ({
+                        ...f,
+                        representative_price: active ? '' : String(p.value),
+                        price_label: active ? '' : (f.price_label || p.hint),
+                      }))}
+                      className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition ${
+                        active
+                          ? 'bg-[#FF6F0F] text-white border-[#FF6F0F]'
+                          : 'bg-card text-tertiary border-border-main hover:border-[#FF6F0F]/60'
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 대표 메뉴 가격 직접 입력 */}
+            <div>
+              <label className="text-xs font-semibold text-tertiary mb-1.5 block">
+                대표 메뉴 가격 (원)
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  value={form.representative_price}
+                  onChange={e => setForm(f => ({ ...f, representative_price: e.target.value }))}
+                  placeholder="예) 8000"
+                  min={0}
+                  className="w-full px-3 py-2.5 pr-10 text-sm bg-[#18191c] border border-border-main rounded-xl outline-none focus:border-[#FF6F0F] text-primary transition"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted">원</span>
+              </div>
+              {form.representative_price && (
+                <p className="text-[10px] text-[#FF6F0F] mt-1">
+                  💰 지도에 표시: {Number(form.representative_price).toLocaleString()}원~
+                </p>
+              )}
+            </div>
+
+            {/* 가격 라벨 (선택) */}
+            <div>
+              <label className="text-xs font-semibold text-tertiary mb-1.5 block">
+                가격 설명 <span className="text-dim font-normal">(선택 · 지도 핀에 표시)</span>
+              </label>
+              <input
+                value={form.price_label}
+                onChange={e => setForm(f => ({ ...f, price_label: e.target.value }))}
+                placeholder="예) 런치 7,000원~ / 커피 4,500원~"
+                className="w-full px-3 py-2.5 text-sm bg-[#18191c] border border-border-main rounded-xl outline-none focus:border-[#FF6F0F] text-primary transition"
+              />
+              <p className="text-[10px] text-dim mt-1">
+                입력하지 않으면 &quot;{form.representative_price ? `${Number(form.representative_price).toLocaleString()}원~` : '8,000원~'}&quot; 형태로 자동 표시돼요.
+              </p>
+            </div>
           </div>
 
           {/* 이미지 URL */}

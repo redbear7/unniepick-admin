@@ -15,13 +15,15 @@ function adminSb() {
 
 export async function PATCH(req: NextRequest) {
   const body = await req.json().catch(() => ({})) as {
-    store_id:      string;
-    owner_user_id: string;
-    name:          string;
-    address?:      string | null;
-    phone?:        string | null;
-    category?:     string | null;
-    image_url?:    string | null;
+    store_id:             string;
+    owner_user_id:        string;
+    name:                 string;
+    address?:             string | null;
+    phone?:               string | null;
+    category?:            string | null;
+    image_url?:           string | null;
+    representative_price?: number | null;
+    price_label?:         string | null;
   };
 
   if (!body.store_id || !body.owner_user_id) {
@@ -45,11 +47,14 @@ export async function PATCH(req: NextRequest) {
   const { error } = await sb
     .from('stores')
     .update({
-      name:      body.name?.trim()      || null,
-      address:   body.address?.trim()   || null,
-      phone:     body.phone?.trim()     || null,
-      category:  body.category?.trim()  || null,
-      image_url: body.image_url?.trim() || null,
+      name:                 body.name?.trim()        || null,
+      address:              body.address?.trim()     || null,
+      phone:                body.phone?.trim()       || null,
+      category:             body.category?.trim()    || null,
+      image_url:            body.image_url?.trim()   || null,
+      representative_price: body.representative_price ?? null,
+      price_label:          body.price_label?.trim() || null,
+      // price_range는 DB 트리거가 자동 계산
     })
     .eq('id', body.store_id);
 
