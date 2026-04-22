@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase';
 import {
   LayoutDashboard, Store, FileText, Music, Ticket,
   Users, LogOut, ChevronRight, ScrollText, MapPin, PlaySquare, Zap, Map, ListMusic, Tag, Building2, Megaphone, Film, Video, KeyRound, Bell,
-  GripVertical, Pencil, Check, X, Settings, ImagePlus, PanelBottom, ClipboardList, UtensilsCrossed, BarChart3, Search, BookOpen, Sparkles,
+  GripVertical, Pencil, Check, X, Settings, ImagePlus, PanelBottom, ClipboardList, UtensilsCrossed, BarChart3, Search, BookOpen, Sparkles, Brain,
 } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 import {
@@ -36,7 +36,7 @@ import { CSS } from '@dnd-kit/utilities';
 
 const ICON_MAP: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
   LayoutDashboard, Store, FileText, Music, Ticket,
-  Users, ScrollText, MapPin, PlaySquare, Zap, Map, ListMusic, Tag, Building2, Megaphone, Film, Video, KeyRound, Bell, ImagePlus, PanelBottom, ClipboardList, UtensilsCrossed, BarChart3, Search, BookOpen, Sparkles,
+  Users, ScrollText, MapPin, PlaySquare, Zap, Map, ListMusic, Tag, Building2, Megaphone, Film, Video, KeyRound, Bell, ImagePlus, PanelBottom, ClipboardList, UtensilsCrossed, BarChart3, Search, BookOpen, Sparkles, Brain,
 };
 
 interface NavItem {
@@ -107,6 +107,7 @@ const DEFAULT_GROUPS: NavGroup[] = [
     id: 'system',
     label: '시스템',
     items: [
+      { id: 'mindmap',     href: '/dashboard/mindmap',     icon: 'Brain',      label: '마인드맵' },
       { id: 'docs',        href: '/dashboard/docs',        icon: 'BookOpen',   label: '문서 Wiki' },
       { id: 'propagation', href: '/dashboard/propagation', icon: 'Zap',        label: '학습 & 전파' },
       { id: 'opensource',  href: '/dashboard/opensource',  icon: 'ScrollText', label: '오픈소스' },
