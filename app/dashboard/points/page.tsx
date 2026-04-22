@@ -110,15 +110,21 @@ export default function PointsPage() {
     setReviews(prev => prev.map(r => r.id === id ? { ...r, status: next } : r));
   };
 
-  // ── 저장 ─────────────────────────────────────────────────────────
+  // ── 저장 (service_role API Route 경유) ───────────────────────────
   const save = async () => {
     setSaving(true); setSaveMsg(null);
-    const { error } = await supabase.from('point_settings').upsert(
-      { key: 'receipt_review', value: setting, description: '영수증 후기 제보 포인트 지급 조건', updated_at: new Date().toISOString() },
-      { onConflict: 'key' },
-    );
+    const res = await fetch('/api/admin/point-settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        key: 'receipt_review',
+        value: setting,
+        description: '영수증 후기 제보 포인트 지급 조건',
+      }),
+    });
+    const json = await res.json();
     setSaving(false);
-    setSaveMsg(error ? `❌ ${error.message}` : '✅ 저장됐어요.');
+    setSaveMsg(json.ok ? '✅ 저장됐어요.' : `❌ ${json.error}`);
     setTimeout(() => setSaveMsg(null), 3000);
   };
 
