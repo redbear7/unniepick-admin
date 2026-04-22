@@ -100,6 +100,21 @@ export default function CrawlKeywordsPage() {
   const verifyPollRef = useRef<NodeJS.Timeout | null>(null);
   const verifyLogPreRef = useRef<HTMLPreElement | null>(null);
 
+  // 네이버 폴더 가져오기
+  const [folderUrl, setFolderUrl] = useState('');
+  const [folderRunning, setFolderRunning] = useState(false);
+  const [folderLog, setFolderLog] = useState('');
+  const [folderLogOpen, setFolderLogOpen] = useState(false);
+  const [folderResult, setFolderResult] = useState<{
+    status: string; total: number; alreadyCount: number;
+    newCount: number; savedCount?: number; failedCount?: number;
+    saved?: Array<{ placeId: string; name: string }>;
+    failed?: Array<{ placeId: string; name: string; error: string }>;
+    error?: string;
+  } | null>(null);
+  const folderPollRef = useRef<NodeJS.Timeout | null>(null);
+  const folderLogPreRef = useRef<HTMLPreElement | null>(null);
+
   // 히스토리 초기 로드
   useEffect(() => {
     setSingleHistory(loadSingleHistory());
@@ -204,6 +219,63 @@ export default function CrawlKeywordsPage() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [singleRunning, singleLogOpen]);
+
+  // ── 네이버 폴더 가져오기 함수들 ──────────────────────────────
+
+  async function fetchFolderStatus() {
+    const res = await fetch('/api/crawl-restaurants/naver-folder');
+    const data = await res.json();
+    setFolderRunning(!!data.running);
+    if (data.log) {
+      setFolderLog(data.log);
+      setTimeout(() => {
+        if (folderLogPreRef.current)
+          folderLogPreRef.current.scrollTop = folderLogPreRef.current.scrollHeight;
+      }, 50);
+    }
+    if (data.result?.status) setFolderResult(data.result);
+    return !!data.running;
+  }
+
+  async function runFolderCrawl() {
+    if (!folderUrl.trim()) return;
+    setFolderResult(null);
+    setFolderLog('');
+    setFolderLogOpen(true);
+
+    const res = await fetch('/api/crawl-restaurants/naver-folder', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ folder_url: folderUrl.trim() }),
+    });
+    const data = await res.json();
+    if (!res.ok) { alert(data.error ?? '실행 실패'); return; }
+    setFolderRunning(true);
+  }
+
+  async function stopFolderCrawl() {
+    if (!confirm('폴더 가져오기를 중지할까요?')) return;
+    await fetch('/api/crawl-restaurants/naver-folder', { method: 'DELETE' });
+    setFolderRunning(false);
+  }
+
+  // 폴더 크롤링 폴링
+  useEffect(() => {
+    if (folderRunning || folderLogOpen) {
+      fetchFolderStatus();
+      folderPollRef.current = setInterval(async () => {
+        const running = await fetchFolderStatus();
+        if (!running && folderPollRef.current) {
+          clearInterval(folderPollRef.current);
+          folderPollRef.current = null;
+        }
+      }, 2000);
+    }
+    return () => {
+      if (folderPollRef.current) { clearInterval(folderPollRef.current); folderPollRef.current = null; }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [folderRunning, folderLogOpen]);
 
   async function checkVerifyStatus() {
     const res = await fetch('/api/crawl-restaurants/verify');
@@ -440,6 +512,107 @@ export default function CrawlKeywordsPage() {
           </pre>
         </div>
       )}
+
+      {/* ── 네이버 폴더 가져오기 ── */}
+      <div className="bg-card border border-border-main rounded-xl overflow-hidden">
+        <div className="p-4 space-y-3">
+          <div className="flex items-center gap-2 mb-1">
+            <MapPin className="w-4 h-4 text-[#03C75A]" />
+            <h2 className="text-sm font-semibold text-primary">네이버 내 장소 폴더 가져오기</h2>
+            <span className="text-xs text-muted">공유된 폴더 URL의 업체를 일괄 수집 (신규만)</span>
+          </div>
+
+          <div className="flex gap-2">
+            <input
+              type="url"
+              value={folderUrl}
+              onChange={(e) => setFolderUrl(e.target.value)}
+              placeholder="https://map.naver.com/p/favorite/myPlace/folder/..."
+              className="flex-1 px-3 py-2 bg-fill-subtle border border-border-subtle rounded-lg text-sm text-primary placeholder:text-muted focus:outline-none focus:border-[#03C75A]"
+              disabled={folderRunning}
+            />
+            {folderRunning ? (
+              <button
+                onClick={stopFolderCrawl}
+                className="px-3 py-2 bg-red-500/15 hover:bg-red-500/25 text-red-400 text-sm font-semibold rounded-lg border border-red-500/30 transition flex items-center gap-1.5"
+              >
+                <X className="w-4 h-4" /> 중지
+              </button>
+            ) : (
+              <button
+                onClick={runFolderCrawl}
+                disabled={!folderUrl.trim()}
+                className="px-4 py-2 bg-[#03C75A] hover:bg-[#02a84a] disabled:opacity-40 text-white text-sm font-semibold rounded-lg transition flex items-center gap-1.5"
+              >
+                <Play className="w-4 h-4" /> 가져오기
+              </button>
+            )}
+            <button
+              onClick={() => { setFolderLogOpen(v => !v); if (!folderLogOpen) fetchFolderStatus(); }}
+              className="px-3 py-2 bg-fill-subtle hover:bg-fill-medium border border-border-subtle rounded-lg text-xs text-muted hover:text-primary transition flex items-center gap-1"
+            >
+              <Terminal className="w-3.5 h-3.5" />
+              {folderLogOpen ? '로그 닫기' : '로그'}
+            </button>
+          </div>
+
+          {/* 결과 요약 */}
+          {folderResult && !folderRunning && (
+            <div className={`rounded-lg px-4 py-3 text-sm border ${
+              folderResult.status === 'failed'
+                ? 'bg-red-500/10 border-red-500/20 text-red-400'
+                : 'bg-green-500/10 border-green-500/20'
+            }`}>
+              {folderResult.status === 'failed' ? (
+                <p className="font-semibold">❌ {folderResult.error}</p>
+              ) : (
+                <div className="space-y-1.5">
+                  <div className="flex gap-4 text-xs">
+                    <span className="text-muted">폴더 내 업체 <strong className="text-primary">{folderResult.total}개</strong></span>
+                    <span className="text-muted">이미 등록 <strong className="text-primary">{folderResult.alreadyCount}개</strong></span>
+                    <span className="text-muted">신규 <strong className="text-[#03C75A]">{folderResult.newCount}개</strong></span>
+                    {folderResult.savedCount !== undefined && (
+                      <span className="text-muted">저장 완료 <strong className="text-[#FF6F0F]">{folderResult.savedCount}개</strong></span>
+                    )}
+                  </div>
+                  {(folderResult.saved?.length ?? 0) > 0 && (
+                    <div className="flex flex-wrap gap-1 pt-1">
+                      {folderResult.saved!.map(s => (
+                        <span key={s.placeId} className="px-2 py-0.5 bg-green-500/15 text-green-400 text-xs rounded-full">
+                          {s.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {(folderResult.failed?.length ?? 0) > 0 && (
+                    <p className="text-xs text-red-400">실패: {folderResult.failed!.map(f => f.name).join(', ')}</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* 로그 */}
+        {folderLogOpen && (
+          <div className="border-t border-border-main bg-[#0D0D0D]">
+            <div className="flex items-center justify-between px-4 py-2 border-b border-border-subtle">
+              <span className="text-xs text-muted flex items-center gap-1.5">
+                <Terminal className="w-3 h-3" />
+                폴더 가져오기 실시간 로그
+                {folderRunning && <Loader2 className="w-3 h-3 animate-spin text-[#03C75A]" />}
+              </span>
+              <button onClick={() => setFolderLogOpen(false)} className="text-xs text-muted hover:text-primary">닫기</button>
+            </div>
+            <pre
+              ref={folderLogPreRef}
+              className="text-[11px] leading-5 px-4 py-3 overflow-y-auto max-h-[300px] font-mono text-secondary whitespace-pre-wrap break-all"
+            >
+              {folderLog || '로딩 중...'}
+            </pre>
+          </div>
+        )}
+      </div>
 
       {/* ── 단일 업체 크롤링 ── */}
       <div className="bg-card border border-border-main rounded-xl overflow-hidden">
