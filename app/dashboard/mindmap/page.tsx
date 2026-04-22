@@ -86,6 +86,54 @@ interface Mindmap {
   next_actions: string[];
 }
 
+// ── 유연한 저장 포맷 → 내부 Mindmap 타입으로 정규화 ───────────────
+// 저장 시 label/nodes/children(string[]) 혼용 포맷을 모두 처리
+function normalizeMindmap(raw: unknown): Mindmap {
+  if (!raw || typeof raw !== 'object') {
+    return { seed: '', summary: '', branches: [], core_insights: [], next_actions: [] };
+  }
+  const r = raw as Record<string, unknown>;
+
+  const normalizeChild = (c: unknown): MindmapNode => {
+    if (typeof c === 'string') return { idea: c, children: [] };
+    const co = c as Record<string, unknown>;
+    const childList = (co.children ?? co.nodes ?? []) as unknown[];
+    return {
+      idea: String(co.idea ?? co.label ?? ''),
+      children: Array.isArray(childList)
+        ? childList.map(normalizeChild)
+        : [],
+    };
+  };
+
+  const normalizeBranch = (b: unknown): MindmapBranch => {
+    const bo = b as Record<string, unknown>;
+    const nodeList = (bo.children ?? bo.nodes ?? []) as unknown[];
+    return {
+      topic:    String(bo.topic ?? bo.label ?? ''),
+      emoji:    String(bo.emoji ?? '🔹'),
+      color:    String(bo.color ?? '#FF6F0F'),
+      children: Array.isArray(nodeList) ? nodeList.map(normalizeChild) : [],
+    };
+  };
+
+  const branches = Array.isArray(r.branches) ? r.branches.map(normalizeBranch) : [];
+  const core_insights = Array.isArray(r.core_insights)
+    ? r.core_insights.map(String)
+    : [];
+  const next_actions = Array.isArray(r.next_actions)
+    ? r.next_actions.map(String)
+    : [];
+
+  return {
+    seed:    String(r.seed ?? ''),
+    summary: String(r.summary ?? ''),
+    branches,
+    core_insights,
+    next_actions,
+  };
+}
+
 interface Session {
   id: string; title: string; date: string;
   messages: Msg[]; mindmap: Mindmap | null;
@@ -141,11 +189,11 @@ function MindmapView({
   onSaved: (m: Mindmap) => void;
 }) {
   const [editMode, setEditMode] = useState(false);
-  const [draft,    setDraft]    = useState<Mindmap>(() => dc(initMindmap));
+  const [draft,    setDraft]    = useState<Mindmap>(() => normalizeMindmap(initMindmap));
   const [saving,   setSaving]   = useState(false);
   const th = useMindTheme();
 
-  useEffect(() => { if (!editMode) setDraft(dc(initMindmap)); }, [initMindmap, editMode]);
+  useEffect(() => { if (!editMode) setDraft(normalizeMindmap(initMindmap)); }, [initMindmap, editMode]);
 
   const data = editMode ? draft : initMindmap;
 
@@ -298,7 +346,7 @@ function MindmapView({
             <div className="flex flex-col gap-2">
               {editMode ? (
                 <>
-                  {branch.children.map((node, ni) => (
+                  {(branch.children ?? []).map((node, ni) => (
                     <div key={ni} className="border border-dashed border-border-subtle rounded-lg p-2.5 space-y-1.5">
                       {/* 1단계 노드 */}
                       <div className="flex items-center gap-1.5">
@@ -334,7 +382,7 @@ function MindmapView({
                   </button>
                 </>
               ) : (
-                branch.children.map((node, j) => (
+                (branch.children ?? []).map((node, j) => (
                   <MindNode key={j} node={node} color={branch.color} depth={0} th={th} />
                 ))
               )}
