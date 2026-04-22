@@ -55,6 +55,7 @@ export default function RestaurantRegisterPage() {
   const [uploading, setUploading] = useState(false);
   const [showUrlInput, setShowUrlInput] = useState(false);
   const [urlInputVal, setUrlInputVal] = useState('');
+  const [imgScale, setImgScale] = useState(100); // 미리보기 크기 % (25~100)
 
   // 원본 row
   const [row, setRow] = useState<RestaurantRow | null>(null);
@@ -252,7 +253,7 @@ export default function RestaurantRegisterPage() {
         </div>
       </div>
 
-      {/* 썸네일 — 원본 비율 · 절반 크기 */}
+      {/* 썸네일 — 원본 비율 · 크기 조절 */}
       <div className="mb-6">
         {/* hidden file input */}
         <input
@@ -263,22 +264,36 @@ export default function RestaurantRegisterPage() {
           onChange={handleFileChange}
         />
 
-        <div className="w-1/2">
-          {imageUrl ? (
-            /* 이미지 있음: 원본 비율 유지 */
-            <div className="relative rounded-xl overflow-hidden border border-border-main">
+        {imageUrl ? (
+          <div className="space-y-2">
+            {/* 크기 조절 슬라이더 */}
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-muted w-6 text-right">소</span>
+              <input
+                type="range"
+                min={25}
+                max={100}
+                step={5}
+                value={imgScale}
+                onChange={(e) => setImgScale(Number(e.target.value))}
+                className="flex-1 accent-[#FF6F0F] h-1 cursor-pointer"
+              />
+              <span className="text-xs text-muted w-6">대</span>
+              <span className="text-xs text-muted w-8 text-right">{imgScale}%</span>
+            </div>
+
+            {/* 이미지 — 원본 비율, 슬라이더 너비 */}
+            <div style={{ width: `${imgScale}%` }} className="relative rounded-xl overflow-hidden border border-border-main">
               <img
                 src={imageUrl}
                 alt={name}
                 className="block w-full h-auto"
               />
-              {/* 업로드 중 */}
               {uploading && (
                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
                   <Loader2 className="w-6 h-6 text-white animate-spin" />
                 </div>
               )}
-              {/* 교체 버튼 */}
               {!uploading && (
                 <div className="absolute bottom-2 right-2 flex gap-1.5">
                   <button
@@ -300,29 +315,29 @@ export default function RestaurantRegisterPage() {
                 </div>
               )}
             </div>
-          ) : (
-            /* 이미지 없음: 고정 플레이스홀더 */
-            <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-fill-subtle border border-border-main flex flex-col items-center justify-center gap-2 text-muted">
-              <Camera className="w-8 h-8 opacity-30" />
-              <span className="text-xs">사진 없음</span>
-              {uploading && (
-                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                  <Loader2 className="w-6 h-6 text-white animate-spin" />
-                </div>
-              )}
-              {!uploading && (
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="absolute bottom-2 right-2 flex items-center gap-1 px-2 py-1 bg-black/60 hover:bg-black/75 text-white text-xs font-medium rounded-md backdrop-blur-sm transition-colors"
-                >
-                  <Camera className="w-3 h-3" />
-                  업로드
-                </button>
-              )}
-            </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          /* 이미지 없음 플레이스홀더 */
+          <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-fill-subtle border border-border-main flex flex-col items-center justify-center gap-2 text-muted">
+            <Camera className="w-8 h-8 opacity-30" />
+            <span className="text-xs">사진 없음</span>
+            {uploading && (
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                <Loader2 className="w-6 h-6 text-white animate-spin" />
+              </div>
+            )}
+            {!uploading && (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="absolute bottom-2 right-2 flex items-center gap-1 px-2 py-1 bg-black/60 hover:bg-black/75 text-white text-xs font-medium rounded-md backdrop-blur-sm transition-colors"
+              >
+                <Camera className="w-3 h-3" />
+                업로드
+              </button>
+            )}
+          </div>
+        )}
 
         {/* URL 입력 패널 */}
         {showUrlInput && (
