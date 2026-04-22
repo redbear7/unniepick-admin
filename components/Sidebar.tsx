@@ -101,7 +101,7 @@ const DEFAULT_GROUPS: NavGroup[] = [
       { id: 'coupons',   href: '/dashboard/coupons',   icon: 'Ticket',      label: '쿠폰 관리' },
       { id: 'banners',   href: '/dashboard/banners',   icon: 'PanelBottom', label: '배너 관리' },
       { id: 'ai-images', href: '/dashboard/ai-images', icon: 'ImagePlus',   label: 'AI 이미지 생성' },
-      { id: 'points',    href: '/dashboard/points',    icon: 'Gift',        label: '포인트 설정' },
+      { id: 'points',    href: '/dashboard/points',    icon: 'Gift',        label: '영수증 리뷰' },
     ],
   },
   {
