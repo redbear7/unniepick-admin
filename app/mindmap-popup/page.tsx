@@ -34,7 +34,7 @@ function PopupContent() {
 
   const composingRef   = useRef(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const intervalRef    = useRef<ReturnType<typeof setInterval> | null>(null);
+  const intervalRef    = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /* ── 세션 로드 ── */
   const loadSession = useCallback(async () => {
@@ -65,17 +65,24 @@ function PopupContent() {
   /* ── 항상 위에 ── */
   useEffect(() => {
     localStorage.setItem(ONTOP_KEY, String(alwaysOnTop));
-    document.title = alwaysOnTop ? '📌 마인드맵 채팅' : '마인드맵 채팅';
+    document.title = alwaysOnTop ? '📌 마인드맵' : '마인드맵 채팅';
 
-    if (alwaysOnTop) {
-      // 3초마다 focus 요청 (브라우저 허용 범위 내)
-      intervalRef.current = setInterval(() => {
-        try { window.focus(); } catch {}
-      }, 3000);
-    } else {
-      if (intervalRef.current) clearInterval(intervalRef.current);
+    if (!alwaysOnTop) {
+      if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
+      return;
     }
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+
+    // blur 시 즉시 focus 재요청 (같은 출처 팝업에서 동작)
+    const onBlur = () => {
+      // 약간의 delay 후 focus (즉시 하면 무한루프 방지 필요)
+      setTimeout(() => { try { window.focus(); } catch {} }, 50);
+    };
+    window.addEventListener('blur', onBlur);
+
+    return () => {
+      window.removeEventListener('blur', onBlur);
+      if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
+    };
   }, [alwaysOnTop]);
 
   /* ── 폰트 저장 ── */

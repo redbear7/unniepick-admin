@@ -2,10 +2,55 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import {
-  Plus, Trash2, Loader2, Sparkles, ChevronDown,
+  Plus, Trash2, Loader2, Sparkles,
   ChevronRight, Calendar, MessageSquare, Lightbulb,
-  ArrowRight, X, Pencil, Check, ExternalLink,
+  ArrowRight, X, Pencil, Check, ExternalLink, Save, Printer,
 } from 'lucide-react';
+
+/* ── 상수 ─────────────────────────────────────────────────────── */
+const BRANCH_COLORS = ['#FF6F0F', '#3B82F6', '#10B981', '#8B5CF6', '#F59E0B'];
+function dc<T>(v: T): T { return JSON.parse(JSON.stringify(v)); }
+
+/* ── 인쇄용 HTML 생성 ─────────────────────────────────────────── */
+function buildPrintHTML(m: Mindmap, title: string): string {
+  const branches = m.branches.map(b => `
+    <div class="branch">
+      <h3 style="color:${b.color}">${b.emoji} ${b.topic}</h3>
+      ${b.children.map(n => `
+        <div class="node" style="color:${b.color}">● ${n.idea}
+          ${(n.children ?? []).map(c => `<div class="child">◦ ${c.idea}</div>`).join('')}
+        </div>`).join('')}
+    </div>`).join('');
+  const insights = (m.core_insights ?? []).map(i => `<li>✦ ${i}</li>`).join('');
+  const actions  = (m.next_actions  ?? []).map((a, i) => `<li>${i+1}. ${a}</li>`).join('');
+  return `<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"/>
+  <title>${m.seed} 마인드맵</title>
+  <style>
+    body{font-family:system-ui,sans-serif;padding:32px;color:#111;max-width:780px;margin:0 auto}
+    h1{color:#FF6F0F;font-size:26px;margin:0 0 4px}
+    .sub{color:#666;font-size:13px;margin-bottom:28px}
+    .branch{border:1px solid #e2e8f0;border-radius:10px;padding:14px;margin-bottom:14px}
+    .branch h3{margin:0 0 8px;font-size:15px}
+    .node{margin:5px 0 5px 12px;font-size:13px;font-weight:600}
+    .child{margin:2px 0 2px 20px;color:#555;font-weight:400;font-size:12px}
+    .section{border:1px solid #e2e8f0;border-radius:10px;padding:14px;margin-bottom:14px}
+    .section h3{margin:0 0 8px;font-size:14px;color:#FF6F0F}
+    ul{margin:0;padding-left:8px;list-style:none}
+    li{margin:4px 0;font-size:13px}
+    .date{font-size:11px;color:#aaa;text-align:right;margin-top:24px}
+    @media print{body{padding:0}}
+  </style></head><body>
+  <div style="text-align:center;margin-bottom:28px">
+    <div style="font-size:36px">🌱</div>
+    <h1>${m.seed}</h1>
+    <p class="sub">${m.summary}</p>
+  </div>
+  ${branches}
+  ${insights ? `<div class="section"><h3>💡 핵심 인사이트</h3><ul>${insights}</ul></div>` : ''}
+  ${actions  ? `<div class="section" style="border-color:#e2e8f0"><h3 style="color:#333">→ 다음 단계</h3><ul>${actions}</ul></div>` : ''}
+  <p class="date">${title} · ${new Date().toLocaleDateString('ko-KR')}</p>
+  </body></html>`;
+}
 
 // ── 타입 ────────────────────────────────────────────────────────
 interface Msg { role: 'user' | 'ai'; content: string; ts: string }
@@ -27,7 +72,7 @@ interface Session {
   core_insights: string[]; created_at: string;
 }
 
-// ── 마인드맵 노드 렌더러 ────────────────────────────────────────
+// ── 뷰용 MindNode ───────────────────────────────────────────────
 function MindNode({ node, color, depth = 0 }: { node: MindmapNode; color: string; depth?: number }) {
   const [open, setOpen] = useState(true);
   const hasChildren = node.children?.length > 0;
@@ -35,100 +80,309 @@ function MindNode({ node, color, depth = 0 }: { node: MindmapNode; color: string
   return (
     <div className="flex flex-col items-start">
       <div className="flex items-center gap-1.5">
-        {/* 연결선 */}
         {depth > 0 && <div className="w-4 h-px opacity-30" style={{ backgroundColor: color }} />}
         <button
           onClick={() => hasChildren && setOpen(v => !v)}
           className={`px-2.5 py-1 rounded-lg border transition-all ${size} ${hasChildren ? 'cursor-pointer hover:opacity-80' : 'cursor-default'}`}
-          style={{
-            backgroundColor: `${color}18`,
-            borderColor: `${color}40`,
-            color: depth === 0 ? color : '#E0E0E0',
-          }}
+          style={{ backgroundColor: `${color}18`, borderColor: `${color}40`, color: depth === 0 ? color : '#E0E0E0' }}
         >
-          {hasChildren && (
-            <span className="mr-1 opacity-60">{open ? '▾' : '▸'}</span>
-          )}
+          {hasChildren && <span className="mr-1 opacity-60">{open ? '▾' : '▸'}</span>}
           {node.idea}
         </button>
       </div>
       {open && hasChildren && (
-        <div className="ml-6 mt-1.5 flex flex-col gap-1.5 border-l border-dashed pl-2"
-          style={{ borderColor: `${color}25` }}>
-          {node.children.map((c, i) => (
-            <MindNode key={i} node={c} color={color} depth={depth + 1} />
-          ))}
+        <div className="ml-6 mt-1.5 flex flex-col gap-1.5 border-l border-dashed pl-2" style={{ borderColor: `${color}25` }}>
+          {node.children.map((c, i) => <MindNode key={i} node={c} color={color} depth={depth + 1} />)}
         </div>
       )}
     </div>
   );
 }
 
-// ── 마인드맵 뷰 ─────────────────────────────────────────────────
-function MindmapView({ mindmap }: { mindmap: Mindmap }) {
+// ── 마인드맵 뷰 + 편집 + 저장 + 인쇄 ───────────────────────────
+function MindmapView({
+  mindmap: initMindmap, sessionId, sessionTitle, onSaved,
+}: {
+  mindmap: Mindmap; sessionId: string; sessionTitle: string;
+  onSaved: (m: Mindmap) => void;
+}) {
+  const [editMode, setEditMode] = useState(false);
+  const [draft,    setDraft]    = useState<Mindmap>(() => dc(initMindmap));
+  const [saving,   setSaving]   = useState(false);
+
+  useEffect(() => { if (!editMode) setDraft(dc(initMindmap)); }, [initMindmap, editMode]);
+
+  const data = editMode ? draft : initMindmap;
+
+  /* ── draft 업데이트 헬퍼 ── */
+  const upd = (fn: (d: Mindmap) => Mindmap) => setDraft(d => fn(dc(d)));
+
+  // 씨앗 / 요약
+  const updSeed    = (v: string) => upd(d => ({ ...d, seed: v }));
+  const updSummary = (v: string) => upd(d => ({ ...d, summary: v }));
+
+  // 브랜치
+  const updBranch   = (bi: number, k: keyof MindmapBranch, v: string) =>
+    upd(d => { (d.branches[bi] as Record<string, unknown>)[k] = v; return d; });
+  const addBranch   = () => upd(d => ({
+    ...d, branches: [...d.branches, {
+      topic: '새 분류', emoji: '🔹',
+      color: BRANCH_COLORS[d.branches.length % BRANCH_COLORS.length],
+      children: [{ idea: '새 아이디어', children: [] }],
+    }],
+  }));
+  const removeBranch = (bi: number) => upd(d => ({ ...d, branches: d.branches.filter((_, i) => i !== bi) }));
+
+  // 노드 (1단계)
+  const updNode    = (bi: number, ni: number, v: string) => upd(d => { d.branches[bi].children[ni].idea = v; return d; });
+  const addNode    = (bi: number) => upd(d => { d.branches[bi].children.push({ idea: '새 아이디어', children: [] }); return d; });
+  const removeNode = (bi: number, ni: number) => upd(d => { d.branches[bi].children.splice(ni, 1); return d; });
+
+  // 자식 노드 (2단계)
+  const updChild    = (bi: number, ni: number, ci: number, v: string) => upd(d => { d.branches[bi].children[ni].children[ci].idea = v; return d; });
+  const addChild    = (bi: number, ni: number) => upd(d => { d.branches[bi].children[ni].children.push({ idea: '세부 아이디어', children: [] }); return d; });
+  const removeChild = (bi: number, ni: number, ci: number) => upd(d => { d.branches[bi].children[ni].children.splice(ci, 1); return d; });
+
+  // 인사이트 / 액션
+  const updInsight    = (i: number, v: string) => upd(d => { d.core_insights[i] = v; return d; });
+  const addInsight    = () => upd(d => ({ ...d, core_insights: [...d.core_insights, '새 인사이트'] }));
+  const removeInsight = (i: number) => upd(d => ({ ...d, core_insights: d.core_insights.filter((_, j) => j !== i) }));
+  const updAction     = (i: number, v: string) => upd(d => { d.next_actions[i] = v; return d; });
+  const addAction     = () => upd(d => ({ ...d, next_actions: [...d.next_actions, '새 액션'] }));
+  const removeAction  = (i: number) => upd(d => ({ ...d, next_actions: d.next_actions.filter((_, j) => j !== i) }));
+
+  /* ── 저장 ── */
+  const saveEdit = async () => {
+    setSaving(true);
+    await fetch(`/api/mindmap/sessions/${sessionId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mindmap: draft }),
+    });
+    onSaved(draft);
+    setEditMode(false);
+    setSaving(false);
+  };
+
+  /* ── 인쇄 ── */
+  const handlePrint = () => {
+    const win = window.open('', '_blank', 'width=820,height=700');
+    if (!win) return;
+    win.document.write(buildPrintHTML(editMode ? draft : initMindmap, sessionTitle));
+    win.document.close();
+    win.onload = () => { win.focus(); win.print(); };
+  };
+
+  /* ── 공용 input 스타일 ── */
+  const inp = 'bg-fill-subtle border border-border-subtle rounded px-2 py-1 focus:outline-none focus:border-[#FF6F0F] w-full';
+
   return (
-    <div className="space-y-6 select-none">
-      {/* 씨앗 */}
-      <div className="flex flex-col items-center gap-1">
+    <div className="space-y-6">
+      {/* ── 툴바 ── */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {editMode ? (
+          <>
+            <button onClick={saveEdit} disabled={saving}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-500 disabled:opacity-50 text-white text-xs font-bold rounded-lg transition">
+              {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+              저장
+            </button>
+            <button onClick={() => { setDraft(dc(initMindmap)); setEditMode(false); }}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-fill-subtle hover:bg-fill-medium text-muted text-xs font-bold rounded-lg transition">
+              <X className="w-3.5 h-3.5" /> 취소
+            </button>
+          </>
+        ) : (
+          <button onClick={() => { setDraft(dc(initMindmap)); setEditMode(true); }}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-fill-subtle hover:bg-fill-medium text-primary text-xs font-bold rounded-lg transition">
+            <Pencil className="w-3.5 h-3.5" /> 편집
+          </button>
+        )}
+        <button onClick={handlePrint}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-fill-subtle hover:bg-fill-medium text-primary text-xs font-bold rounded-lg transition ml-auto">
+          <Printer className="w-3.5 h-3.5" /> 인쇄
+        </button>
+      </div>
+
+      {/* ── 씨앗 ── */}
+      <div className="flex flex-col items-center gap-2">
         <div className="w-20 h-20 rounded-full bg-[#FF6F0F] flex items-center justify-center shadow-lg shadow-[#FF6F0F]/30">
           <span className="text-white text-2xl">🌱</span>
         </div>
-        <span className="text-lg font-black text-white mt-1">{mindmap.seed}</span>
-        <span className="text-xs text-muted text-center max-w-xs">{mindmap.summary}</span>
+        {editMode ? (
+          <>
+            <input value={draft.seed} onChange={e => updSeed(e.target.value)}
+              className={`${inp} text-lg font-black text-center max-w-xs`}
+              style={{ color: '#FF6F0F' }} placeholder="씨앗 키워드" />
+            <textarea value={draft.summary} onChange={e => updSummary(e.target.value)}
+              rows={2} className={`${inp} text-xs text-center max-w-xs resize-none text-muted`}
+              placeholder="한 줄 요약" />
+          </>
+        ) : (
+          <>
+            <span className="text-lg font-black text-white">{data.seed}</span>
+            <span className="text-xs text-muted text-center max-w-xs">{data.summary}</span>
+          </>
+        )}
       </div>
 
-      {/* 브랜치 */}
+      {/* ── 브랜치 ── */}
       <div className="grid grid-cols-1 gap-4">
-        {mindmap.branches.map((branch, i) => (
-          <div key={i} className="bg-card border border-border-main rounded-xl p-4">
+        {data.branches.map((branch, bi) => (
+          <div key={bi} className="bg-card border border-border-main rounded-xl p-4">
+            {/* 브랜치 헤더 */}
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-xl">{branch.emoji}</span>
-              <span className="font-bold text-sm" style={{ color: branch.color }}>{branch.topic}</span>
-              <div className="flex-1 h-px" style={{ backgroundColor: `${branch.color}30` }} />
+              {editMode ? (
+                <>
+                  <input value={branch.emoji} onChange={e => updBranch(bi, 'emoji', e.target.value)}
+                    className="w-9 text-xl text-center bg-fill-subtle border border-border-subtle rounded focus:outline-none" />
+                  <input value={branch.topic} onChange={e => updBranch(bi, 'topic', e.target.value)}
+                    className="flex-1 text-sm font-bold bg-fill-subtle border border-border-subtle rounded px-2 py-1 focus:outline-none focus:border-[#FF6F0F]"
+                    style={{ color: branch.color }} />
+                  <div className="flex gap-1 shrink-0">
+                    {BRANCH_COLORS.map(c => (
+                      <button key={c} onClick={() => updBranch(bi, 'color', c)}
+                        className="w-4 h-4 rounded-full border-2 transition-transform hover:scale-110"
+                        style={{ backgroundColor: c, borderColor: branch.color === c ? 'white' : 'transparent' }} />
+                    ))}
+                  </div>
+                  <button onClick={() => removeBranch(bi)} className="text-muted hover:text-red-400 transition ml-1">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <span className="text-xl">{branch.emoji}</span>
+                  <span className="font-bold text-sm" style={{ color: branch.color }}>{branch.topic}</span>
+                  <div className="flex-1 h-px" style={{ backgroundColor: `${branch.color}30` }} />
+                </>
+              )}
             </div>
+
+            {/* 노드 목록 */}
             <div className="flex flex-col gap-2">
-              {branch.children.map((node, j) => (
-                <MindNode key={j} node={node} color={branch.color} depth={0} />
-              ))}
+              {editMode ? (
+                <>
+                  {branch.children.map((node, ni) => (
+                    <div key={ni} className="border border-dashed border-border-subtle rounded-lg p-2.5 space-y-1.5">
+                      {/* 1단계 노드 */}
+                      <div className="flex items-center gap-1.5">
+                        <input value={node.idea} onChange={e => updNode(bi, ni, e.target.value)}
+                          className="flex-1 text-sm font-semibold bg-fill-subtle border border-border-subtle rounded px-2 py-1 focus:outline-none focus:border-[#FF6F0F]"
+                          style={{ color: branch.color }} />
+                        <button onClick={() => addChild(bi, ni)} title="하위 추가"
+                          className="w-6 h-6 rounded flex items-center justify-center text-muted hover:text-green-400 transition">
+                          <Plus className="w-3.5 h-3.5" />
+                        </button>
+                        <button onClick={() => removeNode(bi, ni)} title="삭제"
+                          className="w-6 h-6 rounded flex items-center justify-center text-muted hover:text-red-400 transition">
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      {/* 2단계 자식 */}
+                      {(node.children ?? []).map((child, ci) => (
+                        <div key={ci} className="flex items-center gap-1.5 pl-4">
+                          <div className="w-3 h-px shrink-0 opacity-30" style={{ backgroundColor: branch.color }} />
+                          <input value={child.idea} onChange={e => updChild(bi, ni, ci, e.target.value)}
+                            className="flex-1 text-xs bg-fill-subtle border border-border-subtle rounded px-2 py-1 focus:outline-none focus:border-[#FF6F0F] text-secondary" />
+                          <button onClick={() => removeChild(bi, ni, ci)}
+                            className="w-5 h-5 rounded flex items-center justify-center text-muted hover:text-red-400 transition">
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                  <button onClick={() => addNode(bi)}
+                    className="flex items-center gap-1 text-xs text-muted hover:text-primary transition py-1 pl-1">
+                    <Plus className="w-3 h-3" /> 아이디어 추가
+                  </button>
+                </>
+              ) : (
+                branch.children.map((node, j) => (
+                  <MindNode key={j} node={node} color={branch.color} depth={0} />
+                ))
+              )}
             </div>
           </div>
         ))}
+
+        {editMode && (
+          <button onClick={addBranch}
+            className="flex items-center justify-center gap-2 py-3 border-2 border-dashed border-border-subtle rounded-xl text-sm text-muted hover:text-primary hover:border-[#FF6F0F]/40 transition">
+            <Plus className="w-4 h-4" /> 브랜치 추가
+          </button>
+        )}
       </div>
 
-      {/* 핵심 인사이트 */}
-      {mindmap.core_insights?.length > 0 && (
+      {/* ── 핵심 인사이트 ── */}
+      {(data.core_insights?.length > 0 || editMode) && (
         <div className="bg-[#FF6F0F]/8 border border-[#FF6F0F]/20 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-3">
             <Lightbulb className="w-4 h-4 text-[#FF6F0F]" />
             <span className="text-sm font-bold text-[#FF6F0F]">핵심 인사이트</span>
           </div>
           <div className="space-y-2">
-            {mindmap.core_insights.map((ins, i) => (
-              <div key={i} className="flex items-start gap-2 text-sm text-secondary">
-                <span className="text-[#FF6F0F] mt-0.5 shrink-0">✦</span>
-                {ins}
+            {(data.core_insights ?? []).map((ins, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <span className="text-[#FF6F0F] shrink-0 mt-0.5">✦</span>
+                {editMode ? (
+                  <>
+                    <input value={ins} onChange={e => updInsight(i, e.target.value)}
+                      className="flex-1 text-sm bg-fill-subtle border border-border-subtle rounded px-2 py-1 focus:outline-none focus:border-[#FF6F0F] text-secondary" />
+                    <button onClick={() => removeInsight(i)}
+                      className="w-5 h-5 flex items-center justify-center text-muted hover:text-red-400 transition shrink-0">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </>
+                ) : (
+                  <span className="text-sm text-secondary">{ins}</span>
+                )}
               </div>
             ))}
+            {editMode && (
+              <button onClick={addInsight}
+                className="flex items-center gap-1 text-xs text-muted hover:text-[#FF6F0F] transition mt-1">
+                <Plus className="w-3 h-3" /> 인사이트 추가
+              </button>
+            )}
           </div>
         </div>
       )}
 
-      {/* 다음 액션 */}
-      {mindmap.next_actions?.length > 0 && (
+      {/* ── 다음 단계 ── */}
+      {(data.next_actions?.length > 0 || editMode) && (
         <div className="bg-fill-subtle border border-border-subtle rounded-xl p-4">
           <div className="flex items-center gap-2 mb-3">
             <ArrowRight className="w-4 h-4 text-primary" />
             <span className="text-sm font-bold text-primary">다음 단계</span>
           </div>
           <div className="space-y-2">
-            {mindmap.next_actions.map((act, i) => (
-              <div key={i} className="flex items-center gap-2 text-sm text-secondary">
+            {(data.next_actions ?? []).map((act, i) => (
+              <div key={i} className="flex items-center gap-2">
                 <span className="w-5 h-5 rounded-full bg-fill-medium flex items-center justify-center text-xs font-bold text-primary shrink-0">
                   {i + 1}
                 </span>
-                {act}
+                {editMode ? (
+                  <>
+                    <input value={act} onChange={e => updAction(i, e.target.value)}
+                      className="flex-1 text-sm bg-fill-subtle border border-border-subtle rounded px-2 py-1 focus:outline-none focus:border-[#FF6F0F] text-secondary" />
+                    <button onClick={() => removeAction(i)}
+                      className="w-5 h-5 flex items-center justify-center text-muted hover:text-red-400 transition shrink-0">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </>
+                ) : (
+                  <span className="text-sm text-secondary">{act}</span>
+                )}
               </div>
             ))}
+            {editMode && (
+              <button onClick={addAction}
+                className="flex items-center gap-1 text-xs text-muted hover:text-primary transition mt-1">
+                <Plus className="w-3 h-3" /> 액션 추가
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -406,7 +660,7 @@ export default function MindmapPage() {
                 onClick={() => {
                   const url = `/mindmap-popup?session=${activeId}`;
                   window.open(url, 'mindmap_popup',
-                    'width=420,height=620,top=60,left=60,resizable=yes,scrollbars=no');
+                    'width=420,height=640,top=60,left=60,resizable=yes,scrollbars=no,toolbar=no,location=no,menubar=no,status=no,directories=no');
                 }}
                 className="p-1.5 rounded-lg hover:bg-fill-subtle text-muted hover:text-primary transition"
                 title="새창으로 열기"
@@ -540,7 +794,12 @@ export default function MindmapPage() {
               </div>
             ) : session.mindmap ? (
               <div className="max-w-2xl mx-auto">
-                <MindmapView mindmap={session.mindmap} />
+                <MindmapView
+                  mindmap={session.mindmap}
+                  sessionId={session.id}
+                  sessionTitle={session.title}
+                  onSaved={(m) => setSession(s => s ? { ...s, mindmap: m } : s)}
+                />
                 <button
                   onClick={() => setView('chat')}
                   className="mt-6 w-full py-2 border border-border-subtle rounded-xl text-xs text-muted hover:text-primary hover:border-border-main transition"
