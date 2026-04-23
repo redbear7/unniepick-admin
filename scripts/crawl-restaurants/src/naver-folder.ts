@@ -65,57 +65,27 @@ async function getExistingIds(): Promise<Set<string>> {
   return new Set((data ?? []).map((r: any) => r.naver_place_id));
 }
 
-// ── 네이버 로그인 (캐시 쿠키 → 신규 로그인 순으로 시도) ─────
+// ── 네이버 세션 복원 (저장된 쿠키 사용) ─────────────────────
 async function naverLogin(page: import('playwright').Page): Promise<boolean> {
-  // 1단계: 저장된 쿠키로 세션 복원 시도
   const restored = await loadCookies(page);
-  if (restored) {
-    // 로그인 상태 검증
-    await page.goto('https://map.naver.com', { waitUntil: 'domcontentloaded', timeout: 15_000 });
-    await page.waitForTimeout(1500);
-    const isLoggedIn = await page.evaluate(() =>
-      !document.cookie.includes('NNB=') || document.cookie.includes('NID_AUT=')
-    );
-    if (isLoggedIn) {
-      console.log('✓ 쿠키 캐시로 세션 복원 성공');
-      return true;
-    }
-    console.log('  쿠키 만료 — 재로그인 시도');
-  }
-
-  // 2단계: ID/PW로 신규 로그인
-  const id = process.env.NAVER_ID;
-  const pw = process.env.NAVER_PW;
-  if (!id || !pw) {
-    console.log('⚠️  NAVER_ID / NAVER_PW 미설정 — 로그인 생략');
+  if (!restored) {
+    console.log('⚠️  저장된 쿠키 없음 — 먼저 실행하세요:');
+    console.log('    npx tsx src/naver-login-setup.ts');
     return false;
   }
 
-  try {
-    await page.goto('https://nid.naver.com/nidlogin.login', { waitUntil: 'domcontentloaded', timeout: 15_000 });
-    await page.waitForTimeout(1000);
+  // 쿠키 유효성 확인 (지도 메인으로 이동 후 로그인 페이지 여부 체크)
+  await page.goto('https://map.naver.com', { waitUntil: 'domcontentloaded', timeout: 15_000 });
+  await page.waitForTimeout(1500);
 
-    await page.fill('#id', id);
-    await page.waitForTimeout(500);
-    await page.fill('#pw', pw);
-    await page.waitForTimeout(500);
-    await page.click('#log\\.login');
-    await page.waitForTimeout(3000);
-
-    const url = page.url();
-    if (url.includes('nid.naver.com')) {
-      console.log('⚠️  네이버 로그인 실패 (captcha 또는 잘못된 계정)');
-      return false;
-    }
-
-    // 로그인 성공 → 쿠키 저장 (다음 실행부터 재사용)
-    await saveCookies(page);
-    console.log('✓ 네이버 로그인 성공 (쿠키 저장됨)');
-    return true;
-  } catch (e) {
-    console.log('⚠️  네이버 로그인 오류:', (e as Error).message);
+  if (page.url().includes('nid.naver.com')) {
+    console.log('⚠️  쿠키 만료 — 다시 실행하세요:');
+    console.log('    npx tsx src/naver-login-setup.ts');
     return false;
   }
+
+  console.log('✓ 네이버 세션 복원 성공');
+  return true;
 }
 
 // ── 폴더 페이지에서 place ID 추출 ────────────────────────────
