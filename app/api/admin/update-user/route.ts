@@ -40,14 +40,23 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: '변경할 내용이 없습니다.' }, { status: 400 });
   }
 
-  // 1) users 테이블 업데이트
-  const { error: usersErr } = await sb
+  // 1) users 테이블 업데이트 (.select() 로 실제 반영 여부 확인)
+  const { data: updatedRows, error: usersErr } = await sb
     .from('users')
     .update(usersUpdate)
-    .eq('id', userId);
+    .eq('id', userId)
+    .select('id, name, role');
 
   if (usersErr) {
     return NextResponse.json({ error: usersErr.message }, { status: 500 });
+  }
+
+  // 0 rows → userId가 users 테이블에 없음
+  if (!updatedRows || updatedRows.length === 0) {
+    return NextResponse.json(
+      { error: 'users 테이블에 해당 유저가 없어요. DB를 직접 확인해주세요.' },
+      { status: 404 },
+    );
   }
 
   // 2) profiles 테이블 nickname 동기화 (있을 경우에만)
@@ -59,5 +68,5 @@ export async function PATCH(req: NextRequest) {
     // 에러 무시 — profiles 없는 유저도 있음
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, updated: updatedRows[0] });
 }
