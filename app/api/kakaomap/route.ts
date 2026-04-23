@@ -169,30 +169,55 @@ export async function GET() {
     function onStore(id) { send({ type:'MARKER_PRESS', storeId: id }); }
     function onDist(id)  { send({ type:'DISTRICT_PRESS', id: id }); }
 
+    function doInitMap() {
+      try {
+        var container = document.getElementById('map');
+        map = new kakao.maps.Map(container, {
+          center: new kakao.maps.LatLng(35.2340, 128.6668),
+          level: 5
+        });
+        kakao.maps.event.addListener(map, 'idle', function() {
+          var c = map.getCenter(), b = map.getBounds();
+          var sw = b.getSouthWest(), ne = b.getNorthEast();
+          send({ type:'REGION_CHANGE', lat:c.getLat(), lng:c.getLng(),
+            latitudeDelta: ne.getLat()-sw.getLat(),
+            longitudeDelta: ne.getLng()-sw.getLng() });
+        });
+        kakao.maps.event.addListener(map, 'click', function() {
+          send({ type:'MAP_PRESS' });
+        });
+        send({ type:'MAP_READY' });
+      } catch(e) {
+        showErr('지도 초기화 실패: ' + e.message);
+      }
+    }
+
     function initKakaoMap() {
-      send({ type:'DEBUG', step:'SDK_ONLOAD', loc: window.location.href });
+      var loc = window.location.href;
+      send({ type:'DEBUG', step:'SDK_ONLOAD', loc: loc });
+
+      var inited = false;
+
+      /* 1차: kakao.maps.load() 콜백 */
       kakao.maps.load(function() {
-        try {
-          var container = document.getElementById('map');
-          map = new kakao.maps.Map(container, {
-            center: new kakao.maps.LatLng(35.2340, 128.6668),
-            level: 5
-          });
-          kakao.maps.event.addListener(map, 'idle', function() {
-            var c = map.getCenter(), b = map.getBounds();
-            var sw = b.getSouthWest(), ne = b.getNorthEast();
-            send({ type:'REGION_CHANGE', lat:c.getLat(), lng:c.getLng(),
-              latitudeDelta: ne.getLat()-sw.getLat(),
-              longitudeDelta: ne.getLng()-sw.getLng() });
-          });
-          kakao.maps.event.addListener(map, 'click', function() {
-            send({ type:'MAP_PRESS' });
-          });
-          send({ type:'MAP_READY' });
-        } catch(e) {
-          showErr('지도 초기화 실패: ' + e.message);
-        }
+        var ok = typeof kakao.maps.LatLng !== 'undefined';
+        send({ type:'DEBUG', step:'MAPS_CB', ok: ok });
+        if (ok && !inited) { inited = true; doInitMap(); }
       });
+
+      /* 2차: 폴링 폴백 — 콜백이 오지 않거나 LatLng 미정의일 때 */
+      var n = 0;
+      var t = setInterval(function() {
+        n++;
+        if (typeof kakao !== 'undefined' && kakao.maps && typeof kakao.maps.LatLng === 'function') {
+          clearInterval(t);
+          send({ type:'DEBUG', step:'POLL_OK', n: n });
+          if (!inited) { inited = true; doInitMap(); }
+        } else if (n >= 100) {
+          clearInterval(t);
+          showErr('지도 로드 실패 — Kakao JS SDK 도메인 미등록? | loc=' + loc.slice(0,30));
+        }
+      }, 150);
     }
   </script>
 
