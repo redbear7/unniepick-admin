@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase';
+import KakaoMapPicker from '@/components/KakaoMapPicker';
 import {
   Search, ToggleLeft, ToggleRight, MapPin, Phone,
   Plus, Pencil, Trash2, X, ImageIcon,
@@ -1492,12 +1493,23 @@ export default function StoresPage() {
                     )}
                   </div>
 
-                  {/* 좌표 */}
+                  {/* 좌표 + 지도 */}
                   <div className="border-t border-border-main pt-3">
                     <p className="text-xs text-muted mb-2 flex items-center gap-1">
-                      <MapPin size={11} /> 위치 좌표 <span className="text-dim">(지오펜스·지도 핀 — 네이버 자동입력 권장)</span>
+                      <MapPin size={11} /> 위치 좌표
+                      <span className="text-dim">(지오펜스·지도 핀 — 핀 드래그로 조정 가능)</span>
                     </p>
-                    <div className="grid grid-cols-2 gap-2">
+
+                    {/* 미니 지도 */}
+                    <KakaoMapPicker
+                      lat={form.latitude}
+                      lng={form.longitude}
+                      onChange={(lat, lng) => setForm(f => ({ ...f, latitude: lat, longitude: lng }))}
+                      height="220px"
+                    />
+
+                    {/* 좌표 수동 입력 */}
+                    <div className="grid grid-cols-2 gap-2 mt-2">
                       <div>
                         <label className="text-[10px] text-dim mb-1 block">위도 (lat)</label>
                         <input type="number" step="0.000001"
