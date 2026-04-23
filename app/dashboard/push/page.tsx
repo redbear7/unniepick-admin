@@ -107,6 +107,13 @@ export default function PushPage() {
   const [expanded,  setExpanded]  = useState<string | null>(null);
   const resultTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // 개발자 테스트 발송
+  const [testEmail,   setTestEmail]   = useState('');
+  const [testTitle,   setTestTitle]   = useState('🧪 언니픽 테스트 알림');
+  const [testBody,    setTestBody]    = useState('푸시 알림이 정상 작동해요! ✅');
+  const [testSending, setTestSending] = useState(false);
+  const [testResult,  setTestResult]  = useState<{ ok: boolean; msg: string } | null>(null);
+
   // ── 통계 로드 ───────────────────────────────────────────────────────
   const loadStats = useCallback(async () => {
     setLoading(true);
@@ -159,6 +166,25 @@ export default function PushPage() {
     ? (stats?.totalTokens ?? 0)
     : (stats?.optinTokens ?? 0);
 
+  const handleTestSend = async () => {
+    if (!testEmail.trim()) return;
+    setTestSending(true);
+    setTestResult(null);
+    try {
+      const res  = await fetch('/api/push/test', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ email: testEmail, title: testTitle, body: testBody }),
+      });
+      const json = await res.json();
+      setTestResult({ ok: json.ok, msg: json.summary ?? json.error ?? '오류' });
+    } catch (e: any) {
+      setTestResult({ ok: false, msg: e.message });
+    } finally {
+      setTestSending(false);
+    }
+  };
+
   return (
     <div className="p-8 max-w-5xl mx-auto">
       {/* 헤더 */}
@@ -208,6 +234,69 @@ export default function PushPage() {
             : ''}
           color="text-purple-400"
         />
+      </div>
+
+      {/* ── 개발자 테스트 발송 ── */}
+      <div className="bg-card border border-orange-500/30 rounded-2xl p-6 mb-6">
+        <h2 className="text-base font-bold text-primary mb-1 flex items-center gap-2">
+          <span className="text-lg">🧪</span>
+          개발자 테스트 발송
+        </h2>
+        <p className="text-xs text-muted mb-5">특정 이메일 계정으로 테스트 푸시를 발송해요</p>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* 이메일 */}
+          <div className="lg:col-span-3">
+            <label className="text-xs font-semibold text-muted uppercase tracking-wider mb-1.5 block">
+              대상 이메일 <span className="text-red-400">*</span>
+            </label>
+            <input
+              value={testEmail}
+              onChange={e => setTestEmail(e.target.value)}
+              placeholder="테스트할 개발자 이메일 입력"
+              className="w-full bg-fill-subtle border border-border-subtle rounded-xl px-4 py-3 text-sm text-primary placeholder-gray-600 focus:outline-none focus:border-[#FF6F0F] transition"
+            />
+          </div>
+          {/* 제목 */}
+          <div>
+            <label className="text-xs font-semibold text-muted uppercase tracking-wider mb-1.5 block">제목</label>
+            <input
+              value={testTitle}
+              onChange={e => setTestTitle(e.target.value)}
+              className="w-full bg-fill-subtle border border-border-subtle rounded-xl px-4 py-3 text-sm text-primary focus:outline-none focus:border-[#FF6F0F] transition"
+            />
+          </div>
+          {/* 내용 */}
+          <div className="lg:col-span-2">
+            <label className="text-xs font-semibold text-muted uppercase tracking-wider mb-1.5 block">내용</label>
+            <input
+              value={testBody}
+              onChange={e => setTestBody(e.target.value)}
+              className="w-full bg-fill-subtle border border-border-subtle rounded-xl px-4 py-3 text-sm text-primary focus:outline-none focus:border-[#FF6F0F] transition"
+            />
+          </div>
+        </div>
+
+        {testResult && (
+          <div className={`mt-4 px-4 py-3 rounded-xl text-sm font-medium ${
+            testResult.ok
+              ? 'bg-green-500/10 text-green-400 border border-green-500/20'
+              : 'bg-red-500/10 text-red-400 border border-red-500/20'
+          }`}>
+            {testResult.msg}
+          </div>
+        )}
+
+        <button
+          onClick={handleTestSend}
+          disabled={testSending || !testEmail.trim()}
+          className="mt-4 flex items-center gap-2 px-6 py-2.5 rounded-xl bg-orange-500/15 border border-orange-500/30 text-orange-400 text-sm font-bold hover:bg-orange-500/25 transition disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {testSending
+            ? <span className="w-4 h-4 border-2 border-orange-400/30 border-t-orange-400 rounded-full animate-spin" />
+            : <Send size={14} />}
+          {testSending ? '발송 중…' : '테스트 발송'}
+        </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
