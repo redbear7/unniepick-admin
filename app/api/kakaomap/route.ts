@@ -18,6 +18,8 @@ export async function GET(request: Request) {
   const initLat   = isFinite(rawLat)   ? rawLat   : 35.2340;
   const initLng   = isFinite(rawLng)   ? rawLng   : 128.6668;
   const initLevel = isFinite(rawLevel) ? rawLevel : 5;
+  // lat/lng 가 명시적으로 전달된 경우(썸네일 모드)에만 핀 표시
+  const showPin   = u.searchParams.has('lat') && u.searchParams.has('lng');
 
   const html = `<!DOCTYPE html>
 <html>
@@ -186,6 +188,10 @@ export async function GET(request: Request) {
           center: new kakao.maps.LatLng(${initLat}, ${initLng}),
           level: ${initLevel}
         });
+        ${showPin ? `new kakao.maps.Marker({
+          position: new kakao.maps.LatLng(${initLat}, ${initLng}),
+          map: map
+        });` : ''}
         kakao.maps.event.addListener(map, 'idle', function() {
           var c = map.getCenter(), b = map.getBounds();
           var sw = b.getSouthWest(), ne = b.getNorthEast();
