@@ -161,7 +161,7 @@ export async function POST(req: NextRequest) {
       ok:    true,
       phone,
       token: tokenRow.token.slice(0, 30) + '…',
-      summary: `✅ ${phone ?? email} 에게 테스트 알림 발송 성공`,
+      summary: `✅ ${targetLabel} 에게 테스트 알림 발송 성공`,
     });
   }
 
