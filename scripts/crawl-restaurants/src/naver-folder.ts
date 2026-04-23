@@ -33,12 +33,12 @@ async function saveCookies(page: import('playwright').Page): Promise<void> {
   } catch {}
 }
 
-async function loadCookies(page: import('playwright').Page): Promise<boolean> {
+async function loadCookies(ctx: import('playwright').BrowserContext): Promise<boolean> {
   try {
     const raw = readFileSync(COOKIE_FILE, 'utf-8');
     const cookies = JSON.parse(raw);
     if (!Array.isArray(cookies) || cookies.length === 0) return false;
-    await page.context().addCookies(cookies);
+    await ctx.addCookies(cookies);
     return true;
   } catch {
     return false;
@@ -68,7 +68,7 @@ async function getExistingIds(): Promise<Set<string>> {
 // ── 네이버 로그인 (쿠키 캐시 → NAVER_ID/PW 순으로 시도) ─────
 async function naverLogin(page: import('playwright').Page): Promise<boolean> {
   // 1단계: 저장된 쿠키로 세션 복원 시도
-  const restored = await loadCookies(page);
+  const restored = await loadCookies(page.context());
   if (restored) {
     await page.goto('https://map.naver.com', { waitUntil: 'domcontentloaded', timeout: 15_000 });
     await page.waitForTimeout(1500);
@@ -113,116 +113,90 @@ async function naverLogin(page: import('playwright').Page): Promise<boolean> {
   }
 }
 
-// ── 폴더 페이지에서 place ID 추출 ────────────────────────────
+// ── 북마크 API 직접 호출로 폴더 내 업체 전체 수집 ───────────
+// API: GET https://pages.map.naver.com/save-pages/api/maps-bookmark/v3/shares/{hash}/bookmarks
+// - placeInfo=true : 썸네일·카테고리 포함 (limit 최대 20)
+// - 페이지네이션: start=0,20,40 ...
 async function extractPlaceIdsFromFolder(folderUrl: string): Promise<Array<{
-  placeId: string;
-  name: string;
+  placeId:   string;
+  name:      string;
   category?: string;
-  address?: string;
+  address?:  string;
+  latitude?: number;
+  longitude?: number;
+  imageUrl?: string;
 }>> {
+  // 폴더 해시 추출 (URL 마지막 path segment)
+  const hashMatch = folderUrl.match(/folder\/([a-f0-9]+)/);
+  if (!hashMatch) throw new Error(`폴더 URL에서 hash를 추출할 수 없습니다: ${folderUrl}`);
+  const folderHash = hashMatch[1];
+
   const browser = await stealthChromium.launch(LAUNCH_ARGS as any);
-  const page = await browser.newPage();
+  const context = await browser.newContext();
 
-  // 내 장소 폴더는 로그인 필요 — 계정이 설정된 경우 먼저 로그인
-  const loggedIn = await naverLogin(page);
-  if (!loggedIn) {
-    console.log('⚠️  비로그인 상태로 시도합니다 (공개 폴더에만 동작)');
-  }
-
-  const intercepted: Array<{ placeId: string; name: string; category?: string; address?: string }> = [];
-
-  // 네트워크 요청 인터셉트 — 폴더 API 응답 캡처
-  page.on('response', async (response) => {
-    const url = response.url();
-    if (!url.includes('favorite') && !url.includes('folder')) return;
-    try {
-      const ct = response.headers()['content-type'] ?? '';
-      if (!ct.includes('json')) return;
-      const json = await response.json();
-      // 폴더 API 응답 구조 탐색
-      const items: any[] = json?.result?.places ?? json?.places ?? json?.items ?? [];
-      for (const item of items) {
-        const placeId = item?.placeId ?? item?.id ?? item?.place_id ?? '';
-        const name    = item?.name ?? item?.placeName ?? '';
-        if (placeId && name) {
-          intercepted.push({
-            placeId: String(placeId),
-            name,
-            category: item?.category ?? item?.categoryName ?? undefined,
-            address:  item?.address ?? item?.roadAddress ?? undefined,
-          });
-        }
-      }
-    } catch {}
-  });
-
-  console.log(`🌐 폴더 URL 로딩: ${folderUrl}`);
-  try {
-    await page.goto(folderUrl, { waitUntil: 'networkidle', timeout: 25_000 });
-  } catch {
-    await page.waitForTimeout(3000);
-  }
-  await page.waitForTimeout(3000);
-
-  // Strategy 1: 네트워크 인터셉트 결과 사용
-  if (intercepted.length > 0) {
-    console.log(`✓ 네트워크 인터셉트: ${intercepted.length}개`);
+  // 쿠키 로드 (로그인 세션 복원)
+  const cookiesLoaded = await loadCookies(context);
+  if (!cookiesLoaded) {
+    console.log('⚠️  저장된 쿠키 없음 — 먼저 실행하세요: npm run naver:login');
     await browser.close();
-    return intercepted;
+    return [];
   }
+  console.log('✓ 쿠키 세션 복원');
 
-  // Strategy 2: Apollo state에서 추출
-  const apolloItems = await page.evaluate(() => {
-    const apollo = (window as any).__APOLLO_STATE__ ?? {};
-    const results: Array<{ placeId: string; name: string; category?: string; address?: string }> = [];
-    for (const [, val] of Object.entries(apollo) as [string, any][]) {
-      const name = val?.name ?? val?.placeName ?? '';
-      const placeId = val?.placeId ?? val?.id ?? '';
-      if (!name || !placeId) continue;
-      if (typeof placeId !== 'string' && typeof placeId !== 'number') continue;
-      if (String(placeId).length < 5) continue;
-      results.push({
-        placeId: String(placeId),
+  const BASE = 'https://pages.map.naver.com/save-pages/api/maps-bookmark/v3/shares';
+  const all: Array<{
+    placeId: string; name: string; category?: string;
+    address?: string; latitude?: number; longitude?: number; imageUrl?: string;
+  }> = [];
+  let start = 0;
+  const LIMIT = 20;
+
+  console.log(`📋 북마크 API 페이지네이션 수집 시작`);
+
+  while (true) {
+    const url = `${BASE}/${folderHash}/bookmarks?placeInfo=true&start=${start}&limit=${LIMIT}&sort=lastUseTime&mcids=ALL&createIdNo=true`;
+    const res = await context.request.get(url, {
+      headers: { 'Referer': 'https://map.naver.com/', 'Accept': 'application/json' },
+    });
+
+    if (!res.ok()) {
+      console.log(`  ⚠️  API 오류 (start=${start}): HTTP ${res.status()}`);
+      break;
+    }
+
+    const json = await res.json() as any;
+    const items: any[] = json?.bookmarkList ?? [];
+    if (items.length === 0) break;
+
+    for (const item of items) {
+      const placeId = item?.sid ?? '';          // sid = 네이버 place ID
+      const name    = item?.name ?? '';
+      if (!placeId || !name) continue;
+
+      all.push({
+        placeId:   String(placeId),
         name,
-        category: val?.category ?? undefined,
-        address:  val?.roadAddress ?? val?.address ?? undefined,
+        category:  item?.placeInfo?.category ?? item?.mcidName ?? undefined,
+        address:   item?.address ?? undefined,
+        latitude:  typeof item?.py === 'number' ? item.py : undefined,
+        longitude: typeof item?.px === 'number' ? item.px : undefined,
+        imageUrl:  item?.placeInfo?.thumbnailUrls?.[0] ?? undefined,
       });
     }
-    return results;
-  });
 
-  if (apolloItems.length > 0) {
-    console.log(`✓ Apollo state: ${apolloItems.length}개`);
-    await browser.close();
-    return apolloItems;
+    console.log(`  start=${start}: ${items.length}개 수집 (누적 ${all.length}개)`);
+
+    // 다음 페이지 여부: bookmarkCount 기준
+    const total = json?.folder?.bookmarkCount ?? 0;
+    start += LIMIT;
+    if (start >= total || items.length < LIMIT) break;
+
+    await new Promise(r => setTimeout(r, 300)); // 짧은 딜레이
   }
 
-  // Strategy 3: DOM에서 /p/entry/place/{id} 링크 파싱
-  const domItems = await page.evaluate(() => {
-    const results: Array<{ placeId: string; name: string }> = [];
-    const seen = new Set<string>();
-
-    // 가게 카드 링크에서 place ID 추출
-    document.querySelectorAll('a[href*="/entry/place/"], a[href*="/p/entry/place/"]').forEach((el) => {
-      const href = el.getAttribute('href') ?? '';
-      const m = href.match(/\/entry\/place\/(\d+)/);
-      if (!m) return;
-      const placeId = m[1];
-      if (seen.has(placeId)) return;
-      seen.add(placeId);
-
-      // 가게명: 가장 가까운 텍스트 노드
-      const name = (el.querySelector('[class*="name"], strong, h2, h3, span:first-child') as HTMLElement)?.innerText?.trim()
-        ?? el.textContent?.trim()
-        ?? '';
-      if (name) results.push({ placeId, name });
-    });
-    return results;
-  });
-
-  console.log(`✓ DOM 파싱: ${domItems.length}개`);
   await browser.close();
-  return domItems;
+  console.log(`✅ 총 ${all.length}개 수집 완료`);
+  return all;
 }
 
 // ── 단일 place ID에서 기본 정보 수집 ─────────────────────────
