@@ -31,6 +31,7 @@ interface Store {
   geo_discoverable:        boolean;
   latitude:                number | null;
   longitude:               number | null;
+  category_detail:         string | null;   // 카카오 full path (음식점 > 한식 > 냉면)
 }
 
 interface TtsPolicy {
@@ -126,6 +127,7 @@ const EMPTY_FORM: StoreForm = {
   latitude: null, longitude: null,
   representative_price: null, price_label: null, price_range: null,
   geo_discoverable: false,
+  category_detail: null,
 };
 
 const EMPTY_COUPON: CouponForm = {
@@ -278,7 +280,7 @@ export default function StoresPage() {
   const loadStores = async () => {
     const { data, error } = await sb
       .from('stores')
-      .select('id, name, address, phone, category, is_active, created_at, updated_at, owner_id, image_url, tts_policy_id, subscription_expires_at, representative_price, price_label, price_range, geo_discoverable, latitude, longitude')
+      .select('id, name, address, phone, category, category_detail, is_active, created_at, updated_at, owner_id, image_url, tts_policy_id, subscription_expires_at, representative_price, price_label, price_range, geo_discoverable, latitude, longitude')
       .order('created_at', { ascending: false });
 
     let rows: Store[];
@@ -388,12 +390,13 @@ export default function StoresPage() {
   const applyKakaoPlace = (place: KakaoPlace) => {
     setForm(f => ({
       ...f,
-      name:      place.place_name || f.name,
-      address:   place.address    || f.address,
-      phone:     place.phone      || f.phone,
-      category:  place.category   || f.category,
-      latitude:  place.latitude   ?? f.latitude,
-      longitude: place.longitude  ?? f.longitude,
+      name:            place.place_name  || f.name,
+      address:         place.address     || f.address,
+      phone:           place.phone       || f.phone,
+      category:        place.category    || f.category,
+      category_detail: place.category_raw || f.category_detail,
+      latitude:        place.latitude    ?? f.latitude,
+      longitude:       place.longitude   ?? f.longitude,
     }));
     setKakaoResults([]);
     setKakaoQ('');
@@ -456,6 +459,7 @@ export default function StoresPage() {
       address:                 form.address       || null,
       phone:                   form.phone         || null,
       category:                form.category      || null,
+      category_detail:         form.category_detail || null,
       is_active:               form.is_active,
       owner_id:                form.owner_id,
       image_url:               form.image_url,
