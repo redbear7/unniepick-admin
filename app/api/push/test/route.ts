@@ -35,30 +35,63 @@ export async function POST(req: NextRequest) {
 
   const sb = adminSb();
 
-  // 1. user_id 조회 — auth.admin.listUsers()는 "Database error finding users" 버그로 사용 불가
-  //    1순위: users 테이블 phone 컬럼 직접 매칭
-  //    2순위: admin_get_user_phones RPC (auth.users 직접 조회)
   let userId: string | null = null;
+  const debug: Record<string, unknown> = {};
 
   if (phone?.trim()) {
     const normalized = normalizePhone(phone.trim());          // +821085757863
     const local      = '0' + normalized.replace('+82', '');  // 01085757863
 
-    // 1순위: users 테이블
-    const { data: usersRow } = await sb
+    debug.normalized = normalized;
+    debug.local      = local;
+
+    // 1순위: users 테이블 phone 컬럼 직접 매칭
+    const { data: usersRow, error: usersErr } = await sb
       .from('users')
       .select('id')
       .or(`phone.eq.${normalized},phone.eq.${local},phone.eq.${phone.trim()}`)
       .maybeSingle();
     userId = usersRow?.id ?? null;
+    debug.usersTableResult = usersRow;
+    if (usersErr) debug.usersTableError = usersErr.message;
 
-    // 2순위: RPC (auth.users phone 조회)
+    // 2순위: users 테이블 name 으로도 탐색 (name 컬럼에 번호 저장하는 엣지 케이스)
     if (!userId) {
-      const { data: phonesData } = await sb.rpc('admin_get_user_phones');
-      const matched = (phonesData ?? []).find((u: { id: string; phone: string | null }) =>
-        u.phone === normalized || u.phone === local || u.phone === phone.trim()
-      );
-      userId = matched?.id ?? null;
+      const { data: allUsers } = await sb
+        .from('users')
+        .select('id, name, phone')
+        .limit(200);
+      debug.allUsersCount = allUsers?.length ?? 0;
+      debug.allUsersSample = (allUsers ?? []).slice(0, 5).map(u => ({
+        id: u.id.slice(0, 8),
+        name: u.name,
+        phone: u.phone,
+      }));
+    }
+
+    // 3순위: RPC (auth.users phone 조회)
+    if (!userId) {
+      const { data: phonesData, error: rpcErr } = await sb.rpc('admin_get_user_phones');
+      if (rpcErr) {
+        debug.rpcError = rpcErr.message;
+      } else {
+        const allPhones = (phonesData ?? []) as { id: string; phone: string | null }[];
+        debug.rpcCount = allPhones.length;
+        debug.rpcSample = allPhones.slice(0, 3).map(u => ({
+          id: u.id.slice(0, 8),
+          phone: u.phone,
+        }));
+        // auth.users phone 포맷: +821085757863 / 821085757863 / 01085757863 모두 허용
+        const noPlus = normalized.replace('+', '');  // 821085757863
+        const matched = allPhones.find(u =>
+          u.phone === normalized ||
+          u.phone === noPlus     ||
+          u.phone === local      ||
+          u.phone === phone.trim()
+        );
+        userId = matched?.id ?? null;
+        debug.rpcMatched = matched ? { id: matched.id.slice(0, 8), phone: matched.phone } : null;
+      }
     }
   } else if (email?.trim()) {
     const { data: row } = await sb
@@ -69,7 +102,10 @@ export async function POST(req: NextRequest) {
   const targetLabel = phone?.trim() ?? email?.trim();
   if (!userId) {
     return NextResponse.json(
-      { error: `${targetLabel} 계정을 찾을 수 없어요 (앱 가입 여부 확인)` },
+      {
+        error: `${targetLabel} 계정을 찾을 수 없어요 (앱 가입 여부 확인)`,
+        debug,
+      },
       { status: 404 }
     );
   }
@@ -123,9 +159,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       ok:    true,
-      email,
+      phone,
       token: tokenRow.token.slice(0, 30) + '…',
-      summary: `✅ ${email} 에게 테스트 알림 발송 성공`,
+      summary: `✅ ${phone ?? email} 에게 테스트 알림 발송 성공`,
     });
   }
 
