@@ -123,8 +123,7 @@ export default function PushPage() {
   const bodyInputRef  = useRef<HTMLTextAreaElement>(null);
   const composeRef    = useRef<HTMLDivElement>(null);
 
-  // 개발자 테스트 발송
-  const [testPhone,   setTestPhone]   = useState('01085757863');
+  // 개발자 테스트 발송 (developer 역할 회원 전체)
   const [testTitle,   setTestTitle]   = useState('🧪 언니픽 테스트 알림');
   const [testBody,    setTestBody]    = useState('푸시 알림이 정상 작동해요! ✅');
   const [testSending, setTestSending] = useState(false);
@@ -222,14 +221,13 @@ export default function PushPage() {
     : (stats?.optinTokens ?? 0);
 
   const handleTestSend = async () => {
-    if (!testPhone.trim()) return;
     setTestSending(true);
     setTestResult(null);
     try {
       const res  = await fetch('/api/push/test', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ phone: testPhone, title: testTitle, body: testBody }),
+        body:    JSON.stringify({ role: 'developer', title: testTitle, body: testBody }),
       });
       const json = await res.json();
       setTestResult({ ok: json.ok, msg: json.summary ?? json.error ?? '오류' });
@@ -270,47 +268,30 @@ export default function PushPage() {
       </div>
 
       {/* ── 개발자 테스트 발송 ── */}
-      <div className="bg-card border border-orange-500/30 rounded-2xl p-6 mb-6">
+      <div className="bg-card border border-teal-500/30 rounded-2xl p-6 mb-6">
         <h2 className="text-base font-bold text-primary mb-1 flex items-center gap-2">
           <span className="text-lg">🧪</span>
           개발자 테스트 발송
         </h2>
-        <p className="text-xs text-muted mb-5">지정 전화번호 계정으로 테스트 푸시를 발송해요</p>
+        <p className="text-xs text-muted mb-5">
+          역할이 <span className="text-teal-400 font-semibold">👨‍💻 개발자</span>인 회원 모두에게 테스트 푸시를 발송해요
+        </p>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="lg:col-span-3">
-            <label className="text-xs font-semibold text-muted uppercase tracking-wider mb-1.5 block">
-              대상 전화번호 <span className="text-red-400">*</span>
-              <span className="ml-2 text-[10px] text-orange-400 normal-case font-normal">개발자 번호 고정</span>
-            </label>
-            <div className="relative">
-              <input
-                value={testPhone}
-                onChange={e => setTestPhone(e.target.value)}
-                placeholder="01012345678"
-                className="w-full bg-fill-subtle border border-border-subtle rounded-xl px-4 py-3 text-sm text-primary placeholder-gray-600 focus:outline-none focus:border-[#FF6F0F] transition pr-24"
-              />
-              {testPhone === '01085757863' && (
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] bg-orange-500/15 text-orange-400 px-2 py-1 rounded-full font-semibold">
-                  개발자
-                </span>
-              )}
-            </div>
-          </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div>
             <label className="text-xs font-semibold text-muted uppercase tracking-wider mb-1.5 block">제목</label>
             <input
               value={testTitle}
               onChange={e => setTestTitle(e.target.value)}
-              className="w-full bg-fill-subtle border border-border-subtle rounded-xl px-4 py-3 text-sm text-primary focus:outline-none focus:border-[#FF6F0F] transition"
+              className="w-full bg-fill-subtle border border-border-subtle rounded-xl px-4 py-3 text-sm text-primary focus:outline-none focus:border-teal-500 transition"
             />
           </div>
-          <div className="lg:col-span-2">
+          <div>
             <label className="text-xs font-semibold text-muted uppercase tracking-wider mb-1.5 block">내용</label>
             <input
               value={testBody}
               onChange={e => setTestBody(e.target.value)}
-              className="w-full bg-fill-subtle border border-border-subtle rounded-xl px-4 py-3 text-sm text-primary focus:outline-none focus:border-[#FF6F0F] transition"
+              className="w-full bg-fill-subtle border border-border-subtle rounded-xl px-4 py-3 text-sm text-primary focus:outline-none focus:border-teal-500 transition"
             />
           </div>
         </div>
@@ -327,13 +308,13 @@ export default function PushPage() {
 
         <button
           onClick={handleTestSend}
-          disabled={testSending || !testPhone.trim()}
-          className="mt-4 flex items-center gap-2 px-6 py-2.5 rounded-xl bg-orange-500/15 border border-orange-500/30 text-orange-400 text-sm font-bold hover:bg-orange-500/25 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={testSending}
+          className="mt-4 flex items-center gap-2 px-6 py-2.5 rounded-xl bg-teal-500/15 border border-teal-500/30 text-teal-400 text-sm font-bold hover:bg-teal-500/25 transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {testSending
-            ? <span className="w-4 h-4 border-2 border-orange-400/30 border-t-orange-400 rounded-full animate-spin" />
+            ? <span className="w-4 h-4 border-2 border-teal-400/30 border-t-teal-400 rounded-full animate-spin" />
             : <Send size={14} />}
-          {testSending ? '발송 중…' : '테스트 발송'}
+          {testSending ? '발송 중…' : '👨‍💻 개발자 전체 발송'}
         </button>
       </div>
 

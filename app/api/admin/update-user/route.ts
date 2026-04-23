@@ -15,7 +15,7 @@ function adminClient() {
   );
 }
 
-const VALID_ROLES = ['customer', 'owner', 'admin', 'superadmin'];
+const VALID_ROLES = ['customer', 'owner', 'admin', 'superadmin', 'developer'];
 
 export async function PATCH(req: NextRequest) {
   const { userId, name, role } = await req.json().catch(() => ({})) as {

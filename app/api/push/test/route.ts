@@ -22,12 +22,68 @@ function normalizePhone(phone: string): string {
 }
 
 export async function POST(req: NextRequest) {
-  const { phone, email, title, body } = await req.json().catch(() => ({})) as {
+  const { phone, email, role, title, body } = await req.json().catch(() => ({})) as {
     phone?: string;
     email?: string;
+    role?:  string;   // 'developer' → 해당 역할 회원 전체 발송
     title?: string;
-    body?: string;
+    body?:  string;
   };
+
+  // ── 역할 전체 발송 모드 ────────────────────────────────────────────
+  if (role) {
+    const sb = adminSb();
+    const pushTitle = title?.trim() || '🧪 언니픽 테스트 알림';
+    const pushBody  = body?.trim()  || '푸시 알림이 정상 작동해요! ✅';
+
+    // 해당 역할 유저 ID 조회
+    const { data: roleUsers, error: roleErr } = await sb
+      .from('users')
+      .select('id')
+      .eq('role', role);
+
+    if (roleErr) {
+      return NextResponse.json({ error: roleErr.message }, { status: 500 });
+    }
+    if (!roleUsers?.length) {
+      return NextResponse.json({ error: `역할 '${role}'인 회원이 없어요` }, { status: 404 });
+    }
+
+    const userIds = roleUsers.map((u: { id: string }) => u.id);
+
+    // push_token 조회
+    const { data: tokenRows } = await sb
+      .from('push_tokens')
+      .select('user_id, token')
+      .in('user_id', userIds);
+
+    if (!tokenRows?.length) {
+      return NextResponse.json({ error: '등록된 푸시 토큰이 없어요' }, { status: 404 });
+    }
+
+    // 일괄 발송
+    const messages = tokenRows.map((t: { user_id: string; token: string }) => ({
+      to:    t.token,
+      sound: 'default',
+      title: pushTitle,
+      body:  pushBody,
+      data:  { type: 'test' },
+    }));
+
+    const expRes = await fetch('https://exp.host/--/api/v2/push/send', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body:    JSON.stringify(messages),
+    });
+    const expJson = await expRes.json();
+    const tickets  = expJson?.data ?? [];
+    const okCount  = (tickets as Array<{ status: string }>).filter(t => t.status === 'ok').length;
+
+    return NextResponse.json({
+      ok:      true,
+      summary: `✅ ${role} ${tokenRows.length}명 중 ${okCount}명 발송 성공`,
+    });
+  }
 
   if (!phone?.trim() && !email?.trim()) {
     return NextResponse.json({ error: '전화번호 또는 이메일을 입력해주세요' }, { status: 400 });

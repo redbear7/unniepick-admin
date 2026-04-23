@@ -29,18 +29,21 @@ const ROLE_LABEL: Record<string, string> = {
   owner:      '사장님',
   admin:      '관리자',
   superadmin: '최고관리자',
+  developer:  '개발자',
 };
 const ROLE_ICON: Record<string, React.ReactNode> = {
   customer:   <User        size={12} />,
   owner:      <Store       size={12} />,
   admin:      <Shield      size={12} />,
   superadmin: <ShieldCheck size={12} />,
+  developer:  <span className="text-[10px]">👨‍💻</span>,
 };
 const ROLE_COLOR: Record<string, string> = {
   customer:   'bg-blue-500/15 text-blue-400',
   owner:      'bg-[#FF6F0F]/15 text-[#FF6F0F]',
   admin:      'bg-yellow-500/15 text-yellow-400',
   superadmin: 'bg-purple-500/15 text-purple-400',
+  developer:  'bg-teal-500/15 text-teal-400',
 };
 
 // ── 전화번호 포맷 (+821012345678 / 01012345678 → 010-1234-5678) ────────
@@ -82,6 +85,7 @@ function EditModal({
     { value: 'owner',      label: '사장님',     color: 'border-[#FF6F0F]/60 bg-[#FF6F0F]/10 text-[#FF6F0F]' },
     { value: 'admin',      label: '관리자',     color: 'border-yellow-500/60 bg-yellow-500/10 text-yellow-400' },
     { value: 'superadmin', label: '최고관리자', color: 'border-purple-500/60 bg-purple-500/10 text-purple-400' },
+    { value: 'developer',  label: '개발자',     color: 'border-teal-500/60 bg-teal-500/10 text-teal-400' },
   ];
 
   return (
@@ -239,7 +243,7 @@ export default function UsersPage() {
   const [users,        setUsers]        = useState<UserRow[]>([]);
   const [loading,      setLoading]      = useState(true);
   const [query,        setQuery]        = useState('');
-  const [filter,       setFilter]       = useState<'all' | 'customer' | 'owner' | 'admin' | 'superadmin' | 'profiles'>('all');
+  const [filter,       setFilter]       = useState<'all' | 'customer' | 'owner' | 'admin' | 'superadmin' | 'developer' | 'profiles'>('all');
   const [deleteTarget, setDeleteTarget] = useState<UserRow | null>(null);
   const [deleting,     setDeleting]     = useState(false);
   const [editTarget,   setEditTarget]   = useState<UserRow | null>(null);
@@ -345,7 +349,7 @@ export default function UsersPage() {
   // ── 필터 / 검색 ─────────────────────────────────────────────────────
   const filtered = users.filter(u => {
     if (filter === 'profiles') return u.source === 'profiles';
-    if (filter !== 'all' && u.role !== filter) return false;
+    if (filter !== 'all' && filter !== 'profiles' && u.role !== filter) return false;
     if (!query) return true;
     return u.name.includes(query) || (u.phone ?? '').includes(query);
   });
@@ -356,6 +360,7 @@ export default function UsersPage() {
     owner:      users.filter(u => u.role === 'owner').length,
     admin:      users.filter(u => u.role === 'admin').length,
     superadmin: users.filter(u => u.role === 'superadmin').length,
+    developer:  users.filter(u => u.role === 'developer').length,
     profiles:   users.filter(u => u.source === 'profiles').length,
   };
 
@@ -453,6 +458,7 @@ export default function UsersPage() {
           { key: 'owner',      label: '사장님',      color: 'orange'  },
           { key: 'admin',      label: '관리자',      color: 'yellow'  },
           { key: 'superadmin', label: '최고관리자',  color: 'purple'  },
+          { key: 'developer',  label: '👨‍💻 개발자',  color: 'teal'    },
           { key: 'profiles',   label: '🆕 신규',    color: 'new'     },
         ] as const).map(({ key, label, color }) => (
           <button
@@ -464,6 +470,7 @@ export default function UsersPage() {
                 : color === 'orange' ? 'bg-[#FF6F0F] text-white'
                 : color === 'yellow' ? 'bg-yellow-500/80 text-black'
                 : color === 'purple' ? 'bg-purple-500/80 text-white'
+                : color === 'teal'   ? 'bg-teal-500/80 text-white'
                 : color === 'new'    ? 'bg-orange-400/80 text-black'
                 : 'bg-white/15 text-primary'
                 : 'bg-card border border-border-subtle text-tertiary hover:text-primary'
