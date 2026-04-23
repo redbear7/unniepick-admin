@@ -222,7 +222,7 @@ export async function GET() {
   </script>
 
   <script
-    src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=${appkey}&autoload=false"
+    src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=${appkey}"
     onload="initKakaoMap()"
     onerror="showErr('카카오맵 SDK 로드 실패')">
   </script>
