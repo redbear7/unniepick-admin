@@ -43,6 +43,45 @@ async function getExistingIds(): Promise<Set<string>> {
   return new Set((data ?? []).map((r: any) => r.naver_place_id));
 }
 
+// ── 네이버 로그인 ────────────────────────────────────────────
+async function naverLogin(page: import('playwright').Page): Promise<boolean> {
+  const id  = process.env.NAVER_ID;
+  const pw  = process.env.NAVER_PW;
+  if (!id || !pw) {
+    console.log('⚠️  NAVER_ID / NAVER_PW 미설정 — 로그인 생략');
+    return false;
+  }
+
+  try {
+    await page.goto('https://nid.naver.com/nidlogin.login', { waitUntil: 'domcontentloaded', timeout: 15_000 });
+    await page.waitForTimeout(800);
+
+    // 아이디 입력
+    await page.fill('#id', id);
+    await page.waitForTimeout(400);
+
+    // 비밀번호 입력
+    await page.fill('#pw', pw);
+    await page.waitForTimeout(400);
+
+    // 로그인 버튼 클릭
+    await page.click('#log\\.login');
+    await page.waitForTimeout(2500);
+
+    // 로그인 성공 확인 (naver.com 도메인 유지 여부)
+    const url = page.url();
+    if (url.includes('nid.naver.com')) {
+      console.log('⚠️  네이버 로그인 실패 (captcha 또는 잘못된 계정)');
+      return false;
+    }
+    console.log('✓ 네이버 로그인 성공');
+    return true;
+  } catch (e) {
+    console.log('⚠️  네이버 로그인 오류:', (e as Error).message);
+    return false;
+  }
+}
+
 // ── 폴더 페이지에서 place ID 추출 ────────────────────────────
 async function extractPlaceIdsFromFolder(folderUrl: string): Promise<Array<{
   placeId: string;
@@ -52,6 +91,12 @@ async function extractPlaceIdsFromFolder(folderUrl: string): Promise<Array<{
 }>> {
   const browser = await chromium.launch({ headless: true, args: ['--lang=ko-KR'] });
   const page = await browser.newPage();
+
+  // 내 장소 폴더는 로그인 필요 — 계정이 설정된 경우 먼저 로그인
+  const loggedIn = await naverLogin(page);
+  if (!loggedIn) {
+    console.log('⚠️  비로그인 상태로 시도합니다 (공개 폴더에만 동작)');
+  }
 
   const intercepted: Array<{ placeId: string; name: string; category?: string; address?: string }> = [];
 
