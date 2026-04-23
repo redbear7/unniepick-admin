@@ -35,22 +35,46 @@ export async function POST(req: NextRequest) {
 
   const sb = adminSb();
 
-  // 1. 전화번호 or 이메일로 user_id 조회 (auth.users)
-  const { data: authUsers, error: authErr } = await sb.auth.admin.listUsers({ perPage: 1000 });
-  if (authErr) return NextResponse.json({ error: authErr.message }, { status: 500 });
+  // 1. user_id 조회 — auth.admin.listUsers()는 "Database error finding users" 버그로 사용 불가
+  //    1순위: users 테이블 phone 컬럼 직접 매칭
+  //    2순위: admin_get_user_phones RPC (auth.users 직접 조회)
+  let userId: string | null = null;
 
-  let authUser = authUsers?.users.find(u => {
-    if (phone?.trim()) {
-      const normalized = normalizePhone(phone.trim());
-      return u.phone === normalized || u.phone === phone.trim();
+  if (phone?.trim()) {
+    const normalized = normalizePhone(phone.trim());          // +821085757863
+    const local      = '0' + normalized.replace('+82', '');  // 01085757863
+
+    // 1순위: users 테이블
+    const { data: usersRow } = await sb
+      .from('users')
+      .select('id')
+      .or(`phone.eq.${normalized},phone.eq.${local},phone.eq.${phone.trim()}`)
+      .maybeSingle();
+    userId = usersRow?.id ?? null;
+
+    // 2순위: RPC (auth.users phone 조회)
+    if (!userId) {
+      const { data: phonesData } = await sb.rpc('admin_get_user_phones');
+      const matched = (phonesData ?? []).find((u: { id: string; phone: string | null }) =>
+        u.phone === normalized || u.phone === local || u.phone === phone.trim()
+      );
+      userId = matched?.id ?? null;
     }
-    return u.email === email?.trim();
-  });
-
-  const target = phone?.trim() ? normalizePhone(phone.trim()) : email?.trim();
-  if (!authUser) {
-    return NextResponse.json({ error: `${target} 계정을 찾을 수 없어요` }, { status: 404 });
+  } else if (email?.trim()) {
+    const { data: row } = await sb
+      .from('users').select('id').eq('email', email.trim()).maybeSingle();
+    userId = row?.id ?? null;
   }
+
+  const targetLabel = phone?.trim() ?? email?.trim();
+  if (!userId) {
+    return NextResponse.json(
+      { error: `${targetLabel} 계정을 찾을 수 없어요 (앱 가입 여부 확인)` },
+      { status: 404 }
+    );
+  }
+
+  const authUser = { id: userId };
 
   // 2. push_token 조회
   const { data: tokenRow, error: tokenErr } = await sb
