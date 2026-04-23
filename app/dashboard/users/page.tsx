@@ -20,6 +20,7 @@ interface UserRow {
   push_enabled:    boolean | null;   // null = 알 수 없음
   gps_granted:     boolean | null;   // follows 여부로 추론
   coupon_count:    number;
+  provider:        'phone' | 'kakao' | null; // 가입방식
 }
 
 // ── 상수 ─────────────────────────────────────────────────────────────
@@ -274,6 +275,7 @@ export default function UsersPage() {
         push_enabled:    null,
         gps_granted:     null,
         coupon_count:    0,
+        provider:        null,
       });
     }
 
@@ -293,6 +295,7 @@ export default function UsersPage() {
           push_enabled:    null,
           gps_granted:     null,
           coupon_count:    0,
+          provider:        null,
         });
       }
     }
@@ -309,7 +312,7 @@ export default function UsersPage() {
       const res  = await fetch('/api/admin/users');
       const json = await res.json();
 
-      const { authUsers = {}, pushMap = {}, followSet = [], couponCount = {}, recentArea = {} } = json;
+      const { authUsers = {}, providerMap = {}, pushMap = {}, followSet = [], couponCount = {}, recentArea = {} } = json;
 
       const followSetObj = new Set<string>(followSet as string[]);
 
@@ -321,6 +324,7 @@ export default function UsersPage() {
         push_enabled:    pushMap[u.id] === true ? true : null,
         gps_granted:     followSetObj.has(u.id) ? true : null,
         coupon_count:    couponCount[u.id] ?? 0,
+        provider:        (providerMap as Record<string, 'phone' | 'kakao'>)[u.id] ?? null,
       })));
     } catch (e) {
       console.error('[users] /api/admin/users fetch 실패:', e);
@@ -478,6 +482,7 @@ export default function UsersPage() {
             <tr className="border-b border-border-main">
               <th className="text-left px-5 py-3.5 text-xs font-semibold text-muted">이름</th>
               <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">전화번호</th>
+              <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">가입방식</th>
               <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">역할</th>
               <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">가입일시</th>
               <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">최근 로그인</th>
@@ -498,7 +503,7 @@ export default function UsersPage() {
             {loading ? (
               [...Array(6)].map((_, i) => (
                 <tr key={i} className="border-b border-border-main">
-                  {[...Array(10)].map((_, j) => (
+                  {[...Array(11)].map((_, j) => (
                     <td key={j} className="px-5 py-4">
                       <div className="h-4 bg-fill-subtle rounded animate-pulse" />
                     </td>
@@ -507,7 +512,7 @@ export default function UsersPage() {
               ))
             ) : filtered.length === 0 ? (
               <tr>
-                <td colSpan={10} className="text-center py-12 text-dim">회원이 없어요</td>
+                <td colSpan={11} className="text-center py-12 text-dim">회원이 없어요</td>
               </tr>
             ) : (
               filtered.map(user => (
@@ -533,6 +538,23 @@ export default function UsersPage() {
                     {user.phone
                       ? formatPhone(user.phone)
                       : <span className="text-dim">-</span>}
+                  </td>
+
+                  {/* 가입방식 */}
+                  <td className="px-4 py-3.5">
+                    {user.provider === 'phone' && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 text-[10px] font-bold whitespace-nowrap">
+                        📱 전화번호
+                      </span>
+                    )}
+                    {user.provider === 'kakao' && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-400/15 text-yellow-400 text-[10px] font-bold whitespace-nowrap">
+                        💬 카카오
+                      </span>
+                    )}
+                    {user.provider === null && (
+                      <span className="text-dim text-xs">-</span>
+                    )}
                   </td>
 
                   {/* 역할 */}

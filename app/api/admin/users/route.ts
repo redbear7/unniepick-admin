@@ -49,6 +49,7 @@ export async function GET() {
 
   // 1) auth.users 전화번호 조회 — RPC(SECURITY DEFINER) 사용
   const authUsers: Record<string, { phone?: string; last_sign_in_at?: string }> = {};
+  const providerMap: Record<string, 'phone' | 'kakao'> = {};
   let phonesError: string | null = null;
   try {
     const { data, error } = await sb.rpc('admin_get_user_phones');
@@ -59,10 +60,13 @@ export async function GET() {
       for (const u of (data ?? []) as Array<{
         id: string; phone: string | null; last_sign_in_at: string | null;
       }>) {
+        const normalizedPhone = normalizePhone(u.phone);
         authUsers[u.id] = {
-          phone:           normalizePhone(u.phone),
+          phone:           normalizedPhone,
           last_sign_in_at: u.last_sign_in_at ?? undefined,
         };
+        // phone이 있으면 전화번호 가입, 없으면 소셜(카카오) 가입
+        providerMap[u.id] = normalizedPhone ? 'phone' : 'kakao';
       }
       console.log('[admin/users] auth users 조회:', Object.keys(authUsers).length, '명');
     }
@@ -138,6 +142,7 @@ export async function GET() {
 
   return NextResponse.json({
     authUsers,
+    providerMap,
     pushMap,
     followSet:   [...followSet],
     couponCount,
