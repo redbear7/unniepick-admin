@@ -421,6 +421,7 @@ export default function StoresPage() {
       representative_price: store.representative_price ?? null,
       price_label: store.price_label ?? null, price_range: store.price_range ?? null,
       geo_discoverable: store.geo_discoverable ?? false,
+      category_detail:  store.category_detail ?? null,
     });
     setNaverUrl(''); setAutoFillErr(''); setSaveError('');
     setKakaoQ(''); setKakaoResults([]); setKakaoErr('');
