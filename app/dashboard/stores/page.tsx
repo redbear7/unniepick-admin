@@ -42,28 +42,45 @@ interface TtsPolicy {
 
 interface StoreForm extends Omit<Store, 'id' | 'created_at'> {}
 
+type CouponType = 'percent' | 'amount' | 'free_item' | 'bogo';
+
 interface StoreCoupon {
-  id:              string;
-  title:           string;
-  discount_type:   'percent' | 'amount';
-  discount_value:  number;
-  total_quantity:  number;
-  issued_count:    number;
-  is_active:       boolean;
-  expires_at:      string;
-  target_segment:  'all' | 'new' | 'returning';
-  min_visit_count: number | null;
+  id:               string;
+  title:            string;
+  discount_type:    CouponType;
+  discount_value:   number;
+  free_item_name:   string | null;
+  total_quantity:   number;
+  issued_count:     number;
+  is_active:        boolean;
+  expires_at:       string;
+  target_segment:   'all' | 'new' | 'returning';
+  min_visit_count:  number | null;
+  min_people:       number;
+  min_order_amount: number;
+  time_start:       string | null;
+  time_end:         string | null;
+  stackable:        boolean;
+  is_featured:      boolean;
 }
 
 interface CouponForm {
-  title:           string;
-  discount_type:   'percent' | 'amount';
-  discount_value:  number;
-  total_quantity:  number;
-  expires_at:      string;
-  target_segment:  'all' | 'new' | 'returning';
-  min_visit_count: number | null;
-  is_active:       boolean;
+  title:            string;
+  discount_type:    CouponType;
+  discount_value:   number;
+  free_item_name:   string;
+  total_quantity:   number;
+  expires_at:       string;
+  target_segment:   'all' | 'new' | 'returning';
+  min_visit_count:  number | null;
+  is_active:        boolean;
+  min_people:       number;
+  min_order_amount: number;
+  use_time_limit:   boolean;
+  time_start:       string;
+  time_end:         string;
+  stackable:        boolean;
+  is_featured:      boolean;
 }
 
 /* ================================================================== */
@@ -99,9 +116,24 @@ const EMPTY_FORM: StoreForm = {
 
 const EMPTY_COUPON: CouponForm = {
   title: '', discount_type: 'percent', discount_value: 10,
+  free_item_name: '',
   total_quantity: 0, expires_at: defaultExpires(30),
   target_segment: 'all', min_visit_count: null, is_active: true,
+  min_people: 1, min_order_amount: 0,
+  use_time_limit: false, time_start: '11:00', time_end: '17:00',
+  stackable: false, is_featured: false,
 };
+
+/* ---- 쿠폰 유형 메타 ---- */
+const COUPON_TYPES: { key: CouponType; label: string; icon: string; desc: string }[] = [
+  { key: 'percent',   label: '% 할인',  icon: '💹', desc: '주문 금액의 N% 할인' },
+  { key: 'amount',    label: '원 할인',  icon: '💵', desc: '주문 금액에서 N원 차감' },
+  { key: 'free_item', label: '무료 증정', icon: '🎁', desc: '특정 메뉴/상품 무료 제공' },
+  { key: 'bogo',      label: '1+1',     icon: '2️⃣', desc: '동일 메뉴 1개 구매 시 1개 무료' },
+];
+
+const MIN_PEOPLE_PRESETS  = [1, 2, 3, 4];
+const MIN_AMOUNT_PRESETS  = [0, 15000, 30000, 50000, 100000];
 
 const POLICY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   '스타터':   { bg: 'bg-slate-500/15',  text: 'text-slate-300',  border: 'border-slate-500/25' },
@@ -137,8 +169,20 @@ function expiresLabel(expires_at: string) {
     color: 'text-muted',
   };
 }
-function discountLabel(type: string, value: number) {
-  return type === 'percent' ? `${value}% 할인` : `${value.toLocaleString()}원 할인`;
+function discountLabel(type: CouponType, value: number, freeItemName?: string | null) {
+  if (type === 'bogo')      return '1+1';
+  if (type === 'free_item') return freeItemName ? `🎁 ${freeItemName}` : '무료 증정';
+  if (type === 'percent')   return `${value}% 할인`;
+  return `${value.toLocaleString()}원 할인`;
+}
+
+function couponConditionTags(c: StoreCoupon): string[] {
+  const tags: string[] = [];
+  if (c.min_people   > 1) tags.push(`👥 ${c.min_people}인+`);
+  if (c.min_order_amount > 0) tags.push(`₩${(c.min_order_amount / 10000).toFixed(0)}만+`);
+  if (c.time_start && c.time_end) tags.push(`⏰ ${c.time_start}~${c.time_end}`);
+  if (c.stackable)    tags.push('중복 가능');
+  return tags;
 }
 
 /* ================================================================== */
@@ -387,7 +431,8 @@ export default function StoresPage() {
   /* ---------------------------------------------------------------- */
 
   const saveCoupon = async () => {
-    if (!couponForm.title.trim() || !couponForm.discount_value || editModal === 'new' || !editModal) return;
+    const _needsValue = couponForm.discount_type === 'percent' || couponForm.discount_type === 'amount';
+    if (!couponForm.title.trim() || (_needsValue && !couponForm.discount_value) || editModal === 'new' || !editModal) return;
     setSavingCoupon(true); setCouponError('');
     try {
       if (editCouponId) {
@@ -424,11 +469,22 @@ export default function StoresPage() {
   const startEditCoupon = (coupon: StoreCoupon) => {
     setEditCouponId(coupon.id);
     setCouponForm({
-      title: coupon.title, discount_type: coupon.discount_type,
-      discount_value: coupon.discount_value, total_quantity: coupon.total_quantity,
-      expires_at: coupon.expires_at.slice(0, 10),
-      target_segment: (coupon.target_segment ?? 'all') as 'all' | 'new' | 'returning',
-      min_visit_count: coupon.min_visit_count, is_active: coupon.is_active,
+      title:            coupon.title,
+      discount_type:    coupon.discount_type,
+      discount_value:   coupon.discount_value,
+      free_item_name:   coupon.free_item_name ?? '',
+      total_quantity:   coupon.total_quantity,
+      expires_at:       coupon.expires_at.slice(0, 10),
+      target_segment:   (coupon.target_segment ?? 'all') as 'all' | 'new' | 'returning',
+      min_visit_count:  coupon.min_visit_count,
+      is_active:        coupon.is_active,
+      min_people:       coupon.min_people       ?? 1,
+      min_order_amount: coupon.min_order_amount ?? 0,
+      use_time_limit:   !!(coupon.time_start && coupon.time_end),
+      time_start:       coupon.time_start ?? '11:00',
+      time_end:         coupon.time_end   ?? '17:00',
+      stackable:        coupon.stackable  ?? false,
+      is_featured:      coupon.is_featured ?? false,
     });
     setShowCouponAdd(true);
   };
@@ -463,172 +519,312 @@ export default function StoresPage() {
   /* Coupon form render                                                */
   /* ---------------------------------------------------------------- */
 
-  const renderCouponForm = () => (
-    <div className="bg-[#FF6F0F]/5 rounded-2xl p-4 space-y-3 border border-[#FF6F0F]/20">
-      <p className="text-xs font-bold text-[#FF6F0F] flex items-center gap-1.5">
-        <Tag size={12} />
-        {editCouponId ? '쿠폰 수정' : '새 쿠폰 등록'}
-      </p>
+  const renderCouponForm = () => {
+    const cf   = couponForm;
+    const set  = (patch: Partial<CouponForm>) => setCouponForm(f => ({ ...f, ...patch }));
+    const needsValue = cf.discount_type === 'percent' || cf.discount_type === 'amount';
+    const isValid = cf.title.trim() &&
+      (cf.discount_type === 'bogo' || cf.discount_type === 'free_item' || cf.discount_value > 0) &&
+      (!cf.use_time_limit || (cf.time_start && cf.time_end));
 
-      {couponError && (
-        <div className="flex items-center gap-2 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-400">
-          <X size={12} />{couponError}
-        </div>
-      )}
-
-      {/* 쿠폰명 */}
-      <div>
-        <label className="text-[10px] text-dim mb-1 block">쿠폰명 *</label>
-        <input
-          value={couponForm.title}
-          onChange={e => setCouponForm(f => ({ ...f, title: e.target.value }))}
-          placeholder="예: 아메리카노 1+1 쿠폰"
-          className="w-full bg-sidebar border border-border-subtle rounded-xl px-3 py-2.5 text-sm text-primary placeholder-gray-600 focus:outline-none focus:border-[#FF6F0F] transition"
-        />
+    const SectionHead = ({ label }: { label: string }) => (
+      <div className="flex items-center gap-2 pt-1">
+        <div className="flex-1 h-px bg-border-main" />
+        <span className="text-[10px] text-muted font-semibold uppercase tracking-wider shrink-0">{label}</span>
+        <div className="flex-1 h-px bg-border-main" />
       </div>
+    );
 
-      {/* 할인 유형 + 값 */}
-      <div className="grid grid-cols-2 gap-2">
+    return (
+      <div className="bg-[#FF6F0F]/5 rounded-2xl p-4 space-y-3.5 border border-[#FF6F0F]/20">
+        {/* 헤더 */}
+        <p className="text-xs font-bold text-[#FF6F0F] flex items-center gap-1.5">
+          <Tag size={12} />
+          {editCouponId ? '쿠폰 수정' : '새 쿠폰 등록'}
+        </p>
+
+        {couponError && (
+          <div className="flex items-center gap-2 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-400">
+            <X size={12} />{couponError}
+          </div>
+        )}
+
+        {/* ── 쿠폰명 ── */}
         <div>
-          <label className="text-[10px] text-dim mb-1 block">할인 유형</label>
-          <div className="flex gap-1">
-            {(['percent', 'amount'] as const).map(t => (
-              <button key={t}
-                onClick={() => setCouponForm(f => ({ ...f, discount_type: t }))}
-                className={`flex-1 py-2 rounded-lg text-xs font-semibold transition border ${
-                  couponForm.discount_type === t
+          <label className="text-[10px] text-dim mb-1 block">쿠폰명 *</label>
+          <input
+            value={cf.title}
+            onChange={e => set({ title: e.target.value })}
+            placeholder="예: 밀면 3인분 이상 주문시 만두 50% 할인권"
+            className="w-full bg-sidebar border border-border-subtle rounded-xl px-3 py-2.5 text-sm text-primary placeholder-gray-600 focus:outline-none focus:border-[#FF6F0F] transition"
+          />
+        </div>
+
+        {/* ── 쿠폰 유형 ── */}
+        <div>
+          <label className="text-[10px] text-dim mb-1.5 block">쿠폰 유형</label>
+          <div className="grid grid-cols-4 gap-1.5">
+            {COUPON_TYPES.map(({ key, label, icon, desc }) => (
+              <button key={key}
+                onClick={() => set({ discount_type: key })}
+                title={desc}
+                className={`flex flex-col items-center gap-1 py-2.5 rounded-xl border text-xs font-semibold transition ${
+                  cf.discount_type === key
+                    ? 'border-[#FF6F0F] bg-[#FF6F0F]/15 text-[#FF6F0F]'
+                    : 'border-border-subtle bg-sidebar text-muted hover:text-primary hover:border-border-main'
+                }`}
+              >
+                <span className="text-base leading-none">{icon}</span>
+                {label}
+              </button>
+            ))}
+          </div>
+          <p className="text-[10px] text-dim mt-1.5">
+            {COUPON_TYPES.find(t => t.key === cf.discount_type)?.desc}
+          </p>
+        </div>
+
+        {/* 할인값 (percent / amount) */}
+        {needsValue && (
+          <div>
+            <div className="grid grid-cols-2 gap-2 mb-2">
+              <div>
+                <label className="text-[10px] text-dim mb-1 block">
+                  할인값 ({cf.discount_type === 'percent' ? '%' : '원'})
+                </label>
+                <input type="number" min="1"
+                  value={cf.discount_value || ''}
+                  onChange={e => set({ discount_value: Number(e.target.value) })}
+                  placeholder={cf.discount_type === 'percent' ? '10' : '2000'}
+                  className="w-full bg-sidebar border border-border-subtle rounded-xl px-3 py-2.5 text-sm text-primary placeholder-gray-600 focus:outline-none focus:border-[#FF6F0F] transition"
+                />
+              </div>
+              <div className="flex flex-col justify-end">
+                <div className="flex flex-wrap gap-1">
+                  {(cf.discount_type === 'percent'
+                    ? [5, 10, 15, 20, 30, 50]
+                    : [1000, 2000, 3000, 5000]
+                  ).map(v => (
+                    <button key={v}
+                      onClick={() => set({ discount_value: v })}
+                      className={`text-[10px] px-2 py-1 rounded-lg border transition ${
+                        cf.discount_value === v
+                          ? 'border-[#FF6F0F] bg-[#FF6F0F]/10 text-[#FF6F0F]'
+                          : 'border-border-subtle bg-sidebar text-muted hover:text-primary'
+                      }`}
+                    >
+                      {cf.discount_type === 'percent' ? `${v}%` : `${v.toLocaleString()}`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 무료 증정 상품명 */}
+        {cf.discount_type === 'free_item' && (
+          <div>
+            <label className="text-[10px] text-dim mb-1 block">증정 상품명 *</label>
+            <input
+              value={cf.free_item_name}
+              onChange={e => set({ free_item_name: e.target.value })}
+              placeholder="예: 아메리카노, 만두 1인분"
+              className="w-full bg-sidebar border border-border-subtle rounded-xl px-3 py-2.5 text-sm text-primary placeholder-gray-600 focus:outline-none focus:border-[#FF6F0F] transition"
+            />
+          </div>
+        )}
+
+        {/* ━━ 사용 조건 ━━ */}
+        <SectionHead label="사용 조건" />
+
+        {/* 최소 인원 */}
+        <div>
+          <label className="text-[10px] text-dim mb-1.5 block">최소 인원</label>
+          <div className="flex gap-1.5">
+            {MIN_PEOPLE_PRESETS.map(n => (
+              <button key={n}
+                onClick={() => set({ min_people: n })}
+                className={`flex-1 py-1.5 rounded-lg border text-xs font-semibold transition ${
+                  cf.min_people === n
                     ? 'border-[#FF6F0F] bg-[#FF6F0F]/15 text-[#FF6F0F]'
                     : 'border-border-subtle bg-sidebar text-muted hover:text-primary'
                 }`}
               >
-                {t === 'percent' ? '% 할인' : '원 할인'}
+                {n === 4 ? '4인+' : `${n}인`}
               </button>
             ))}
           </div>
         </div>
+
+        {/* 최소 주문금액 */}
         <div>
-          <label className="text-[10px] text-dim mb-1 block">
-            할인값 ({couponForm.discount_type === 'percent' ? '%' : '원'})
+          <label className="text-[10px] text-dim mb-1.5 block">최소 주문금액</label>
+          <div className="flex gap-1.5 mb-1.5">
+            {MIN_AMOUNT_PRESETS.map(n => (
+              <button key={n}
+                onClick={() => set({ min_order_amount: n })}
+                className={`flex-1 py-1.5 rounded-lg border text-[10px] font-semibold transition ${
+                  cf.min_order_amount === n
+                    ? 'border-[#FF6F0F] bg-[#FF6F0F]/15 text-[#FF6F0F]'
+                    : 'border-border-subtle bg-sidebar text-muted hover:text-primary'
+                }`}
+              >
+                {n === 0 ? '없음' : `${(n / 10000).toFixed(0)}만`}
+              </button>
+            ))}
+          </div>
+          {!MIN_AMOUNT_PRESETS.includes(cf.min_order_amount) && (
+            <input type="number" min="0" step="1000"
+              value={cf.min_order_amount || ''}
+              onChange={e => set({ min_order_amount: Number(e.target.value) })}
+              placeholder="직접 입력 (원)"
+              className="w-full bg-sidebar border border-border-subtle rounded-xl px-3 py-2 text-xs text-primary placeholder-gray-600 focus:outline-none focus:border-[#FF6F0F] transition"
+            />
+          )}
+        </div>
+
+        {/* 사용 가능 시간 */}
+        <div>
+          <label className="flex items-center gap-2 cursor-pointer mb-2">
+            <input type="checkbox"
+              checked={cf.use_time_limit}
+              onChange={e => set({ use_time_limit: e.target.checked })}
+              className="rounded accent-[#FF6F0F]"
+            />
+            <span className="text-[10px] text-muted font-semibold">사용 가능 시간 제한</span>
+            {!cf.use_time_limit && <span className="text-[10px] text-dim">24시간 사용 가능</span>}
           </label>
-          <input
-            type="number" min="1"
-            value={couponForm.discount_value || ''}
-            onChange={e => setCouponForm(f => ({ ...f, discount_value: Number(e.target.value) }))}
-            placeholder={couponForm.discount_type === 'percent' ? '10' : '2000'}
-            className="w-full bg-sidebar border border-border-subtle rounded-xl px-3 py-2.5 text-sm text-primary placeholder-gray-600 focus:outline-none focus:border-[#FF6F0F] transition"
-          />
+          {cf.use_time_limit && (
+            <div className="flex items-center gap-2">
+              <input type="time" value={cf.time_start}
+                onChange={e => set({ time_start: e.target.value })}
+                className="flex-1 bg-sidebar border border-border-subtle rounded-xl px-3 py-2 text-xs text-primary focus:outline-none focus:border-[#FF6F0F] transition"
+              />
+              <span className="text-muted text-xs">~</span>
+              <input type="time" value={cf.time_end}
+                onChange={e => set({ time_end: e.target.value })}
+                className="flex-1 bg-sidebar border border-border-subtle rounded-xl px-3 py-2 text-xs text-primary focus:outline-none focus:border-[#FF6F0F] transition"
+              />
+            </div>
+          )}
         </div>
-      </div>
 
-      {/* 할인값 프리셋 */}
-      <div className="flex flex-wrap gap-1.5">
-        {(couponForm.discount_type === 'percent'
-          ? [5, 10, 15, 20, 30, 50]
-          : [1000, 2000, 3000, 5000]
-        ).map(v => (
-          <button key={v}
-            onClick={() => setCouponForm(f => ({ ...f, discount_value: v }))}
-            className={`text-[10px] px-2.5 py-1 rounded-lg border transition ${
-              couponForm.discount_value === v
-                ? 'border-[#FF6F0F] bg-[#FF6F0F]/10 text-[#FF6F0F]'
-                : 'border-border-subtle bg-sidebar text-muted hover:text-primary'
-            }`}
-          >
-            {couponForm.discount_type === 'percent' ? `${v}%` : `${v.toLocaleString()}원`}
-          </button>
-        ))}
-      </div>
+        {/* ━━ 수량 & 기간 ━━ */}
+        <SectionHead label="수량 & 기간" />
 
-      {/* 수량 + 만료일 */}
-      <div className="grid grid-cols-2 gap-2">
-        <div>
-          <label className="text-[10px] text-dim mb-1 block">수량 (0=무제한)</label>
-          <input
-            type="number" min="0"
-            value={couponForm.total_quantity}
-            onChange={e => setCouponForm(f => ({ ...f, total_quantity: Number(e.target.value) }))}
-            className="w-full bg-sidebar border border-border-subtle rounded-xl px-3 py-2.5 text-sm text-primary focus:outline-none focus:border-[#FF6F0F] transition"
-          />
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-[10px] text-dim mb-1 block">수량 (0 = 무제한)</label>
+            <input type="number" min="0"
+              value={cf.total_quantity}
+              onChange={e => set({ total_quantity: Number(e.target.value) })}
+              className="w-full bg-sidebar border border-border-subtle rounded-xl px-3 py-2.5 text-sm text-primary focus:outline-none focus:border-[#FF6F0F] transition"
+            />
+          </div>
+          <div>
+            <label className="text-[10px] text-dim mb-1 block">만료일</label>
+            <input type="date" value={cf.expires_at}
+              onChange={e => set({ expires_at: e.target.value })}
+              className="w-full bg-sidebar border border-border-subtle rounded-xl px-3 py-2.5 text-sm text-primary focus:outline-none focus:border-[#FF6F0F] transition"
+            />
+          </div>
         </div>
-        <div>
-          <label className="text-[10px] text-dim mb-1 block">만료일</label>
-          <input
-            type="date"
-            value={couponForm.expires_at}
-            onChange={e => setCouponForm(f => ({ ...f, expires_at: e.target.value }))}
-            className="w-full bg-sidebar border border-border-subtle rounded-xl px-3 py-2.5 text-sm text-primary focus:outline-none focus:border-[#FF6F0F] transition"
-          />
+        <div className="flex gap-1.5">
+          {[7, 30, 60, 90].map(d => (
+            <button key={d}
+              onClick={() => set({ expires_at: defaultExpires(d) })}
+              className="text-[10px] px-2.5 py-1 rounded-lg border border-border-subtle bg-sidebar text-muted hover:text-primary hover:border-border-main transition"
+            >
+              +{d}일
+            </button>
+          ))}
         </div>
-      </div>
 
-      {/* 만료일 프리셋 */}
-      <div className="flex gap-1.5">
-        {[7, 30, 60, 90].map(days => (
-          <button key={days}
-            onClick={() => setCouponForm(f => ({ ...f, expires_at: defaultExpires(days) }))}
-            className="text-[10px] px-2.5 py-1 rounded-lg border border-border-subtle bg-sidebar text-muted hover:text-primary hover:border-border-main transition"
-          >
-            +{days}일
-          </button>
-        ))}
-      </div>
+        {/* ━━ 대상 고객 ━━ */}
+        <SectionHead label="대상 고객" />
 
-      {/* 대상 고객 */}
-      <div>
-        <label className="text-[10px] text-dim mb-1.5 block">대상 고객</label>
         <div className="flex gap-1.5">
           {([
-            { key: 'all',       label: '전체' },
-            { key: 'new',       label: '신규' },
-            { key: 'returning', label: '재방문' },
-          ] as const).map(({ key, label }) => (
+            { key: 'all',       label: '전체', desc: '모든 고객' },
+            { key: 'new',       label: '신규', desc: '첫 방문 고객' },
+            { key: 'returning', label: '재방문', desc: 'N회 이상 방문' },
+          ] as const).map(({ key, label, desc }) => (
             <button key={key}
-              onClick={() => setCouponForm(f => ({
-                ...f, target_segment: key,
-                min_visit_count: key === 'returning' ? (f.min_visit_count ?? 2) : null,
-              }))}
-              className={`flex-1 py-2 rounded-lg text-xs font-semibold border transition ${
-                couponForm.target_segment === key
+              onClick={() => set({ target_segment: key, min_visit_count: key === 'returning' ? (cf.min_visit_count ?? 2) : null })}
+              title={desc}
+              className={`flex-1 py-2 rounded-lg border text-xs font-semibold transition ${
+                cf.target_segment === key
                   ? 'border-[#FF6F0F] bg-[#FF6F0F]/15 text-[#FF6F0F]'
                   : 'border-border-subtle bg-sidebar text-muted hover:text-primary'
               }`}
             >
               {label}
+              <span className="block text-[9px] font-normal opacity-60 mt-0.5">{desc}</span>
             </button>
           ))}
         </div>
-        {couponForm.target_segment === 'returning' && (
-          <div className="mt-2 flex items-center gap-2">
+        {cf.target_segment === 'returning' && (
+          <div className="flex items-center gap-2">
             <label className="text-[10px] text-dim">최소 방문</label>
-            <input
-              type="number" min="1"
-              value={couponForm.min_visit_count ?? 2}
-              onChange={e => setCouponForm(f => ({ ...f, min_visit_count: Number(e.target.value) }))}
+            <input type="number" min="1"
+              value={cf.min_visit_count ?? 2}
+              onChange={e => set({ min_visit_count: Number(e.target.value) })}
               className="w-16 bg-sidebar border border-border-subtle rounded-lg px-2 py-1 text-xs text-primary focus:outline-none focus:border-[#FF6F0F] transition"
             />
             <span className="text-[10px] text-muted">회 이상</span>
           </div>
         )}
-      </div>
 
-      {/* 저장/취소 */}
-      <div className="flex gap-2 pt-1">
-        <button
-          onClick={() => { setShowCouponAdd(false); setCouponForm(EMPTY_COUPON); setCouponError(''); setEditCouponId(null); }}
-          className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-muted bg-sidebar border border-border-subtle hover:bg-fill-medium transition"
-        >
-          취소
-        </button>
-        <button
-          onClick={saveCoupon}
-          disabled={savingCoupon || !couponForm.title.trim() || !couponForm.discount_value}
-          className="flex-1 py-2.5 rounded-xl text-xs font-bold text-primary bg-[#FF6F0F] hover:bg-[#e66000] transition disabled:opacity-50"
-        >
-          {savingCoupon ? '저장 중...' : (editCouponId ? '수정 완료' : '쿠폰 등록')}
-        </button>
+        {/* ━━ 운영 설정 ━━ */}
+        <SectionHead label="운영 설정" />
+
+        <div className="flex gap-3 flex-wrap">
+          {/* 중복 사용 */}
+          <button onClick={() => set({ stackable: !cf.stackable })}
+            className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-semibold transition flex-1 ${
+              cf.stackable ? 'border-blue-500/40 bg-blue-500/10 text-blue-400' : 'border-border-subtle bg-sidebar text-muted hover:text-primary'
+            }`}
+          >
+            {cf.stackable ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
+            <div>
+              <p>다른 쿠폰과 중복 사용</p>
+              <p className="text-[9px] opacity-60 mt-0.5">{cf.stackable ? '중복 허용' : '중복 불가'}</p>
+            </div>
+          </button>
+          {/* 앱 상단 노출 */}
+          <button onClick={() => set({ is_featured: !cf.is_featured })}
+            className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-semibold transition flex-1 ${
+              cf.is_featured ? 'border-amber-500/40 bg-amber-500/10 text-amber-400' : 'border-border-subtle bg-sidebar text-muted hover:text-primary'
+            }`}
+          >
+            {cf.is_featured ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
+            <div>
+              <p>⭐ 앱 상단 노출</p>
+              <p className="text-[9px] opacity-60 mt-0.5">{cf.is_featured ? '리스트 최상단' : '일반 순서'}</p>
+            </div>
+          </button>
+        </div>
+
+        {/* ── 저장/취소 ── */}
+        <div className="flex gap-2 pt-1">
+          <button
+            onClick={() => { setShowCouponAdd(false); setCouponForm(EMPTY_COUPON); setCouponError(''); setEditCouponId(null); }}
+            className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-muted bg-sidebar border border-border-subtle hover:bg-fill-medium transition"
+          >
+            취소
+          </button>
+          <button
+            onClick={saveCoupon}
+            disabled={savingCoupon || !isValid}
+            className="flex-1 py-2.5 rounded-xl text-xs font-bold text-primary bg-[#FF6F0F] hover:bg-[#e66000] transition disabled:opacity-50"
+          >
+            {savingCoupon ? '저장 중...' : (editCouponId ? '수정 완료' : '쿠폰 등록')}
+          </button>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   /* ---------------------------------------------------------------- */
   /* Render                                                             */
@@ -1148,17 +1344,23 @@ export default function StoresPage() {
                   ) : (
                     <div className="space-y-2">
                       {storeCoupons.map(coupon => {
-                        const exp = expiresLabel(coupon.expires_at);
+                        const exp  = expiresLabel(coupon.expires_at);
+                        const tags = couponConditionTags(coupon);
                         return (
-                          <div key={coupon.id} className="bg-fill-subtle border border-border-main rounded-xl px-4 py-3 flex items-center gap-3">
+                          <div key={coupon.id} className={`bg-fill-subtle border rounded-xl px-4 py-3 flex items-center gap-3 ${coupon.is_featured ? 'border-amber-500/30' : 'border-border-main'}`}>
                             <div className="flex-1 min-w-0">
+                              {/* 제목 행 */}
                               <div className="flex items-center gap-2 mb-1">
+                                {coupon.is_featured && (
+                                  <span className="shrink-0 text-amber-400 leading-none" title="앱 상단 노출">⭐</span>
+                                )}
                                 <p className="text-sm font-semibold text-primary truncate">{coupon.title}</p>
                                 <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-md bg-[#FF6F0F]/15 text-[#FF6F0F] font-bold">
-                                  {discountLabel(coupon.discount_type, coupon.discount_value)}
+                                  {discountLabel(coupon.discount_type, coupon.discount_value, coupon.free_item_name)}
                                 </span>
                               </div>
-                              <div className="flex items-center gap-2.5 text-[10px]">
+                              {/* 메타 행 */}
+                              <div className="flex flex-wrap items-center gap-2 text-[10px]">
                                 <span className={exp.color}>{exp.text}</span>
                                 {coupon.total_quantity > 0 && (
                                   <span className="text-muted">{coupon.issued_count}/{coupon.total_quantity}매</span>
@@ -1168,6 +1370,9 @@ export default function StoresPage() {
                                     {coupon.target_segment === 'new' ? '신규' : `재방문 ${coupon.min_visit_count ?? 2}회+`}
                                   </span>
                                 )}
+                                {tags.map(tag => (
+                                  <span key={tag} className="px-1.5 py-0.5 rounded bg-fill-medium text-tertiary">{tag}</span>
+                                ))}
                               </div>
                             </div>
                             <div className="flex items-center gap-1.5 shrink-0">

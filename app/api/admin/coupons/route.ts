@@ -22,8 +22,9 @@ export async function GET(req: NextRequest) {
 
   const { data, error } = await adminSb()
     .from('coupons')
-    .select('id, title, discount_type, discount_value, total_quantity, issued_count, is_active, expires_at, created_at, target_segment, min_visit_count')
+    .select('id, title, discount_type, discount_value, free_item_name, total_quantity, issued_count, is_active, expires_at, created_at, target_segment, min_visit_count, min_people, min_order_amount, time_start, time_end, stackable, is_featured')
     .eq('store_id', storeId)
+    .order('is_featured', { ascending: false })
     .order('created_at', { ascending: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -39,19 +40,31 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '필수 필드 누락 (store_id, title, discount_type, discount_value, expires_at)' }, { status: 400 });
     }
 
+    const {
+      free_item_name, min_people, min_order_amount,
+      time_start, time_end, stackable, is_featured,
+    } = body;
+
     const { data, error } = await adminSb()
       .from('coupons')
       .insert({
         store_id,
-        title:           title.trim(),
+        title:            title.trim(),
         discount_type,
-        discount_value:  Number(discount_value),
-        total_quantity:  Number(total_quantity ?? 0),
-        issued_count:    0,
-        expires_at:      new Date(expires_at).toISOString(),
-        is_active:       is_active ?? true,
-        target_segment:  target_segment ?? 'all',
-        min_visit_count: target_segment === 'returning' ? (min_visit_count ?? 2) : null,
+        discount_value:   ['free_item', 'bogo'].includes(discount_type) ? 0 : Number(discount_value),
+        free_item_name:   discount_type === 'free_item' ? (free_item_name ?? null) : null,
+        total_quantity:   Number(total_quantity ?? 0),
+        issued_count:     0,
+        expires_at:       new Date(expires_at).toISOString(),
+        is_active:        is_active ?? true,
+        target_segment:   target_segment ?? 'all',
+        min_visit_count:  target_segment === 'returning' ? (min_visit_count ?? 2) : null,
+        min_people:       Number(min_people ?? 1),
+        min_order_amount: Number(min_order_amount ?? 0),
+        time_start:       time_start || null,
+        time_end:         time_end   || null,
+        stackable:        stackable  ?? false,
+        is_featured:      is_featured ?? false,
       })
       .select()
       .single();
