@@ -39,7 +39,7 @@ async function crawl(keywords: CrawlKeyword[]) {
 
     async requestHandler({ page, request, log }) {
       const { kw } = request.userData as { kw: CrawlKeyword };
-      log.info(`🔍 "${kw.keyword}" ${kw.analyze_reviews ? '(리뷰분석)' : ''}`);
+      log.info(`🔍 "${kw.keyword}" (리뷰 상세 분석)`);
 
       await updateKeywordStatus(kw.id, { status: 'running', last_error: undefined });
 
@@ -47,8 +47,8 @@ async function crawl(keywords: CrawlKeyword[]) {
       const restaurants = await collectFromApollo(page, kw.keyword);
       log.info(`   ${restaurants.length}개 업체 수집`);
 
-      // ── 2. analyze_reviews=true인 경우: 상세 정보 + 리뷰 분석 ──
-      if (kw.analyze_reviews) {
+      // ── 2. 리뷰 상세 분석 (항상 실행) ──
+      if (true) { // eslint-disable-line no-constant-condition
         for (let i = 0; i < restaurants.length; i++) {
           const r = restaurants[i];
           r.is_new_open = true;

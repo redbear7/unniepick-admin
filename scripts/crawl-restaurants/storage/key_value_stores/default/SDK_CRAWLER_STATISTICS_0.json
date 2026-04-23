@@ -1,29 +1,70 @@
 {
-  "requestsFinished": 1,
-  "requestsFailed": 0,
-  "requestsRetries": 0,
+  "requestsFinished": 3,
+  "requestsFailed": 2,
+  "requestsRetries": 4,
   "requestsFailedPerMinute": 0,
-  "requestsFinishedPerMinute": 0,
-  "requestMinDurationMillis": 21018,
+  "requestsFinishedPerMinute": 1,
+  "requestMinDurationMillis": 7655,
   "requestMaxDurationMillis": 21018,
-  "requestTotalFailedDurationMillis": 0,
-  "requestTotalFinishedDurationMillis": 21018,
+  "requestTotalFailedDurationMillis": 944,
+  "requestTotalFinishedDurationMillis": 36807,
   "crawlerStartedAt": "2026-04-23T01:22:48.271Z",
-  "crawlerFinishedAt": null,
-  "statsPersistedAt": "2026-04-23T01:24:48.266Z",
-  "crawlerRuntimeMillis": 120158,
+  "crawlerFinishedAt": "2026-04-23T01:28:21.107Z",
+  "statsPersistedAt": "2026-04-23T01:28:21.107Z",
+  "crawlerRuntimeMillis": 332999,
   "crawlerLastStartTimestamp": 1776907368108,
   "requestRetryHistogram": [
-    1
+    1,
+    null,
+    1,
+    null,
+    null,
+    null,
+    null,
+    1,
+    null,
+    null,
+    null,
+    2
   ],
   "statsId": 0,
-  "requestAvgFailedDurationMillis": null,
-  "requestAvgFinishedDurationMillis": 21018,
-  "requestTotalDurationMillis": 21018,
-  "requestsTotal": 1,
+  "requestAvgFailedDurationMillis": 472,
+  "requestAvgFinishedDurationMillis": 12269,
+  "requestTotalDurationMillis": 37751,
+  "requestsTotal": 5,
   "requestsWithStatusCode": {
-    "200": 4
+    "200": 6,
+    "429": 30
   },
-  "errors": {},
-  "retryErrors": {}
+  "errors": {
+    "/Users/bangju/Documents/PROGRAM/unniepick-admin/scripts/crawl-restaurants/node_modules/@crawlee/src/internals/browser-crawler.ts:584:30": {
+      "missing error code": {
+        "Error": {
+          "Detected a session error, rotating session... ": {
+            "count": 2
+          }
+        }
+      }
+    }
+  },
+  "retryErrors": {
+    "/Users/bangju/Documents/PROGRAM/unniepick-admin/scripts/crawl-restaurants/node_modules/@apify/src/index.ts:87:74": {
+      "missing error code": {
+        "Error": {
+          "requestHandler timed out after 300 seconds.": {
+            "count": 3
+          }
+        }
+      }
+    },
+    "/Users/bangju/Documents/PROGRAM/unniepick-admin/scripts/crawl-restaurants/node_modules/@crawlee/src/internals/browser-crawler.ts:584:30": {
+      "missing error code": {
+        "Error": {
+          "Detected a session error, rotating session... ": {
+            "count": 28
+          }
+        }
+      }
+    }
+  }
 }

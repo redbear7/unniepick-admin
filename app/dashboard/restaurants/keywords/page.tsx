@@ -661,15 +661,10 @@ export default function CrawlKeywordsPage() {
             </button>
           </div>
 
-          <label className="flex items-center gap-2 cursor-pointer text-xs text-secondary">
-            <input
-              type="checkbox"
-              checked={singleAnalyze}
-              onChange={(e) => setSingleAnalyze(e.target.checked)}
-              className="accent-[#FF6F0F]"
-            />
-            리뷰 상세 분석 포함 (느림, 약 30초 추가)
-          </label>
+          <div className="flex items-center gap-2 text-xs text-purple-400 bg-purple-500/10 border border-purple-500/20 rounded px-2.5 py-1.5">
+            <MessageSquare className="w-3.5 h-3.5" />
+            리뷰 상세 분석 항상 포함
+          </div>
 
           {/* 결과 카드 */}
           {singleResult && singleResult.status === 'success' && singleResult.store && (
@@ -843,15 +838,10 @@ export default function CrawlKeywordsPage() {
             />
             매일 자동 크롤링
           </label>
-          <label className="flex items-center gap-2 cursor-pointer text-secondary">
-            <input
-              type="checkbox"
-              checked={form.analyze_reviews}
-              onChange={(e) => setForm({ ...form, analyze_reviews: e.target.checked })}
-              className="accent-[#FF6F0F]"
-            />
-            리뷰 상세 분석 (느림)
-          </label>
+          <div className="flex items-center gap-2 text-sm text-purple-400 bg-purple-500/10 border border-purple-500/20 rounded px-3 py-1.5">
+            <MessageSquare className="w-3.5 h-3.5" />
+            리뷰 상세 분석 항상 포함
+          </div>
         </div>
       </form>
 
@@ -948,12 +938,10 @@ function KeywordRow({
                 매일
               </span>
             )}
-            {k.analyze_reviews && (
-              <span className="px-1.5 py-0.5 bg-purple-500/15 text-purple-400 text-[10px] rounded border border-purple-500/25 flex items-center gap-1">
-                <MessageSquare className="w-3 h-3" />
-                리뷰분석
-              </span>
-            )}
+            <span className="px-1.5 py-0.5 bg-purple-500/15 text-purple-400 text-[10px] rounded border border-purple-500/25 flex items-center gap-1">
+              <MessageSquare className="w-3 h-3" />
+              리뷰 상세 분석
+            </span>
           </div>
           {k.description && (
             <p className="text-xs text-muted mt-0.5">{k.description}</p>
@@ -985,12 +973,7 @@ function KeywordRow({
             icon={<Calendar className="w-3.5 h-3.5" />}
             title="매일 자동"
           />
-          <IconToggle
-            active={k.analyze_reviews}
-            onClick={() => onToggle({ analyze_reviews: !k.analyze_reviews })}
-            icon={<MessageSquare className="w-3.5 h-3.5" />}
-            title="리뷰 분석"
-          />
+          {/* 리뷰 분석은 항상 활성 — 토글 제거 */}
         </div>
 
         {/* 실행/중지 버튼 */}
