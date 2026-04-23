@@ -1,0 +1,148 @@
+{
+  "usableSessionsCount": 5,
+  "retiredSessionsCount": 0,
+  "sessions": [
+    {
+      "id": "session_mFxTlyfANf",
+      "cookieJar": {
+        "version": "tough-cookie@6.0.1",
+        "storeType": "MemoryCookieStore",
+        "rejectPublicSuffixes": true,
+        "enableLooseMode": false,
+        "allowSpecialUseDomain": true,
+        "prefixSecurity": "silent",
+        "cookies": []
+      },
+      "userData": {},
+      "maxErrorScore": 3,
+      "errorScoreDecrement": 0.5,
+      "expiresAt": "2026-04-23T02:12:48.352Z",
+      "createdAt": "2026-04-23T01:22:48.352Z",
+      "usageCount": 0,
+      "maxUsageCount": 50,
+      "errorScore": 0
+    },
+    {
+      "id": "session_oqwjn9zv2f",
+      "cookieJar": {
+        "version": "tough-cookie@6.0.1",
+        "storeType": "MemoryCookieStore",
+        "rejectPublicSuffixes": true,
+        "enableLooseMode": false,
+        "allowSpecialUseDomain": true,
+        "prefixSecurity": "silent",
+        "cookies": [
+          {
+            "key": "NACT",
+            "value": "1",
+            "expires": "2026-04-24T01:23:02.664Z",
+            "domain": "naver.com",
+            "path": "/restaurant/2023563185",
+            "hostOnly": false,
+            "creation": "2026-04-23T01:23:11.978Z",
+            "lastAccessed": "2026-04-23T01:23:12.283Z"
+          },
+          {
+            "key": "_fwb",
+            "value": "214pDIeHuA1BrQmFehs165p.1776907382517",
+            "expires": "2027-05-28T01:23:10.308Z",
+            "domain": "pcmap.place.naver.com",
+            "path": "/",
+            "hostOnly": false,
+            "creation": "2026-04-23T01:23:11.991Z",
+            "lastAccessed": "2026-04-23T01:23:12.283Z"
+          },
+          {
+            "key": "NAC",
+            "value": "2dB3BAR9cuvi",
+            "expires": "2027-05-28T01:23:02.663Z",
+            "domain": "naver.com",
+            "path": "/",
+            "secure": true,
+            "hostOnly": false,
+            "creation": "2026-04-23T01:23:11.997Z",
+            "lastAccessed": "2026-04-23T01:23:12.283Z"
+          },
+          {
+            "key": "wcs_bt",
+            "value": "sp_585e42c3e80248:1776907390",
+            "expires": "2027-05-28T01:23:10.308Z",
+            "domain": "pcmap.place.naver.com",
+            "path": "/",
+            "hostOnly": true,
+            "creation": "2026-04-23T01:23:12.018Z",
+            "lastAccessed": "2026-04-23T01:23:12.283Z"
+          }
+        ]
+      },
+      "userData": {},
+      "maxErrorScore": 3,
+      "errorScoreDecrement": 0.5,
+      "expiresAt": "2026-04-23T02:12:48.357Z",
+      "createdAt": "2026-04-23T01:22:48.357Z",
+      "usageCount": 1,
+      "maxUsageCount": 50,
+      "errorScore": 0
+    },
+    {
+      "id": "session_rzYhYHrwDw",
+      "cookieJar": {
+        "version": "tough-cookie@6.0.1",
+        "storeType": "MemoryCookieStore",
+        "rejectPublicSuffixes": true,
+        "enableLooseMode": false,
+        "allowSpecialUseDomain": true,
+        "prefixSecurity": "silent",
+        "cookies": []
+      },
+      "userData": {},
+      "maxErrorScore": 3,
+      "errorScoreDecrement": 0.5,
+      "expiresAt": "2026-04-23T02:12:48.366Z",
+      "createdAt": "2026-04-23T01:22:48.366Z",
+      "usageCount": 0,
+      "maxUsageCount": 50,
+      "errorScore": 0
+    },
+    {
+      "id": "session_gxQDtEvUV7",
+      "cookieJar": {
+        "version": "tough-cookie@6.0.1",
+        "storeType": "MemoryCookieStore",
+        "rejectPublicSuffixes": true,
+        "enableLooseMode": false,
+        "allowSpecialUseDomain": true,
+        "prefixSecurity": "silent",
+        "cookies": []
+      },
+      "userData": {},
+      "maxErrorScore": 3,
+      "errorScoreDecrement": 0.5,
+      "expiresAt": "2026-04-23T02:13:09.398Z",
+      "createdAt": "2026-04-23T01:23:09.398Z",
+      "usageCount": 0,
+      "maxUsageCount": 50,
+      "errorScore": 0
+    },
+    {
+      "id": "session_hq0OQx0Jwk",
+      "cookieJar": {
+        "version": "tough-cookie@6.0.1",
+        "storeType": "MemoryCookieStore",
+        "rejectPublicSuffixes": true,
+        "enableLooseMode": false,
+        "allowSpecialUseDomain": true,
+        "prefixSecurity": "silent",
+        "cookies": []
+      },
+      "userData": {},
+      "maxErrorScore": 3,
+      "errorScoreDecrement": 0.5,
+      "expiresAt": "2026-04-23T02:13:09.400Z",
+      "createdAt": "2026-04-23T01:23:09.400Z",
+      "usageCount": 0,
+      "maxUsageCount": 50,
+      "errorScore": 0
+    }
+  ]
+}

@@ -105,3 +105,137 @@ URL: https://map.naver.com/p/favorite/myPlace/folder/3ff79c32c6f748ac9ded424f118
 [32/503] 용추추어탕 (1910262891)
   ✓ 저장 완료
 [33/503] 차돌풍 창원시청점 (1082706450)
+  ✓ 저장 완료
+[34/503] 남해일식 (15103032)
+  ✓ 저장 완료
+[35/503] 우메루 창원본점 (1155558082)
+  ✓ 저장 완료
+[36/503] 제주은희네해장국 창원중동점 (1927938065)
+  ✓ 저장 완료
+[37/503] 제주은희네해장국 마산합포점 (1730748899)
+  ✓ 저장 완료
+[38/503] 은신처 중앙점 (1666207306)
+  ✓ 저장 완료
+[39/503] 겉바속촉 압력솥통닭 (1599595685)
+  ✓ 저장 완료
+[40/503] 아프리카막창 산호본점 (1165306584)
+  ✓ 저장 완료
+[41/503] 올바릇식당 창원점 (1961944129)
+  ✓ 저장 완료
+[42/503] 카페 비쥬 (1916742627)
+  ✓ 저장 완료
+[43/503] 좋은날 (1614140587)
+  ✓ 저장 완료
+[44/503] 신과함께 마산반점 (1379154902)
+  ✓ 저장 완료
+[45/503] 하우요커피 (1264797964)
+  ✓ 저장 완료
+[46/503] 그린하우스 주남점 (1997677264)
+  ✓ 저장 완료
+[47/503] 호랑면옥 상남본점 (1337046050)
+  ✓ 저장 완료
+[48/503] 장군갈비탕 (36381384)
+  ✓ 저장 완료
+[49/503] 마산당커피 (1222150951)
+  ✓ 저장 완료
+[50/503] 스시환 (1698520703)
+  ✓ 저장 완료
+[51/503] 고마화로 상남점 (1428643853)
+  ✓ 저장 완료
+[52/503] 도노아 (1993256416)
+  ✓ 저장 완료
+[53/503] 만재네 창원상남점 (1864361084)
+  ✓ 저장 완료
+[54/503] 도돌커피로스터스 (1931540737)
+
+==================================================
+[2026. 4. 23. 오전 10:22:47] 크롤링 시작 (5개 키워드)
+==================================================
+기존 DB: 349개
+[32mINFO[39m [33m PlaywrightCrawler:[39m Starting the crawler.
+  ✓ 저장 완료
+[55/503] 한다솥 창원상남점 (1126647345)
+[32mINFO[39m [33m PlaywrightCrawler:[39m 🔍 "창원시 새로오픈 맛집" 
+[32mINFO[39m [33m PlaywrightCrawler:[39m 🔍 "창원시 산호동 맛집" (리뷰분석)
+     페이지 1: 50개 (누적 50개)
+     페이지 2: 0개 (누적 50개)
+     (새 결과 없음 — 종료)
+[32mINFO[39m [33m PlaywrightCrawler:[39m    50개 업체 수집
+[32mINFO[39m [33m PlaywrightCrawler:[39m    📷 이미지 처리 중...
+     페이지 1: 57개 (누적 57개)
+     페이지 2: 0개 (누적 57개)
+     (새 결과 없음 — 종료)
+[32mINFO[39m [33m PlaywrightCrawler:[39m    57개 업체 수집
+[32mINFO[39m [33m PlaywrightCrawler:[39m    [1/57] 산호길 상세+리뷰 분석...
+  ✓ 저장 완료
+[56/503] 통영해물가 창원본점 (1198675123)
+    [image] 소스 4672×4672px
+    [image] ✓ 완료 → 321KB
+    [image] 소스 4000×2252px
+    [image] ✓ 완료 → 118KB
+    [image] 소스 3818×2864px
+    [image] ✓ 완료 → 208KB
+[32mINFO[39m [33m PlaywrightCrawler:[39m    📷 50/50개 이미지 저장
+[32mINFO[39m [33m PlaywrightCrawler:[39m    ✓ 완료
+[32mINFO[39m [33m PlaywrightCrawler:[39m 🔍 "창원시 북면 맛집" (리뷰분석)
+[32mINFO[39m [33m PlaywrightCrawler:[39m 🔍 "창원시 봉곡동 맛집" (리뷰분석)
+  ✓ 저장 완료
+[57/503] 야키야 창원상남점 (1520659521)
+     페이지 1: 58개 (누적 58개)
+     페이지 1: 59개 (누적 59개)
+     페이지 2: 0개 (누적 59개)
+     (새 결과 없음 — 종료)
+[32mINFO[39m [33m PlaywrightCrawler:[39m    59개 업체 수집
+[32mINFO[39m [33m PlaywrightCrawler:[39m    [1/59] 연막창 창원봉곡점 상세+리뷰 분석...
+     페이지 2: 0개 (누적 58개)
+     (새 결과 없음 — 종료)
+[32mINFO[39m [33m PlaywrightCrawler:[39m    58개 업체 수집
+[32mINFO[39m [33m PlaywrightCrawler:[39m    [1/58] 주문진메밀막국수 상세+리뷰 분석...
+[32mINFO[39m [33m PlaywrightCrawler:[39m    [2/57] 속초오징어어시장 산호점 상세+리뷰 분석...
+  ✓ 저장 완료
+[58/503] 오마카세 오사이초밥 창원상남점 (1622300731)
+[32mINFO[39m [33m PlaywrightCrawler:[39m    [2/59] 압구정화로구이 창원봉곡점 상세+리뷰 분석...
+[32mINFO[39m [33m PlaywrightCrawler:[39m    [2/58] 황금코다리 창원북면점 상세+리뷰 분석...
+  ✓ 저장 완료
+[59/503] 팥이야기 진해점 (21393150)
+[32mINFO[39m [33m PlaywrightCrawler:[39m    [3/57] 참뽀뽀쪽갈비 산호직영점 상세+리뷰 분석...
+[32mINFO[39m [33m PlaywrightCrawler:[39m    [3/59] 오빠네 봉곡점 상세+리뷰 분석...
+  ✓ 저장 완료
+[60/503] 이층횟집 (15842908)
+[32mINFO[39m [33m PlaywrightCrawler:[39m    [3/58] 더하다 북면점 상세+리뷰 분석...
+[32mINFO[39m [33m PlaywrightCrawler:Statistics:[39m PlaywrightCrawler request statistics:[90m {"requestAvgFailedDurationMillis":null,"requestAvgFinishedDurationMillis":21018,"requestsFinishedPerMinute":1,"requestsFailedPerMinute":0,"requestTotalDurationMillis":21018,"requestsTotal":1,"crawlerRuntimeMillis":60165,"retryHistogram":[1]}[39m
+[32mINFO[39m [33m PlaywrightCrawler:AutoscaledPool:[39m state[90m {"currentConcurrency":3,"desiredConcurrency":3,"systemStatus":{"isSystemIdle":true,"memInfo":{"isOverloaded":false,"limitRatio":0.2,"actualRatio":0},"eventLoopInfo":{"isOverloaded":false,"limitRatio":0.6,"actualRatio":0},"cpuInfo":{"isOverloaded":false,"limitRatio":0.4,"actualRatio":0},"clientInfo":{"isOverloaded":false,"limitRatio":0.3,"actualRatio":0}}}[39m
+[32mINFO[39m [33m PlaywrightCrawler:[39m    [4/57] 전재경스시 상세+리뷰 분석...
+[32mINFO[39m [33m PlaywrightCrawler:[39m    [4/59] 고기 쫌 아는언니 상세+리뷰 분석...
+  ✓ 저장 완료
+[61/503] 참나무장작구이통닭 창원중동점 (1516897508)
+[32mINFO[39m [33m PlaywrightCrawler:[39m    [4/58] NATUREL45 상세+리뷰 분석...
+  ✓ 저장 완료
+[32mINFO[39m [33m PlaywrightCrawler:[39m    [5/57] 마산식연탄구이 상세+리뷰 분석...
+[62/503] 국민반찬 보리밥 한식 뷔페 (1978180419)
+[32mINFO[39m [33m PlaywrightCrawler:[39m    [5/59] 미진축산 창원봉곡점 상세+리뷰 분석...
+[32mINFO[39m [33m PlaywrightCrawler:[39m    [5/58] 플레이팅 상세+리뷰 분석...
+  ✓ 저장 완료
+[63/503] 수제국수 진해점 (1281498100)
+[32mINFO[39m [33m PlaywrightCrawler:[39m    [6/57] 꼬치7942 본점 상세+리뷰 분석...
+[32mINFO[39m [33m PlaywrightCrawler:[39m    [6/59] 멍게집 봉곡동본점 상세+리뷰 분석...
+[32mINFO[39m [33m PlaywrightCrawler:[39m    [6/58] 소나무집 북면점 상세+리뷰 분석...
+  ✓ 저장 완료
+[64/503] 오대지식당 유니시티 어반브릭스점 (1054667953)
+[32mINFO[39m [33m PlaywrightCrawler:[39m    [7/57] 산호동 오빠네 본점 상세+리뷰 분석...
+[32mINFO[39m [33m PlaywrightCrawler:[39m    [7/59] 정통집 창원봉곡점 상세+리뷰 분석...
+  ✓ 저장 완료
+[32mINFO[39m [33m PlaywrightCrawler:[39m    [7/58] 메가MGC커피 창원무동점 상세+리뷰 분석...
+[65/503] 설대포 진해본점 (1071676157)
+[32mINFO[39m [33m PlaywrightCrawler:[39m    [8/57] 행님쪽갈비 마산산호점 상세+리뷰 분석...
+[32mINFO[39m [33m PlaywrightCrawler:[39m    [8/59] 종점심야식당 상세+리뷰 분석...
+  ✓ 저장 완료
+[32mINFO[39m [33m PlaywrightCrawler:[39m    [8/58] 산수정 상세+리뷰 분석...
+[66/503] 마금산 옛날국수 (1098868989)
+[32mINFO[39m [33m PlaywrightCrawler:[39m    [9/57] 월명관 상세+리뷰 분석...
+[32mINFO[39m [33m PlaywrightCrawler:Statistics:[39m PlaywrightCrawler request statistics:[90m {"requestAvgFailedDurationMillis":null,"requestAvgFinishedDurationMillis":21018,"requestsFinishedPerMinute":0,"requestsFailedPerMinute":0,"requestTotalDurationMillis":21018,"requestsTotal":1,"crawlerRuntimeMillis":120166,"retryHistogram":[1]}[39m
+[32mINFO[39m [33m PlaywrightCrawler:AutoscaledPool:[39m state[90m {"currentConcurrency":3,"desiredConcurrency":3,"systemStatus":{"isSystemIdle":true,"memInfo":{"isOverloaded":false,"limitRatio":0.2,"actualRatio":0},"eventLoopInfo":{"isOverloaded":false,"limitRatio":0.6,"actualRatio":0},"cpuInfo":{"isOverloaded":false,"limitRatio":0.4,"actualRatio":0},"clientInfo":{"isOverloaded":false,"limitRatio":0.3,"actualRatio":0}}}[39m
+  ✓ 저장 완료
+[32mINFO[39m [33m PlaywrightCrawler:[39m    [9/59] 대세박목살 봉곡점 상세+리뷰 분석...
+[67/503] 왕사부 마라탕양꼬치 (1337869410)
+[32mINFO[39m [33m PlaywrightCrawler:[39m    [9/58] 전통순대촌 상세+리뷰 분석...
