@@ -15,6 +15,7 @@ interface UserRow {
   role:            string;
   created_at:      string;
   last_sign_in_at: string | null;
+  recent_area:     string | null;
   source:          'users' | 'profiles' | 'both';
   push_enabled:    boolean | null;   // null = 알 수 없음
   gps_granted:     boolean | null;   // follows 여부로 추론
@@ -268,6 +269,7 @@ export default function UsersPage() {
         role:            u.role,
         created_at:      u.created_at,
         last_sign_in_at: null,
+        recent_area:     null,
         source:          'users',
         push_enabled:    null,
         gps_granted:     null,
@@ -286,6 +288,7 @@ export default function UsersPage() {
           role:            'customer',
           created_at:      p.created_at,
           last_sign_in_at: null,
+          recent_area:     null,
           source:          'profiles',
           push_enabled:    null,
           gps_granted:     null,
@@ -306,7 +309,7 @@ export default function UsersPage() {
       const res  = await fetch('/api/admin/users');
       const json = await res.json();
 
-      const { authUsers = {}, pushMap = {}, followSet = [], couponCount = {} } = json;
+      const { authUsers = {}, pushMap = {}, followSet = [], couponCount = {}, recentArea = {} } = json;
 
       const followSetObj = new Set<string>(followSet as string[]);
 
@@ -314,6 +317,7 @@ export default function UsersPage() {
         ...u,
         phone:           authUsers[u.id]?.phone ?? u.phone,
         last_sign_in_at: authUsers[u.id]?.last_sign_in_at ?? null,
+        recent_area:     (recentArea as Record<string, string>)[u.id] ?? null,
         push_enabled:    pushMap[u.id] === true ? true : null,
         gps_granted:     followSetObj.has(u.id) ? true : null,
         coupon_count:    couponCount[u.id] ?? 0,
@@ -477,6 +481,7 @@ export default function UsersPage() {
               <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">역할</th>
               <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">가입일시</th>
               <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">최근 로그인</th>
+              <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">접속지역</th>
               <th className="text-center px-3 py-3.5 text-xs font-semibold text-muted">
                 <MapPin size={12} className="inline-block mr-0.5 -mt-0.5" />GPS
               </th>
@@ -493,7 +498,7 @@ export default function UsersPage() {
             {loading ? (
               [...Array(6)].map((_, i) => (
                 <tr key={i} className="border-b border-border-main">
-                  {[...Array(9)].map((_, j) => (
+                  {[...Array(10)].map((_, j) => (
                     <td key={j} className="px-5 py-4">
                       <div className="h-4 bg-fill-subtle rounded animate-pulse" />
                     </td>
@@ -502,7 +507,7 @@ export default function UsersPage() {
               ))
             ) : filtered.length === 0 ? (
               <tr>
-                <td colSpan={9} className="text-center py-12 text-dim">회원이 없어요</td>
+                <td colSpan={10} className="text-center py-12 text-dim">회원이 없어요</td>
               </tr>
             ) : (
               filtered.map(user => (
@@ -547,6 +552,18 @@ export default function UsersPage() {
                   <td className="px-4 py-3.5 text-xs whitespace-nowrap">
                     {user.last_sign_in_at
                       ? <span className="text-tertiary">{fmtDate(user.last_sign_in_at)}</span>
+                      : <span className="text-dim">-</span>}
+                  </td>
+
+                  {/* 접속지역 */}
+                  <td className="px-4 py-3.5 text-xs">
+                    {user.recent_area
+                      ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 font-medium whitespace-nowrap">
+                          <MapPin size={10} />
+                          {user.recent_area}
+                        </span>
+                      )
                       : <span className="text-dim">-</span>}
                   </td>
 

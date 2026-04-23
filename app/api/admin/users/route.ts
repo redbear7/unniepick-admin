@@ -3,7 +3,7 @@
  *
  * admin_get_user_phones() RPC로 auth.users 직접 조회 (전화번호 포함)
  * auth.admin.listUsers는 "Database error finding users" 버그로 우회
- * 추가 데이터: push_tokens, follows(GPS 여부), user_coupons(쿠폰 수)
+ * 추가 데이터: push_tokens, follows(GPS 여부), user_coupons(쿠폰 수), 최근 접속지역
  */
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
@@ -25,11 +25,29 @@ function normalizePhone(phone: string | undefined | null): string | undefined {
   return digits || undefined;
 }
 
+/**
+ * 주소에서 지역명 추출
+ * "창원 의창구 팔용동 차룡로48번길 49" → "의창구 팔용동"
+ * "경남 창원시 성산구 상남동 ..." → "성산구 상남동"
+ */
+function extractArea(address: string | null | undefined): string | null {
+  if (!address) return null;
+  const parts = address.trim().split(/\s+/);
+  // "경남 창원시 성산구 상남동 ..."  → parts[2] + parts[3]
+  // "창원 의창구 팔용동 ..."         → parts[1] + parts[2]
+  if (parts.length >= 4 && parts[1]?.endsWith('시')) {
+    return `${parts[2]} ${parts[3]}`;
+  }
+  if (parts.length >= 3) {
+    return `${parts[1]} ${parts[2]}`;
+  }
+  return parts.slice(0, 2).join(' ') || null;
+}
+
 export async function GET() {
   const sb = adminClient();
 
   // 1) auth.users 전화번호 조회 — RPC(SECURITY DEFINER) 사용
-  //    auth.admin.listUsers는 "Database error finding users" 버그로 우회
   const authUsers: Record<string, { phone?: string; last_sign_in_at?: string }> = {};
   let phonesError: string | null = null;
   try {
@@ -83,12 +101,49 @@ export async function GET() {
     }
   } catch { /* 테이블 없으면 무시 */ }
 
+  // 5) 최근 접속지역 — 유저별 최신 follows → store의 district 또는 address
+  const recentArea: Record<string, string> = {};
+  try {
+    // 유저별 가장 최근 팔로우 1건 + 가게 district/address 조인
+    const { data: followRows } = await sb
+      .from('follows')
+      .select('user_id, created_at, stores(district_id, address, districts(name))')
+      .order('created_at', { ascending: false });
+
+    // 유저별 첫 번째(최신) 레코드만 처리
+    const seen = new Set<string>();
+    for (const row of (followRows ?? []) as Array<{
+      user_id: string;
+      created_at: string;
+      stores: {
+        district_id: string | null;
+        address: string | null;
+        districts: { name: string } | null;
+      } | null;
+    }>) {
+      if (seen.has(row.user_id)) continue;
+      seen.add(row.user_id);
+
+      const districtName = row.stores?.districts?.name;
+      if (districtName) {
+        recentArea[row.user_id] = districtName;
+      } else {
+        const area = extractArea(row.stores?.address);
+        if (area) recentArea[row.user_id] = area;
+      }
+    }
+  } catch (e) {
+    console.error('[admin/users] recentArea error:', e);
+  }
+
   return NextResponse.json({
     authUsers,
     pushMap,
     followSet:   [...followSet],
     couponCount,
+    recentArea,
     _phonesError: phonesError,
     _authUserCount: Object.keys(authUsers).length,
   });
 }
+
