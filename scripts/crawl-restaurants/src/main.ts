@@ -1,5 +1,7 @@
 import 'dotenv/config';
-import { chromium, type Page } from 'playwright';
+import { type Page } from 'playwright';
+import { PlaywrightCrawler } from 'crawlee';
+import { stealthChromium, LAUNCH_ARGS } from './stealth-browser.js';
 import {
   upsertRestaurants, getStats, getExistingIds,
   getActiveKeywords, updateKeywordStatus,
@@ -20,106 +22,109 @@ async function crawl(keywords: CrawlKeyword[]) {
   const existingIds = await getExistingIds();
   console.log(`기존 DB: ${existingIds.size}개`);
 
-  const browser = await chromium.launch({ headless: true, args: ['--lang=ko-KR'] });
-  const allResults: RestaurantData[] = [];
+  // 키워드별 결과를 수집하는 공유 맵 (스레드 안전: 키 단위로만 접근)
+  const resultsMap = new Map<string, RestaurantData[]>();
 
-  try {
-    for (const kw of keywords) {
-      console.log(`\n  🔍 "${kw.keyword}" ${kw.analyze_reviews ? '(리뷰분석)' : ''}`);
+  const crawler = new PlaywrightCrawler({
+    maxConcurrency: 3,          // 키워드 3개 동시 크롤
+    maxRequestRetries: 2,       // 실패 시 자동 재시도 (지수 백오프)
+    retryOnBlocked: true,       // 봇 차단 감지 시 재시도
+    requestHandlerTimeoutSecs: 300,
 
-      // 상태 'running'으로 마킹
+    // Stealth 적용 Chromium 사용
+    launchContext: {
+      launcher: stealthChromium as any,
+      launchOptions: LAUNCH_ARGS as any,
+    },
+
+    async requestHandler({ page, request, log }) {
+      const { kw } = request.userData as { kw: CrawlKeyword };
+      log.info(`🔍 "${kw.keyword}" ${kw.analyze_reviews ? '(리뷰분석)' : ''}`);
+
       await updateKeywordStatus(kw.id, { status: 'running', last_error: undefined });
 
-      const page = await browser.newPage();
-      let keywordResults: RestaurantData[] = [];
+      // ── 1. 목록에서 기본 정보 일괄 추출 ──
+      const restaurants = await collectFromApollo(page, kw.keyword);
+      log.info(`   ${restaurants.length}개 업체 수집`);
 
-      try {
-        // ── 1. 목록에서 기본 정보 일괄 추출 ──
-        const restaurants = await collectFromApollo(page, kw.keyword);
-        console.log(`     ${restaurants.length}개 업체 수집`);
+      // ── 2. analyze_reviews=true인 경우: 상세 정보 + 리뷰 분석 ──
+      if (kw.analyze_reviews) {
+        for (let i = 0; i < restaurants.length; i++) {
+          const r = restaurants[i];
+          r.is_new_open = true;
+          try {
+            log.info(`   [${i + 1}/${restaurants.length}] ${r.name} 상세+리뷰 분석...`);
 
-        // ── 2. analyze_reviews=true인 경우: 상세 정보 + 리뷰 분석 ──
-        if (kw.analyze_reviews) {
-          for (let i = 0; i < restaurants.length; i++) {
-            const r = restaurants[i];
-            r.is_new_open = true;
-            try {
-              console.log(`     [${i + 1}/${restaurants.length}] ${r.name} 상세+리뷰 분석...`);
+            const detail = await crawlDetailInfo(page, r.naver_place_id);
+            if (detail.business_hours)        r.business_hours = detail.business_hours;
+            if (detail.business_hours_detail) r.business_hours_detail = detail.business_hours_detail;
+            if (detail.website_url)           r.website_url = detail.website_url;
+            if (detail.instagram_url)         r.instagram_url = detail.instagram_url;
+            if (detail.menu_items?.length)    r.menu_items = detail.menu_items;
 
-              // 홈 탭 상세 정보 (영업시간·홈페이지·메뉴판)
-              const detail = await crawlDetailInfo(page, r.naver_place_id);
-              if (detail.business_hours)        r.business_hours = detail.business_hours;
-              if (detail.business_hours_detail) r.business_hours_detail = detail.business_hours_detail;
-              if (detail.website_url)           r.website_url = detail.website_url;
-              if (detail.instagram_url)         r.instagram_url = detail.instagram_url;
-              if (detail.menu_items?.length)    r.menu_items = detail.menu_items;
+            const reviews = await crawlReviews(page, r.naver_place_id);
+            r.review_keywords = reviews.keywords;
+            r.menu_keywords = reviews.menuKeywords;
+            r.review_summary = reviews.summary;
+            r.blog_reviews = reviews.blogReviews;
 
-              // 방문자 리뷰 분석
-              const reviews = await crawlReviews(page, r.naver_place_id);
-              r.review_keywords = reviews.keywords;
-              r.menu_keywords = reviews.menuKeywords;
-              r.review_summary = reviews.summary;
-              r.blog_reviews = reviews.blogReviews;
-
-              // 상세 데이터로 auto_tags 재계산
-              r.auto_tags = autoTagRestaurant(r);
-            } catch (e) {
-              console.log(`       분석 에러: ${(e as Error).message}`);
-            }
-            await page.waitForTimeout(500 + Math.random() * 500);
+            r.auto_tags = autoTagRestaurant(r);
+          } catch (e) {
+            log.warning(`   분석 에러: ${(e as Error).message}`);
           }
+          await page.waitForTimeout(500 + Math.random() * 500);
         }
-
-        // 키워드 태그 부착 (어떤 키워드에서 왔는지 식별용)
-        for (const r of restaurants) r.tags = [...(r.tags ?? []), kw.keyword];
-
-        // ── 이미지 리사이즈 + Storage 업로드 ──
-        console.log(`     📷 이미지 처리 중...`);
-        let imgCount = 0;
-        for (const r of restaurants) {
-          if (r.image_url) {
-            (r as any).image_url_original = r.image_url;
-            const { url, isProcessed } = await processImage(r.image_url, r.naver_place_id);
-            if (isProcessed) {
-              r.image_url = url;
-              imgCount++;
-            }
-          }
-        }
-        console.log(`     📷 ${imgCount}/${restaurants.length}개 이미지 저장`);
-
-        keywordResults = restaurants;
-        allResults.push(...restaurants);
-        console.log(`     ✓ 완료 (누적 ${allResults.length}개)`);
-
-        // 키워드별 신규 수 계산 (성공 시에만)
-        const newForKw = keywordResults.filter((r) => !existingIds.has(r.naver_place_id)).length;
-
-        // 상태 'success' + 결과 기록 + PID 정리
-        await updateKeywordStatus(kw.id, {
-          status: 'success',
-          last_crawled_at: new Date().toISOString(),
-          last_result_count: keywordResults.length,
-          last_new_count: existingIds.size > 0 ? newForKw : 0,
-          current_pid: null,
-        });
-      } catch (e) {
-        const msg = (e as Error).message;
-        console.log(`     ✗ 에러: ${msg}`);
-        await updateKeywordStatus(kw.id, {
-          status: 'failed',
-          last_error: msg,
-          last_crawled_at: new Date().toISOString(),
-          current_pid: null,
-        });
       }
-      await page.close();
-    }
-  } finally {
-    await browser.close();
-  }
 
-  // 중복 제거
+      // 키워드 태그 부착
+      for (const r of restaurants) r.tags = [...(r.tags ?? []), kw.keyword];
+
+      // 이미지 처리
+      log.info(`   📷 이미지 처리 중...`);
+      let imgCount = 0;
+      for (const r of restaurants) {
+        if (r.image_url) {
+          (r as any).image_url_original = r.image_url;
+          const { url, isProcessed } = await processImage(r.image_url, r.naver_place_id);
+          if (isProcessed) { r.image_url = url; imgCount++; }
+        }
+      }
+      log.info(`   📷 ${imgCount}/${restaurants.length}개 이미지 저장`);
+
+      resultsMap.set(kw.id, restaurants);
+
+      const newForKw = restaurants.filter((r) => !existingIds.has(r.naver_place_id)).length;
+      await updateKeywordStatus(kw.id, {
+        status: 'success',
+        last_crawled_at: new Date().toISOString(),
+        last_result_count: restaurants.length,
+        last_new_count: existingIds.size > 0 ? newForKw : 0,
+        current_pid: null,
+      });
+      log.info(`   ✓ 완료`);
+    },
+
+    async failedRequestHandler({ request, log }) {
+      const { kw } = request.userData as { kw: CrawlKeyword };
+      const msg = request.errorMessages?.at(-1) ?? '크롤링 실패';
+      log.error(`✗ "${kw.keyword}" 실패: ${msg}`);
+      await updateKeywordStatus(kw.id, {
+        status: 'failed',
+        last_error: msg,
+        last_crawled_at: new Date().toISOString(),
+        current_pid: null,
+      });
+    },
+  });
+
+  await crawler.addRequests(keywords.map((kw) => ({
+    url: `https://pcmap.place.naver.com/restaurant/list?query=${encodeURIComponent(kw.keyword)}`,
+    userData: { kw },
+  })));
+  await crawler.run();
+
+  // 전체 결과 합산 + 중복 제거
+  const allResults = [...resultsMap.values()].flat();
   const unique = new Map<string, RestaurantData>();
   for (const r of allResults) {
     const existing = unique.get(r.naver_place_id);
@@ -159,11 +164,8 @@ async function crawl(keywords: CrawlKeyword[]) {
   // ── 신규 업체 텔레그램 알림 (키워드별로 분리) ──
   if (existingIds.size > 0) {
     for (const kw of keywords) {
-      // 이 키워드 태그가 붙은 신규 업체만 골라냄
       const kwNew = newRestaurants.filter((r) => r.tags?.includes(kw.keyword));
-      if (kwNew.length > 0) {
-        await notifyNewRestaurants(kwNew, kw.keyword);
-      }
+      if (kwNew.length > 0) await notifyNewRestaurants(kwNew, kw.keyword);
     }
   }
 

@@ -11,17 +11,39 @@
  *   4. restaurants + stores 테이블에 저장
  */
 import 'dotenv/config';
-import { chromium } from 'playwright';
-import { writeFileSync, mkdirSync } from 'fs';
+import { writeFileSync, readFileSync, mkdirSync } from 'fs';
 import path from 'path';
 import { createClient } from '@supabase/supabase-js';
 import { crawlDetailInfo } from './main.js';
 import { processImage } from './image.js';
 import { autoTagRestaurant } from './tagger.js';
 import { upsertRestaurants, type RestaurantData } from './storage.js';
+import { stealthChromium, LAUNCH_ARGS } from './stealth-browser.js';
 
-const RESULT_FILE = path.join(new URL('../logs/folder-result.json', import.meta.url).pathname);
-const LOGS_DIR = path.dirname(RESULT_FILE);
+const RESULT_FILE  = path.join(new URL('../logs/folder-result.json', import.meta.url).pathname);
+const COOKIE_FILE  = path.join(new URL('../logs/naver-cookies.json',  import.meta.url).pathname);
+const LOGS_DIR     = path.dirname(RESULT_FILE);
+
+// ── 쿠키 저장/복원 (로그인 1회화) ────────────────────────────
+async function saveCookies(page: import('playwright').Page): Promise<void> {
+  try {
+    const cookies = await page.context().cookies();
+    mkdirSync(LOGS_DIR, { recursive: true });
+    writeFileSync(COOKIE_FILE, JSON.stringify(cookies, null, 2), 'utf-8');
+  } catch {}
+}
+
+async function loadCookies(page: import('playwright').Page): Promise<boolean> {
+  try {
+    const raw = readFileSync(COOKIE_FILE, 'utf-8');
+    const cookies = JSON.parse(raw);
+    if (!Array.isArray(cookies) || cookies.length === 0) return false;
+    await page.context().addCookies(cookies);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
@@ -43,10 +65,27 @@ async function getExistingIds(): Promise<Set<string>> {
   return new Set((data ?? []).map((r: any) => r.naver_place_id));
 }
 
-// ── 네이버 로그인 ────────────────────────────────────────────
+// ── 네이버 로그인 (캐시 쿠키 → 신규 로그인 순으로 시도) ─────
 async function naverLogin(page: import('playwright').Page): Promise<boolean> {
-  const id  = process.env.NAVER_ID;
-  const pw  = process.env.NAVER_PW;
+  // 1단계: 저장된 쿠키로 세션 복원 시도
+  const restored = await loadCookies(page);
+  if (restored) {
+    // 로그인 상태 검증
+    await page.goto('https://map.naver.com', { waitUntil: 'domcontentloaded', timeout: 15_000 });
+    await page.waitForTimeout(1500);
+    const isLoggedIn = await page.evaluate(() =>
+      !document.cookie.includes('NNB=') || document.cookie.includes('NID_AUT=')
+    );
+    if (isLoggedIn) {
+      console.log('✓ 쿠키 캐시로 세션 복원 성공');
+      return true;
+    }
+    console.log('  쿠키 만료 — 재로그인 시도');
+  }
+
+  // 2단계: ID/PW로 신규 로그인
+  const id = process.env.NAVER_ID;
+  const pw = process.env.NAVER_PW;
   if (!id || !pw) {
     console.log('⚠️  NAVER_ID / NAVER_PW 미설정 — 로그인 생략');
     return false;
@@ -54,27 +93,24 @@ async function naverLogin(page: import('playwright').Page): Promise<boolean> {
 
   try {
     await page.goto('https://nid.naver.com/nidlogin.login', { waitUntil: 'domcontentloaded', timeout: 15_000 });
-    await page.waitForTimeout(800);
+    await page.waitForTimeout(1000);
 
-    // 아이디 입력
     await page.fill('#id', id);
-    await page.waitForTimeout(400);
-
-    // 비밀번호 입력
+    await page.waitForTimeout(500);
     await page.fill('#pw', pw);
-    await page.waitForTimeout(400);
-
-    // 로그인 버튼 클릭
+    await page.waitForTimeout(500);
     await page.click('#log\\.login');
-    await page.waitForTimeout(2500);
+    await page.waitForTimeout(3000);
 
-    // 로그인 성공 확인 (naver.com 도메인 유지 여부)
     const url = page.url();
     if (url.includes('nid.naver.com')) {
       console.log('⚠️  네이버 로그인 실패 (captcha 또는 잘못된 계정)');
       return false;
     }
-    console.log('✓ 네이버 로그인 성공');
+
+    // 로그인 성공 → 쿠키 저장 (다음 실행부터 재사용)
+    await saveCookies(page);
+    console.log('✓ 네이버 로그인 성공 (쿠키 저장됨)');
     return true;
   } catch (e) {
     console.log('⚠️  네이버 로그인 오류:', (e as Error).message);
@@ -89,7 +125,7 @@ async function extractPlaceIdsFromFolder(folderUrl: string): Promise<Array<{
   category?: string;
   address?: string;
 }>> {
-  const browser = await chromium.launch({ headless: true, args: ['--lang=ko-KR'] });
+  const browser = await stealthChromium.launch(LAUNCH_ARGS as any);
   const page = await browser.newPage();
 
   // 내 장소 폴더는 로그인 필요 — 계정이 설정된 경우 먼저 로그인
@@ -280,7 +316,7 @@ if (newItems.length === 0) {
 }
 
 // 3. 신규 업체 상세 크롤링
-const browser2 = await chromium.launch({ headless: true, args: ['--lang=ko-KR'] });
+const browser2 = await stealthChromium.launch(LAUNCH_ARGS as any);
 const page2 = await browser2.newPage();
 const saved: Array<{ placeId: string; name: string }> = [];
 const failed: Array<{ placeId: string; name: string; error: string }> = [];

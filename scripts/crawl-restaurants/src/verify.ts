@@ -1,5 +1,6 @@
 import 'dotenv/config';
-import { chromium, type Page } from 'playwright';
+import { type Page } from 'playwright';
+import { stealthChromium, LAUNCH_ARGS } from './stealth-browser.js';
 import {
   getRestaurantsForVerification,
   updateClosureStatus,
@@ -75,7 +76,7 @@ async function verify() {
     return;
   }
 
-  const browser = await chromium.launch({ headless: true, args: ['--lang=ko-KR'] });
+  const browser = await stealthChromium.launch(LAUNCH_ARGS as any);
   const page = await browser.newPage();
 
   const now = new Date().toISOString();

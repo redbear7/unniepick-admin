@@ -9,7 +9,8 @@
  */
 import 'dotenv/config';
 import { autoTagRestaurant } from './tagger.js';
-import { chromium, type Page } from 'playwright';
+import { type Page } from 'playwright';
+import { stealthChromium, LAUNCH_ARGS } from './stealth-browser.js';
 import { upsertRestaurants, type RestaurantData, type ReviewKeyword, type MenuKeyword, type BlogReview } from './storage.js';
 import { crawlDetailInfo } from './main.js';
 import { processImage } from './image.js';
@@ -188,7 +189,7 @@ console.log(`쿼리: "${query}"`);
 console.log(`리뷰분석: ${analyzeReviews ? '✓' : '✗'}`);
 console.log(`${'─'.repeat(50)}\n`);
 
-const browser = await chromium.launch({ headless: true, args: ['--lang=ko-KR'] });
+const browser = await stealthChromium.launch(LAUNCH_ARGS as any);
 try {
   const page = await browser.newPage();
 
