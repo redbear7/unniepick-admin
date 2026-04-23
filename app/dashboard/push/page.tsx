@@ -108,7 +108,7 @@ export default function PushPage() {
   const resultTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 개발자 테스트 발송
-  const [testEmail,   setTestEmail]   = useState('');
+  const [testPhone,   setTestPhone]   = useState('01085757863');
   const [testTitle,   setTestTitle]   = useState('🧪 언니픽 테스트 알림');
   const [testBody,    setTestBody]    = useState('푸시 알림이 정상 작동해요! ✅');
   const [testSending, setTestSending] = useState(false);
@@ -167,14 +167,14 @@ export default function PushPage() {
     : (stats?.optinTokens ?? 0);
 
   const handleTestSend = async () => {
-    if (!testEmail.trim()) return;
+    if (!testPhone.trim()) return;
     setTestSending(true);
     setTestResult(null);
     try {
       const res  = await fetch('/api/push/test', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ email: testEmail, title: testTitle, body: testBody }),
+        body:    JSON.stringify({ phone: testPhone, title: testTitle, body: testBody }),
       });
       const json = await res.json();
       setTestResult({ ok: json.ok, msg: json.summary ?? json.error ?? '오류' });
@@ -242,20 +242,28 @@ export default function PushPage() {
           <span className="text-lg">🧪</span>
           개발자 테스트 발송
         </h2>
-        <p className="text-xs text-muted mb-5">특정 이메일 계정으로 테스트 푸시를 발송해요</p>
+        <p className="text-xs text-muted mb-5">지정 전화번호 계정으로 테스트 푸시를 발송해요</p>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* 이메일 */}
+          {/* 전화번호 */}
           <div className="lg:col-span-3">
             <label className="text-xs font-semibold text-muted uppercase tracking-wider mb-1.5 block">
-              대상 이메일 <span className="text-red-400">*</span>
+              대상 전화번호 <span className="text-red-400">*</span>
+              <span className="ml-2 text-[10px] text-orange-400 normal-case font-normal">개발자 번호 고정</span>
             </label>
-            <input
-              value={testEmail}
-              onChange={e => setTestEmail(e.target.value)}
-              placeholder="테스트할 개발자 이메일 입력"
-              className="w-full bg-fill-subtle border border-border-subtle rounded-xl px-4 py-3 text-sm text-primary placeholder-gray-600 focus:outline-none focus:border-[#FF6F0F] transition"
-            />
+            <div className="relative">
+              <input
+                value={testPhone}
+                onChange={e => setTestPhone(e.target.value)}
+                placeholder="01012345678"
+                className="w-full bg-fill-subtle border border-border-subtle rounded-xl px-4 py-3 text-sm text-primary placeholder-gray-600 focus:outline-none focus:border-[#FF6F0F] transition pr-24"
+              />
+              {testPhone === '01085757863' && (
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] bg-orange-500/15 text-orange-400 px-2 py-1 rounded-full font-semibold">
+                  개발자
+                </span>
+              )}
+            </div>
           </div>
           {/* 제목 */}
           <div>
@@ -289,7 +297,7 @@ export default function PushPage() {
 
         <button
           onClick={handleTestSend}
-          disabled={testSending || !testEmail.trim()}
+          disabled={testSending || !testPhone.trim()}
           className="mt-4 flex items-center gap-2 px-6 py-2.5 rounded-xl bg-orange-500/15 border border-orange-500/30 text-orange-400 text-sm font-bold hover:bg-orange-500/25 transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {testSending

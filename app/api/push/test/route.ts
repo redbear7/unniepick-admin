@@ -1,7 +1,7 @@
 /**
  * POST /api/push/test
- * 특정 이메일 유저에게 테스트 푸시 발송
- * body: { email: string, title?: string, body?: string }
+ * 특정 전화번호(또는 이메일) 유저에게 테스트 푸시 발송
+ * body: { phone?: string, email?: string, title?: string, body?: string }
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
@@ -13,26 +13,43 @@ function adminSb() {
   );
 }
 
+/** 전화번호 → E.164 정규화 (010-xxxx-xxxx / 01012345678 → +8210xxxxxxxx) */
+function normalizePhone(phone: string): string {
+  const digits = phone.replace(/\D/g, '');
+  if (digits.startsWith('82')) return `+${digits}`;
+  if (digits.startsWith('0'))  return `+82${digits.slice(1)}`;
+  return `+82${digits}`;
+}
+
 export async function POST(req: NextRequest) {
-  const { email, title, body } = await req.json().catch(() => ({})) as {
+  const { phone, email, title, body } = await req.json().catch(() => ({})) as {
+    phone?: string;
     email?: string;
     title?: string;
     body?: string;
   };
 
-  if (!email?.trim()) {
-    return NextResponse.json({ error: '이메일을 입력해주세요' }, { status: 400 });
+  if (!phone?.trim() && !email?.trim()) {
+    return NextResponse.json({ error: '전화번호 또는 이메일을 입력해주세요' }, { status: 400 });
   }
 
   const sb = adminSb();
 
-  // 1. 이메일로 user_id 조회 (auth.users)
-  const { data: authUsers, error: authErr } = await sb.auth.admin.listUsers();
+  // 1. 전화번호 or 이메일로 user_id 조회 (auth.users)
+  const { data: authUsers, error: authErr } = await sb.auth.admin.listUsers({ perPage: 1000 });
   if (authErr) return NextResponse.json({ error: authErr.message }, { status: 500 });
 
-  const authUser = authUsers?.users.find(u => u.email === email.trim());
+  let authUser = authUsers?.users.find(u => {
+    if (phone?.trim()) {
+      const normalized = normalizePhone(phone.trim());
+      return u.phone === normalized || u.phone === phone.trim();
+    }
+    return u.email === email?.trim();
+  });
+
+  const target = phone?.trim() ? normalizePhone(phone.trim()) : email?.trim();
   if (!authUser) {
-    return NextResponse.json({ error: `${email} 계정을 찾을 수 없어요` }, { status: 404 });
+    return NextResponse.json({ error: `${target} 계정을 찾을 수 없어요` }, { status: 404 });
   }
 
   // 2. push_token 조회
