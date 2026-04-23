@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase';
 import {
   Search, User, Store, Shield, ShieldCheck, Trash2, AlertTriangle, X,
-  Bell, BellOff, MapPin, Ticket,
+  Bell, BellOff, MapPin, Ticket, Pencil, Check,
 } from 'lucide-react';
 
 // ── 타입 ─────────────────────────────────────────────────────────────
@@ -57,6 +57,106 @@ function fmtDate(iso: string) {
   const ymd = d.toLocaleDateString('ko-KR'); // "2026. 4. 20."
   const hm  = d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
   return `${ymd} ${hm}`;
+}
+
+// ── 편집 모달 ────────────────────────────────────────────────────────
+function EditModal({
+  user,
+  onConfirm,
+  onCancel,
+  saving,
+}: {
+  user: UserRow;
+  onConfirm: (name: string, role: string) => void;
+  onCancel: () => void;
+  saving: boolean;
+}) {
+  const [name, setName] = useState(user.name === '(이름 없음)' ? '' : user.name);
+  const [role, setRole] = useState(user.role);
+
+  const roles: { value: string; label: string; color: string }[] = [
+    { value: 'customer',   label: '일반회원',   color: 'border-blue-500/60 bg-blue-500/10 text-blue-400' },
+    { value: 'owner',      label: '사장님',     color: 'border-[#FF6F0F]/60 bg-[#FF6F0F]/10 text-[#FF6F0F]' },
+    { value: 'admin',      label: '관리자',     color: 'border-yellow-500/60 bg-yellow-500/10 text-yellow-400' },
+    { value: 'superadmin', label: '최고관리자', color: 'border-purple-500/60 bg-purple-500/10 text-purple-400' },
+  ];
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="bg-[#1A1D23] border border-white/10 rounded-2xl p-6 w-full max-w-sm mx-4 shadow-2xl">
+        <div className="flex items-start justify-between mb-5">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[#FF6F0F]/15 flex items-center justify-center">
+              <Pencil size={18} className="text-[#FF6F0F]" />
+            </div>
+            <div>
+              <p className="font-bold text-primary">회원 정보 수정</p>
+              <p className="text-xs text-muted mt-0.5">이름과 역할을 변경해요</p>
+            </div>
+          </div>
+          <button onClick={onCancel} className="text-muted hover:text-primary transition">
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* 이름 */}
+        <div className="mb-4">
+          <label className="text-xs font-semibold text-muted uppercase tracking-wider mb-1.5 block">이름</label>
+          <input
+            value={name}
+            onChange={e => setName(e.target.value)}
+            maxLength={20}
+            placeholder="이름 입력"
+            className="w-full bg-fill-subtle border border-border-subtle rounded-xl px-4 py-3 text-sm text-primary placeholder-gray-600 focus:outline-none focus:border-[#FF6F0F] transition"
+          />
+        </div>
+
+        {/* 역할 */}
+        <div className="mb-6">
+          <label className="text-xs font-semibold text-muted uppercase tracking-wider mb-2 block">역할</label>
+          <div className="grid grid-cols-2 gap-2">
+            {roles.map(r => (
+              <button
+                key={r.value}
+                onClick={() => setRole(r.value)}
+                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm font-semibold transition ${
+                  role === r.value
+                    ? r.color
+                    : 'border-border-subtle bg-fill-subtle text-tertiary hover:text-primary'
+                }`}
+              >
+                {ROLE_ICON[r.value]}
+                {r.label}
+                {role === r.value && <Check size={12} className="ml-auto" />}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex gap-2">
+          <button
+            onClick={onCancel}
+            disabled={saving}
+            className="flex-1 py-2.5 rounded-xl bg-fill-medium text-sm font-semibold text-tertiary hover:text-primary transition disabled:opacity-50"
+          >
+            취소
+          </button>
+          <button
+            onClick={() => onConfirm(name, role)}
+            disabled={saving || !name.trim()}
+            className="flex-1 py-2.5 rounded-xl bg-[#FF6F0F] hover:bg-[#e55e00] text-sm font-semibold text-white transition disabled:opacity-60 flex items-center justify-center gap-2"
+          >
+            {saving ? (
+              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+              <Check size={14} />
+            )}
+            {saving ? '저장 중…' : '저장'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // ── 삭제 확인 모달 ───────────────────────────────────────────────────
@@ -139,6 +239,8 @@ export default function UsersPage() {
   const [filter,       setFilter]       = useState<'all' | 'customer' | 'owner' | 'admin' | 'superadmin' | 'profiles'>('all');
   const [deleteTarget, setDeleteTarget] = useState<UserRow | null>(null);
   const [deleting,     setDeleting]     = useState(false);
+  const [editTarget,   setEditTarget]   = useState<UserRow | null>(null);
+  const [saving,       setSaving]       = useState(false);
   const [toast,        setToast]        = useState('');
 
   // ── 데이터 로드 ──────────────────────────────────────────────────────
@@ -243,6 +345,33 @@ export default function UsersPage() {
     admin:      users.filter(u => u.role === 'admin').length,
     superadmin: users.filter(u => u.role === 'superadmin').length,
     profiles:   users.filter(u => u.source === 'profiles').length,
+  };
+
+  // ── 수정 ────────────────────────────────────────────────────────────
+  const handleEdit = async (name: string, role: string) => {
+    if (!editTarget) return;
+    setSaving(true);
+    try {
+      const res = await fetch('/api/admin/update-user', {
+        method:  'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ userId: editTarget.id, name, role }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? '수정 실패');
+
+      setUsers(prev => prev.map(u =>
+        u.id === editTarget.id ? { ...u, name, role } : u
+      ));
+      setToast(`${name} 정보가 수정됐어요`);
+      setTimeout(() => setToast(''), 3000);
+    } catch (e: any) {
+      setToast(`오류: ${e.message}`);
+      setTimeout(() => setToast(''), 4000);
+    } finally {
+      setSaving(false);
+      setEditTarget(null);
+    }
   };
 
   // ── 삭제 ────────────────────────────────────────────────────────────
@@ -434,15 +563,24 @@ export default function UsersPage() {
                       : <span className="text-dim text-xs">-</span>}
                   </td>
 
-                  {/* 삭제 */}
+                  {/* 편집 / 삭제 */}
                   <td className="px-4 py-3.5">
-                    <button
-                      onClick={() => setDeleteTarget(user)}
-                      className="opacity-0 group-hover:opacity-100 transition p-1.5 rounded-lg hover:bg-red-500/15 text-muted hover:text-red-400"
-                      title="삭제"
-                    >
-                      <Trash2 size={15} />
-                    </button>
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
+                      <button
+                        onClick={() => setEditTarget(user)}
+                        className="p-1.5 rounded-lg hover:bg-[#FF6F0F]/15 text-muted hover:text-[#FF6F0F]"
+                        title="수정"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button
+                        onClick={() => setDeleteTarget(user)}
+                        className="p-1.5 rounded-lg hover:bg-red-500/15 text-muted hover:text-red-400"
+                        title="삭제"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
@@ -450,6 +588,16 @@ export default function UsersPage() {
           </tbody>
         </table>
       </div>
+
+      {/* 편집 모달 */}
+      {editTarget && (
+        <EditModal
+          user={editTarget}
+          onConfirm={handleEdit}
+          onCancel={() => !saving && setEditTarget(null)}
+          saving={saving}
+        />
+      )}
 
       {/* 삭제 확인 모달 */}
       {deleteTarget && (
