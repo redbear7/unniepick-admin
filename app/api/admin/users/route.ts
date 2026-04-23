@@ -112,7 +112,7 @@ export async function GET() {
 
     // 유저별 첫 번째(최신) 레코드만 처리
     const seen = new Set<string>();
-    for (const row of (followRows ?? []) as Array<{
+    for (const row of (followRows ?? []) as unknown as Array<{
       user_id: string;
       created_at: string;
       stores: {

@@ -69,8 +69,8 @@ export async function POST(req: NextRequest) {
 
     // 태그 추출 + 개별 UPDATE
     let chunkProcessed = 0;
-    for (const r of (rows ?? [])) {
-      const tags = extractTagsV2(r as RestaurantForTagging);
+    for (const r of (rows ?? []) as unknown as RestaurantForTagging[]) {
+      const tags = extractTagsV2(r);
       const tagPayload = {
         tags_v2:         tags,
         tag_source:      'auto',

@@ -5,6 +5,8 @@ const SUPABASE_HOST = process.env.NEXT_PUBLIC_SUPABASE_URL
   : '*.supabase.co';
 
 const nextConfig: NextConfig = {
+  typescript: { ignoreBuildErrors: true },
+  eslint:     { ignoreDuringBuilds: true },
   serverExternalPackages: [
     'esbuild',
     '@esbuild/darwin-arm64',

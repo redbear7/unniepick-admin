@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
@@ -29,7 +30,7 @@ interface RestaurantRow {
   longitude: number | null;
 }
 
-export default function RestaurantRegisterPage() {
+function RestaurantRegisterPageInner() {
   const params = useSearchParams();
   const router = useRouter();
   const naverPlaceId = params.get('naver_place_id') ?? '';
@@ -520,4 +521,8 @@ function Field({
       {children}
     </div>
   );
+}
+
+export default function RestaurantRegisterPage() {
+  return <Suspense><RestaurantRegisterPageInner /></Suspense>;
 }

@@ -36,6 +36,7 @@ export interface TagsV2 {
 }
 
 export interface RestaurantForTagging {
+  naver_place_id?:      string;
   name:                 string;
   category:             string | null;
   address:              string | null;
