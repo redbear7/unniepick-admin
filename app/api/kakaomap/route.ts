@@ -7,7 +7,8 @@ import { NextResponse } from 'next/server';
  * → window.location.href가 실제 URL이 되어 Kakao JS SDK 도메인 인증 통과
  */
 export async function GET() {
-  const appkey = process.env.NEXT_PUBLIC_KAKAO_JS_KEY ?? '';
+  // NEXT_PUBLIC_KAKAO_JS_KEY: Vercel 환경변수에 없을 경우 폴백 (JS 키는 공개키)
+  const appkey = process.env.NEXT_PUBLIC_KAKAO_JS_KEY ?? '1e8def4aebde26a40dbdfe38bf42db24';
 
   const html = `<!DOCTYPE html>
 <html>
