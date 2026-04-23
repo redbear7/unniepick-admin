@@ -46,10 +46,11 @@ async function sendExpo(
 }
 
 export async function POST(req: NextRequest) {
-  const { title, body, target = 'optin', data = {} } =
+  const { title, body, target = 'optin', link, data = {} } =
     await req.json().catch(() => ({})) as {
       title?: string; body?: string;
       target?: 'all' | 'optin';
+      link?: string;
       data?: Record<string, string>;
     };
 
@@ -68,10 +69,13 @@ export async function POST(req: NextRequest) {
   const validRows  = (rows ?? []).filter((r: any) => r.token && r.user_id) as { user_id: string; token: string }[];
   const tokens     = validRows.map(r => r.token);
 
+  const cleanLink = link?.trim() || null;
+
   // Expo 발송
-  const { ok, fail } = await sendExpo(tokens, title.trim(), body.trim(), {
-    type: 'superadmin', ...data,
-  });
+  const pushData: Record<string, string> = { type: 'superadmin', ...data };
+  if (cleanLink) pushData.link = cleanLink;
+
+  const { ok, fail } = await sendExpo(tokens, title.trim(), body.trim(), pushData);
 
   // 앱 알림 내역 저장 (notifications 테이블 — 화면에 표시됨)
   if (validRows.length > 0) {
@@ -80,7 +84,7 @@ export async function POST(req: NextRequest) {
       type:     'event',
       title:    title.trim(),
       body:     body.trim(),
-      data:     { type: 'superadmin', ...data },
+      data:     pushData,
       is_read:  false,
     }));
     const { error: notifErr } = await sb.from('notifications').insert(notifRows);
@@ -88,7 +92,7 @@ export async function POST(req: NextRequest) {
   }
 
   // 관리자 발송 히스토리 저장 (push_history 테이블)
-  const { error: histErr } = await sb.from('push_history').insert({
+  const histInsert: Record<string, unknown> = {
     sender_type:  'superadmin',
     sender_label: '최고관리자',
     title:        title.trim(),
@@ -96,7 +100,9 @@ export async function POST(req: NextRequest) {
     sent_count:   ok,
     read_count:   0,
     target,
-  });
+    link:         cleanLink,
+  };
+  const { error: histErr } = await sb.from('push_history').insert(histInsert);
   if (histErr) console.warn('[push/send] history insert error:', histErr.message);
 
   return NextResponse.json({

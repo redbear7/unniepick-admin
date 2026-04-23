@@ -18,7 +18,7 @@ export async function GET() {
   const [tokensRes, optinRes, historyRes] = await Promise.allSettled([
     sb.from('push_tokens').select('user_id', { count: 'exact', head: true }),
     sb.from('push_tokens').select('user_id', { count: 'exact', head: true }).eq('opt_in', true),
-    sb.from('push_history').select('id, title, body, sent_count, read_count, created_at, target').order('created_at', { ascending: false }).limit(50),
+    sb.from('push_history').select('id, title, body, link, sent_count, read_count, created_at, target').order('created_at', { ascending: false }).limit(50),
   ]);
 
   const totalTokens  = tokensRes.status  === 'fulfilled' ? (tokensRes.value.count  ?? 0) : 0;

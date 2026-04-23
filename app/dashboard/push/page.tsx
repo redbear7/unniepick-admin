@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Bell, Send, Users, CheckCheck, RefreshCw,
-  Smartphone, ToggleLeft, ToggleRight, ChevronDown, ChevronUp,
+  Smartphone, ToggleRight, ChevronDown, ChevronUp, Link2, RotateCcw,
 } from 'lucide-react';
 
 // ── 타입 ────────────────────────────────────────────────────────────────
@@ -11,6 +11,7 @@ interface HistoryRow {
   id:         string;
   title:      string;
   body:       string;
+  link?:      string | null;
   sent_count: number;
   read_count: number;
   created_at: string;
@@ -23,6 +24,17 @@ interface Stats {
   totalRead:   number;
   history:     HistoryRow[];
 }
+
+// ── 이모지 팔레트 ────────────────────────────────────────────────────────
+const EMOJIS = ['🎟','🎁','🔥','⚡','☕','🍽','🛒','⭐','💰','🎉','📢','🔔','🏷️','✨','💥','🆕','❤️','👀'];
+
+// ── 딥링크 프리셋 ────────────────────────────────────────────────────────
+const LINK_PRESETS = [
+  { label: '홈',    value: 'unniepick://home' },
+  { label: '쿠폰함', value: 'unniepick://coupons' },
+  { label: '지갑',  value: 'unniepick://wallet' },
+  { label: '내주변', value: 'unniepick://nearby' },
+];
 
 // ── 날짜 포맷 ───────────────────────────────────────────────────────────
 function fmtDate(iso: string) {
@@ -71,9 +83,7 @@ function KpiCard({
 function PhonePreview({ title, body }: { title: string; body: string }) {
   return (
     <div className="bg-[#0D0D0D] rounded-3xl p-4 w-64 mx-auto shadow-2xl border border-white/10">
-      {/* 상단 시간 */}
       <div className="text-center text-xs text-white/40 mb-4 font-medium">9:41</div>
-      {/* 알림 카드 */}
       <div className="bg-white/10 backdrop-blur rounded-2xl p-4">
         <div className="flex items-center gap-2 mb-2">
           <div className="w-6 h-6 rounded-md bg-[#FF6F0F] flex items-center justify-center text-xs">🍖</div>
@@ -83,11 +93,10 @@ function PhonePreview({ title, body }: { title: string; body: string }) {
         <p className="text-sm font-bold text-white leading-snug mb-1">
           {title || '알림 제목'}
         </p>
-        <p className="text-xs text-white/60 leading-relaxed">
+        <p className="text-xs text-white/60 leading-relaxed line-clamp-2">
           {body || '알림 내용이 여기 표시됩니다.'}
         </p>
       </div>
-      {/* 홈 인디케이터 */}
       <div className="mt-4 flex justify-center">
         <div className="w-16 h-1 bg-white/20 rounded-full" />
       </div>
@@ -101,11 +110,18 @@ export default function PushPage() {
   const [loading,   setLoading]   = useState(true);
   const [title,     setTitle]     = useState('');
   const [body,      setBody]      = useState('');
+  const [link,      setLink]      = useState('');
   const [target,    setTarget]    = useState<'all' | 'optin'>('optin');
   const [sending,   setSending]   = useState(false);
   const [result,    setResult]    = useState<{ ok: boolean; msg: string } | null>(null);
   const [expanded,  setExpanded]  = useState<string | null>(null);
   const resultTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 이모지 삽입: 마지막으로 포커스된 필드 추적
+  const [lastFocused, setLastFocused] = useState<'title' | 'body'>('title');
+  const titleInputRef = useRef<HTMLInputElement>(null);
+  const bodyInputRef  = useRef<HTMLTextAreaElement>(null);
+  const composeRef    = useRef<HTMLDivElement>(null);
 
   // 개발자 테스트 발송
   const [testPhone,   setTestPhone]   = useState('01085757863');
@@ -114,7 +130,45 @@ export default function PushPage() {
   const [testSending, setTestSending] = useState(false);
   const [testResult,  setTestResult]  = useState<{ ok: boolean; msg: string } | null>(null);
 
-  // ── 통계 로드 ───────────────────────────────────────────────────────
+  // ── 이모지 커서 삽입 ──────────────────────────────────────────────────
+  function insertEmoji(emoji: string) {
+    if (lastFocused === 'title') {
+      const el = titleInputRef.current;
+      if (!el) { setTitle(t => t + emoji); return; }
+      const s    = el.selectionStart ?? title.length;
+      const e    = el.selectionEnd   ?? title.length;
+      const next = title.slice(0, s) + emoji + title.slice(e);
+      setTitle(next);
+      requestAnimationFrame(() => {
+        el.focus();
+        el.setSelectionRange(s + emoji.length, s + emoji.length);
+      });
+    } else {
+      const el = bodyInputRef.current;
+      if (!el) { setBody(b => b + emoji); return; }
+      const s    = el.selectionStart ?? body.length;
+      const e    = el.selectionEnd   ?? body.length;
+      const next = body.slice(0, s) + emoji + body.slice(e);
+      setBody(next);
+      requestAnimationFrame(() => {
+        el.focus();
+        el.setSelectionRange(s + emoji.length, s + emoji.length);
+      });
+    }
+  }
+
+  // ── 재발송: 히스토리 → 폼 자동 입력 ────────────────────────────────
+  function handleResend(row: HistoryRow) {
+    setTitle(row.title);
+    setBody(row.body);
+    setLink(row.link ?? '');
+    setExpanded(null);
+    setTimeout(() => {
+      composeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  }
+
+  // ── 통계 로드 ──────────────────────────────────────────────────────────
   const loadStats = useCallback(async () => {
     setLoading(true);
     try {
@@ -130,7 +184,7 @@ export default function PushPage() {
 
   useEffect(() => { loadStats(); }, [loadStats]);
 
-  // ── 발송 ────────────────────────────────────────────────────────────
+  // ── 발송 ──────────────────────────────────────────────────────────────
   const handleSend = async () => {
     if (!title.trim() || !body.trim()) return;
     if (!confirm(`${target === 'all' ? '전체' : 'opt-in'} 수신자에게 푸쉬 알림을 발송할까요?`)) return;
@@ -141,7 +195,7 @@ export default function PushPage() {
       const res  = await fetch('/api/push/send', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ title, body, target }),
+        body:    JSON.stringify({ title, body, target, link: link.trim() || undefined }),
       });
       const json = await res.json();
 
@@ -151,7 +205,8 @@ export default function PushPage() {
         setResult({ ok: true, msg: json.summary });
         setTitle('');
         setBody('');
-        loadStats(); // 히스토리 갱신
+        setLink('');
+        loadStats();
       }
     } catch (e: any) {
       setResult({ ok: false, msg: e.message });
@@ -205,33 +260,11 @@ export default function PushPage() {
 
       {/* KPI */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <KpiCard
-          icon={Smartphone}
-          label="전체 기기"
-          value={stats?.totalTokens ?? '-'}
-          sub="push_tokens 등록"
-          color="text-blue-400"
-        />
-        <KpiCard
-          icon={ToggleRight}
-          label="opt-in 수신자"
-          value={stats?.optinTokens ?? '-'}
-          sub="알림 허용 유저"
-          color="text-green-400"
-        />
-        <KpiCard
-          icon={Send}
-          label="누적 발송"
-          value={stats?.totalSent ?? '-'}
-          sub="전체 히스토리 합산"
-        />
-        <KpiCard
-          icon={CheckCheck}
-          label="누적 읽음"
-          value={stats?.totalRead ?? '-'}
-          sub={stats && stats.totalSent > 0
-            ? `읽음율 ${Math.round((stats.totalRead / stats.totalSent) * 100)}%`
-            : ''}
+        <KpiCard icon={Smartphone}    label="전체 기기"    value={stats?.totalTokens ?? '-'} sub="push_tokens 등록"       color="text-blue-400"   />
+        <KpiCard icon={ToggleRight}   label="opt-in 수신자" value={stats?.optinTokens ?? '-'} sub="알림 허용 유저"          color="text-green-400"  />
+        <KpiCard icon={Send}          label="누적 발송"    value={stats?.totalSent   ?? '-'} sub="전체 히스토리 합산"                               />
+        <KpiCard icon={CheckCheck}    label="누적 읽음"    value={stats?.totalRead   ?? '-'}
+          sub={stats && stats.totalSent > 0 ? `읽음율 ${Math.round((stats.totalRead / stats.totalSent) * 100)}%` : ''}
           color="text-purple-400"
         />
       </div>
@@ -245,7 +278,6 @@ export default function PushPage() {
         <p className="text-xs text-muted mb-5">지정 전화번호 계정으로 테스트 푸시를 발송해요</p>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* 전화번호 */}
           <div className="lg:col-span-3">
             <label className="text-xs font-semibold text-muted uppercase tracking-wider mb-1.5 block">
               대상 전화번호 <span className="text-red-400">*</span>
@@ -265,7 +297,6 @@ export default function PushPage() {
               )}
             </div>
           </div>
-          {/* 제목 */}
           <div>
             <label className="text-xs font-semibold text-muted uppercase tracking-wider mb-1.5 block">제목</label>
             <input
@@ -274,7 +305,6 @@ export default function PushPage() {
               className="w-full bg-fill-subtle border border-border-subtle rounded-xl px-4 py-3 text-sm text-primary focus:outline-none focus:border-[#FF6F0F] transition"
             />
           </div>
-          {/* 내용 */}
           <div className="lg:col-span-2">
             <label className="text-xs font-semibold text-muted uppercase tracking-wider mb-1.5 block">내용</label>
             <input
@@ -308,14 +338,14 @@ export default function PushPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* ── 발송 폼 ── */}
-        <div className="bg-card border border-border-main rounded-2xl p-6">
+        {/* ── 알림 작성 ── */}
+        <div ref={composeRef} className="bg-card border border-border-main rounded-2xl p-6">
           <h2 className="text-base font-bold text-primary mb-5 flex items-center gap-2">
             <Bell size={16} className="text-[#FF6F0F]" />
             알림 작성
           </h2>
 
-          {/* 대상 선택 */}
+          {/* 발송 대상 */}
           <div className="mb-4">
             <label className="text-xs font-semibold text-muted uppercase tracking-wider mb-2 block">
               발송 대상
@@ -350,8 +380,10 @@ export default function PushPage() {
               제목 <span className="text-red-400">*</span>
             </label>
             <input
+              ref={titleInputRef}
               value={title}
               onChange={e => setTitle(e.target.value)}
+              onFocus={() => setLastFocused('title')}
               maxLength={60}
               placeholder="예: 🎟 새 쿠폰이 도착했어요!"
               className="w-full bg-fill-subtle border border-border-subtle rounded-xl px-4 py-3 text-sm text-primary placeholder-gray-600 focus:outline-none focus:border-[#FF6F0F] transition"
@@ -359,20 +391,93 @@ export default function PushPage() {
             <p className="text-[10px] text-muted mt-1 text-right">{title.length}/60</p>
           </div>
 
+          {/* 이모지 팔레트 */}
+          <div className="mb-3 bg-fill-subtle rounded-xl px-3 py-2 border border-border-subtle">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <span className="text-[10px] text-muted font-medium">이모지 →</span>
+              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-md transition ${
+                lastFocused === 'title'
+                  ? 'bg-[#FF6F0F]/20 text-[#FF6F0F]'
+                  : 'bg-white/5 text-muted'
+              }`}>제목</span>
+              <span className="text-[10px] text-muted">/</span>
+              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-md transition ${
+                lastFocused === 'body'
+                  ? 'bg-[#FF6F0F]/20 text-[#FF6F0F]'
+                  : 'bg-white/5 text-muted'
+              }`}>내용</span>
+              <span className="text-[10px] text-muted ml-auto">커서 위치에 삽입</span>
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {EMOJIS.map(e => (
+                <button
+                  key={e}
+                  onClick={() => insertEmoji(e)}
+                  className="text-base hover:scale-125 transition-transform active:scale-95 leading-none px-0.5"
+                  title={e}
+                >
+                  {e}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* 본문 */}
-          <div className="mb-5">
+          <div className="mb-4">
             <label className="text-xs font-semibold text-muted uppercase tracking-wider mb-1.5 block">
               내용 <span className="text-red-400">*</span>
+              <span className="ml-2 text-[10px] text-muted normal-case font-normal">iOS 기본 2줄 표시</span>
             </label>
             <textarea
+              ref={bodyInputRef}
               value={body}
               onChange={e => setBody(e.target.value)}
-              maxLength={200}
+              onFocus={() => setLastFocused('body')}
+              maxLength={100}
               rows={3}
               placeholder="예: 오월의커피 아메리카노 1+1 쿠폰을 지금 확인해보세요."
               className="w-full bg-fill-subtle border border-border-subtle rounded-xl px-4 py-3 text-sm text-primary placeholder-gray-600 focus:outline-none focus:border-[#FF6F0F] transition resize-none"
             />
-            <p className="text-[10px] text-muted mt-1 text-right">{body.length}/200</p>
+            <p className="text-[10px] text-muted mt-1 text-right">{body.length}/100</p>
+          </div>
+
+          {/* 이동 링크 */}
+          <div className="mb-5">
+            <label className="text-xs font-semibold text-muted uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+              <Link2 size={11} />
+              클릭 시 이동 링크
+              <span className="text-[10px] font-normal normal-case text-muted">(선택)</span>
+            </label>
+            <input
+              value={link}
+              onChange={e => setLink(e.target.value)}
+              placeholder="unniepick://coupons"
+              className="w-full bg-fill-subtle border border-border-subtle rounded-xl px-4 py-3 text-sm text-primary placeholder-gray-600 focus:outline-none focus:border-[#FF6F0F] transition font-mono"
+            />
+            {/* 프리셋 버튼 */}
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {LINK_PRESETS.map(p => (
+                <button
+                  key={p.value}
+                  onClick={() => setLink(p.value)}
+                  className={`text-[11px] px-2.5 py-1 rounded-lg border transition font-medium ${
+                    link === p.value
+                      ? 'border-[#FF6F0F] bg-[#FF6F0F]/10 text-[#FF6F0F]'
+                      : 'border-border-subtle bg-fill-subtle text-muted hover:text-primary hover:border-border-main'
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+              {link && (
+                <button
+                  onClick={() => setLink('')}
+                  className="text-[11px] px-2.5 py-1 rounded-lg border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20 transition font-medium"
+                >
+                  ✕ 삭제
+                </button>
+              )}
+            </div>
           </div>
 
           {/* 결과 메시지 */}
@@ -397,9 +502,7 @@ export default function PushPage() {
             ) : (
               <Send size={15} />
             )}
-            {sending
-              ? '발송 중…'
-              : `${targetCount.toLocaleString()}명에게 발송`}
+            {sending ? '발송 중…' : `${targetCount.toLocaleString()}명에게 발송`}
           </button>
         </div>
 
@@ -410,6 +513,12 @@ export default function PushPage() {
             알림 미리보기
           </h2>
           <PhonePreview title={title} body={body} />
+          {link && (
+            <div className="mt-4 flex items-center gap-2 px-3 py-2 rounded-xl bg-fill-subtle border border-border-subtle">
+              <Link2 size={12} className="text-muted shrink-0" />
+              <span className="text-[11px] text-tertiary font-mono truncate">{link}</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -469,7 +578,7 @@ export default function PushPage() {
                       </p>
                     </div>
 
-                    {/* 읽음율 바 (중간) */}
+                    {/* 읽음율 바 */}
                     <div className="w-24 shrink-0">
                       <ReadRate sent={row.sent_count} read={row.read_count} />
                     </div>
@@ -485,12 +594,30 @@ export default function PushPage() {
                     </div>
                   </button>
 
-                  {/* 펼쳐진 본문 */}
+                  {/* 펼쳐진 상세 */}
                   {isExp && (
-                    <div className="px-6 pb-4">
+                    <div className="px-6 pb-4 space-y-3">
+                      {/* 본문 */}
                       <div className="bg-fill-subtle rounded-xl px-4 py-3 text-sm text-tertiary leading-relaxed">
                         {row.body}
                       </div>
+
+                      {/* 링크 (있을 경우) */}
+                      {row.link && (
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-fill-subtle border border-border-subtle">
+                          <Link2 size={12} className="text-muted shrink-0" />
+                          <span className="text-[11px] text-tertiary font-mono">{row.link}</span>
+                        </div>
+                      )}
+
+                      {/* 재발송 버튼 */}
+                      <button
+                        onClick={() => handleResend(row)}
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#FF6F0F]/10 border border-[#FF6F0F]/30 text-[#FF6F0F] text-xs font-bold hover:bg-[#FF6F0F]/20 transition"
+                      >
+                        <RotateCcw size={12} />
+                        재발송 — 폼에 자동 입력
+                      </button>
                     </div>
                   )}
                 </div>
