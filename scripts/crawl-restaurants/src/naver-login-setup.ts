@@ -13,25 +13,27 @@ import 'dotenv/config';
 import { chromium } from 'playwright';
 import { writeFileSync, mkdirSync } from 'fs';
 import path from 'path';
-import readline from 'readline';
 
 const COOKIE_FILE = path.join(new URL('../logs/naver-cookies.json', import.meta.url).pathname);
 const LOGS_DIR    = path.dirname(COOKIE_FILE);
 
-function waitForEnter(prompt: string): Promise<void> {
-  return new Promise((resolve) => {
-    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-    rl.question(prompt, () => { rl.close(); resolve(); });
-  });
+async function waitForLogin(page: import('playwright').Page, timeoutMs = 120_000): Promise<boolean> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const url = page.url();
+    if (!url.includes('nid.naver.com')) return true;
+    await page.waitForTimeout(1000);
+  }
+  return false;
 }
 
 async function main() {
   console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('  네이버 로그인 쿠키 설정');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('Chrome 창이 열립니다. 네이버에 직접 로그인하세요.\n');
+  console.log('Chrome 창이 열립니다. 네이버에 직접 로그인하세요.');
+  console.log('로그인 완료 시 자동으로 쿠키가 저장됩니다.\n');
 
-  // headless: false — 사용자가 직접 조작 가능한 창
   const browser = await chromium.launch({
     headless: false,
     args: ['--lang=ko-KR'],
@@ -44,12 +46,11 @@ async function main() {
     waitUntil: 'domcontentloaded',
   });
 
-  await waitForEnter('로그인 완료 후 여기서 Enter를 누르세요...');
+  console.log('⏳ 로그인 대기 중... (최대 2분)');
+  const loggedIn = await waitForLogin(page);
 
-  // 로그인 상태 검증
-  const currentUrl = page.url();
-  if (currentUrl.includes('nid.naver.com')) {
-    console.log('\n⚠️  아직 로그인 페이지입니다. 로그인을 완료하고 다시 실행하세요.');
+  if (!loggedIn) {
+    console.log('\n⚠️  시간 초과. 다시 실행하세요.');
     await browser.close();
     process.exit(1);
   }
