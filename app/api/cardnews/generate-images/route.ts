@@ -31,11 +31,12 @@ interface Card {
 
 export async function POST(req: NextRequest) {
   try {
-    const { store_name, category, cards, template } = await req.json() as {
+    const { store_name, category, cards, template, aspect_ratio = '9:16' } = await req.json() as {
       store_name: string;
       category: string;
       cards: Card[];
       template: string;
+      aspect_ratio?: '1:1' | '4:5' | '9:16';
     };
 
     if (!cards?.length) {
@@ -49,7 +50,7 @@ export async function POST(req: NextRequest) {
     const promises = cards.map(async (card, index) => {
       const promptData: GeminiPromptSchema = {
         meta: {
-          aspect_ratio: '9:16',
+          aspect_ratio,
           resolution: '1K',
           thinking_level: 'minimal',
         },
