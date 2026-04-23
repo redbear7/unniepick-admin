@@ -215,8 +215,23 @@ export default function Sidebar() {
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [editingLabel,   setEditingLabel]   = useState('');
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string>('');
 
   useEffect(() => { setGroups(loadGroups()); }, []);
+
+  // 현재 로그인 유저 이름 조회
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (!data.user) return;
+      const { data: row } = await supabase
+        .from('users')
+        .select('name')
+        .eq('id', data.user.id)
+        .maybeSingle();
+      if (row?.name) setUserName(row.name);
+    });
+  }, []);
 
   const saveGroups = (next: NavGroup[]) => {
     setGroups(next);
@@ -309,8 +324,10 @@ export default function Sidebar() {
       <Link href="/dashboard" className="flex items-center gap-3 px-5 py-5 border-b border-border-main hover:bg-card transition">
         <div className="w-8 h-8 rounded-lg bg-[#FF6F0F] flex items-center justify-center text-base shrink-0">🍖</div>
         <div className="flex-1 min-w-0">
-          <p className="text-[10px] text-muted leading-none">언니픽</p>
-          <p className="text-sm font-bold text-primary leading-tight mt-0.5">슈퍼어드민</p>
+          <p className="text-[10px] text-muted leading-none">언니픽 슈퍼어드민</p>
+          <p className="text-sm font-bold text-primary leading-tight mt-0.5 truncate">
+            {userName || '로딩 중…'}
+          </p>
           <div className="flex items-center justify-between mt-1">
             <p className="text-[10px] text-muted">v0.1.1</p>
             <ThemeToggle />
