@@ -59,20 +59,35 @@ export async function POST(req: NextRequest) {
 
   const sb = adminSb();
 
-  // 토큰 조회
-  let query = sb.from('push_tokens').select('token').not('token', 'is', null);
+  // 토큰 + user_id 조회 (notifications 테이블 삽입에 user_id 필요)
+  let query = sb.from('push_tokens').select('user_id, token').not('token', 'is', null);
   if (target === 'optin') query = query.eq('opt_in', true);
   const { data: rows, error: fetchErr } = await query;
   if (fetchErr) return NextResponse.json({ error: fetchErr.message }, { status: 500 });
 
-  const tokens = (rows ?? []).map((r: any) => r.token as string).filter(Boolean);
+  const validRows  = (rows ?? []).filter((r: any) => r.token && r.user_id) as { user_id: string; token: string }[];
+  const tokens     = validRows.map(r => r.token);
 
   // Expo 발송
   const { ok, fail } = await sendExpo(tokens, title.trim(), body.trim(), {
     type: 'superadmin', ...data,
   });
 
-  // 히스토리 저장
+  // 앱 알림 내역 저장 (notifications 테이블 — 화면에 표시됨)
+  if (validRows.length > 0) {
+    const notifRows = validRows.map(r => ({
+      user_id:  r.user_id,
+      type:     'event',
+      title:    title.trim(),
+      body:     body.trim(),
+      data:     { type: 'superadmin', ...data },
+      is_read:  false,
+    }));
+    const { error: notifErr } = await sb.from('notifications').insert(notifRows);
+    if (notifErr) console.warn('[push/send] notifications insert error:', notifErr.message);
+  }
+
+  // 관리자 발송 히스토리 저장 (push_history 테이블)
   const { error: histErr } = await sb.from('push_history').insert({
     sender_type:  'superadmin',
     sender_label: '최고관리자',

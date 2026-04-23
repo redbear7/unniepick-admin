@@ -68,6 +68,18 @@ export async function POST(req: NextRequest) {
   const ticket = result?.data?.[0];
 
   if (ticket?.status === 'ok') {
+    // 앱 알림 내역 저장 (notifications 테이블)
+    await sb.from('notifications').insert({
+      user_id: authUser.id,
+      type:    'event',
+      title:   pushTitle,
+      body:    pushBody,
+      data:    { type: 'test' },
+      is_read: false,
+    }).then(({ error }) => {
+      if (error) console.warn('[push/test] notifications insert error:', error.message);
+    });
+
     return NextResponse.json({
       ok:    true,
       email,
