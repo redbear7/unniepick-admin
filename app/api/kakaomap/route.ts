@@ -6,9 +6,18 @@ import { NextResponse } from 'next/server';
  * Expo React Native WebView가 source={{ uri }} 로 이 URL을 로드함
  * → window.location.href가 실제 URL이 되어 Kakao JS SDK 도메인 인증 통과
  */
-export async function GET() {
+export async function GET(request: Request) {
   // NEXT_PUBLIC_KAKAO_JS_KEY: Vercel 환경변수에 없을 경우 폴백 (JS 키는 공개키)
   const appkey = process.env.NEXT_PUBLIC_KAKAO_JS_KEY ?? '1e8def4aebde26a40dbdfe38bf42db24';
+
+  // 썸네일 모드: ?lat=&lng=&level= 로 초기 중심·레벨 지정
+  const u        = new URL(request.url);
+  const rawLat   = parseFloat(u.searchParams.get('lat')   ?? '');
+  const rawLng   = parseFloat(u.searchParams.get('lng')   ?? '');
+  const rawLevel = parseInt  (u.searchParams.get('level') ?? '');
+  const initLat   = isFinite(rawLat)   ? rawLat   : 35.2340;
+  const initLng   = isFinite(rawLng)   ? rawLng   : 128.6668;
+  const initLevel = isFinite(rawLevel) ? rawLevel : 5;
 
   const html = `<!DOCTYPE html>
 <html>
@@ -174,8 +183,8 @@ export async function GET() {
       try {
         var container = document.getElementById('map');
         map = new kakao.maps.Map(container, {
-          center: new kakao.maps.LatLng(35.2340, 128.6668),
-          level: 5
+          center: new kakao.maps.LatLng(${initLat}, ${initLng}),
+          level: ${initLevel}
         });
         kakao.maps.event.addListener(map, 'idle', function() {
           var c = map.getCenter(), b = map.getBounds();
