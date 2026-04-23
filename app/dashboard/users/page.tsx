@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase';
 import {
-  Search, User, Store, Shield, Trash2, AlertTriangle, X,
+  Search, User, Store, Shield, ShieldCheck, Trash2, AlertTriangle, X,
   Bell, BellOff, MapPin, Ticket,
 } from 'lucide-react';
 
@@ -22,18 +22,21 @@ interface UserRow {
 
 // ── 상수 ─────────────────────────────────────────────────────────────
 const ROLE_LABEL: Record<string, string> = {
-  customer:   '고객',
+  customer:   '일반회원',
   owner:      '사장님',
-  superadmin: '시샵',
+  admin:      '관리자',
+  superadmin: '최고관리자',
 };
 const ROLE_ICON: Record<string, React.ReactNode> = {
-  customer:   <User   size={12} />,
-  owner:      <Store  size={12} />,
-  superadmin: <Shield size={12} />,
+  customer:   <User        size={12} />,
+  owner:      <Store       size={12} />,
+  admin:      <Shield      size={12} />,
+  superadmin: <ShieldCheck size={12} />,
 };
 const ROLE_COLOR: Record<string, string> = {
   customer:   'bg-blue-500/15 text-blue-400',
   owner:      'bg-[#FF6F0F]/15 text-[#FF6F0F]',
+  admin:      'bg-yellow-500/15 text-yellow-400',
   superadmin: 'bg-purple-500/15 text-purple-400',
 };
 
@@ -133,7 +136,7 @@ export default function UsersPage() {
   const [users,        setUsers]        = useState<UserRow[]>([]);
   const [loading,      setLoading]      = useState(true);
   const [query,        setQuery]        = useState('');
-  const [filter,       setFilter]       = useState<'all' | 'customer' | 'owner' | 'profiles'>('all');
+  const [filter,       setFilter]       = useState<'all' | 'customer' | 'owner' | 'admin' | 'superadmin' | 'profiles'>('all');
   const [deleteTarget, setDeleteTarget] = useState<UserRow | null>(null);
   const [deleting,     setDeleting]     = useState(false);
   const [toast,        setToast]        = useState('');
@@ -142,11 +145,10 @@ export default function UsersPage() {
   const load = useCallback(async () => {
     const sb = createClient();
 
-    // 기본 유저 데이터
+    // 기본 유저 데이터 (전 등급 포함)
     const [usersRes, profilesRes] = await Promise.all([
       sb.from('users')
         .select('id, name, phone, role, created_at')
-        .neq('role', 'superadmin')
         .order('created_at', { ascending: false }),
       sb.from('profiles')
         .select('id, nickname, created_at')
@@ -235,10 +237,12 @@ export default function UsersPage() {
   });
 
   const counts = {
-    all:      users.length,
-    customer: users.filter(u => u.role === 'customer').length,
-    owner:    users.filter(u => u.role === 'owner').length,
-    profiles: users.filter(u => u.source === 'profiles').length,
+    all:        users.length,
+    customer:   users.filter(u => u.role === 'customer').length,
+    owner:      users.filter(u => u.role === 'owner').length,
+    admin:      users.filter(u => u.role === 'admin').length,
+    superadmin: users.filter(u => u.role === 'superadmin').length,
+    profiles:   users.filter(u => u.source === 'profiles').length,
   };
 
   // ── 삭제 ────────────────────────────────────────────────────────────
@@ -282,10 +286,12 @@ export default function UsersPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-primary">회원 관리</h1>
         <p className="text-sm text-muted mt-1">
-          전체 {users.length}명 · 고객 {counts.customer}명 · 사장님 {counts.owner}명
-          {counts.profiles > 0 && (
-            <span className="ml-2 text-yellow-400">· 신규플로우 {counts.profiles}명</span>
-          )}
+          전체 {users.length}명 &middot;
+          일반 {counts.customer}명 &middot;
+          사장님 {counts.owner}명
+          {counts.admin > 0 && <span> &middot; 관리자 <span className="text-yellow-400">{counts.admin}명</span></span>}
+          {counts.superadmin > 0 && <span> &middot; 최고관리자 <span className="text-purple-400">{counts.superadmin}명</span></span>}
+          {counts.profiles > 0 && <span className="ml-2 text-orange-400"> &middot; 🆕 신규 {counts.profiles}명</span>}
         </p>
       </div>
 
@@ -300,23 +306,30 @@ export default function UsersPage() {
             className="w-full bg-card border border-border-subtle rounded-xl pl-9 pr-4 py-2.5 text-sm text-primary placeholder-gray-600 focus:outline-none focus:border-[#FF6F0F] transition"
           />
         </div>
-        {(['all', 'customer', 'owner', 'profiles'] as const).map(f => (
+        {([
+          { key: 'all',        label: '전체',       color: 'default' },
+          { key: 'customer',   label: '일반회원',    color: 'blue'    },
+          { key: 'owner',      label: '사장님',      color: 'orange'  },
+          { key: 'admin',      label: '관리자',      color: 'yellow'  },
+          { key: 'superadmin', label: '최고관리자',  color: 'purple'  },
+          { key: 'profiles',   label: '🆕 신규',    color: 'new'     },
+        ] as const).map(({ key, label, color }) => (
           <button
-            key={f}
-            onClick={() => setFilter(f)}
+            key={key}
+            onClick={() => setFilter(key)}
             className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${
-              filter === f
-                ? f === 'profiles'
-                  ? 'bg-yellow-500/80 text-black'
-                  : 'bg-[#FF6F0F] text-primary'
+              filter === key
+                ? color === 'blue'   ? 'bg-blue-500/80 text-white'
+                : color === 'orange' ? 'bg-[#FF6F0F] text-white'
+                : color === 'yellow' ? 'bg-yellow-500/80 text-black'
+                : color === 'purple' ? 'bg-purple-500/80 text-white'
+                : color === 'new'    ? 'bg-orange-400/80 text-black'
+                : 'bg-white/15 text-primary'
                 : 'bg-card border border-border-subtle text-tertiary hover:text-primary'
             }`}
           >
-            {f === 'all'      && '전체'}
-            {f === 'customer' && '고객'}
-            {f === 'owner'    && '사장님'}
-            {f === 'profiles' && '🆕 신규플로우'}
-            <span className="ml-1.5 text-xs opacity-70">{counts[f]}</span>
+            {label}
+            <span className="ml-1.5 text-xs opacity-70">{counts[key]}</span>
           </button>
         ))}
       </div>
