@@ -3,6 +3,15 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase';
 
+type CouponDraft = {
+  discount_type:  'free_item' | 'percent' | 'amount';
+  title:          string;
+  discount_value: number;
+  free_item_name: string | null;
+  expires_at:     string | null;
+  total_quantity: number;
+};
+
 type Application = {
   id: string;
   store_name: string;
@@ -18,6 +27,7 @@ type Application = {
   description?: string;
   latitude?: number;
   longitude?: number;
+  coupon_draft?: CouponDraft | null;
 };
 
 type TabFilter = 'all' | 'pending' | 'approved' | 'rejected';
@@ -185,7 +195,7 @@ export default function ApplicationsPage() {
                 <th className="px-4 py-3 text-left font-semibold">가게명</th>
                 <th className="px-4 py-3 text-left font-semibold">카테고리</th>
                 <th className="px-4 py-3 text-left font-semibold">주소</th>
-                <th className="px-4 py-3 text-left font-semibold">전화통화 가능시간</th>
+                <th className="px-4 py-3 text-left font-semibold">첫 번째 쿠폰</th>
                 <th className="px-4 py-3 text-left font-semibold">상태</th>
                 <th className="px-4 py-3 text-left font-semibold">액션</th>
               </tr>
@@ -223,9 +233,21 @@ export default function ApplicationsPage() {
                     <span className="truncate block">{app.address || '-'}</span>
                   </td>
 
-                  {/* 전화통화 가능시간 (message 컬럼) */}
-                  <td className="px-4 py-3 text-zinc-400 text-sm">
-                    {app.message || '-'}
+                  {/* 첫 번째 쿠폰 */}
+                  <td className="px-4 py-3 max-w-[200px]">
+                    {app.coupon_draft ? (
+                      <div>
+                        <p className="text-white text-xs font-semibold truncate">🎟️ {app.coupon_draft.title}</p>
+                        <p className="text-zinc-500 text-[10px] mt-0.5">
+                          {app.coupon_draft.discount_type === 'free_item' && app.coupon_draft.free_item_name && `🎁 ${app.coupon_draft.free_item_name}`}
+                          {app.coupon_draft.discount_type === 'percent'   && `${app.coupon_draft.discount_value}% 할인`}
+                          {app.coupon_draft.discount_type === 'amount'    && `${app.coupon_draft.discount_value.toLocaleString()}원 할인`}
+                          {app.coupon_draft.expires_at && ` · ~${new Date(app.coupon_draft.expires_at).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}`}
+                        </p>
+                      </div>
+                    ) : (
+                      <span className="text-zinc-600 text-xs">-</span>
+                    )}
                   </td>
 
                   {/* 상태 뱃지 */}

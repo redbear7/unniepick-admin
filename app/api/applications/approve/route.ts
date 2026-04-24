@@ -116,6 +116,41 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // 3-1. coupon_draft → coupons 테이블에 첫 번째 쿠폰 자동 생성
+  let couponId: string | null = null;
+  if (app.coupon_draft) {
+    const draft = app.coupon_draft as {
+      discount_type:  string;
+      title:          string;
+      discount_value: number;
+      free_item_name: string | null;
+      expires_at:     string | null;
+      total_quantity: number;
+    };
+    const fallbackExpiry = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: coupon, error: couponErr } = await sb
+      .from('coupons')
+      .insert({
+        store_id:       store.id,
+        title:          draft.title,
+        discount_type:  draft.discount_type,
+        discount_value: draft.discount_value ?? 0,
+        free_item_name: draft.free_item_name ?? null,
+        total_quantity: draft.total_quantity ?? 100,
+        issued_count:   0,
+        is_active:      true,
+        expires_at:     draft.expires_at ?? fallbackExpiry,
+      })
+      .select('id')
+      .single();
+    if (couponErr) {
+      console.error('[applications/approve] coupon 생성 실패:', couponErr.message);
+    } else {
+      couponId = coupon?.id ?? null;
+      console.log('[applications/approve] 첫 쿠폰 생성 완료:', couponId);
+    }
+  }
+
   // 4. 신청자 푸시 알림 발송 (best-effort)
   let pushSent = false;
   if (app.owner_id) {
@@ -130,5 +165,5 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, store_id: store.id, push_sent: pushSent });
+  return NextResponse.json({ ok: true, store_id: store.id, coupon_id: couponId, push_sent: pushSent });
 }
