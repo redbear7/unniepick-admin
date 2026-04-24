@@ -118,7 +118,7 @@ const PLANS = [
       '공지사항 수신',
       '이메일 지원',
     ],
-    cta: '무료로 시작하기',
+    cta: '가게 등록하기',
     ctaStyle: 'bg-fill-subtle text-primary hover:bg-fill-medium border border-border-main',
     popular: false,
   },
@@ -322,7 +322,7 @@ export default function LandingPage() {
             href="/apply"
             className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl bg-[#FF6F0F] hover:bg-[#e66000] text-white font-bold text-base transition shadow-lg shadow-[#FF6F0F]/20"
           >
-            무료로 시작하기 <ChevronRight size={16} />
+            가게 등록하기 <ChevronRight size={16} />
           </Link>
           <a
             href="#shorts"
@@ -438,7 +438,7 @@ export default function LandingPage() {
       <section className="max-w-6xl mx-auto px-5 py-10">
         <div className="bg-gradient-to-r from-[#FF6F0F] to-[#FF9F0F] rounded-3xl p-10 md:p-14 text-center">
           <h2 className="text-2xl md:text-3xl font-extrabold text-white">
-            지금 바로 무료로 시작하세요
+            지금 바로 가게를 등록하세요
           </h2>
           <p className="text-white/80 mt-3 max-w-md mx-auto">
             오픈 기념으로 모든 기능을 무료로 체험할 수 있습니다.<br />
@@ -528,13 +528,13 @@ export default function LandingPage() {
         <h2 className="text-3xl font-extrabold">매장 운영, 더 쉬워질 준비 되셨나요?</h2>
         <p className="text-tertiary mt-4 max-w-lg mx-auto">
           복잡한 설정 없이 3분이면 가입 완료.<br />
-          지금 무료로 시작하세요.
+          지금 바로 가게를 등록하세요.
         </p>
         <Link
           href="/apply"
           className="inline-flex items-center gap-2 mt-8 px-10 py-4 rounded-2xl bg-[#FF6F0F] hover:bg-[#e66000] text-white font-bold text-base transition shadow-lg shadow-[#FF6F0F]/20"
         >
-          무료로 시작하기 <ChevronRight size={16} />
+          가게 등록하기 <ChevronRight size={16} />
         </Link>
       </section>
 

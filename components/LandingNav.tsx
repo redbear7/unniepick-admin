@@ -29,7 +29,7 @@ export default function LandingNav() {
             href="/apply"
             className="hidden md:inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#FF6F0F] hover:bg-[#e66000] text-white text-sm font-bold transition"
           >
-            무료로 시작 <ChevronRight size={14} />
+            가게 등록하기<ChevronRight size={14} />
           </Link>
           <button
             onClick={() => setMobileMenu(v => !v)}
@@ -47,7 +47,7 @@ export default function LandingNav() {
           <Link href="/#reviews" onClick={() => setMobileMenu(false)} className="block text-sm font-medium text-tertiary hover:text-primary">후기</Link>
           <Link href="/apply" onClick={() => setMobileMenu(false)} className="block text-sm font-semibold text-[#FF6F0F] hover:text-primary">가게등록</Link>
           <Link href="/apply" className="block text-center py-3 rounded-xl bg-[#FF6F0F] text-white text-sm font-bold">
-            무료로 시작하기
+            가게 등록하기
           </Link>
         </div>
       )}
