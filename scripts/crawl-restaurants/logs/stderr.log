@@ -681,3 +681,25 @@ Error: EPERM: operation not permitted, open '/Users/bangju/Documents/PROGRAM/unn
 }
 
 Node.js v25.6.1
+node:fs:555
+  return binding.open(
+                 ^
+
+Error: EPERM: operation not permitted, open '/Users/bangju/Documents/PROGRAM/unniepick-admin/scripts/crawl-restaurants/node_modules/tsx/dist/cli.mjs'
+    at Object.openSync (node:fs:555:18)
+    at readFileSync (node:fs:439:35)
+    at getSourceSync (node:internal/modules/esm/load:37:14)
+    at defaultLoadSync (node:internal/modules/esm/load:153:34)
+    at #loadAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:790:12)
+    at #loadSync (node:internal/modules/esm/loader:810:49)
+    at ModuleLoader.load (node:internal/modules/esm/loader:775:26)
+    at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:520:31)
+    at #getOrCreateModuleJobAfterResolve (node:internal/modules/esm/loader:571:36)
+    at afterResolve (node:internal/modules/esm/loader:619:52) {
+  errno: -1,
+  code: 'EPERM',
+  syscall: 'open',
+  path: '/Users/bangju/Documents/PROGRAM/unniepick-admin/scripts/crawl-restaurants/node_modules/tsx/dist/cli.mjs'
+}
+
+Node.js v25.6.1
