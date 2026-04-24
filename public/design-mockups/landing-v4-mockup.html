@@ -166,23 +166,6 @@
     .sb-ai:hover { background: linear-gradient(135deg, var(--purple-d), #8B5FE5); }
     .sb-ai-icon { font-size: 15px; }
 
-    /* 예시 쿼리 */
-    .search-examples {
-      display: flex; align-items: center; gap: 7px;
-      margin-top: 12px; overflow-x: auto; scrollbar-width: none;
-      padding-bottom: 2px;
-    }
-    .search-examples::-webkit-scrollbar { display: none; }
-    .se-label { font-size: 12px; color: var(--t4); white-space: nowrap; flex-shrink: 0; }
-    .se-chip {
-      padding: 5px 13px; border-radius: 100px;
-      background: var(--bg); border: 1px solid var(--border);
-      font-size: 12px; font-weight: 600; color: var(--t3);
-      cursor: pointer; white-space: nowrap; flex-shrink: 0;
-      transition: .12s;
-    }
-    .se-chip:hover { border-color: var(--orange); color: var(--orange); background: var(--orange-soft); }
-
     /* 검색 드롭다운 */
     .search-block-inner { position: relative; }
     .search-dropdown {
@@ -726,18 +709,6 @@
           AI 추천
         </button>
       </form>
-
-      <!-- 예시 쿼리 -->
-      <div class="search-examples">
-        <span class="se-label">언니의 픽 취향 ·</span>
-        <button class="se-chip" onclick="setAndSearch('상남동 카페')">상남동 카페</button>
-        <button class="se-chip" onclick="setAndSearch('혼밥 매운거')">혼밥 매운거</button>
-        <button class="se-chip" onclick="setAndSearch('헤어샵 할인')">헤어샵 할인</button>
-        <button class="se-chip" onclick="setAndSearch('진해 벚꽃 카페')">진해 벚꽃 카페</button>
-        <button class="se-chip" onclick="setAndSearch('가족외식 고기집')">가족외식 고기집</button>
-        <button class="se-chip" onclick="setAndSearch('타임세일 점심')">타임세일 점심</button>
-        <button class="se-chip" onclick="setAndSearch('스터디카페')">스터디카페</button>
-      </div>
 
       <!-- 검색 드롭다운 -->
       <div class="search-dropdown" id="search-dropdown">
