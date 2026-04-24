@@ -202,7 +202,21 @@ export default function HomePage() {
     kakaoMapRef.current.setLevel(5);
     if (myLocOverlay.current) myLocOverlay.current.setMap(null);
     const el = document.createElement('div');
-    el.style.cssText = 'width:16px;height:16px;border-radius:50%;background:rgba(66,133,244,.9);border:2px solid #fff;box-shadow:0 0 0 6px rgba(66,133,244,.2);';
+    el.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:3px;pointer-events:none;';
+    el.innerHTML = `
+      <style>
+        @keyframes unniepick-pulse {
+          0%   { transform:scale(1);   opacity:.7; }
+          50%  { transform:scale(1.6); opacity:.2; }
+          100% { transform:scale(1);   opacity:.7; }
+        }
+      </style>
+      <div style="position:relative;width:22px;height:22px;">
+        <div style="position:absolute;inset:0;border-radius:50%;background:rgba(66,133,244,.3);animation:unniepick-pulse 2s ease-in-out infinite;"></div>
+        <div style="position:absolute;inset:3px;border-radius:50%;background:#4285F4;border:2.5px solid #fff;box-shadow:0 2px 8px rgba(66,133,244,.5);"></div>
+      </div>
+      <div style="background:#4285F4;color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.2);white-space:nowrap;letter-spacing:-.2px;">내 위치</div>
+    `;
     myLocOverlay.current = new window.kakao.maps.CustomOverlay({
       position: new window.kakao.maps.LatLng(lat, lng),
       content: el, yAnchor: 0.5, xAnchor: 0.5,
