@@ -382,16 +382,12 @@ export default function HomePage() {
           {/* Nav */}
           <nav style={{ display:'flex', alignItems:'center', flex:1 }}>
             {[
-              { label:'홈',     href:'/' },
-              { label:'가게찾기', href:'/stores' },
-              { label:'쿠폰',   href:'/coupons' },
-              { label:'스탬프', href:'/stamps' },
-              { label:'사장님', href:'/owner' },
+              { label:'홈', href:'/' },
             ].map(({ label, href }) => (
               <Link key={label} href={href}
                 style={{ padding:'0 15px', height:60, display:'flex', alignItems:'center',
-                  fontSize:14, fontWeight:600, color: href === '/' ? OR : '#6B7280',
-                  borderBottom: href === '/' ? `2.5px solid ${OR}` : '2.5px solid transparent',
+                  fontSize:14, fontWeight:600, color: OR,
+                  borderBottom: `2.5px solid ${OR}`,
                   marginBottom:-1, textDecoration:'none', whiteSpace:'nowrap', transition:'color .12s' }}>
                 {label}
               </Link>
@@ -400,15 +396,15 @@ export default function HomePage() {
 
           {/* Right */}
           <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
-            <button onClick={() => showToast('로그인 페이지로 이동합니다.')}
+            <button onClick={() => showToast('앱 다운로드 준비 중입니다.')}
               style={{ padding:'8px 16px', borderRadius:6, fontSize:13, fontWeight:600,
-                color:'#6B7280', background:'none', border:'none', cursor:'pointer' }}>
-              로그인 / 회원가입
+                color:'#6B7280', background:'none', border:'1px solid #E5E7EB', cursor:'pointer' }}>
+              📱 앱 다운로드
             </button>
             <Link href="/apply"
               style={{ padding:'9px 18px', borderRadius:6, fontSize:13, fontWeight:700,
                 color:'#fff', background:PU, textDecoration:'none', display:'inline-block' }}>
-              사장님 가입
+              가게 등록
             </Link>
           </div>
         </div>
