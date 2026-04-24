@@ -2,7 +2,7 @@
  * POST /api/admin/run-migration
  * ⚠️  일회성 임시 엔드포인트 — 사용 후 삭제
  *
- * users.role 컬럼의 CHECK 제약조건을 확인하고 제거/재생성합니다.
+ * users_role_check 제약조건에 'developer' 추가
  */
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
@@ -16,43 +16,37 @@ function adminClient() {
 
 export async function POST() {
   const sb = adminClient();
-  const log: string[] = [];
 
-  // Step 1: users 테이블에서 샘플 유저 1명 가져오기
-  const { data: user, error: userErr } = await sb
-    .from('users')
-    .select('id, name, role')
-    .limit(1)
-    .single();
+  // 1) 기존 users_role_check 제약조건 삭제
+  const { error: dropErr } = await sb.rpc('exec_sql' as any, {
+    sql: 'ALTER TABLE public.users DROP CONSTRAINT IF EXISTS users_role_check;',
+  }).catch(() => ({ error: { message: 'rpc not available' } }));
 
-  if (userErr || !user) {
-    return NextResponse.json({ error: `유저 조회 실패: ${userErr?.message}` });
-  }
-  log.push(`✅ 샘플 유저: ${user.name} (role: ${user.role})`);
-
-  // Step 2: developer 로 업데이트 시도
-  const { data: updated, error: updateErr } = await sb
-    .from('users')
-    .update({ role: 'developer' })
-    .eq('id', user.id)
-    .select('id, role');
-
-  if (updateErr) {
-    log.push(`❌ developer 업데이트 실패: ${updateErr.message} [code: ${updateErr.code}]`);
-    log.push(`⚠️  DB에 CHECK 제약조건이 있습니다. Supabase 대시보드 → Table Editor → users 테이블에서 role 컬럼 제약을 직접 수정하세요.`);
-    return NextResponse.json({ ok: false, log });
+  // rpc 없으면 직접 시도
+  if (dropErr?.message === 'rpc not available') {
+    // Supabase REST API로 직접 실행 불가 — 아래 URL을 사용해주세요
+    return NextResponse.json({
+      ok: false,
+      message: 'RPC 미지원. 아래 SQL을 Supabase 대시보드 SQL Editor에서 직접 실행해주세요.',
+      sql: [
+        "ALTER TABLE public.users DROP CONSTRAINT IF EXISTS users_role_check;",
+        "ALTER TABLE public.users ADD CONSTRAINT users_role_check CHECK (role IN ('customer', 'owner', 'admin', 'superadmin', 'developer'));",
+      ],
+    });
   }
 
-  if (!updated || updated.length === 0) {
-    log.push(`❌ 업데이트 행 없음 (0 rows) — users 테이블에 해당 ID가 없음`);
-    return NextResponse.json({ ok: false, log });
+  if (dropErr) {
+    return NextResponse.json({ ok: false, step: 'drop', error: dropErr.message });
   }
 
-  log.push(`✅ developer 업데이트 성공: ${JSON.stringify(updated[0])}`);
+  // 2) 새 제약조건 추가 (developer 포함)
+  const { error: addErr } = await sb.rpc('exec_sql' as any, {
+    sql: "ALTER TABLE public.users ADD CONSTRAINT users_role_check CHECK (role IN ('customer', 'owner', 'admin', 'superadmin', 'developer'));",
+  });
 
-  // Step 3: 원래 role로 복구
-  await sb.from('users').update({ role: user.role }).eq('id', user.id);
-  log.push(`🔄 원래 역할(${user.role})로 복구 완료`);
+  if (addErr) {
+    return NextResponse.json({ ok: false, step: 'add', error: addErr.message });
+  }
 
-  return NextResponse.json({ ok: true, log });
+  return NextResponse.json({ ok: true, message: '✅ users_role_check 제약조건 업데이트 완료' });
 }
