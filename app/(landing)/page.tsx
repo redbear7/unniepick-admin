@@ -410,7 +410,7 @@ export default function HomePage() {
 
           {/* Right */}
           <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
-            <button onClick={() => window.open('file:///Users/bangju/Documents/PROGRAM/unniepick-admin/public/design-mockups/landing-v2-mockup.html', '_blank')}
+            <button onClick={() => window.open('/design-mockups/landing-v2-mockup.html', '_blank')}
               style={{ padding:'8px 16px', borderRadius:6, fontSize:13, fontWeight:600,
                 color:'#6B7280', background:'none', border:'1px solid #E5E7EB', cursor:'pointer' }}>
               📱 앱 다운로드
