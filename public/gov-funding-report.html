@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>언니픽 정부 지원사업 조사 보고서</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
+
+  :root {
+    --orange: #FF6F0F;
+    --orange-light: #FFF4EC;
+    --orange-mid: #FFD9B8;
+    --purple: #6742F5;
+    --dark: #111827;
+    --gray7: #374151;
+    --gray5: #6B7280;
+    --gray3: #D1D5DB;
+    --gray1: #F9FAFB;
+    --green: #059669;
+    --green-light: #ECFDF5;
+    --blue: #2563EB;
+    --blue-light: #EFF6FF;
+    --red: #DC2626;
+    --red-light: #FEF2F2;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans KR', -apple-system, sans-serif;
+    background: #F3F4F6;
+    color: var(--dark);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* ── 인쇄 설정 ── */
+  @media print {
+    body { background: white; }
+    .no-print { display: none !important; }
+    .page-break { page-break-before: always; }
+    .card { box-shadow: none !important; border: 1px solid #e5e7eb !important; }
+    header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+
+  /* ── 레이아웃 ── */
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 24px 60px; }
+
+  /* ── 헤더 ── */
+  header {
+    background: linear-gradient(135deg, #1a0533 0%, #2d1060 40%, #FF6F0F 100%);
+    color: white;
+    padding: 48px 0 40px;
+    margin-bottom: 36px;
+  }
+  .header-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .header-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .logo-icon {
+    width: 44px; height: 44px;
+    background: rgba(255,255,255,.15);
+    border: 1.5px solid rgba(255,255,255,.3);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+  }
+  .logo-name { font-size: 22px; font-weight: 900; letter-spacing: -0.5px; }
+  header h1 { font-size: 30px; font-weight: 900; letter-spacing: -0.8px; line-height: 1.3; margin-bottom: 8px; }
+  header p  { font-size: 14px; opacity: .75; }
+  .header-meta { text-align: right; }
+  .header-meta .date { font-size: 13px; opacity: .7; margin-bottom: 6px; }
+  .header-meta .badge {
+    display: inline-block;
+    background: rgba(255,255,255,.15);
+    border: 1px solid rgba(255,255,255,.3);
+    border-radius: 100px;
+    padding: 5px 14px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  /* ── 섹션 타이틀 ── */
+  .section-title {
+    font-size: 19px; font-weight: 900;
+    color: var(--dark);
+    margin: 40px 0 16px;
+    display: flex; align-items: center; gap: 10px;
+    letter-spacing: -0.3px;
+  }
+  .section-title::before {
+    content: '';
+    width: 4px; height: 22px;
+    background: var(--orange);
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .section-sub { font-size: 13px; color: var(--gray5); margin: -10px 0 16px 14px; }
+
+  /* ── 카드 ── */
+  .card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.04);
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .card-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid #F3F4F6;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .card-header h3 { font-size: 15px; font-weight: 800; }
+  .card-body { padding: 20px; }
+
+  /* ── 전략 박스 ── */
+  .strategy-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  @media (max-width: 700px) { .strategy-grid { grid-template-columns: 1fr; } }
+  .strategy-item {
+    background: white;
+    border-radius: 14px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    border-left: 4px solid var(--orange);
+  }
+  .strategy-item .icon { font-size: 28px; margin-bottom: 10px; }
+  .strategy-item h4 { font-size: 13px; font-weight: 800; color: var(--orange); margin-bottom: 6px; }
+  .strategy-item p  { font-size: 12px; color: var(--gray5); line-height: 1.7; }
+
+  /* ── 테이블 ── */
+  .table-wrap { overflow-x: auto; margin-bottom: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead tr { background: var(--gray1); }
+  thead th {
+    padding: 10px 12px;
+    text-align: left;
+    font-weight: 700;
+    font-size: 12px;
+    color: var(--gray5);
+    border-bottom: 1.5px solid var(--gray3);
+    white-space: nowrap;
+  }
+  tbody tr { border-bottom: 1px solid #F3F4F6; transition: background .1s; }
+  tbody tr:hover { background: var(--gray1); }
+  tbody td { padding: 11px 12px; vertical-align: top; }
+  tbody td:first-child { font-weight: 700; color: var(--dark); }
+
+  /* ── 별점 ── */
+  .stars { color: var(--orange); font-size: 12px; white-space: nowrap; }
+
+  /* ── 금액 배지 ── */
+  .amount {
+    display: inline-block;
+    background: var(--green-light);
+    color: var(--green);
+    font-size: 11px;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 100px;
+    white-space: nowrap;
+  }
+
+  /* ── 타이밍 배지 ── */
+  .tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 100px;
+    white-space: nowrap;
+  }
+  .tag-now    { background: #FEF2F2; color: #DC2626; }
+  .tag-after  { background: #EFF6FF; color: #2563EB; }
+  .tag-2027   { background: #F5F3FF; color: #7C3AED; }
+  .tag-always { background: var(--green-light); color: var(--green); }
+
+  /* ── 타임라인 ── */
+  .timeline { display: flex; flex-direction: column; gap: 0; }
+  .tl-item {
+    display: flex;
+    gap: 20px;
+    padding: 0 0 28px;
+    position: relative;
+  }
+  .tl-item:not(:last-child) .tl-line::after {
+    content: '';
+    position: absolute;
+    left: 19px;
+    top: 40px;
+    bottom: 0;
+    width: 2px;
+    background: var(--gray3);
+  }
+  .tl-dot {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+  }
+  .tl-dot.green  { background: var(--green-light);  color: var(--green); border: 2px solid var(--green); }
+  .tl-dot.blue   { background: var(--blue-light);   color: var(--blue);  border: 2px solid var(--blue);  }
+  .tl-dot.purple { background: #F5F3FF; color: #7C3AED; border: 2px solid #7C3AED; }
+  .tl-content { flex: 1; padding-top: 8px; }
+  .tl-content h4 { font-size: 15px; font-weight: 800; margin-bottom: 8px; }
+  .tl-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+  .tl-list li {
+    display: flex; align-items: flex-start; gap: 8px;
+    font-size: 13px; color: var(--gray7);
+  }
+  .tl-list li::before {
+    content: '→';
+    color: var(--orange);
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  /* ── 조합 카드 ── */
+  .combo-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+  @media (max-width: 650px) { .combo-grid { grid-template-columns: 1fr; } }
+  .combo-card {
+    background: white;
+    border-radius: 14px;
+    padding: 18px 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    border-top: 3px solid var(--orange);
+  }
+  .combo-card.blue-top  { border-top-color: var(--blue); }
+  .combo-card.green-top { border-top-color: var(--green); }
+  .combo-card.purple-top{ border-top-color: var(--purple); }
+  .combo-label { font-size: 11px; font-weight: 700; color: var(--gray5); margin-bottom: 4px; letter-spacing: 0.3px; text-transform: uppercase; }
+  .combo-title { font-size: 14px; font-weight: 800; margin-bottom: 10px; }
+  .combo-items { display: flex; flex-direction: column; gap: 5px; }
+  .combo-item {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; color: var(--gray7);
+  }
+  .combo-item .bullet {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--orange);
+    flex-shrink: 0;
+  }
+  .combo-item .bullet.blue   { background: var(--blue); }
+  .combo-item .bullet.green  { background: var(--green); }
+  .combo-item .bullet.purple { background: var(--purple); }
+
+  /* ── 포인트 박스 ── */
+  .point-box {
+    background: var(--orange-light);
+    border-left: 4px solid var(--orange);
+    border-radius: 0 10px 10px 0;
+    padding: 12px 16px;
+    font-size: 13px;
+    color: var(--gray7);
+    margin: 12px 0;
+  }
+  .point-box strong { color: var(--orange); }
+
+  /* ── 링크 목록 ── */
+  .link-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+  @media (max-width: 700px) { .link-grid { grid-template-columns: repeat(2, 1fr); } }
+  .link-item {
+    background: white;
+    border-radius: 10px;
+    padding: 12px 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.05);
+    display: flex; flex-direction: column; gap: 3px;
+  }
+  .link-item .link-name { font-size: 13px; font-weight: 700; color: var(--dark); }
+  .link-item a { font-size: 11px; color: var(--blue); text-decoration: none; }
+  .link-item a:hover { text-decoration: underline; }
+  .link-item .link-desc { font-size: 11px; color: var(--gray5); }
+
+  /* ── 강점 박스 ── */
+  .strength-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  @media (max-width: 600px) { .strength-grid { grid-template-columns: 1fr; } }
+  .strength-item {
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.05);
+    display: flex; gap: 12px;
+  }
+  .strength-num {
+    width: 32px; height: 32px;
+    background: var(--orange);
+    color: white;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 900; font-size: 15px;
+    flex-shrink: 0;
+  }
+  .strength-item h4 { font-size: 13px; font-weight: 800; margin-bottom: 4px; }
+  .strength-item p  { font-size: 12px; color: var(--gray5); line-height: 1.6; }
+
+  /* ── 상단 요약 카드 ── */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  @media (max-width: 700px) { .summary-grid { grid-template-columns: repeat(2, 1fr); } }
+  .summary-card {
+    background: white;
+    border-radius: 14px;
+    padding: 18px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    text-align: center;
+  }
+  .summary-card .s-num { font-size: 26px; font-weight: 900; color: var(--orange); line-height: 1; margin-bottom: 4px; }
+  .summary-card .s-label { font-size: 12px; color: var(--gray5); font-weight: 500; }
+
+  /* ── 인쇄 버튼 ── */
+  .print-btn {
+    position: fixed;
+    bottom: 28px; right: 28px;
+    background: var(--orange);
+    color: white;
+    border: none;
+    border-radius: 100px;
+    padding: 12px 22px;
+    font-size: 14px; font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(255,111,15,.35);
+    display: flex; align-items: center; gap: 8px;
+    font-family: inherit;
+    z-index: 100;
+    transition: transform .15s;
+  }
+  .print-btn:hover { transform: scale(1.05); }
+
+  /* ── footer ── */
+  footer {
+    background: var(--dark);
+    color: rgba(255,255,255,.5);
+    text-align: center;
+    padding: 24px;
+    font-size: 12px;
+    margin-top: 48px;
+  }
+
+  .divider { height: 1px; background: var(--gray3); margin: 32px 0; }
+
+  .highlight-row td { background: var(--orange-light) !important; }
+  .highlight-row td:first-child { color: var(--orange) !important; }
+</style>
+</head>
+<body>
+
+<!-- ═══ HEADER ═══ -->
+<header>
+  <div class="header-inner">
+    <div>
+      <div class="header-logo">
+        <div class="logo-icon">🩷</div>
+        <div class="logo-name">언니픽</div>
+      </div>
+      <h1>정부 지원사업 조사 보고서</h1>
+      <p>앱 런칭 전·후 신청 가능한 정부 예산 지원사업 종합 분석</p>
+    </div>
+    <div class="header-meta">
+      <div class="date">작성일: 2026년 4월 25일</div>
+      <div class="badge">대외비 · 내부 보고용</div>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- ═══ 상단 요약 ═══ -->
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="s-num">23+</div>
+      <div class="s-label">발굴 지원사업</div>
+    </div>
+    <div class="summary-card">
+      <div class="s-num">22억+</div>
+      <div class="s-label">최대 수혜 가능액</div>
+    </div>
+    <div class="summary-card">
+      <div class="s-num">7개</div>
+      <div class="s-label">지원 기관 카테고리</div>
+    </div>
+    <div class="summary-card">
+      <div class="s-num">4가지</div>
+      <div class="s-label">추천 중복 신청 조합</div>
+    </div>
+  </div>
+
+  <!-- ═══ 핵심 전략 ═══ -->
+  <div class="section-title">핵심 전략</div>
+  <p class="section-sub">언니픽의 3가지 강점이 서로 다른 지원 트랙에서 경쟁력을 만들어냅니다.</p>
+  <div class="strategy-grid">
+    <div class="strategy-item">
+      <div class="icon">🏪</div>
+      <h4>로컬 소상공인 연결 플랫폼</h4>
+      <p>소상공인 도약 지원·로컬크리에이터·스마트상점 기술공급사 등록 트랙에 적합</p>
+    </div>
+    <div class="strategy-item">
+      <div class="icon">🤖</div>
+      <h4>AI 기술 탑재 앱</h4>
+      <p>AI 바우처 공급기업 등록·디딤돌 R&D·창업패키지 딥테크 트랙에 적합</p>
+    </div>
+    <div class="strategy-item">
+      <div class="icon">📣</div>
+      <h4>미디어 자산 보유</h4>
+      <p>교차로 신문(오프라인) + 인스타 4.6만 + 유튜브 4만 → 언론진흥재단·KOCCA 트랙에 적합</p>
+    </div>
+  </div>
+
+
+  <!-- ═══ 1. 창업 지원 ═══ -->
+  <div class="section-title">① 창업 지원 (중기부 / 창진원)</div>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>사업명</th>
+              <th>지원 금액</th>
+              <th>신청 시기</th>
+              <th>신청 조건</th>
+              <th>적합도</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="highlight-row">
+              <td>초기창업패키지</td>
+              <td><span class="amount">최대 1억원</span></td>
+              <td><span class="tag tag-2027">2027년 1~2월</span></td>
+              <td>창업 3년 이내</td>
+              <td><span class="stars">★★★★★</span></td>
+            </tr>
+            <tr class="highlight-row">
+              <td>소상공인 도약 지원 (로컬기업육성)</td>
+              <td><span class="amount">최대 4천만원</span></td>
+              <td><span class="tag tag-2027">2027년 2~3월</span></td>
+              <td>소상공인확인서 필요</td>
+              <td><span class="stars">★★★★★</span></td>
+            </tr>
+            <tr>
+              <td>예비창업패키지</td>
+              <td><span class="amount">최대 8천만원</span></td>
+              <td><span class="tag tag-now">2027년 2~3월 (사전 준비)</span></td>
+              <td>사업자 미등록 상태</td>
+              <td><span class="stars">★★★★</span></td>
+            </tr>
+            <tr>
+              <td>팁스 (TIPS)</td>
+              <td><span class="amount">R&D 최대 8억원</span></td>
+              <td><span class="tag tag-always">365일 상시</span></td>
+              <td>투자 유치 이후</td>
+              <td><span class="stars">★★★</span></td>
+            </tr>
+            <tr>
+              <td>창업도약패키지</td>
+              <td><span class="amount">최대 2억원</span></td>
+              <td><span class="tag tag-2027">2027년 1~2월</span></td>
+              <td>창업 3~7년차</td>
+              <td><span class="stars">★★★</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="point-box">
+        <strong>핵심 전략:</strong> 런칭 직후 <strong>초기창업패키지(1억원)</strong>가 최우선 목표.
+        지금부터 사업계획서 초안 작성 시작 권장. 소상공인확인서 발급 후 <strong>로컬기업육성 트랙</strong>과 동시 진행 가능.
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══ 2. AI / ICT ═══ -->
+  <div class="section-title">② AI / ICT 기술 지원 (과기정통부 / NIPA)</div>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>사업명</th>
+              <th>지원 금액</th>
+              <th>신청 시기</th>
+              <th>적합도</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="highlight-row">
+              <td>AI 바우처 (소상공인 트랙)</td>
+              <td><span class="amount">수천만원 매칭</span></td>
+              <td><span class="tag tag-2027">2027년 3월</span></td>
+              <td><span class="stars">★★★★★</span></td>
+            </tr>
+            <tr>
+              <td>창업성장기술개발 (디딤돌 R&D)</td>
+              <td><span class="amount">최대 2억원</span></td>
+              <td><span class="tag tag-2027">연 2회 (1·3월)</span></td>
+              <td><span class="stars">★★★</span></td>
+            </tr>
+            <tr>
+              <td>경남 디지털혁신거점 조성</td>
+              <td><span class="amount">자율형 맞춤지원</span></td>
+              <td><span class="tag tag-always">연중 공고</span></td>
+              <td><span class="stars">★★★★</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="point-box">
+        <strong>AI 바우처 이중 전략:</strong>
+        언니픽이 소상공인에게 AI 기능을 제공하는 <strong>공급기업 Pool에 등록</strong>하면,
+        소상공인들이 정부 바우처로 언니픽 서비스를 구독하는 구조 가능.
+        수요기업과 공급기업 양방향 활용.
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══ 3. 소상공인 ═══ -->
+  <div class="section-title">③ 소상공인 / 지역상권 (소진공)</div>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>사업명</th>
+              <th>지원 내용</th>
+              <th>신청 시기</th>
+              <th>비고</th>
+              <th>적합도</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="highlight-row">
+              <td>스마트상점 기술공급사 등록</td>
+              <td>소상공인 도입비 정부 지원</td>
+              <td><span class="tag tag-2027">매년 1월 모집</span></td>
+              <td>언니픽 = 스마트상점 기술로 등록</td>
+              <td><span class="stars">★★★★★</span></td>
+            </tr>
+            <tr>
+              <td>소상공인 온라인판로 지원</td>
+              <td>SNS 마케팅·콘텐츠 제작</td>
+              <td><span class="tag tag-2027">매년 3~4월</span></td>
+              <td>창원언니쓰 채널 연계</td>
+              <td><span class="stars">★★★</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="point-box">
+        <strong>스마트상점 기술공급사 등록이 핵심.</strong>
+        등록 완료 시 소상공인이 정부 지원금으로 언니픽 앱 도입 →
+        <strong>수익 모델과 정부 지원이 동시에 해결</strong>되는 구조.
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══ 4. 콘텐츠 / 미디어 ═══ -->
+  <div class="section-title">④ 콘텐츠 / 미디어 (KOCCA / 언론진흥재단)</div>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>사업명</th>
+              <th>기관</th>
+              <th>신청 시기</th>
+              <th>활용 자산</th>
+              <th>적합도</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="highlight-row">
+              <td>미디어 스타트업 지원사업</td>
+              <td>한국언론진흥재단</td>
+              <td><span class="tag tag-2027">매년 3~4월</span></td>
+              <td>창원교차로 신문 보유</td>
+              <td><span class="stars">★★★★</span></td>
+            </tr>
+            <tr>
+              <td>지역신문발전기금 (디지털혁신)</td>
+              <td>지역신문발전위원회</td>
+              <td><span class="tag tag-always">연중 수시</span></td>
+              <td>교차로 신문 디지털 전환</td>
+              <td><span class="stars">★★★</span></td>
+            </tr>
+            <tr>
+              <td>KOCCA 콘텐츠 제작지원</td>
+              <td>한국콘텐츠진흥원</td>
+              <td><span class="tag tag-2027">매년 2~4월</span></td>
+              <td>인스타 4.6만 + 유튜브 4만</td>
+              <td><span class="stars">★★★</span></td>
+            </tr>
+            <tr>
+              <td>뉴스콘텐츠 디지털화 지원</td>
+              <td>한국언론진흥재단</td>
+              <td><span class="tag tag-2027">매년 3~4월</span></td>
+              <td>교차로 신문 디지털 콘텐츠화</td>
+              <td><span class="stars">★★★</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══ 5. 경남 / 창원 지자체 ═══ -->
+  <div class="section-title">⑤ 경남도 / 창원시 지자체 특화 ← 가장 빠른 진입로</div>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>사업명</th>
+              <th>기관</th>
+              <th>신청 시기</th>
+              <th>특이사항</th>
+              <th>적합도</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="highlight-row">
+              <td>경남CCEI 창업-BuS</td>
+              <td>경남창조경제혁신센터 (삼성 연계)</td>
+              <td><span class="tag tag-now">연중 모집</span></td>
+              <td>☎ 055-256-2700 직접 상담 가능</td>
+              <td><span class="stars">★★★★★</span></td>
+            </tr>
+            <tr>
+              <td>G-Space 예비·초기기업 지원</td>
+              <td>경남창조경제혁신센터</td>
+              <td><span class="tag tag-now">연중</span></td>
+              <td>우수 수료 시 창업패키지 우선 선정</td>
+              <td><span class="stars">★★★★</span></td>
+            </tr>
+            <tr>
+              <td>창원시 스타트업 액셀러레이팅</td>
+              <td>창원산업진흥원</td>
+              <td><span class="tag tag-now">상반기</span></td>
+              <td>창원 소재 조건, 로컬 플랫폼 강점</td>
+              <td><span class="stars">★★★★</span></td>
+            </tr>
+            <tr>
+              <td>경남TP 디지털혁신거점 R&BD</td>
+              <td>경남테크노파크</td>
+              <td><span class="tag tag-always">분기별</span></td>
+              <td>과기정통부·창원시 연계</td>
+              <td><span class="stars">★★★</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="point-box">
+        <strong>지금 즉시 1순위:</strong> 경남창조경제혁신센터 (<strong>055-256-2700</strong>) 전화 상담.
+        삼성전자 연계 인큐베이팅 → 창업패키지 우선 선정 경로 확보 가능.
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══ 6. 정책 융자 ═══ -->
+  <div class="section-title">⑥ 정책 융자 / 보증 (상시)</div>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>사업명</th>
+              <th>기관</th>
+              <th>지원 내용</th>
+              <th>조건</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>청년전용창업자금</td>
+              <td>중소기업진흥공단</td>
+              <td><span class="amount">최대 1억원 (연 2.5%)</span></td>
+              <td>만 39세 이하, 창업 3년 미만</td>
+            </tr>
+            <tr>
+              <td>퍼스트펭귄 보증</td>
+              <td>신용보증기금</td>
+              <td>보증 기반 대출</td>
+              <td>신사업 선도 기업</td>
+            </tr>
+            <tr>
+              <td>Start-up NEST</td>
+              <td>신용보증기금</td>
+              <td>보증 + 투자 + 컨설팅 패키지</td>
+              <td>혁신 스타트업</td>
+            </tr>
+            <tr>
+              <td>창업기업 특례보증</td>
+              <td>기술보증기금</td>
+              <td>기술 평가 기반 보증</td>
+              <td>AI·소프트웨어 기술력 → 유리</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══ 7. 고용 지원 ═══ -->
+  <div class="section-title">⑦ 고용 지원 (팀 채용 시)</div>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>사업명</th>
+              <th>지원 금액</th>
+              <th>비고</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>청년추가고용장려금</td>
+              <td><span class="amount">1인당 연 최대 960만원 (3년간)</span></td>
+              <td>개발자·마케터 채용 시 활용</td>
+            </tr>
+            <tr>
+              <td>청년내일채움공제</td>
+              <td><span class="amount">2년 최대 1,200만원 공제 지원</span></td>
+              <td>초기 팀 구성 시 핵심 활용</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="divider"></div>
+
+
+  <!-- ═══ 타임라인 ═══ -->
+  <div class="section-title">⏱ 타이밍별 액션 플랜</div>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="timeline">
+
+        <!-- 지금 -->
+        <div class="tl-item">
+          <div class="tl-line">
+            <div class="tl-dot green">🟢</div>
+          </div>
+          <div class="tl-content">
+            <h4 style="color: var(--green)">지금 즉시 — 런칭 전 (2026년 4~6월)</h4>
+            <ul class="tl-list">
+              <li><strong>경남CCEI 전화 상담</strong> (055-256-2700) → 창업-BuS / G-Space 접수</li>
+              <li><strong>신보 퍼스트펭귄</strong> 가까운 지점 방문 상담</li>
+              <li><strong>기술보증기금 창업특례</strong> 기술평가 신청 (AI 기술 보유 강점)</li>
+              <li><strong>AI 바우처 공급기업 Pool</strong> 등록 준비 (NIPA 사이트 확인)</li>
+              <li><strong>초기창업패키지 사업계획서</strong> 초안 작성 시작</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- 런칭 후 -->
+        <div class="tl-item">
+          <div class="tl-line">
+            <div class="tl-dot blue">🔵</div>
+          </div>
+          <div class="tl-content">
+            <h4 style="color: var(--blue)">런칭 직후 — 하반기 (2026년 하반기)</h4>
+            <ul class="tl-list">
+              <li><strong>소상공인확인서 발급</strong> → 소진공 도약 지원 신청 준비</li>
+              <li><strong>스마트상점 기술공급사</strong> 2027년 1월 공고 대비 서류 준비</li>
+              <li><strong>중진공 청년전용창업자금</strong> 사업자 등록 직후 신청</li>
+              <li><strong>언론진흥재단</strong> 미디어 스타트업 사전 상담</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- 2027년 -->
+        <div class="tl-item">
+          <div class="tl-line">
+            <div class="tl-dot purple">🔴</div>
+          </div>
+          <div class="tl-content">
+            <h4 style="color: #7C3AED">2027년 1~4월 집중 신청</h4>
+            <ul class="tl-list">
+              <li><strong>초기창업패키지</strong> (1~2월) — 최대 1억원</li>
+              <li><strong>스마트상점 기술공급사 등록</strong> (1월)</li>
+              <li><strong>AI 바우처 소상공인</strong> (3월)</li>
+              <li><strong>소상공인 온라인판로 지원</strong> (3~4월)</li>
+              <li><strong>언론진흥재단 미디어 스타트업</strong> (3~4월)</li>
+              <li><strong>디딤돌 R&D 2차</strong> (3~4월)</li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══ 중복 신청 조합 ═══ -->
+  <div class="section-title">💡 추천 중복 신청 조합</div>
+  <p class="section-sub">아래 조합은 동시 신청이 가능한 사업들로, 시너지 효과가 높습니다.</p>
+
+  <div class="combo-grid">
+    <div class="combo-card">
+      <div class="combo-label">조합 A — 초기 부트스트랩</div>
+      <div class="combo-title">런칭 직후 현금 확보</div>
+      <div class="combo-items">
+        <div class="combo-item"><div class="bullet"></div>초기창업패키지 (최대 1억원)</div>
+        <div class="combo-item"><div class="bullet"></div>중진공 청년전용창업자금 (1억원 저금리)</div>
+        <div class="combo-item"><div class="bullet"></div>신보 퍼스트펭귄 보증</div>
+      </div>
+    </div>
+    <div class="combo-card blue-top">
+      <div class="combo-label">조합 B — 로컬 플랫폼 특화</div>
+      <div class="combo-title">언니픽 최적 조합</div>
+      <div class="combo-items">
+        <div class="combo-item"><div class="bullet blue"></div>소상공인 도약 지원 로컬기업육성 (4천만원)</div>
+        <div class="combo-item"><div class="bullet blue"></div>AI 바우처 소상공인 트랙</div>
+        <div class="combo-item"><div class="bullet blue"></div>경남창조경제혁신센터 프로그램</div>
+      </div>
+    </div>
+    <div class="combo-card green-top">
+      <div class="combo-label">조합 C — 미디어 + 기술</div>
+      <div class="combo-title">미디어 자산 적극 활용</div>
+      <div class="combo-items">
+        <div class="combo-item"><div class="bullet green"></div>언론진흥재단 미디어 스타트업</div>
+        <div class="combo-item"><div class="bullet green"></div>KOCCA 지역 콘텐츠 지원</div>
+        <div class="combo-item"><div class="bullet green"></div>소상공인 온라인판로 지원</div>
+      </div>
+    </div>
+    <div class="combo-card purple-top">
+      <div class="combo-label">조합 D — R&D + 투자</div>
+      <div class="combo-title">성장 단계 투자 유치</div>
+      <div class="combo-items">
+        <div class="combo-item"><div class="bullet purple"></div>디딤돌 R&D (최대 2억원)</div>
+        <div class="combo-item"><div class="bullet purple"></div>TIPS 운영사 IR 미팅</div>
+        <div class="combo-item"><div class="bullet purple"></div>기보 Tech-사업화 보증</div>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="divider"></div>
+
+
+  <!-- ═══ 언니픽 차별화 포인트 ═══ -->
+  <div class="section-title">📝 서류 작성 시 강조할 차별화 포인트</div>
+
+  <div class="strength-grid">
+    <div class="strength-item">
+      <div class="strength-num">1</div>
+      <div>
+        <h4>소상공인 디지털화 실증 솔루션</h4>
+        <p>창원 지역 소상공인들이 실제 사용 중인 앱. 쿠폰·스탬프·타임세일 실 데이터 제시 가능</p>
+      </div>
+    </div>
+    <div class="strength-item">
+      <div class="strength-num">2</div>
+      <div>
+        <h4>미디어 + 기술 결합 삼각 시너지</h4>
+        <p>창원교차로(오프라인) + 인스타·유튜브(온라인, 누적 팔로워 8.6만) + 앱(플랫폼) 트리플 채널</p>
+      </div>
+    </div>
+    <div class="strength-item">
+      <div class="strength-num">3</div>
+      <div>
+        <h4>창원 집중 → 전국 확장 로드맵</h4>
+        <p>경남 창원 한 도시 집중으로 검증 완료 → 광역·전국 확장 가능성 명확히 제시 가능</p>
+      </div>
+    </div>
+    <div class="strength-item">
+      <div class="strength-num">4</div>
+      <div>
+        <h4>1인 AI 풀스택 개발 효율성</h4>
+        <p>소규모 예산으로 iOS+Android+웹 동시 출시. AI 기술 중급 이상 = 기술 자립도 증거</p>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══ 핵심 포털 ═══ -->
+  <div class="section-title">🔗 핵심 포털 및 문의처</div>
+
+  <div class="link-grid">
+    <div class="link-item">
+      <div class="link-name">K-Startup</div>
+      <a href="https://www.k-startup.go.kr" target="_blank">k-startup.go.kr</a>
+      <div class="link-desc">창업패키지 전체 신청</div>
+    </div>
+    <div class="link-item">
+      <div class="link-name">기업마당</div>
+      <a href="https://www.bizinfo.go.kr" target="_blank">bizinfo.go.kr</a>
+      <div class="link-desc">전체 지원사업 공고 통합검색</div>
+    </div>
+    <div class="link-item">
+      <div class="link-name">경남창조경제혁신센터</div>
+      <a href="https://ccei.creativekorea.or.kr/gyeongnam" target="_blank">ccei 경남</a>
+      <div class="link-desc">☎ 055-256-2700 (삼성 연계)</div>
+    </div>
+    <div class="link-item">
+      <div class="link-name">창원산업진흥원</div>
+      <a href="https://www.cwip.or.kr" target="_blank">cwip.or.kr</a>
+      <div class="link-desc">창원시 스타트업 지원</div>
+    </div>
+    <div class="link-item">
+      <div class="link-name">AI 바우처 (NIPA)</div>
+      <a href="https://www.nipa.kr" target="_blank">nipa.kr</a>
+      <div class="link-desc">공급기업·수요기업 등록</div>
+    </div>
+    <div class="link-item">
+      <div class="link-name">소상공인24</div>
+      <a href="https://www.sbiz.or.kr" target="_blank">sbiz.or.kr</a>
+      <div class="link-desc">소진공 전체 사업</div>
+    </div>
+    <div class="link-item">
+      <div class="link-name">중소기업진흥공단</div>
+      <a href="https://www.kosmes.or.kr" target="_blank">kosmes.or.kr</a>
+      <div class="link-desc">정책자금 융자</div>
+    </div>
+    <div class="link-item">
+      <div class="link-name">신용보증기금</div>
+      <a href="https://www.kodit.co.kr" target="_blank">kodit.co.kr</a>
+      <div class="link-desc">퍼스트펭귄·Start-up NEST</div>
+    </div>
+    <div class="link-item">
+      <div class="link-name">한국언론진흥재단</div>
+      <a href="https://www.kpf.or.kr" target="_blank">kpf.or.kr</a>
+      <div class="link-desc">미디어 스타트업 지원</div>
+    </div>
+    <div class="link-item">
+      <div class="link-name">한국콘텐츠진흥원</div>
+      <a href="https://www.kocca.kr" target="_blank">kocca.kr</a>
+      <div class="link-desc">콘텐츠 제작지원</div>
+    </div>
+    <div class="link-item">
+      <div class="link-name">기술보증기금</div>
+      <a href="https://www.kibo.or.kr" target="_blank">kibo.or.kr</a>
+      <div class="link-desc">기술 기반 보증</div>
+    </div>
+    <div class="link-item">
+      <div class="link-name">중기부 콜센터</div>
+      <a href="tel:1357">☎ 1357</a>
+      <div class="link-desc">국번 없이, 전체 사업 문의</div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<footer>
+  <p>언니픽 정부 지원사업 조사 보고서 · 작성일 2026.04.25 · 대외비 · 내부 보고용</p>
+  <p style="margin-top:6px">본 자료의 지원 금액·일정은 연도별 공고에 따라 변동될 수 있으므로 신청 전 공식 공고문을 반드시 확인하세요.</p>
+</footer>
+
+<!-- 인쇄 버튼 -->
+<button class="print-btn no-print" onclick="window.print()">
+  🖨️ 인쇄 / PDF 저장
+</button>
+
+</body>
+</html>
