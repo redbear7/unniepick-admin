@@ -542,7 +542,7 @@ export default function HomePage() {
                   { name:'성산구',    landmark:'NC파크',        lat:35.2229, lng:128.6827 },
                   { name:'마산합포구', landmark:'마산어시장',    lat:35.1946, lng:128.5688 },
                   { name:'마산회원구', landmark:'마산역',        lat:35.2065, lng:128.5746 },
-                  { name:'진해구',    landmark:'경화역 벚꽃거리', lat:35.1487, lng:128.6672 },
+                  { name:'진해구',    landmark:'경화역벚꽃길', lat:35.1487, lng:128.6672 },
                 ].map(r => (
                   <div key={r.name} onClick={() => selectRegion(r.name, r.lat, r.lng)}
                     style={{ padding:'9px 14px', cursor:'pointer', transition:'background .1s' }}
