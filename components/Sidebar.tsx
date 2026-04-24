@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
@@ -8,6 +8,7 @@ import {
   LayoutDashboard, Store, FileText, Music, Ticket,
   Users, LogOut, ChevronRight, ScrollText, MapPin, PlaySquare, Zap, Map, ListMusic, Tag, Building2, Megaphone, Film, Video, KeyRound, Bell,
   GripVertical, Pencil, Check, X, Settings, ImagePlus, PanelBottom, ClipboardList, UtensilsCrossed, BarChart3, Search, BookOpen, Sparkles, Brain, Gift,
+  FolderInput,
 } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 import {
@@ -124,12 +125,10 @@ function loadGroups(): NavGroup[] {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULT_GROUPS;
     const saved = JSON.parse(raw) as NavGroup[];
-    // Merge: keep saved order but ensure all default items exist
     const allDefaultItems = DEFAULT_GROUPS.flatMap(g => g.items);
     const savedItemIds = saved.flatMap(g => g.items.map(i => i.id));
     const missing = allDefaultItems.filter(i => !savedItemIds.includes(i.id));
     if (missing.length > 0) {
-      // append missing to their original group
       const result = saved.map(g => {
         const origGroup = DEFAULT_GROUPS.find(dg => dg.id === g.id);
         if (!origGroup) return g;
@@ -145,6 +144,57 @@ function loadGroups(): NavGroup[] {
 }
 
 /* ------------------------------------------------------------------ */
+/* Move-to-category Popover                                             */
+/* ------------------------------------------------------------------ */
+
+function MoveCategoryPopover({
+  item,
+  groups,
+  currentGroupId,
+  onMove,
+  onClose,
+}: {
+  item: NavItem;
+  groups: NavGroup[];
+  currentGroupId: string;
+  onMove: (targetGroupId: string) => void;
+  onClose: () => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  // 외부 클릭 시 닫기
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [onClose]);
+
+  const otherGroups = groups.filter(g => g.id !== currentGroupId);
+
+  return (
+    <div
+      ref={ref}
+      className="absolute left-full top-0 ml-1 z-50 bg-sidebar border border-border-subtle rounded-xl shadow-xl py-1 min-w-[130px]"
+    >
+      <p className="px-3 py-1.5 text-[10px] font-semibold text-muted uppercase tracking-wider border-b border-border-subtle mb-1">
+        카테고리 이동
+      </p>
+      {otherGroups.map(g => (
+        <button
+          key={g.id}
+          onClick={() => { onMove(g.id); onClose(); }}
+          className="w-full text-left px-3 py-2 text-xs text-tertiary hover:text-primary hover:bg-card transition-colors"
+        >
+          {g.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /* SortableNavItem                                                      */
 /* ------------------------------------------------------------------ */
 
@@ -152,10 +202,20 @@ function SortableNavItem({
   item,
   isActive,
   editMode,
+  currentGroupId,
+  groups,
+  onMove,
+  moveOpenId,
+  setMoveOpenId,
 }: {
   item: NavItem;
   isActive: boolean;
   editMode: boolean;
+  currentGroupId: string;
+  groups: NavGroup[];
+  onMove: (itemId: string, targetGroupId: string) => void;
+  moveOpenId: string | null;
+  setMoveOpenId: (id: string | null) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: item.id });
@@ -168,11 +228,13 @@ function SortableNavItem({
     opacity: isDragging ? 0 : 1,
   };
 
+  const isMoveOpen = moveOpenId === item.id;
+
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-1 transition ${
+      className={`relative flex items-center gap-1 transition ${
         isActive
           ? 'bg-[#FF6F0F]/20 border-l-2 border-[#FF6F0F] rounded-r-lg'
           : 'rounded-lg hover:bg-card'
@@ -197,6 +259,33 @@ function SortableNavItem({
         <span className="flex-1 truncate">{item.label}</span>
         {isActive && !editMode && <ChevronRight size={12} />}
       </Link>
+
+      {/* 카테고리 이동 버튼 */}
+      {editMode && (
+        <div className="relative shrink-0 pr-1">
+          <button
+            onClick={() => setMoveOpenId(isMoveOpen ? null : item.id)}
+            title="카테고리 이동"
+            className={`p-1.5 rounded-md transition-colors ${
+              isMoveOpen
+                ? 'bg-[#FF6F0F]/20 text-[#FF6F0F]'
+                : 'text-muted hover:text-primary hover:bg-card'
+            }`}
+          >
+            <FolderInput size={12} />
+          </button>
+
+          {isMoveOpen && (
+            <MoveCategoryPopover
+              item={item}
+              groups={groups}
+              currentGroupId={currentGroupId}
+              onMove={(targetGroupId) => onMove(item.id, targetGroupId)}
+              onClose={() => setMoveOpenId(null)}
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -209,17 +298,17 @@ export default function Sidebar() {
   const pathname = usePathname();
   const router   = useRouter();
 
-  const [groups,       setGroups]       = useState<NavGroup[]>(DEFAULT_GROUPS);
-  const [editMode,     setEditMode]     = useState(false);
-  const [preEditSnap,  setPreEditSnap]  = useState<NavGroup[] | null>(null);
+  const [groups,         setGroups]         = useState<NavGroup[]>(DEFAULT_GROUPS);
+  const [editMode,       setEditMode]       = useState(false);
+  const [preEditSnap,    setPreEditSnap]    = useState<NavGroup[] | null>(null);
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [editingLabel,   setEditingLabel]   = useState('');
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const [userName, setUserName] = useState<string>('');
+  const [activeId,       setActiveId]       = useState<string | null>(null);
+  const [moveOpenId,     setMoveOpenId]     = useState<string | null>(null);
+  const [userName,       setUserName]       = useState<string>('');
 
   useEffect(() => { setGroups(loadGroups()); }, []);
 
-  // 현재 로그인 유저 이름 조회
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(async ({ data }) => {
@@ -232,6 +321,11 @@ export default function Sidebar() {
       if (row?.name) setUserName(row.name);
     });
   }, []);
+
+  // 편집 모드 종료 시 이동 팝오버 닫기
+  useEffect(() => {
+    if (!editMode) setMoveOpenId(null);
+  }, [editMode]);
 
   const saveGroups = (next: NavGroup[]) => {
     setGroups(next);
@@ -251,12 +345,12 @@ export default function Sidebar() {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  /* ---- Find which group contains an itemId ---- */
   const findGroupOf = (itemId: string) =>
     groups.find(g => g.items.some(i => i.id === itemId));
 
   const handleDragStart = (e: DragStartEvent) => {
     setActiveId(String(e.active.id));
+    setMoveOpenId(null);
   };
 
   const handleDragEnd = (e: DragEndEvent) => {
@@ -270,22 +364,39 @@ export default function Sidebar() {
 
     const next = groups.map(g => {
       if (g.id === srcGroup.id && g.id === dstGroup.id) {
-        // same group — reorder
         const oldIdx = g.items.findIndex(i => i.id === active.id);
         const newIdx = g.items.findIndex(i => i.id === over.id);
         return { ...g, items: arrayMove(g.items, oldIdx, newIdx) };
       }
       if (g.id === srcGroup.id) {
-        // remove from source
         return { ...g, items: g.items.filter(i => i.id !== active.id) };
       }
       if (g.id === dstGroup.id) {
-        // insert into dest at over's position
         const movedItem = srcGroup.items.find(i => i.id === active.id)!;
         const overIdx   = g.items.findIndex(i => i.id === over.id);
         const newItems  = [...g.items];
         newItems.splice(overIdx, 0, movedItem);
         return { ...g, items: newItems };
+      }
+      return g;
+    });
+    saveGroups(next);
+  };
+
+  /* ---- Move item to another category ---- */
+  const handleMoveToCategory = (itemId: string, targetGroupId: string) => {
+    const srcGroup = findGroupOf(itemId);
+    if (!srcGroup || srcGroup.id === targetGroupId) return;
+
+    const movedItem = srcGroup.items.find(i => i.id === itemId);
+    if (!movedItem) return;
+
+    const next = groups.map(g => {
+      if (g.id === srcGroup.id) {
+        return { ...g, items: g.items.filter(i => i.id !== itemId) };
+      }
+      if (g.id === targetGroupId) {
+        return { ...g, items: [...g.items, movedItem] };
       }
       return g;
     });
@@ -313,7 +424,6 @@ export default function Sidebar() {
     setGroups(DEFAULT_GROUPS);
   };
 
-  /* ---- Active item id (for overlay) ---- */
   const activeItem = activeId
     ? groups.flatMap(g => g.items).find(i => i.id === activeId)
     : null;
@@ -345,32 +455,35 @@ export default function Sidebar() {
         >
           {groups.map(group => (
             <div key={group.id}>
-              {/* Category label */}
-              <div className="flex items-center gap-1 px-2 mb-1 h-5">
+              {/* 카테고리 헤더 */}
+              <div className="flex items-center gap-1 px-2 mb-1 h-6">
                 {editMode && editingGroupId === group.id ? (
+                  /* 이름 편집 인풋 */
                   <div className="flex items-center gap-1 flex-1">
                     <input
                       autoFocus
                       value={editingLabel}
                       onChange={e => setEditingLabel(e.target.value)}
                       onKeyDown={e => {
-                        if (e.key === 'Enter') commitRename();
+                        if (e.key === 'Enter')  commitRename();
                         if (e.key === 'Escape') setEditingGroupId(null);
                       }}
                       className="flex-1 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-card border border-[#FF6F0F] rounded outline-none text-primary"
                     />
-                    <button onClick={commitRename} className="text-green-500 hover:text-green-400"><Check size={11} /></button>
-                    <button onClick={() => setEditingGroupId(null)} className="text-muted hover:text-primary"><X size={11} /></button>
+                    <button onClick={commitRename}              className="text-green-500 hover:text-green-400 transition-colors"><Check size={11} /></button>
+                    <button onClick={() => setEditingGroupId(null)} className="text-muted hover:text-primary transition-colors"><X size={11} /></button>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-1 flex-1 group/cat">
-                    <p className="text-[10px] font-semibold text-muted uppercase tracking-wider flex-1">
+                  /* 카테고리 이름 + 편집 모드 시 연필 아이콘 항상 표시 */
+                  <div className="flex items-center gap-1.5 flex-1">
+                    <p className="text-[10px] font-semibold text-muted uppercase tracking-wider flex-1 truncate">
                       {group.label}
                     </p>
                     {editMode && (
                       <button
                         onClick={() => startRename(group)}
-                        className="opacity-0 group-hover/cat:opacity-100 text-muted hover:text-primary transition"
+                        title="카테고리 이름 수정"
+                        className="shrink-0 text-muted hover:text-[#FF6F0F] transition-colors"
                       >
                         <Pencil size={10} />
                       </button>
@@ -379,7 +492,7 @@ export default function Sidebar() {
                 )}
               </div>
 
-              {/* Items */}
+              {/* 아이템 목록 */}
               <div className="space-y-0.5">
                 <SortableContext
                   items={group.items.map(i => i.id)}
@@ -395,6 +508,11 @@ export default function Sidebar() {
                         item={item}
                         isActive={isActive}
                         editMode={editMode}
+                        currentGroupId={group.id}
+                        groups={groups}
+                        onMove={handleMoveToCategory}
+                        moveOpenId={moveOpenId}
+                        setMoveOpenId={setMoveOpenId}
                       />
                     );
                   })}
@@ -403,7 +521,7 @@ export default function Sidebar() {
             </div>
           ))}
 
-          {/* Drag overlay */}
+          {/* 드래그 오버레이 */}
           <DragOverlay>
             {activeItem ? (
               <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-card border border-[#FF6F0F]/40 shadow-lg text-sm font-medium text-primary opacity-90">
