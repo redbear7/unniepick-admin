@@ -183,6 +183,63 @@
     }
     .se-chip:hover { border-color: var(--orange); color: var(--orange); background: var(--orange-soft); }
 
+    /* 검색 드롭다운 */
+    .search-block-inner { position: relative; }
+    .search-dropdown {
+      position: absolute; top: calc(100% + 10px); left: 24px; right: 24px;
+      background: var(--white);
+      border: 1.5px solid var(--border2);
+      border-radius: var(--r-xl);
+      box-shadow: var(--sh-lg);
+      z-index: 500; overflow: hidden;
+      display: none;
+    }
+    .search-dropdown.open { display: block; }
+
+    /* 탭 */
+    .sd-tabs {
+      display: flex; border-bottom: 1px solid var(--border);
+    }
+    .sd-tab {
+      flex: 1; padding: 14px 0;
+      font-size: 14px; font-weight: 700; color: var(--t4);
+      background: none; cursor: pointer; transition: .12s;
+      border-bottom: 2.5px solid transparent; margin-bottom: -1px;
+    }
+    .sd-tab.active { color: var(--purple); border-bottom-color: var(--purple); }
+
+    /* 키워드 목록 */
+    .sd-list { padding: 8px 0; }
+    .sd-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 13px 24px; cursor: pointer; transition: background .1s;
+    }
+    .sd-item:hover { background: var(--bg); }
+    .sd-item-icon {
+      width: 34px; height: 34px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 17px; flex-shrink: 0; background: var(--bg);
+    }
+    .sd-item-text { font-size: 15px; color: var(--t2); font-weight: 500; }
+
+    /* 빈 상태 (최근 검색 없을 때) */
+    .sd-empty {
+      padding: 36px 24px; text-align: center;
+      color: var(--t4); font-size: 13px; line-height: 1.8;
+    }
+
+    /* 닫기 푸터 */
+    .sd-footer {
+      display: flex; justify-content: flex-end;
+      padding: 10px 18px; border-top: 1px solid var(--border);
+    }
+    .sd-close {
+      font-size: 13px; font-weight: 700; color: var(--t4);
+      background: none; cursor: pointer; padding: 4px 8px;
+      transition: color .12s;
+    }
+    .sd-close:hover { color: var(--t1); }
+
     /* 카테고리 칩 바 */
     .cat-bar {
       flex-shrink: 0; background: var(--white);
@@ -660,7 +717,9 @@
         <div class="sb-icon">🔍</div>
         <input
           class="sb-input" type="text" id="search-input"
-          placeholder="가게 이름, 메뉴, 상황 검색... (예: 상남동 카페)"
+          placeholder="어떤 혜택을 찾고 있나요?"
+          onfocus="openSearchDropdown()"
+          autocomplete="off"
         />
         <button type="button" class="sb-ai" onclick="openAiPanel()">
           <span class="sb-ai-icon">✨</span>
@@ -678,6 +737,24 @@
         <button class="se-chip" onclick="setAndSearch('가족외식 고기집')">가족외식 고기집</button>
         <button class="se-chip" onclick="setAndSearch('타임세일 점심')">타임세일 점심</button>
         <button class="se-chip" onclick="setAndSearch('스터디카페')">스터디카페</button>
+      </div>
+
+      <!-- 검색 드롭다운 -->
+      <div class="search-dropdown" id="search-dropdown">
+        <div class="sd-tabs">
+          <button class="sd-tab active" onclick="switchSearchTab('popular', this)">인기 키워드</button>
+          <button class="sd-tab"        onclick="switchSearchTab('recent',  this)">최근 검색</button>
+        </div>
+        <div id="sd-popular" class="sd-list"></div>
+        <div id="sd-recent"  style="display:none;">
+          <div class="sd-empty">
+            최근 검색한 가게나 키워드가 없어요.<br>
+            지금 바로 근처 혜택을 검색해보세요 🔍
+          </div>
+        </div>
+        <div class="sd-footer">
+          <button class="sd-close" onclick="closeSearchDropdown()">닫기</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1450,6 +1527,86 @@ function showToast(msg) {
 }
 
 function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ════════════════════════════════════════════════════════════════
+// 검색 드롭다운 — 랜덤 픽 취향
+// ════════════════════════════════════════════════════════════════
+const PICK_POOL = [
+  { icon: '☕', text: '아메리카노 500원 할인' },
+  { icon: '✂️', text: '헤어샵 할인쿠폰' },
+  { icon: '🍽️', text: '점심 타임세일 맛집' },
+  { icon: '💅', text: '젤네일 할인' },
+  { icon: '💆', text: '마사지 스파 쿠폰' },
+  { icon: '🧋', text: '버블티 2+1' },
+  { icon: '🍕', text: '저녁 피자 20% 할인' },
+  { icon: '📚', text: '스터디카페 1시간 무료' },
+  { icon: '🍜', text: '혼밥 국수 가성비' },
+  { icon: '💰', text: '1만원 이하 가성비 점심' },
+  { icon: '🌸', text: '진해 벚꽃 분위기 카페' },
+  { icon: '💪', text: '헬스장 1일 체험 무료' },
+  { icon: '🐾', text: '반려견 동반 카페' },
+  { icon: '🍱', text: '런치 도시락 세트 할인' },
+  { icon: '🍣', text: '회식 고기집 단체 할인' },
+  { icon: '🎯', text: '상남동 데이트 코스' },
+  { icon: '🧖', text: '왁싱 샵 신규 할인' },
+  { icon: '🥐', text: '오전 베이커리 1+1' },
+  { icon: '🍦', text: '디저트 카페 스탬프' },
+  { icon: '🏊', text: '수영장 첫 방문 할인' },
+];
+
+function shuffled(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function openSearchDropdown() {
+  const dd = document.getElementById('search-dropdown');
+  if (dd.classList.contains('open')) return;
+
+  // 랜덤 6개 선택
+  const picks = shuffled(PICK_POOL).slice(0, 6);
+  const list = document.getElementById('sd-popular');
+  list.innerHTML = picks.map(p => `
+    <div class="sd-item" onclick="pickKeyword('${p.text}')">
+      <div class="sd-item-icon">${p.icon}</div>
+      <div class="sd-item-text">${p.text}</div>
+    </div>
+  `).join('');
+
+  dd.classList.add('open');
+}
+
+function closeSearchDropdown() {
+  document.getElementById('search-dropdown').classList.remove('open');
+}
+
+function pickKeyword(text) {
+  document.getElementById('search-input').value = text;
+  closeSearchDropdown();
+  runAiSearch(text);
+}
+
+function switchSearchTab(tab, el) {
+  document.querySelectorAll('.sd-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('sd-popular').style.display = tab === 'popular' ? 'block' : 'none';
+  document.getElementById('sd-recent').style.display  = tab === 'recent'  ? 'block' : 'none';
+}
+
+// 드롭다운 외부 클릭 시 닫기 (search-bar, loc-dropdown 제외)
+document.addEventListener('click', e => {
+  const dd = document.getElementById('search-dropdown');
+  if (dd && dd.classList.contains('open')) {
+    if (!e.target.closest('#search-dropdown') &&
+        !e.target.closest('#search-form')) {
+      closeSearchDropdown();
+    }
+  }
+});
 
 // ════════════════════════════════════════════════════════════════
 // 초기화
