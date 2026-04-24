@@ -410,7 +410,7 @@ export default function HomePage() {
             </div>
 
           <div style={{ width:440, position:'relative' }}>
-            <form onSubmit={onSubmit}
+            <form id="search-form" onSubmit={onSubmit}
               style={{ display:'flex', alignItems:'center', background:'#fff',
                 border:`1.5px solid ${searchDropOpen ? OR : '#D1D5DB'}`,
                 borderRadius:100,
@@ -418,7 +418,7 @@ export default function HomePage() {
                 overflow:'visible', transition:'border-color .15s, box-shadow .15s' }}>
 
               {/* 위치 버튼 */}
-              <button type="button"
+              <button id="loc-btn" type="button"
                 onClick={() => setLocDropOpen(v => !v)}
                 style={{ display:'flex', alignItems:'center', gap:4, padding:'0 12px', height:40,
                   flexShrink:0,
@@ -461,7 +461,7 @@ export default function HomePage() {
 
             {/* ── 검색 드롭다운 ─────────────────────────────── */}
             {searchDropOpen && (
-              <div style={{ position:'absolute', top:'calc(100% + 8px)', left:0, right:0,
+              <div id="search-drop" style={{ position:'absolute', top:'calc(100% + 8px)', left:0, right:0,
                 background:'#fff', border:'1.5px solid #D1D5DB', borderRadius:20,
                 boxShadow:'0 8px 40px rgba(0,0,0,.14)', zIndex:500, overflow:'hidden' }}>
 
@@ -517,7 +517,7 @@ export default function HomePage() {
 
             {/* ── 위치 드롭다운 ────────────────────────────── */}
             {locDropOpen && (
-              <div style={{ position:'absolute', top:'calc(100% + 8px)', left:0, width:260,
+              <div id="loc-drop" style={{ position:'absolute', top:'calc(100% + 8px)', left:0, width:260,
                 background:'#fff', border:'1.5px solid #D1D5DB', borderRadius:20,
                 boxShadow:'0 8px 40px rgba(0,0,0,.14)', zIndex:500, overflow:'hidden' }}>
                 <div style={{ padding:'12px 14px', borderBottom:'1px solid #E5E7EB',
