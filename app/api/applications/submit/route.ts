@@ -4,9 +4,12 @@
  * 점주 가게 등록 신청 제출 (공개 엔드포인트 — 로그인 불필요)
  * store_applications 테이블에 'pending' 상태로 저장
  * coupon_draft JSON 필드에 첫 번째 쿠폰 초안 포함
+ *
+ * Response: { ok: true, id: string, review_token: string }
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { sendSms } from '@/lib/sms';
 
 function adminClient() {
   return createClient(
@@ -16,23 +19,33 @@ function adminClient() {
 }
 
 interface CouponDraft {
-  discount_type:  'free_item' | 'percent' | 'amount';
-  title:          string;
-  discount_value: number;
-  free_item_name: string | null;
-  expires_at:     string | null;
-  total_quantity: number;
+  discount_type:    'free_item' | 'percent' | 'amount';
+  title:            string;
+  discount_value:   number;
+  free_item_name:   string | null;
+  expires_at:       string | null;
+  total_quantity:   number;
+  target_segment?:  string | null;
+  min_visit_count?: number | null;
+  min_people?:      number | null;
+  min_order_amount?: number | null;
+  time_start?:      string | null;
+  time_end?:        string | null;
+  stackable?:       boolean;
+  per_person_limit?: boolean;
 }
 
 interface SubmitBody {
-  store_name:     string;
-  category:       string;
-  address:        string;
+  store_name:      string;
+  category:        string;
+  address:         string;
   address_detail?: string | null;
-  phone?:         string | null;
-  owner_name:     string;
-  owner_phone:    string;
-  coupon_draft:   CouponDraft;
+  phone?:          string | null;
+  latitude?:       number | null;
+  longitude?:      number | null;
+  owner_name:      string;
+  owner_phone:     string;
+  coupon_draft:    CouponDraft;
 }
 
 export async function POST(req: NextRequest) {
@@ -66,12 +79,14 @@ export async function POST(req: NextRequest) {
       address:        body.address.trim(),
       address_detail: body.address_detail ?? null,
       phone:          body.phone ?? null,
+      latitude:       body.latitude ?? null,
+      longitude:      body.longitude ?? null,
       owner_name:     body.owner_name.trim(),
       owner_phone:    body.owner_phone.trim(),
       coupon_draft:   body.coupon_draft,
       status:         'pending',
     })
-    .select('id')
+    .select('id, review_token')
     .single();
 
   if (error) {
@@ -79,5 +94,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `저장 실패: ${error.message}` }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true, id: data.id });
+  const reviewToken: string = data.review_token;
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://unniepick.com';
+  const statusUrl = `${siteUrl}/apply/status/${reviewToken}`;
+
+  // ── SMS 발송 (SOLAPI 설정된 경우만) ────────────────────────────
+  try {
+    await sendSms({
+      to:   body.owner_phone!.trim(),
+      text: `[언니픽] ${body.store_name} 가게 등록 신청이 완료됐어요!\n영업일 1~2일 내 심사 후 안내드릴게요.\n\n신청 내역 확인:\n${statusUrl}`,
+    });
+  } catch (smsErr) {
+    // SMS 실패해도 신청은 완료 처리
+    console.warn('[applications/submit] SMS 발송 실패 (무시):', (smsErr as Error).message);
+  }
+
+  return NextResponse.json({ ok: true, id: data.id, review_token: reviewToken });
 }

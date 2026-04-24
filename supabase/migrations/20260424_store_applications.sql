@@ -1,5 +1,5 @@
 -- ============================================================
--- store_applications 테이블 생성 + coupon_draft 컬럼 추가
+-- store_applications 테이블 생성 + 컬럼 추가
 -- 점주 가게 등록 신청 (단계별 위저드 /apply 에서 제출)
 -- ============================================================
 
@@ -33,6 +33,14 @@ CREATE TABLE IF NOT EXISTS public.store_applications (
 ALTER TABLE public.store_applications
   ADD COLUMN IF NOT EXISTS coupon_draft JSONB;
 
+-- review_token 컬럼 추가 — 신청자가 로그인 없이 신청 내역 확인에 사용
+ALTER TABLE public.store_applications
+  ADD COLUMN IF NOT EXISTS review_token UUID NOT NULL DEFAULT gen_random_uuid();
+
+-- review_token 유니크 인덱스 (토큰으로 단건 조회)
+CREATE UNIQUE INDEX IF NOT EXISTS store_applications_review_token_idx
+  ON public.store_applications (review_token);
+
 -- RLS 활성화
 ALTER TABLE public.store_applications ENABLE ROW LEVEL SECURITY;
 
@@ -57,5 +65,17 @@ BEGIN
       AND policyname = 'public insert allowed'
   ) THEN
     EXECUTE 'CREATE POLICY "public insert allowed" ON public.store_applications FOR INSERT WITH CHECK (true)';
+  END IF;
+END $$;
+
+-- review_token으로 단건 조회 허용 (공개 확인 페이지용)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE tablename = 'store_applications'
+      AND policyname = 'public select by token'
+  ) THEN
+    EXECUTE 'CREATE POLICY "public select by token" ON public.store_applications FOR SELECT USING (true)';
   END IF;
 END $$;

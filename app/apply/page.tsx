@@ -14,6 +14,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Script from 'next/script';
 import {
   ChevronLeft, Check, MapPin, Loader2, Percent, CircleDollarSign,
@@ -146,6 +147,7 @@ const INITIAL_FORM: FormData = {
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function ApplyPage() {
+  const router = useRouter();
   const [step,       setStep]       = useState(0);
   const [form,       setForm]       = useState<FormData>({ ...INITIAL_FORM, couponExpiry: defaultExpiry() });
   const [submitting, setSubmitting] = useState(false);
@@ -302,7 +304,13 @@ export default function ApplyPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? '제출에 실패했습니다');
-      setDone(true);
+
+      // review_token 이 있으면 완료 페이지로 이동, 없으면 인라인 done 상태
+      if (data.review_token) {
+        router.push(`/apply/complete?token=${data.review_token}`);
+      } else {
+        setDone(true);
+      }
     } catch (e: unknown) {
       setError((e as Error).message ?? '오류가 발생했습니다');
     } finally { setSubmitting(false); }
