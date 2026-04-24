@@ -108,49 +108,44 @@
     .search-block {
       flex-shrink: 0; background: var(--white);
       border-bottom: 1px solid var(--border);
-      padding: 28px 0 20px;
+      padding: 16px 0 14px;
     }
     .search-block-inner {
-      max-width: 860px; margin: 0 auto; padding: 0 24px;
+      max-width: 900px; margin: 0 auto; padding: 0 24px;
     }
 
-    /* 위치 헤딩 */
-    .loc-heading {
-      display: flex; align-items: center; justify-content: center;
-      gap: 0; font-size: 28px; font-weight: 900;
-      color: var(--t1); letter-spacing: -.5px;
-      margin-bottom: 20px; text-align: center;
-      flex-wrap: wrap; gap: 6px;
-    }
-    .loc-btn {
-      display: inline-flex; align-items: center; gap: 4px;
-      color: var(--t1); font-weight: 900; font-size: 28px;
-      padding: 2px 6px; border-radius: 6px;
-      cursor: pointer; border-bottom: 2px dashed var(--border2);
-      transition: .12s; background: none;
-      font-family: inherit; letter-spacing: -.5px;
-    }
-    .loc-btn:hover { border-bottom-color: var(--orange); color: var(--orange); }
-    .loc-btn .arrow { font-size: 18px; color: var(--t3); margin-left: 2px; }
-    .loc-suffix { color: var(--t1); font-size: 28px; font-weight: 900; letter-spacing: -.5px; }
-
-    /* 검색창 */
+    /* 검색창 (위치 버튼 내장) */
     .search-bar {
       display: flex; align-items: center;
       background: var(--white);
       border: 2px solid var(--border2); border-radius: 100px;
       box-shadow: var(--sh-sm);
-      overflow: hidden;
+      overflow: visible; position: relative;
       transition: border-color .15s, box-shadow .15s;
     }
     .search-bar:focus-within {
       border-color: var(--orange);
       box-shadow: 0 4px 20px rgba(255,111,15,.15);
     }
+
+    /* 위치 버튼 — 검색창 왼쪽 내장 */
+    .loc-btn {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 0 16px; height: 52px; flex-shrink: 0;
+      border-right: 1px solid var(--border2);
+      font-size: 14px; font-weight: 700; color: var(--t2);
+      cursor: pointer; background: none; border-radius: 0;
+      font-family: inherit; white-space: nowrap;
+      transition: color .12s;
+      border-top: none; border-bottom: none; border-left: none;
+    }
+    .loc-btn:hover { color: var(--orange); }
+    .loc-btn .arrow { font-size: 11px; color: var(--t4); margin-left: 1px; }
+
     .sb-icon {
-      width: 52px; height: 52px; flex-shrink: 0;
+      width: 44px; height: 52px; flex-shrink: 0;
       display: flex; align-items: center; justify-content: center;
-      color: var(--t4); font-size: 18px;
+      color: var(--t4); font-size: 17px;
     }
     .sb-input {
       flex: 1; height: 52px; padding: 0 4px;
@@ -622,8 +617,8 @@
 
     /* ── 반응형 ─────────────────────────────────────────── */
     @media (max-width: 768px) {
-      .loc-heading { font-size: 20px; }
-      .loc-btn, .loc-suffix { font-size: 20px; }
+      .loc-btn { font-size: 13px; padding: 0 10px; }
+      .sb-input { font-size: 14px; }
       .gnb-nav a[data-page="stamps"],
       .gnb-nav a[data-page="owner"] { display: none; }
       .stores-layout { grid-template-columns: 1fr; }
@@ -663,17 +658,12 @@
   <div class="search-block">
     <div class="search-block-inner">
 
-      <!-- 위치 헤딩 -->
-      <div class="loc-heading">
-        <button class="loc-btn" id="loc-btn" onclick="toggleLocDropdown()">
+      <!-- 검색창 (위치 버튼 내장) -->
+      <form class="search-bar" id="search-form" onsubmit="doSearch(event)">
+        <button type="button" class="loc-btn" id="loc-btn" onclick="toggleLocDropdown()">
           <span id="loc-text">📍 위치 확인 중...</span>
           <span class="arrow">▾</span>
         </button>
-        <span class="loc-suffix">에서 어떤 혜택이 필요하세요?</span>
-      </div>
-
-      <!-- 검색창 -->
-      <form class="search-bar" id="search-form" onsubmit="doSearch(event)">
         <div class="sb-icon">🔍</div>
         <input
           class="sb-input" type="text" id="search-input"
