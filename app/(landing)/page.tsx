@@ -538,18 +538,18 @@ export default function HomePage() {
                   </div>
                 </div>
                 {[
-                  { name:'의창구',    lat:35.2399, lng:128.6909 },
-                  { name:'성산구',    lat:35.2296, lng:128.6862 },
-                  { name:'마산합포구', lat:35.1999, lng:128.5747 },
-                  { name:'마산회원구', lat:35.2148, lng:128.5832 },
-                  { name:'진해구',    lat:35.1496, lng:128.7082 },
+                  { name:'의창구',    landmark:'창원시청',      lat:35.2279, lng:128.6811 },
+                  { name:'성산구',    landmark:'NC파크',        lat:35.2229, lng:128.6827 },
+                  { name:'마산합포구', landmark:'마산어시장',    lat:35.1946, lng:128.5688 },
+                  { name:'마산회원구', landmark:'마산역',        lat:35.2065, lng:128.5746 },
+                  { name:'진해구',    landmark:'경화역 벚꽃거리', lat:35.1487, lng:128.6672 },
                 ].map(r => (
                   <div key={r.name} onClick={() => selectRegion(r.name, r.lat, r.lng)}
-                    style={{ padding:'9px 14px', fontSize:12, fontWeight:600, color:'#374151',
-                      cursor:'pointer', transition:'background .1s' }}
+                    style={{ padding:'9px 14px', cursor:'pointer', transition:'background .1s' }}
                     onMouseEnter={e => (e.currentTarget.style.background = '#F9FAFB')}
                     onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                    {r.name}
+                    <div style={{ fontSize:12, fontWeight:700, color:'#374151' }}>{r.name}</div>
+                    <div style={{ fontSize:10, color:'#9CA3AF', marginTop:1 }}>📍 {r.landmark}</div>
                   </div>
                 ))}
               </div>
