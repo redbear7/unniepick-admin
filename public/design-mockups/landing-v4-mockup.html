@@ -183,45 +183,38 @@
     }
     .se-chip:hover { border-color: var(--orange); color: var(--orange); background: var(--orange-soft); }
 
-    /* 카테고리 그리드 */
+    /* 카테고리 칩 바 */
     .cat-bar {
       flex-shrink: 0; background: var(--white);
       border-bottom: 1px solid var(--border);
-      padding: 14px 0;
+      padding: 10px 0;
     }
     .cat-inner {
       max-width: 1200px; margin: 0 auto; padding: 0 24px;
-      display: flex; align-items: flex-start;
-      gap: 0; overflow-x: auto; scrollbar-width: none;
+      display: flex; align-items: center;
+      gap: 6px; overflow-x: auto; scrollbar-width: none;
     }
     .cat-inner::-webkit-scrollbar { display: none; }
     .cat-item {
-      display: flex; flex-direction: column; align-items: center; gap: 7px;
-      padding: 8px 16px; border-radius: var(--r-md);
-      cursor: pointer; transition: .15s; flex-shrink: 0; min-width: 72px;
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 7px 15px; border-radius: 100px;
+      border: 1.5px solid var(--border);
+      background: var(--white);
+      font-size: 13px; font-weight: 600; color: var(--t2);
+      cursor: pointer; transition: .15s; flex-shrink: 0;
+      white-space: nowrap;
     }
-    .cat-item:hover { background: var(--orange-soft); }
-    .cat-item.active { background: var(--orange-soft); }
-    .cat-item.active .cat-name { color: var(--orange); font-weight: 800; }
-    .cat-ico {
-      width: 48px; height: 48px; border-radius: 14px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 24px; transition: .15s;
+    .cat-item:hover {
+      border-color: var(--orange-mid);
+      color: var(--orange);
+      background: var(--orange-soft);
     }
-    .cat-item:hover .cat-ico { transform: scale(1.1); }
-    .cat-name { font-size: 12px; font-weight: 600; color: var(--t2); text-align: center; }
-
-    /* 카테고리 색상 */
-    .c-all    { background: #F0F0FF; }
-    .c-cafe   { background: #FFF4E8; }
-    .c-food   { background: #FFF0F0; }
-    .c-snack  { background: #FFF8E8; }
-    .c-beauty { background: #FFF0FA; }
-    .c-health { background: #F0FFF5; }
-    .c-fit    { background: #F0F4FF; }
-    .c-shop   { background: #F5F0FF; }
-    .c-pet    { background: #FFFBE8; }
-    .c-etc    { background: #F5F5F5; }
+    .cat-item.active {
+      background: var(--orange);
+      border-color: var(--orange);
+      color: #fff;
+      font-weight: 700;
+    }
 
     /* 지도 영역 */
     .map-wrap {
@@ -677,7 +670,7 @@
 
       <!-- 예시 쿼리 -->
       <div class="search-examples">
-        <span class="se-label">예시 ·</span>
+        <span class="se-label">언니의 픽 취향 ·</span>
         <button class="se-chip" onclick="setAndSearch('상남동 카페')">상남동 카페</button>
         <button class="se-chip" onclick="setAndSearch('혼밥 매운거')">혼밥 매운거</button>
         <button class="se-chip" onclick="setAndSearch('헤어샵 할인')">헤어샵 할인</button>
@@ -689,49 +682,20 @@
     </div>
   </div>
 
-  <!-- 카테고리 바 -->
+  <!-- 카테고리 칩 바 -->
   <div class="cat-bar">
     <div class="cat-inner">
-      <div class="cat-item active" onclick="filterCat('all', this)">
-        <div class="cat-ico c-all">🗺️</div>
-        <div class="cat-name">전체</div>
-      </div>
-      <div class="cat-item" onclick="filterCat('cafe', this)">
-        <div class="cat-ico c-cafe">☕</div>
-        <div class="cat-name">카페</div>
-      </div>
-      <div class="cat-item" onclick="filterCat('food', this)">
-        <div class="cat-ico c-food">🍽️</div>
-        <div class="cat-name">음식점</div>
-      </div>
-      <div class="cat-item" onclick="filterCat('snack', this)">
-        <div class="cat-ico c-snack">🥢</div>
-        <div class="cat-name">분식·간식</div>
-      </div>
-      <div class="cat-item" onclick="filterCat('beauty', this)">
-        <div class="cat-ico c-beauty">💅</div>
-        <div class="cat-name">뷰티·미용</div>
-      </div>
-      <div class="cat-item" onclick="filterCat('health', this)">
-        <div class="cat-ico c-health">🏥</div>
-        <div class="cat-name">병원·건강</div>
-      </div>
-      <div class="cat-item" onclick="filterCat('fitness', this)">
-        <div class="cat-ico c-fit">💪</div>
-        <div class="cat-name">피트니스</div>
-      </div>
-      <div class="cat-item" onclick="filterCat('shop', this)">
-        <div class="cat-ico c-shop">🛍️</div>
-        <div class="cat-name">쇼핑</div>
-      </div>
-      <div class="cat-item" onclick="filterCat('pet', this)">
-        <div class="cat-ico c-pet">🐾</div>
-        <div class="cat-name">반려동물</div>
-      </div>
-      <div class="cat-item" onclick="filterCat('etc', this)">
-        <div class="cat-ico c-etc">✨</div>
-        <div class="cat-name">기타</div>
-      </div>
+      <div class="cat-item active" onclick="filterCat('all', this)">🗺️ 전체</div>
+      <div class="cat-item" onclick="filterCat('cafe', this)">☕ 카페</div>
+      <div class="cat-item" onclick="filterCat('food', this)">🍽️ 음식점</div>
+      <div class="cat-item" onclick="filterCat('snack', this)">🥢 분식·간식</div>
+      <div class="cat-item" onclick="filterCat('beauty', this)">💅 뷰티·미용</div>
+      <div class="cat-item" onclick="filterCat('health', this)">🏥 병원·건강</div>
+      <div class="cat-item" onclick="filterCat('fitness', this)">💪 피트니스</div>
+      <div class="cat-item" onclick="filterCat('shop', this)">🛍️ 쇼핑</div>
+      <div class="cat-item" onclick="filterCat('pet', this)">🐾 반려동물</div>
+      <div class="cat-item" onclick="filterCat('etc', this)">✨ 기타</div>
+      <div class="cat-item" onclick="filterCat('value', this)">💰 가성비픽</div>
     </div>
   </div>
 
