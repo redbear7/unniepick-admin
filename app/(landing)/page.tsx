@@ -352,11 +352,20 @@ export default function HomePage() {
   };
 
   /* ── 지역 직접 선택 ─────────────────────────────────── */
-  const selectRegion = (name: string, lat: number, lng: number) => {
+  const selectRegion = useCallback((name: string, lat: number, lng: number) => {
     setLocText('📍 ' + name);
-    moveMapTo(lat, lng);
     setLocDropOpen(false);
-  };
+    // 상태 업데이트 후 다음 프레임에서 지도 이동 (렌더 사이클 간섭 방지)
+    requestAnimationFrame(() => {
+      if (!window.kakao || !kakaoMapRef.current) {
+        initMap(lat, lng);
+        return;
+      }
+      const pos = new window.kakao.maps.LatLng(lat, lng);
+      kakaoMapRef.current.setCenter(pos);
+      kakaoMapRef.current.setLevel(5);
+    });
+  }, [initMap]);
 
   /* ──────────────────────────────────────────────────── */
   /* Render                                               */
