@@ -1,0 +1,386 @@
+/* ── CSS 변수 & 베이스 ──────────────────────────────────────── */
+.root {
+  --orange:      #FF6F0F;
+  --orange-dark: #E05F00;
+  --orange-soft: #FFF3EB;
+  --orange-mid:  #FFE0CC;
+  --white:       #FFFFFF;
+  --bg:          #F7F7F7;
+  --bg-card:     #FFFFFF;
+  --text-1:      #1A1A1A;
+  --text-2:      #444444;
+  --text-3:      #888888;
+  --border:      #E8E8E8;
+  --border-deep: #D0D0D0;
+  --green:       #0AC86E;
+  --blue:        #1A73E8;
+  --radius-sm:   8px;
+  --radius-md:   12px;
+  --radius-lg:   20px;
+  --radius-xl:   28px;
+  --shadow-sm:   0 1px 4px rgba(0,0,0,.07);
+  --shadow-md:   0 4px 16px rgba(0,0,0,.10);
+  --shadow-lg:   0 8px 32px rgba(0,0,0,.13);
+
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont,
+               'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+  background: var(--white);
+  color: var(--text-1);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+.root :global(*, *::before, *::after) { box-sizing: border-box; margin: 0; padding: 0; }
+.root :global(a)   { text-decoration: none; color: inherit; }
+.root :global(img) { display: block; max-width: 100%; }
+.root :global(ul)  { list-style: none; }
+
+/* ── 공통 래퍼 & 섹션 ──────────────────────────────────────── */
+.wrap        { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+.section     { padding: 80px 0; }
+.sectionGray { background: var(--bg); }
+.sectionDark { background: #111; color: #fff; }
+
+.sectionLabel {
+  display: inline-block;
+  font-size: 12px; font-weight: 700; letter-spacing: .06em;
+  color: var(--orange);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.sectionTitle {
+  font-size: 30px; font-weight: 800; line-height: 1.3;
+  color: var(--text-1); letter-spacing: -.4px;
+}
+.sectionSub {
+  margin-top: 10px; font-size: 15px;
+  color: var(--text-3); line-height: 1.7; max-width: 520px;
+}
+.sectionHead { text-align: center; margin-bottom: 52px; }
+.sectionHead .sectionSub { margin-left: auto; margin-right: auto; }
+
+/* ── 버튼 ────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-weight: 700; font-size: 14px;
+  padding: 13px 24px; border-radius: var(--radius-md);
+  border: none; cursor: pointer; transition: .15s;
+  white-space: nowrap;
+}
+.btnPrimary {
+  background: var(--orange); color: #fff;
+  box-shadow: 0 4px 16px rgba(255,111,15,.3);
+}
+.btnPrimary:hover { background: var(--orange-dark); transform: translateY(-1px); }
+.btnOutline {
+  background: #fff; color: var(--text-1);
+  border: 1.5px solid var(--border-deep);
+}
+.btnOutline:hover { border-color: var(--orange); color: var(--orange); }
+.btnLg     { padding: 16px 32px; font-size: 15px; border-radius: var(--radius-lg); }
+.btnSm     { padding: 9px 16px; font-size: 13px; }
+.btnGhost  { background: transparent; color: var(--orange); padding: 0; }
+
+/* ── ① HEADER ─────────────────────────────────────────────── */
+.header {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(255,255,255,.95); backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+}
+.headerInner {
+  display: flex; align-items: center; justify-content: space-between;
+  height: 64px; gap: 24px;
+}
+.logo {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 20px; font-weight: 900; color: var(--orange); letter-spacing: -.5px;
+}
+.logoIcon {
+  width: 32px; height: 32px; background: var(--orange);
+  border-radius: 8px; display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 16px;
+}
+.headerNav {
+  display: flex; align-items: center; gap: 2px;
+  flex: 1; padding: 0 24px;
+}
+.headerNav :global(a) {
+  padding: 6px 14px; border-radius: var(--radius-sm);
+  font-size: 14px; font-weight: 600; color: var(--text-2);
+  transition: .12s;
+}
+.headerNav :global(a:hover) { background: var(--bg); color: var(--text-1); }
+.headerNav :global(a.active) { color: var(--orange); }
+.headerRight { display: flex; align-items: center; gap: 10px; }
+
+/* ── ② HERO ──────────────────────────────────────────────── */
+.hero      { padding: 72px 0 80px; }
+.heroInner {
+  display: grid; grid-template-columns: 1fr 1fr;
+  align-items: center; gap: 60px;
+}
+.heroLabel {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--orange-soft); color: var(--orange);
+  font-size: 12px; font-weight: 700; padding: 5px 12px;
+  border-radius: 100px; margin-bottom: 20px;
+}
+.heroTitle {
+  font-size: 40px; font-weight: 900; line-height: 1.25;
+  letter-spacing: -.6px; color: var(--text-1);
+}
+.heroTitle :global(em) { color: var(--orange); font-style: normal; }
+.heroDesc {
+  margin-top: 16px; font-size: 16px; color: var(--text-3);
+  line-height: 1.75; max-width: 440px;
+}
+.heroBtns {
+  display: flex; align-items: center; gap: 12px; margin-top: 32px; flex-wrap: wrap;
+}
+.heroTrust {
+  display: flex; align-items: center; gap: 20px;
+  margin-top: 36px; padding-top: 28px;
+  border-top: 1px solid var(--border);
+}
+.trustItem { text-align: center; }
+.trustNum  { font-size: 22px; font-weight: 900; color: var(--text-1); line-height: 1; }
+.trustNum :global(span) { color: var(--orange); }
+.trustLbl  { font-size: 11px; color: var(--text-3); margin-top: 3px; }
+.trustDiv  { width: 1px; height: 36px; background: var(--border); }
+
+/* Hero 우측 — 앱 목업 */
+.heroVisual {
+  position: relative; display: flex;
+  justify-content: center; align-items: flex-end; gap: 16px;
+}
+.phoneMock {
+  width: 200px; background: #111; border-radius: 36px;
+  padding: 10px; box-shadow: var(--shadow-lg);
+  position: relative;
+}
+.phoneMock.front { z-index: 2; }
+.phoneMock.back  {
+  width: 176px; margin-bottom: -20px; margin-right: -32px; opacity: .7;
+  transform: scale(.93) rotate(-4deg); z-index: 1;
+}
+.phoneScreen      { background: var(--white); border-radius: 28px; overflow: hidden; }
+.phoneScreenInner { padding: 14px 12px 16px; }
+
+/* 미니 쿠폰 */
+.miniCoupon {
+  background: linear-gradient(135deg, #fff3eb, #ffe5cc);
+  border: 1px solid var(--orange-mid);
+  border-radius: 12px; padding: 10px 12px; margin-bottom: 8px;
+}
+.mcTop      { display: flex; align-items: center; justify-content: space-between; }
+.mcBadge    { font-size: 9px; font-weight: 800; color: var(--orange); background: var(--orange-soft); padding: 2px 7px; border-radius: 20px; }
+.mcMenu     { font-size: 11px; font-weight: 700; margin-top: 5px; color: var(--text-1); }
+.mcStore    { font-size: 9px; color: var(--text-3); margin-top: 2px; }
+.mcDiscount { font-size: 14px; font-weight: 900; color: var(--orange); }
+
+/* 미니 스탬프 */
+.miniStamp  { background: var(--white); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; }
+.msTitle    { font-size: 10px; font-weight: 700; color: var(--text-2); margin-bottom: 8px; }
+.msDots     { display: flex; gap: 5px; flex-wrap: wrap; }
+.msDot {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--orange-soft); border: 1.5px solid var(--orange-mid);
+  display: flex; align-items: center; justify-content: center; font-size: 10px;
+}
+.msDot.filled { background: var(--orange); border-color: var(--orange); }
+
+/* 미니 탭 */
+.miniTabs { display: flex; gap: 5px; margin-bottom: 10px; flex-wrap: wrap; }
+.miniTab  { font-size: 9px; font-weight: 700; padding: 3px 8px; border-radius: 20px; background: var(--bg); color: var(--text-3); border: 1px solid var(--border); }
+.miniTab.active { background: var(--orange); color: #fff; border-color: var(--orange); }
+
+/* ── ③ 카테고리 ──────────────────────────────────────────────── */
+.categoryBar { padding: 0 0 64px; }
+.catGrid {
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 12px; margin-top: 36px;
+}
+.catItem {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 8px; padding: 18px 8px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-md); cursor: pointer; transition: .15s;
+}
+.catItem:hover {
+  border-color: var(--orange); background: var(--orange-soft);
+  transform: translateY(-2px); box-shadow: var(--shadow-sm);
+}
+.catEmoji { font-size: 28px; }
+.catName  { font-size: 12px; font-weight: 700; color: var(--text-2); text-align: center; }
+
+/* ── ④ FEATURE SPLIT ────────────────────────────────────────── */
+.split       { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 64px; }
+.splitVisual {
+  background: var(--bg); border-radius: var(--radius-xl);
+  padding: 36px 28px; min-height: 380px;
+  display: flex; flex-direction: column; gap: 12px; justify-content: center;
+}
+
+/* 쿠폰 카드 */
+.couponCard {
+  display: flex; align-items: stretch;
+  background: var(--white); border-radius: var(--radius-md);
+  overflow: hidden; box-shadow: var(--shadow-sm); border: 1px solid var(--border);
+}
+.couponLeft {
+  width: 56px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 14px 0; gap: 4px; flex-shrink: 0;
+}
+.couponLeftEmoji { font-size: 20px; }
+.couponLeftLabel { font-size: 8px; font-weight: 800; color: #fff; writing-mode: vertical-rl; letter-spacing: .1em; }
+.couponRight     { flex: 1; padding: 12px 14px; }
+.crTitle    { font-size: 13px; font-weight: 700; color: var(--text-1); }
+.crDiscount { font-size: 18px; font-weight: 900; color: var(--orange); margin: 2px 0; }
+.crMeta     { display: flex; justify-content: space-between; }
+.crExpiry   { font-size: 10px; color: var(--text-3); }
+.crQty      { font-size: 10px; color: var(--text-3); }
+
+/* 스탬프 데모 */
+.stampDemo  { background: var(--white); border-radius: var(--radius-md); padding: 16px 18px; box-shadow: var(--shadow-sm); border: 1px solid var(--border); }
+.sdHeader   { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.sdTitle    { font-size: 13px; font-weight: 700; }
+.sdCount    { font-size: 13px; color: var(--orange); font-weight: 800; }
+.sdBar      { background: var(--bg); border-radius: 4px; height: 7px; overflow: hidden; margin-bottom: 12px; }
+.sdFill     { height: 100%; background: var(--orange); border-radius: 4px; }
+.sdStamps   { display: flex; gap: 7px; flex-wrap: wrap; }
+.sdStamp    { width: 36px; height: 36px; border-radius: 50%; background: var(--bg); border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 16px; }
+.sdStamp.on { background: var(--orange-soft); border-color: var(--orange); }
+
+/* 영수증 데모 */
+.receiptDemo { background: var(--white); border-radius: var(--radius-md); padding: 14px 16px; box-shadow: var(--shadow-sm); border: 1px solid var(--border); }
+.rdLabel { font-size: 10px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+.rdRow   { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.rdIcon  { width: 36px; height: 36px; border-radius: var(--radius-sm); background: var(--orange-soft); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.rdText  { font-size: 12px; font-weight: 600; color: var(--text-1); }
+.rdSub   { font-size: 10px; color: var(--text-3); }
+.partyCode { background: linear-gradient(135deg, var(--orange-soft), #fff3eb); border: 1.5px dashed var(--orange); border-radius: var(--radius-md); padding: 12px 16px; text-align: center; margin-top: 8px; }
+.pcLabel { font-size: 10px; color: var(--text-3); font-weight: 600; }
+.pcCode  { font-size: 26px; font-weight: 900; color: var(--orange); letter-spacing: 5px; margin-top: 3px; }
+.pcSub   { font-size: 10px; color: var(--text-3); margin-top: 3px; }
+
+/* 기능 목록 */
+.featureList { display: flex; flex-direction: column; gap: 22px; margin-top: 8px; }
+.fi      { display: flex; gap: 14px; align-items: flex-start; }
+.fiIcon  { width: 42px; height: 42px; border-radius: var(--radius-sm); flex-shrink: 0; background: var(--orange-soft); display: flex; align-items: center; justify-content: center; font-size: 20px; }
+.fiTitle { font-size: 14px; font-weight: 700; color: var(--text-1); margin-bottom: 3px; }
+.fiDesc  { font-size: 13px; color: var(--text-3); line-height: 1.6; }
+
+/* ── ⑤ 사장님 기능 GRID ──────────────────────────────────────── */
+.ownerGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.ogCard    { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 26px 22px; transition: .15s; }
+.ogCard:hover { border-color: var(--orange); box-shadow: var(--shadow-md); transform: translateY(-2px); }
+.ogCardIcon  { width: 44px; height: 44px; border-radius: var(--radius-sm); background: var(--orange-soft); display: flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 14px; }
+.ogCardTitle { font-size: 15px; font-weight: 700; margin-bottom: 6px; color: var(--text-1); }
+.ogCardDesc  { font-size: 13px; color: var(--text-3); line-height: 1.65; }
+.ogBadge     { display: inline-block; margin-top: 10px; font-size: 10px; font-weight: 700; color: var(--orange); background: var(--orange-soft); padding: 2px 8px; border-radius: 20px; }
+
+/* ── ⑥ HOW IT WORKS ────────────────────────────────────────── */
+.howTabs  { display: flex; gap: 8px; justify-content: center; margin-bottom: 48px; }
+.howTab   { padding: 9px 22px; border-radius: 100px; font-size: 14px; font-weight: 700; cursor: pointer; border: 1.5px solid var(--border); color: var(--text-3); transition: .12s; background: none; }
+.howTab.active { background: var(--orange); color: #fff; border-color: var(--orange); }
+.howSteps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; }
+.hs       { text-align: center; position: relative; }
+.hs::after { content: '→'; position: absolute; top: 28px; right: -24px; font-size: 20px; color: var(--orange); opacity: .4; }
+.hs:last-child::after { display: none; }
+.hsNum    { width: 56px; height: 56px; border-radius: var(--radius-md); background: var(--orange-soft); margin: 0 auto 16px; display: flex; align-items: center; justify-content: center; font-size: 28px; }
+.hsStep   { font-size: 10px; font-weight: 800; color: var(--orange); letter-spacing: .1em; margin-bottom: 6px; text-transform: uppercase; }
+.hsTitle  { font-size: 15px; font-weight: 700; color: var(--text-1); margin-bottom: 6px; }
+.hsDesc   { font-size: 13px; color: var(--text-3); line-height: 1.65; }
+
+/* ── ⑦ 앱 다운로드 배너 ────────────────────────────────────── */
+.appBanner {
+  background: linear-gradient(135deg, #111 0%, #2a1a00 100%);
+  border-radius: var(--radius-xl); padding: 52px 60px;
+  display: grid; grid-template-columns: 1fr auto;
+  align-items: center; gap: 48px;
+}
+.abTitle    { font-size: 28px; font-weight: 900; color: #fff; line-height: 1.3; }
+.abTitle :global(em) { color: var(--orange); font-style: normal; }
+.abSub      { font-size: 14px; color: rgba(255,255,255,.6); margin-top: 10px; line-height: 1.7; }
+.abBtns     { display: flex; gap: 10px; margin-top: 24px; flex-wrap: wrap; }
+.storeBtn   { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2); border-radius: var(--radius-md); padding: 10px 18px; color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; transition: .15s; }
+.storeBtn:hover      { background: rgba(255,255,255,.18); }
+.storeBtnIcon        { font-size: 22px; }
+.storeBtnTextSm      { font-size: 9px; color: rgba(255,255,255,.6); font-weight: 400; }
+.abQr       { background: #fff; border-radius: var(--radius-md); padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.qrPlaceholder { width: 100px; height: 100px; background: repeating-linear-gradient(45deg, #f0f0f0, #f0f0f0 4px, #fff 4px, #fff 8px); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--text-3); text-align: center; padding: 4px; }
+.abQrLabel  { font-size: 11px; color: var(--text-2); font-weight: 600; }
+
+/* ── ⑧ 사장님 등록 CTA ─────────────────────────────────────── */
+.ownerCta {
+  background: var(--orange-soft); border-radius: var(--radius-xl); padding: 52px 60px;
+  display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 40px;
+}
+.ocTitle    { font-size: 26px; font-weight: 900; color: var(--text-1); line-height: 1.3; }
+.ocTitle :global(em) { color: var(--orange); font-style: normal; }
+.ocSub      { font-size: 14px; color: var(--text-3); margin-top: 10px; line-height: 1.7; }
+.ocSteps    { display: flex; gap: 20px; margin-top: 22px; }
+.ocStep     { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; color: var(--text-2); }
+.ocStepNum  { width: 22px; height: 22px; border-radius: 50%; background: var(--orange); color: #fff; font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+/* ── ⑨ 가게 탐색 미리보기 ──────────────────────────────────── */
+.storePreviewGrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.spCard { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; transition: .15s; cursor: pointer; }
+.spCard:hover { box-shadow: var(--shadow-md); transform: translateY(-3px); }
+.spThumb     { height: 120px; display: flex; align-items: center; justify-content: center; font-size: 48px; background: var(--bg); }
+.spBody      { padding: 14px; }
+.spName      { font-size: 14px; font-weight: 700; color: var(--text-1); }
+.spCat       { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+.spCouponTag { display: inline-flex; align-items: center; gap: 4px; margin-top: 8px; padding: 3px 8px; border-radius: 20px; background: var(--orange-soft); color: var(--orange); font-size: 11px; font-weight: 700; }
+.spOpen      { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; color: var(--green); margin-top: 2px; }
+.spOpenDot   { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+
+/* ── ⑩ 후기 ────────────────────────────────────────────────── */
+.testiGrid  { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.testiCard  { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px 22px; }
+.testiStars { color: #FFC107; font-size: 14px; margin-bottom: 12px; }
+.testiQuote { font-size: 14px; color: var(--text-2); line-height: 1.7; font-style: italic; margin-bottom: 18px; }
+.testiAvatar { width: 36px; height: 36px; border-radius: 50%; background: var(--orange-soft); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+.testiInfo  { display: flex; align-items: center; gap: 10px; }
+.testiName  { font-size: 13px; font-weight: 700; }
+.testiRole  { font-size: 11px; color: var(--text-3); }
+
+/* ── ⑪ FOOTER ────────────────────────────────────────────────── */
+.footer     { border-top: 1px solid var(--border); padding: 52px 0 32px; }
+.footerTop  { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: 40px; padding-bottom: 40px; border-bottom: 1px solid var(--border); margin-bottom: 28px; }
+.footerBrand .logo { margin-bottom: 12px; }
+.footerDesc { font-size: 13px; color: var(--text-3); line-height: 1.7; max-width: 260px; }
+.footerAppBtns { display: flex; gap: 8px; margin-top: 16px; }
+.fapp       { display: flex; align-items: center; gap: 6px; padding: 7px 12px; background: var(--text-1); color: #fff; border-radius: var(--radius-sm); font-size: 11px; font-weight: 600; }
+.footerCol :global(h4) { font-size: 13px; font-weight: 700; color: var(--text-1); margin-bottom: 14px; }
+.footerCol :global(ul li + li) { margin-top: 9px; }
+.footerCol :global(ul li a) { font-size: 13px; color: var(--text-3); }
+.footerCol :global(ul li a:hover) { color: var(--text-1); }
+.footerBottom { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.footerLegal  { display: flex; gap: 16px; flex-wrap: wrap; }
+.footerLegal :global(a)       { font-size: 12px; color: var(--text-3); }
+.footerLegal :global(a:hover) { color: var(--text-1); }
+.footerCorp   { font-size: 11px; color: var(--text-3); line-height: 1.8; }
+
+/* ── 배지 ──────────────────────────────────────────────────── */
+.badge       { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; }
+.badgeOrange { background: var(--orange-soft); color: var(--orange); }
+.badgeGreen  { background: #E6FAF1; color: var(--green); }
+.badgeBlue   { background: #EAF2FF; color: var(--blue); }
+
+/* ── 반응형 ────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .heroInner         { grid-template-columns: 1fr; }
+  .heroVisual        { display: none; }
+  .split             { grid-template-columns: 1fr; gap: 40px; }
+  .catGrid           { grid-template-columns: repeat(4, 1fr); }
+  .ownerGrid         { grid-template-columns: repeat(2, 1fr); }
+  .howSteps          { grid-template-columns: 1fr; gap: 28px; }
+  .hs::after         { display: none; }
+  .appBanner         { grid-template-columns: 1fr; }
+  .ownerCta          { grid-template-columns: 1fr; }
+  .storePreviewGrid  { grid-template-columns: repeat(2, 1fr); }
+  .testiGrid         { grid-template-columns: 1fr; }
+  .footerTop         { grid-template-columns: 1fr 1fr; }
+}

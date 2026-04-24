@@ -380,12 +380,12 @@ export default function HomePage() {
       {/* ═══ HEADER ════════════════════════════════════════ */}
       <header style={{ flexShrink:0, background:'#fff', borderBottom:'1px solid #E5E7EB',
         position:'sticky', top:0, zIndex:200 }}>
-        <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 24px',
-          display:'flex', alignItems:'center', height:60 }}>
+        <div style={{ maxWidth:1400, margin:'0 auto', padding:'0 20px',
+          display:'flex', alignItems:'center', gap:16, height:64 }}>
 
           {/* Logo */}
           <div style={{ display:'flex', alignItems:'center', gap:8,
-            fontSize:20, fontWeight:900, color:OR, flexShrink:0, marginRight:32, cursor:'pointer' }}>
+            fontSize:20, fontWeight:900, color:OR, flexShrink:0, cursor:'pointer' }}>
             <div style={{ width:30, height:30, background:OR, borderRadius:8,
               display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, color:'#fff' }}>
               🩷
@@ -393,194 +393,169 @@ export default function HomePage() {
             언니픽
           </div>
 
-          {/* Nav */}
-          <nav style={{ display:'flex', alignItems:'center', flex:1 }}>
-            {[
-              { label:'홈', href:'/' },
-            ].map(({ label, href }) => (
-              <Link key={label} href={href}
-                style={{ padding:'0 15px', height:60, display:'flex', alignItems:'center',
-                  fontSize:14, fontWeight:600, color: OR,
-                  borderBottom: `2.5px solid ${OR}`,
-                  marginBottom:-1, textDecoration:'none', whiteSpace:'nowrap', transition:'color .12s' }}>
-                {label}
-              </Link>
-            ))}
-          </nav>
+          {/* ── 검색창 (헤더 중앙) ─────────────────────────── */}
+          <div style={{ flex:1, maxWidth:480, position:'relative' }}>
+            <form onSubmit={onSubmit}
+              style={{ display:'flex', alignItems:'center', background:'#fff',
+                border:`1.5px solid ${searchDropOpen ? OR : '#D1D5DB'}`,
+                borderRadius:100,
+                boxShadow: searchDropOpen ? `0 2px 12px rgba(255,111,15,.12)` : '0 1px 4px rgba(0,0,0,.06)',
+                overflow:'visible', transition:'border-color .15s, box-shadow .15s' }}>
+
+              {/* 위치 버튼 */}
+              <button type="button"
+                onClick={() => setLocDropOpen(v => !v)}
+                style={{ display:'flex', alignItems:'center', gap:4, padding:'0 12px', height:40,
+                  flexShrink:0,
+                  fontSize:12, fontWeight:700, color: locDropOpen ? OR : '#374151',
+                  background:'none', border:'none', borderRight:'1px solid #E5E7EB',
+                  cursor:'pointer', fontFamily:'inherit', whiteSpace:'nowrap' }}>
+                <span>{locText}</span>
+                <span style={{ fontSize:10, color:'#9CA3AF' }}>▾</span>
+              </button>
+
+              {/* 검색 아이콘 */}
+              <div style={{ width:34, height:40, flexShrink:0, display:'flex',
+                alignItems:'center', justifyContent:'center', color:'#9CA3AF', fontSize:14 }}>
+                🔍
+              </div>
+
+              {/* Input */}
+              <input
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                onFocus={openSearchDrop}
+                placeholder="혜택 검색"
+                autoComplete="off"
+                style={{ flex:1, height:40, padding:'0 2px', border:'none', outline:'none',
+                  background:'transparent', fontFamily:'inherit', fontSize:13, color:'#374151' }}
+              />
+
+              {/* AI 추천 버튼 */}
+              <button type="button"
+                onClick={() => handleSearch(searchQuery || randomPicks[0]?.text || '아메리카노 500원 할인')}
+                style={{ margin:4, padding:'0 12px', height:32, borderRadius:100, border:'none',
+                  background:`linear-gradient(135deg, ${PU}, #9B6FF5)`,
+                  color:'#fff', fontSize:12, fontWeight:700,
+                  display:'flex', alignItems:'center', gap:4, cursor:'pointer', flexShrink:0,
+                  whiteSpace:'nowrap', boxShadow:'0 1px 6px rgba(103,66,245,.25)',
+                  fontFamily:'inherit' }}>
+                ✨ AI
+              </button>
+            </form>
+
+            {/* ── 검색 드롭다운 ─────────────────────────────── */}
+            {searchDropOpen && (
+              <div style={{ position:'absolute', top:'calc(100% + 8px)', left:0, right:0,
+                background:'#fff', border:'1.5px solid #D1D5DB', borderRadius:20,
+                boxShadow:'0 8px 40px rgba(0,0,0,.14)', zIndex:500, overflow:'hidden' }}>
+
+                <div style={{ display:'flex', borderBottom:'1px solid #E5E7EB' }}>
+                  {(['popular','recent'] as const).map(tab => (
+                    <button key={tab} onClick={() => setSearchTab(tab)}
+                      style={{ flex:1, padding:'12px 0', fontSize:13, fontWeight:700,
+                        color: searchTab === tab ? PU : '#9CA3AF',
+                        background:'none', border:'none', cursor:'pointer',
+                        borderBottom: searchTab === tab ? `2.5px solid ${PU}` : '2.5px solid transparent',
+                        marginBottom:-1, fontFamily:'inherit' }}>
+                      {tab === 'popular' ? '인기 키워드' : '최근 검색'}
+                    </button>
+                  ))}
+                </div>
+
+                {searchTab === 'popular' && (
+                  <div>
+                    {randomPicks.map((p, i) => (
+                      <div key={i} onClick={() => pickKeyword(p.text)}
+                        style={{ display:'flex', alignItems:'center', gap:10, padding:'11px 18px',
+                          cursor:'pointer', transition:'background .1s' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = '#F9FAFB')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                        <div style={{ width:30, height:30, borderRadius:8, background:'#F3F4F6',
+                          display:'flex', alignItems:'center', justifyContent:'center',
+                          fontSize:15, flexShrink:0 }}>
+                          {p.icon}
+                        </div>
+                        <span style={{ fontSize:13, color:'#374151', fontWeight:500 }}>{p.text}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {searchTab === 'recent' && (
+                  <div style={{ padding:'28px 18px', textAlign:'center', color:'#9CA3AF', fontSize:12, lineHeight:1.8 }}>
+                    최근 검색한 가게나 키워드가 없어요.<br />
+                    지금 바로 근처 혜택을 검색해보세요 🔍
+                  </div>
+                )}
+
+                <div style={{ display:'flex', justifyContent:'flex-end',
+                  padding:'8px 14px', borderTop:'1px solid #E5E7EB' }}>
+                  <button onClick={() => setSearchDropOpen(false)}
+                    style={{ fontSize:12, fontWeight:700, color:'#9CA3AF', background:'none',
+                      border:'none', cursor:'pointer', padding:'4px 8px', fontFamily:'inherit' }}>
+                    닫기
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ── 위치 드롭다운 ────────────────────────────── */}
+            {locDropOpen && (
+              <div style={{ position:'absolute', top:'calc(100% + 8px)', left:0, width:260,
+                background:'#fff', border:'1.5px solid #D1D5DB', borderRadius:20,
+                boxShadow:'0 8px 40px rgba(0,0,0,.14)', zIndex:500, overflow:'hidden' }}>
+                <div style={{ padding:'12px 14px', borderBottom:'1px solid #E5E7EB',
+                  fontSize:12, fontWeight:800, color:'#111827',
+                  display:'flex', justifyContent:'space-between' }}>
+                  <span>지역 선택</span>
+                  <span style={{ fontSize:11, fontWeight:500, color:'#9CA3AF' }}>창원시</span>
+                </div>
+                <div onClick={() => { getGPS(); setLocDropOpen(false); }}
+                  style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px',
+                    borderBottom:'1px solid #E5E7EB', cursor:'pointer', transition:'background .1s' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = OR_S)}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                  <span style={{ fontSize:16 }}>🎯</span>
+                  <div>
+                    <div style={{ fontSize:12, fontWeight:700, color:OR }}>현재 위치 사용</div>
+                    <div style={{ fontSize:10, color:'#9CA3AF' }}>GPS로 자동 감지</div>
+                  </div>
+                </div>
+                {[
+                  { name:'의창구',    lat:35.2399, lng:128.6909 },
+                  { name:'성산구',    lat:35.2296, lng:128.6862 },
+                  { name:'마산합포구', lat:35.1999, lng:128.5747 },
+                  { name:'마산회원구', lat:35.2148, lng:128.5832 },
+                  { name:'진해구',    lat:35.1496, lng:128.7082 },
+                ].map(r => (
+                  <div key={r.name} onClick={() => selectRegion(r.name, r.lat, r.lng)}
+                    style={{ padding:'9px 14px', fontSize:12, fontWeight:600, color:'#374151',
+                      cursor:'pointer', transition:'background .1s' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = '#F9FAFB')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                    {r.name}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* Right */}
-          <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0, marginLeft:'auto' }}>
             <button onClick={() => window.open('/app', '_blank')}
-              style={{ padding:'8px 16px', borderRadius:6, fontSize:13, fontWeight:600,
+              style={{ padding:'7px 14px', borderRadius:6, fontSize:12, fontWeight:600,
                 color:'#6B7280', background:'none', border:'1px solid #E5E7EB', cursor:'pointer' }}>
               📱 앱 다운로드
             </button>
             <Link href="/apply"
-              style={{ padding:'9px 18px', borderRadius:6, fontSize:13, fontWeight:700,
+              style={{ padding:'8px 16px', borderRadius:6, fontSize:12, fontWeight:700,
                 color:'#fff', background:PU, textDecoration:'none', display:'inline-block' }}>
               가게 등록
             </Link>
           </div>
         </div>
       </header>
-
-      {/* ═══ SEARCH BLOCK ══════════════════════════════════ */}
-      <div style={{ flexShrink:0, background:'#fff', borderBottom:'1px solid #E5E7EB',
-        padding:'14px 0', position:'relative', zIndex:100 }}>
-        <div id="search-block-inner" style={{ maxWidth:900, margin:'0 auto', padding:'0 24px', position:'relative' }}>
-
-          {/* Search form */}
-          <form id="search-form" onSubmit={onSubmit}
-            style={{ display:'flex', alignItems:'center', background:'#fff',
-              border:`2px solid ${searchDropOpen ? OR : '#D1D5DB'}`,
-              borderRadius:100, boxShadow: searchDropOpen ? `0 4px 20px rgba(255,111,15,.12)` : '0 2px 8px rgba(0,0,0,.07)',
-              overflow:'visible', transition:'border-color .15s, box-shadow .15s' }}>
-
-            {/* 위치 버튼 */}
-            <button type="button" id="loc-btn"
-              onClick={() => setLocDropOpen(v => !v)}
-              style={{ display:'flex', alignItems:'center', gap:5, padding:'0 16px', height:52,
-                flexShrink:0, borderRight:'1px solid #E5E7EB',
-                fontSize:14, fontWeight:700, color: locDropOpen ? OR : '#374151',
-                background:'none', border:'none', borderRight:'1px solid #E5E7EB',
-                cursor:'pointer', fontFamily:'inherit', whiteSpace:'nowrap' }}>
-              <span>{locText}</span>
-              <span style={{ fontSize:11, color:'#9CA3AF', marginLeft:1 }}>▾</span>
-            </button>
-
-            {/* 검색 아이콘 */}
-            <div style={{ width:44, height:52, flexShrink:0, display:'flex',
-              alignItems:'center', justifyContent:'center', color:'#9CA3AF', fontSize:17 }}>
-              🔍
-            </div>
-
-            {/* Input */}
-            <input
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              onFocus={openSearchDrop}
-              placeholder="어떤 혜택을 찾고 있나요?"
-              autoComplete="off"
-              style={{ flex:1, height:52, padding:'0 4px', border:'none', outline:'none',
-                background:'transparent', fontFamily:'inherit', fontSize:16, color:'#374151' }}
-            />
-
-            {/* AI 추천 버튼 */}
-            <button type="button"
-              onClick={() => handleSearch(searchQuery || randomPicks[0]?.text || '아메리카노 500원 할인')}
-              style={{ margin:6, padding:'0 18px', height:40, borderRadius:100, border:'none',
-                background:`linear-gradient(135deg, ${PU}, #9B6FF5)`,
-                color:'#fff', fontSize:13, fontWeight:700,
-                display:'flex', alignItems:'center', gap:6, cursor:'pointer', flexShrink:0,
-                whiteSpace:'nowrap', boxShadow:'0 2px 8px rgba(103,66,245,.25)',
-                fontFamily:'inherit' }}>
-              ✨ AI 추천
-            </button>
-          </form>
-
-          {/* ── 검색 드롭다운 ─────────────────────────────── */}
-          {searchDropOpen && (
-            <div id="search-drop"
-              style={{ position:'absolute', top:'calc(100% + 10px)', left:24, right:24,
-                background:'#fff', border:'1.5px solid #D1D5DB', borderRadius:24,
-                boxShadow:'0 8px 40px rgba(0,0,0,.14)', zIndex:500, overflow:'hidden' }}>
-
-              {/* 탭 */}
-              <div style={{ display:'flex', borderBottom:'1px solid #E5E7EB' }}>
-                {(['popular','recent'] as const).map(tab => (
-                  <button key={tab} onClick={() => setSearchTab(tab)}
-                    style={{ flex:1, padding:'14px 0', fontSize:14, fontWeight:700,
-                      color: searchTab === tab ? PU : '#9CA3AF',
-                      background:'none', border:'none', cursor:'pointer',
-                      borderBottom: searchTab === tab ? `2.5px solid ${PU}` : '2.5px solid transparent',
-                      marginBottom:-1, fontFamily:'inherit' }}>
-                    {tab === 'popular' ? '인기 키워드' : '최근 검색'}
-                  </button>
-                ))}
-              </div>
-
-              {/* 인기 키워드 */}
-              {searchTab === 'popular' && (
-                <div>
-                  {randomPicks.map((p, i) => (
-                    <div key={i} onClick={() => pickKeyword(p.text)}
-                      style={{ display:'flex', alignItems:'center', gap:12, padding:'13px 24px',
-                        cursor:'pointer', transition:'background .1s' }}
-                      onMouseEnter={e => (e.currentTarget.style.background = '#F9FAFB')}
-                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                      <div style={{ width:34, height:34, borderRadius:10, background:'#F3F4F6',
-                        display:'flex', alignItems:'center', justifyContent:'center',
-                        fontSize:17, flexShrink:0 }}>
-                        {p.icon}
-                      </div>
-                      <span style={{ fontSize:15, color:'#374151', fontWeight:500 }}>{p.text}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* 최근 검색 */}
-              {searchTab === 'recent' && (
-                <div style={{ padding:'36px 24px', textAlign:'center', color:'#9CA3AF', fontSize:13, lineHeight:1.8 }}>
-                  최근 검색한 가게나 키워드가 없어요.<br />
-                  지금 바로 근처 혜택을 검색해보세요 🔍
-                </div>
-              )}
-
-              {/* 닫기 */}
-              <div style={{ display:'flex', justifyContent:'flex-end',
-                padding:'10px 18px', borderTop:'1px solid #E5E7EB' }}>
-                <button onClick={() => setSearchDropOpen(false)}
-                  style={{ fontSize:13, fontWeight:700, color:'#9CA3AF', background:'none',
-                    border:'none', cursor:'pointer', padding:'4px 8px', fontFamily:'inherit' }}>
-                  닫기
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* ── 위치 드롭다운 ────────────────────────────── */}
-          {locDropOpen && (
-            <div id="loc-drop"
-              style={{ position:'absolute', top:'calc(100% + 10px)', left:24, width:280,
-                background:'#fff', border:'1.5px solid #D1D5DB', borderRadius:24,
-                boxShadow:'0 8px 40px rgba(0,0,0,.14)', zIndex:500, overflow:'hidden' }}>
-              <div style={{ padding:'14px 16px', borderBottom:'1px solid #E5E7EB',
-                fontSize:13, fontWeight:800, color:'#111827',
-                display:'flex', justifyContent:'space-between' }}>
-                <span>지역 선택</span>
-                <span style={{ fontSize:12, fontWeight:500, color:'#9CA3AF' }}>창원시</span>
-              </div>
-              <div onClick={() => { getGPS(); setLocDropOpen(false); }}
-                style={{ display:'flex', alignItems:'center', gap:10, padding:'12px 16px',
-                  borderBottom:'1px solid #E5E7EB', cursor:'pointer', transition:'background .1s' }}
-                onMouseEnter={e => (e.currentTarget.style.background = OR_S)}
-                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                <span style={{ fontSize:18 }}>🎯</span>
-                <div>
-                  <div style={{ fontSize:13, fontWeight:700, color:OR }}>현재 위치 사용</div>
-                  <div style={{ fontSize:11, color:'#9CA3AF' }}>GPS로 자동 감지</div>
-                </div>
-              </div>
-              {[
-                { name:'의창구',    lat:35.2399, lng:128.6909 },
-                { name:'성산구',    lat:35.2296, lng:128.6862 },
-                { name:'마산합포구', lat:35.1999, lng:128.5747 },
-                { name:'마산회원구', lat:35.2148, lng:128.5832 },
-                { name:'진해구',    lat:35.1496, lng:128.7082 },
-              ].map(r => (
-                <div key={r.name} onClick={() => selectRegion(r.name, r.lat, r.lng)}
-                  style={{ padding:'10px 16px', fontSize:13, fontWeight:600, color:'#374151',
-                    cursor:'pointer', transition:'background .1s' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = '#F9FAFB')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                  {r.name}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
 
       {/* ═══ CATEGORY BAR ══════════════════════════════════ */}
       <div style={{ flexShrink:0, background:'#fff', borderBottom:'1px solid #E5E7EB', padding:'10px 0' }}>
