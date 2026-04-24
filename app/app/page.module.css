@@ -31,7 +31,9 @@
   -webkit-font-smoothing: antialiased;
 }
 
-.root :global(*, *::before, *::after) { box-sizing: border-box; margin: 0; padding: 0; }
+.root :global(*) { box-sizing: border-box; margin: 0; padding: 0; }
+.root :global(*::before) { box-sizing: border-box; }
+.root :global(*::after)  { box-sizing: border-box; }
 .root :global(a)   { text-decoration: none; color: inherit; }
 .root :global(img) { display: block; max-width: 100%; }
 .root :global(ul)  { list-style: none; }
