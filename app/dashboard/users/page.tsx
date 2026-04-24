@@ -316,12 +316,20 @@ export default function UsersPage() {
       const res  = await fetch('/api/admin/users');
       const json = await res.json();
 
-      const { authUsers = {}, providerMap = {}, pushMap = {}, followSet = [], couponCount = {}, recentArea = {} } = json;
+      const {
+        authUsers = {}, providerMap = {}, pushMap = {},
+        followSet = [], couponCount = {}, recentArea = {},
+        usersRoleMap = {},
+      } = json;
 
       const followSetObj = new Set<string>(followSet as string[]);
+      const roleMap = usersRoleMap as Record<string, { name: string; role: string }>;
 
       setUsers(prev => prev.map(u => ({
         ...u,
+        // 서비스롤로 조회한 role/name 이 있으면 덮어쓰기 (RLS 우회)
+        name:            roleMap[u.id]?.name  ?? u.name,
+        role:            roleMap[u.id]?.role  ?? u.role,
         phone:           authUsers[u.id]?.phone ?? u.phone,
         last_sign_in_at: authUsers[u.id]?.last_sign_in_at ?? null,
         recent_area:     (recentArea as Record<string, string>)[u.id] ?? null,

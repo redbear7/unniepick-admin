@@ -40,23 +40,51 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: '변경할 내용이 없습니다.' }, { status: 400 });
   }
 
-  // 1) users 테이블 업데이트 (.select() 로 실제 반영 여부 확인)
-  const { data: updatedRows, error: usersErr } = await sb
+  // 1) users 테이블 UPDATE 시도
+  const { data: updatedRows, error: updateErr } = await sb
     .from('users')
     .update(usersUpdate)
     .eq('id', userId)
     .select('id, name, role');
 
-  if (usersErr) {
-    return NextResponse.json({ error: usersErr.message }, { status: 500 });
+  if (updateErr) {
+    return NextResponse.json({ error: updateErr.message }, { status: 500 });
   }
 
-  // 0 rows → userId가 users 테이블에 없음
+  // 0 rows → users 테이블에 행 없음 (전화번호 OTP 가입 등)
+  // → profiles 에서 닉네임 조회 후 INSERT 로 행 생성
   if (!updatedRows || updatedRows.length === 0) {
-    return NextResponse.json(
-      { error: 'users 테이블에 해당 유저가 없어요. DB를 직접 확인해주세요.' },
-      { status: 404 },
-    );
+    // profiles 에서 닉네임 가져오기 (name 미제공 시 fallback)
+    const { data: prof } = await sb
+      .from('profiles')
+      .select('nickname')
+      .eq('id', userId)
+      .maybeSingle();
+
+    const insertRow: Record<string, string> = {
+      id:   userId,
+      name: usersUpdate.name ?? prof?.nickname ?? '(이름 없음)',
+      role: usersUpdate.role ?? 'customer',
+    };
+
+    const { data: inserted, error: insertErr } = await sb
+      .from('users')
+      .insert(insertRow)
+      .select('id, name, role');
+
+    if (insertErr) {
+      return NextResponse.json(
+        { error: `users 행 생성 실패: ${insertErr.message}` },
+        { status: 500 },
+      );
+    }
+
+    // profiles nickname 동기화
+    if (usersUpdate.name) {
+      await sb.from('profiles').update({ nickname: usersUpdate.name }).eq('id', userId);
+    }
+
+    return NextResponse.json({ ok: true, created: true, updated: inserted?.[0] });
   }
 
   // 2) profiles 테이블 nickname 동기화 (있을 경우에만)

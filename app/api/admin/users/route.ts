@@ -140,6 +140,17 @@ export async function GET() {
     console.error('[admin/users] recentArea error:', e);
   }
 
+  // 6) users 테이블 — 역할/이름 (서비스롤로 RLS 우회)
+  const usersRoleMap: Record<string, { name: string; role: string }> = {};
+  try {
+    const { data: usersRows } = await sb
+      .from('users')
+      .select('id, name, role');
+    for (const u of usersRows ?? []) {
+      usersRoleMap[u.id] = { name: u.name, role: u.role };
+    }
+  } catch { /* 테이블 없으면 무시 */ }
+
   return NextResponse.json({
     authUsers,
     providerMap,
@@ -147,6 +158,7 @@ export async function GET() {
     followSet:   [...followSet],
     couponCount,
     recentArea,
+    usersRoleMap,
     _phonesError: phonesError,
     _authUserCount: Object.keys(authUsers).length,
   });
