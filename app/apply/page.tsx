@@ -175,20 +175,20 @@ export default function ApplyPage() {
     }
   };
 
-  // 카카오 결과 선택 → 자동입력 → Step 5 (쿠폰)으로 점프
+  // 카카오 결과 선택 → 자동입력 → Step 1부터 순서대로 확인
   const handleSelectPlace = (place: KakaoPlace) => {
     setForm(prev => ({
       ...prev,
-      storeName:    place.place_name,
-      category:     kakaoRawToCatKey(place.category_raw),
-      address:      place.road_address ?? place.address,
+      storeName:     place.place_name,
+      category:      kakaoRawToCatKey(place.category_raw),
+      address:       place.road_address ?? place.address,
       addressDetail: '',
-      storePhone:   place.phone ?? '',
-      latitude:     place.latitude,
-      longitude:    place.longitude,
+      storePhone:    place.phone ?? '',
+      latitude:      place.latitude,
+      longitude:     place.longitude,
       kakaoPlaceUrl: place.place_url,
     }));
-    setStep(5); // 쿠폰 단계로 바로 점프
+    setStep(1); // Step 1부터 순서대로 — 자동입력 내용 확인/수정 가능
   };
 
   // ── Validation ───────────────────────────────────────────────────────────
@@ -432,18 +432,16 @@ export default function ApplyPage() {
         {/* ── 스텝 콘텐츠 ──────────────────────────────────────── */}
         <div className="flex-1 flex flex-col px-5 max-w-lg mx-auto w-full pt-8 pb-4">
 
-          {/* 카카오 자동입력 뱃지 (step 5 진입 시 표시) */}
-          {step === 5 && form.storeName && form.kakaoPlaceUrl && (
-            <div className="flex items-center gap-2 mb-5 px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-xl w-fit">
-              <span className="text-sm">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="#3A1D1D" className="inline mr-1">
-                  <path d="M12 3C6.477 3 2 6.477 2 10.6c0 2.7 1.707 5.073 4.29 6.424l-.895 3.312a.4.4 0 00.59.44L10.04 18.3a11.3 11.3 0 001.96.17c5.523 0 10-3.477 10-7.87C22 6.477 17.523 3 12 3z"/>
-                </svg>
+          {/* 카카오 자동입력 뱃지 — Step 1~4에서 표시 */}
+          {form.kakaoPlaceUrl && step >= 1 && step <= 4 && (
+            <div className="flex items-center gap-2 mb-5 px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-xl">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="#92661a" className="shrink-0">
+                <path d="M12 3C6.477 3 2 6.477 2 10.6c0 2.7 1.707 5.073 4.29 6.424l-.895 3.312a.4.4 0 00.59.44L10.04 18.3a11.3 11.3 0 001.96.17c5.523 0 10-3.477 10-7.87C22 6.477 17.523 3 12 3z"/>
+              </svg>
+              <span className="text-xs font-semibold text-yellow-800 flex-1">
+                카카오에서 자동입력됐어요 — 내용을 확인하고 수정해주세요
               </span>
-              <span className="text-xs font-semibold text-yellow-800">
-                {form.storeName} — 카카오 정보 자동입력 완료
-              </span>
-              <Check size={12} className="text-green-600" />
+              <Check size={12} className="text-yellow-600 shrink-0" />
             </div>
           )}
 
