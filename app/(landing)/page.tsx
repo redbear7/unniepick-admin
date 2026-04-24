@@ -381,11 +381,12 @@ export default function HomePage() {
       <header style={{ flexShrink:0, background:'#fff', borderBottom:'1px solid #E5E7EB',
         position:'sticky', top:0, zIndex:200 }}>
         <div style={{ maxWidth:1400, margin:'0 auto', padding:'0 20px',
-          display:'flex', alignItems:'center', gap:16, height:64 }}>
+          display:'grid', gridTemplateColumns:'1fr auto 1fr',
+          alignItems:'center', height:64 }}>
 
-          {/* Logo */}
+          {/* Logo — 좌측 */}
           <div style={{ display:'flex', alignItems:'center', gap:8,
-            fontSize:20, fontWeight:900, color:OR, flexShrink:0, cursor:'pointer' }}>
+            fontSize:20, fontWeight:900, color:OR, cursor:'pointer' }}>
             <div style={{ width:30, height:30, background:OR, borderRadius:8,
               display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, color:'#fff' }}>
               🩷
@@ -393,8 +394,8 @@ export default function HomePage() {
             언니픽
           </div>
 
-          {/* ── 검색창 (헤더 중앙) ─────────────────────────── */}
-          <div style={{ flex:1, maxWidth:480, position:'relative' }}>
+          {/* ── 검색창 (정확히 가운데) ──────────────────────── */}
+          <div style={{ width:480, position:'relative' }}>
             <form onSubmit={onSubmit}
               style={{ display:'flex', alignItems:'center', background:'#fff',
                 border:`1.5px solid ${searchDropOpen ? OR : '#D1D5DB'}`,
@@ -541,8 +542,8 @@ export default function HomePage() {
             )}
           </div>
 
-          {/* Right */}
-          <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0, marginLeft:'auto' }}>
+          {/* Right — 우측 정렬 */}
+          <div style={{ display:'flex', alignItems:'center', gap:8, justifyContent:'flex-end' }}>
             <button onClick={() => window.open('/app', '_blank')}
               style={{ padding:'7px 14px', borderRadius:6, fontSize:12, fontWeight:600,
                 color:'#6B7280', background:'none', border:'1px solid #E5E7EB', cursor:'pointer' }}>
