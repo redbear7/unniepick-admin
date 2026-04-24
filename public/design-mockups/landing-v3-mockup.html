@@ -1,0 +1,2109 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>언니픽 — 내 주변 가게 혜택, 한눈에</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Reset & Base ─────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --orange:       #FF6F0F;
+      --orange-dark:  #E05F00;
+      --orange-soft:  #FFF4EC;
+      --orange-mid:   #FFD9B8;
+      --orange-light: #FFEFE0;
+      --green:        #00C471;
+      --blue:         #2D6FF5;
+      --purple:       #7B5CF5;
+      --red:          #FF4040;
+      --yellow:       #FFB800;
+      --white:        #FFFFFF;
+      --bg:           #F7F8FA;
+      --bg2:          #F0F1F4;
+      --card:         #FFFFFF;
+      --t1:           #111827;
+      --t2:           #374151;
+      --t3:           #6B7280;
+      --t4:           #9CA3AF;
+      --border:       #E5E7EB;
+      --border2:      #D1D5DB;
+      --r-sm:  6px;  --r-md: 12px;  --r-lg: 16px;
+      --r-xl:  24px; --r-2xl: 32px;
+      --sh-xs: 0 1px 3px rgba(0,0,0,.06);
+      --sh-sm: 0 2px 8px rgba(0,0,0,.08);
+      --sh-md: 0 4px 20px rgba(0,0,0,.10);
+      --sh-lg: 0 8px 40px rgba(0,0,0,.14);
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--white); color: var(--t1);
+      font-size: 15px; line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { text-decoration: none; color: inherit; }
+    ul { list-style: none; }
+    img { display: block; max-width: 100%; }
+    button { font-family: inherit; cursor: pointer; border: none; outline: none; }
+
+    .wrap { max-width: 1140px; margin: 0 auto; padding: 0 24px; }
+
+    /* ── HEADER ───────────────────────────────────────────── */
+    .gnb {
+      position: sticky; top: 0; z-index: 200;
+      background: rgba(255,255,255,.97);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .gnb-inner {
+      display: flex; align-items: center; height: 60px; gap: 0;
+    }
+    .logo {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 20px; font-weight: 900;
+      color: var(--orange); letter-spacing: -.5px;
+      white-space: nowrap; flex-shrink: 0; margin-right: 28px;
+    }
+    .logo-mark {
+      width: 32px; height: 32px; background: var(--orange);
+      border-radius: 9px; display: flex; align-items: center; justify-content: center;
+      font-size: 17px; color: #fff;
+    }
+    .gnb-nav {
+      display: flex; align-items: center; gap: 0; flex: 1;
+    }
+    .gnb-nav a {
+      padding: 0 14px; height: 60px;
+      display: flex; align-items: center;
+      font-size: 14px; font-weight: 600; color: var(--t2);
+      transition: color .12s;
+      border-bottom: 2.5px solid transparent;
+      margin-bottom: -1px;
+    }
+    .gnb-nav a:hover { color: var(--t1); }
+    .gnb-nav a.active { color: var(--orange); border-bottom-color: var(--orange); }
+    .gnb-loc {
+      display: flex; align-items: center; gap: 5px;
+      padding: 7px 12px; border-radius: var(--r-sm);
+      background: var(--bg); border: 1px solid var(--border2);
+      font-size: 13px; font-weight: 600; color: var(--t2);
+      cursor: pointer; transition: .12s; flex-shrink: 0;
+    }
+    .gnb-loc:hover { border-color: var(--orange); color: var(--orange); }
+    .gnb-right {
+      display: flex; align-items: center; gap: 10px; margin-left: 16px;
+    }
+    .btn-login {
+      padding: 8px 16px; border-radius: var(--r-sm);
+      font-size: 13px; font-weight: 700; color: var(--t2);
+      background: var(--bg); border: 1px solid var(--border2);
+      transition: .12s;
+    }
+    .btn-login:hover { border-color: var(--orange); color: var(--orange); }
+    .btn-app {
+      padding: 8px 18px; border-radius: var(--r-sm);
+      font-size: 13px; font-weight: 700; color: #fff;
+      background: var(--orange);
+      box-shadow: 0 2px 8px rgba(255,111,15,.3);
+      transition: .12s;
+    }
+    .btn-app:hover { background: var(--orange-dark); transform: translateY(-1px); }
+
+    /* ── LOCATION BAR (숨고 서브헤더 스타일) ─────────────── */
+    .loc-bar {
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 0;
+    }
+    .loc-inner {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .loc-chip {
+      display: flex; align-items: center; gap: 5px;
+      padding: 6px 14px; border-radius: 100px;
+      background: var(--orange-soft); border: 1.5px solid var(--orange-mid);
+      font-size: 13px; font-weight: 700; color: var(--orange);
+      cursor: pointer;
+    }
+    .loc-list {
+      display: flex; align-items: center; gap: 6px; flex: 1; overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .loc-list::-webkit-scrollbar { display: none; }
+    .loc-tag {
+      padding: 6px 14px; border-radius: 100px;
+      background: var(--bg); border: 1px solid var(--border2);
+      font-size: 13px; font-weight: 600; color: var(--t3);
+      cursor: pointer; white-space: nowrap; transition: .12s;
+      flex-shrink: 0;
+    }
+    .loc-tag:hover { border-color: var(--t2); color: var(--t2); }
+
+    /* ── HERO ─────────────────────────────────────────────── */
+    .hero {
+      padding: 60px 0 52px;
+      background: linear-gradient(160deg, #fff 60%, #FFF4EC 100%);
+    }
+    .hero-inner {
+      display: grid; grid-template-columns: 1fr 480px;
+      align-items: center; gap: 60px;
+    }
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--orange-soft); color: var(--orange);
+      border: 1px solid var(--orange-mid);
+      padding: 5px 14px; border-radius: 100px;
+      font-size: 12px; font-weight: 700;
+      margin-bottom: 20px;
+    }
+    .hero-title {
+      font-size: 38px; font-weight: 900;
+      line-height: 1.28; letter-spacing: -.6px;
+      color: var(--t1);
+    }
+    .hero-title em { color: var(--orange); font-style: normal; }
+    .hero-sub {
+      margin-top: 14px; font-size: 16px;
+      color: var(--t3); line-height: 1.75; max-width: 460px;
+    }
+
+    /* 검색창 */
+    .hero-search {
+      display: flex; align-items: center; gap: 0;
+      background: var(--white);
+      border: 2px solid var(--orange);
+      border-radius: var(--r-lg); overflow: hidden;
+      box-shadow: 0 4px 20px rgba(255,111,15,.15);
+      margin-top: 28px;
+    }
+    .search-loc {
+      display: flex; align-items: center; gap: 5px;
+      padding: 0 16px; height: 52px; border-right: 1px solid var(--border);
+      font-size: 14px; font-weight: 700; color: var(--orange);
+      cursor: pointer; white-space: nowrap; flex-shrink: 0;
+    }
+    .search-input {
+      flex: 1; padding: 0 16px; height: 52px;
+      border: none; outline: none; background: transparent;
+      font-family: inherit; font-size: 15px; color: var(--t2);
+    }
+    .search-input::placeholder { color: var(--t4); }
+    .search-btn {
+      width: 52px; height: 52px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--orange); color: #fff;
+      font-size: 20px; transition: .12s;
+    }
+    .search-btn:hover { background: var(--orange-dark); }
+
+    /* 인기 검색어 */
+    .search-tags {
+      display: flex; align-items: center; gap: 7px;
+      margin-top: 12px; flex-wrap: wrap;
+    }
+    .search-tag-label { font-size: 12px; color: var(--t4); }
+    .search-tag {
+      padding: 4px 12px; border-radius: 100px;
+      background: var(--bg); border: 1px solid var(--border);
+      font-size: 12px; font-weight: 600; color: var(--t3);
+      cursor: pointer; transition: .12s;
+    }
+    .search-tag:hover { border-color: var(--orange); color: var(--orange); }
+
+    /* 신뢰 지표 */
+    .hero-trust {
+      display: flex; align-items: center; gap: 0;
+      margin-top: 32px; padding-top: 24px;
+      border-top: 1px solid var(--border);
+    }
+    .trust-item { flex: 1; text-align: center; }
+    .trust-num {
+      font-size: 20px; font-weight: 900; color: var(--t1);
+      line-height: 1.2;
+    }
+    .trust-num b { color: var(--orange); }
+    .trust-lbl { font-size: 11px; color: var(--t4); margin-top: 2px; }
+    .trust-div { width: 1px; background: var(--border); height: 40px; }
+
+    /* 히어로 우측 비주얼 */
+    .hero-visual {
+      position: relative;
+      display: flex; justify-content: center; align-items: flex-end; gap: 12px;
+    }
+    .ph-wrap {
+      background: #111; border-radius: 36px;
+      padding: 10px; box-shadow: var(--sh-lg);
+    }
+    .ph-wrap.main { width: 210px; z-index: 2; position: relative; }
+    .ph-wrap.sub {
+      width: 185px; z-index: 1;
+      transform: scale(.92) rotate(-5deg) translateY(20px);
+      opacity: .75; margin-right: -40px;
+    }
+    .ph-screen {
+      background: #F7F8FA; border-radius: 28px;
+      overflow: hidden; padding: 12px;
+    }
+    /* phone status bar */
+    .ph-status {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 0 4px 8px; font-size: 8px; font-weight: 700; color: var(--t3);
+    }
+    .ph-head {
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--white); border-radius: 10px;
+      padding: 8px 10px; margin-bottom: 8px;
+    }
+    .ph-head-loc { font-size: 9px; font-weight: 700; color: var(--orange); }
+    .ph-head-bell { font-size: 13px; }
+    /* store card in phone */
+    .ph-card {
+      background: var(--white); border-radius: 10px;
+      padding: 9px 10px; margin-bottom: 6px;
+      border: 1px solid var(--border);
+    }
+    .ph-card-top {
+      display: flex; align-items: center; gap: 7px; margin-bottom: 6px;
+    }
+    .ph-card-icon {
+      width: 28px; height: 28px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; flex-shrink: 0;
+    }
+    .ph-card-name { font-size: 9px; font-weight: 700; color: var(--t1); }
+    .ph-card-cat  { font-size: 7px; color: var(--t4); margin-top: 1px; }
+    .ph-coupon {
+      display: flex; align-items: center; gap: 4px;
+      background: var(--orange-soft);
+      border-radius: 6px; padding: 4px 8px;
+    }
+    .ph-coupon-txt { font-size: 8px; font-weight: 800; color: var(--orange); }
+    /* stamp row in phone */
+    .ph-stamp {
+      background: var(--white); border-radius: 10px;
+      padding: 9px 10px; border: 1px solid var(--border);
+    }
+    .ph-stamp-ttl { font-size: 8px; font-weight: 700; color: var(--t2); margin-bottom: 6px; }
+    .ph-dots { display: flex; gap: 4px; }
+    .ph-dot {
+      width: 16px; height: 16px; border-radius: 50%;
+      background: var(--orange-soft); border: 1.5px solid var(--orange-mid);
+      font-size: 7px; display: flex; align-items: center; justify-content: center;
+    }
+    .ph-dot.on { background: var(--orange); border-color: var(--orange); color: #fff; }
+
+    /* float badge */
+    .float-badge {
+      position: absolute; background: var(--white);
+      border-radius: var(--r-md); padding: 8px 12px;
+      box-shadow: var(--sh-md); border: 1px solid var(--border);
+      display: flex; align-items: center; gap: 7px;
+    }
+    .fb-top { right: -10px; top: 40px; }
+    .fb-bot { left: 0px; bottom: 50px; }
+    .fb-icon { font-size: 18px; }
+    .fb-text { font-size: 10px; }
+    .fb-text b { display: block; font-size: 12px; font-weight: 800; color: var(--t1); }
+    .fb-text span { color: var(--t4); }
+
+    /* ── PROMO BANNER STRIP ──────────────────────────────── */
+    .promo-strip { background: var(--bg); padding: 20px 0; }
+    .promo-inner {
+      display: flex; gap: 12px; overflow-x: auto; scrollbar-width: none;
+    }
+    .promo-inner::-webkit-scrollbar { display: none; }
+    .promo-card {
+      min-width: 280px; border-radius: var(--r-lg);
+      padding: 18px 22px; display: flex; align-items: center; gap: 14px;
+      flex-shrink: 0; border: 1px solid transparent;
+      cursor: pointer; transition: .15s;
+    }
+    .promo-card:hover { transform: translateY(-2px); box-shadow: var(--sh-sm); }
+    .promo-card.orange { background: linear-gradient(135deg, #FF6F0F, #FF9A4D); color: #fff; }
+    .promo-card.green  { background: linear-gradient(135deg, #00C471, #4AE09A); color: #fff; }
+    .promo-card.blue   { background: linear-gradient(135deg, #2D6FF5, #6A9FF5); color: #fff; }
+    .promo-card.purple { background: linear-gradient(135deg, #7B5CF5, #AE8CF5); color: #fff; }
+    .promo-emoji { font-size: 32px; }
+    .promo-text-sm { font-size: 11px; font-weight: 600; opacity: .85; }
+    .promo-text-lg { font-size: 16px; font-weight: 900; margin-top: 3px; }
+
+    /* ── CATEGORY GRID ────────────────────────────────────── */
+    .cat-section { padding: 56px 0 48px; }
+    .sec-head { margin-bottom: 28px; }
+    .sec-label {
+      font-size: 11px; font-weight: 800; color: var(--orange);
+      letter-spacing: .08em; text-transform: uppercase; margin-bottom: 8px;
+    }
+    .sec-title {
+      font-size: 24px; font-weight: 900; color: var(--t1);
+      letter-spacing: -.4px; line-height: 1.3;
+    }
+    .sec-sub {
+      font-size: 14px; color: var(--t3); margin-top: 6px; line-height: 1.6;
+    }
+
+    .cat-grid {
+      display: grid;
+      grid-template-columns: repeat(9, 1fr);
+      gap: 10px;
+    }
+    .cat-item {
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+      padding: 20px 8px 16px;
+      background: var(--white); border: 1.5px solid var(--border);
+      border-radius: var(--r-lg); cursor: pointer; transition: .15s;
+    }
+    .cat-item:hover {
+      border-color: var(--orange);
+      background: var(--orange-soft);
+      transform: translateY(-3px); box-shadow: var(--sh-sm);
+    }
+    .cat-icon-wrap {
+      width: 52px; height: 52px; border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px; transition: .15s;
+    }
+    .cat-item:hover .cat-icon-wrap { transform: scale(1.1); }
+    .cat-name { font-size: 12px; font-weight: 700; color: var(--t2); text-align: center; }
+    .cat-count { font-size: 10px; color: var(--t4); }
+
+    /* category color themes */
+    .c-cafe    { background: #FFF4E8; }
+    .c-food    { background: #FFF0F0; }
+    .c-snack   { background: #FFF8E8; }
+    .c-beauty  { background: #FFF0FA; }
+    .c-health  { background: #F0FFF5; }
+    .c-fitness { background: #F0F4FF; }
+    .c-shop    { background: #F5F0FF; }
+    .c-pet     { background: #FFFBF0; }
+    .c-more    { background: #F5F5F5; }
+
+    /* ── DIVIDER ─────────────────────────────────────────── */
+    .divider { height: 8px; background: var(--bg); }
+
+    /* ── STORE CAROUSEL ──────────────────────────────────── */
+    .carousel-section { padding: 48px 0 40px; }
+    .carousel-head {
+      display: flex; align-items: flex-end; justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .more-link {
+      font-size: 13px; font-weight: 700; color: var(--t3);
+      display: flex; align-items: center; gap: 3px; transition: .12s;
+    }
+    .more-link:hover { color: var(--orange); }
+
+    .carousel-track {
+      display: flex; gap: 14px;
+      overflow-x: auto; scrollbar-width: none;
+      padding-bottom: 4px;
+    }
+    .carousel-track::-webkit-scrollbar { display: none; }
+
+    /* 가게 카드 */
+    .store-card {
+      min-width: 220px; max-width: 220px;
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+      cursor: pointer; transition: .18s;
+      flex-shrink: 0;
+    }
+    .store-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--sh-md);
+      border-color: var(--orange-mid);
+    }
+    .store-thumb {
+      width: 100%; height: 130px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 48px; position: relative;
+      background: var(--bg);
+    }
+    .store-thumb-badge {
+      position: absolute; top: 10px; left: 10px;
+      background: var(--orange); color: #fff;
+      font-size: 10px; font-weight: 800;
+      padding: 3px 8px; border-radius: 100px;
+    }
+    .store-thumb-new {
+      position: absolute; top: 10px; right: 10px;
+      background: var(--green); color: #fff;
+      font-size: 9px; font-weight: 800;
+      padding: 3px 8px; border-radius: 100px;
+    }
+    .store-body { padding: 12px 14px 14px; }
+    .store-cat {
+      font-size: 10px; font-weight: 700; color: var(--orange);
+      margin-bottom: 4px;
+    }
+    .store-name {
+      font-size: 14px; font-weight: 800; color: var(--t1);
+      margin-bottom: 3px;
+    }
+    .store-loc {
+      font-size: 11px; color: var(--t4);
+      display: flex; align-items: center; gap: 3px;
+      margin-bottom: 10px;
+    }
+    .store-tags { display: flex; gap: 5px; flex-wrap: wrap; }
+    .store-tag {
+      padding: 3px 9px; border-radius: 100px;
+      font-size: 10px; font-weight: 700;
+    }
+    .tag-coupon  { background: var(--orange-soft); color: var(--orange); }
+    .tag-stamp   { background: #FFF0FA; color: #C026D3; }
+    .tag-sale    { background: #FFEBEB; color: var(--red); }
+    .tag-new     { background: #EDFFF6; color: var(--green); }
+
+    /* ── FEATURE SPLIT: 쿠폰 ─────────────────────────────── */
+    .feature-section { padding: 64px 0; }
+    .feature-section.gray { background: var(--bg); }
+    .feature-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      align-items: center; gap: 72px;
+    }
+    .feature-grid.rev .feature-visual { order: -1; }
+    .feature-text {}
+    .feature-label {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 12px; border-radius: 100px;
+      font-size: 11px; font-weight: 800;
+      margin-bottom: 18px;
+    }
+    .fl-orange { background: var(--orange-soft); color: var(--orange); }
+    .fl-purple { background: #F3F0FF; color: var(--purple); }
+    .fl-green  { background: #EDFFF6; color: var(--green); }
+    .fl-blue   { background: #EEF3FF; color: var(--blue); }
+    .feature-title {
+      font-size: 28px; font-weight: 900;
+      line-height: 1.3; letter-spacing: -.4px; color: var(--t1);
+      margin-bottom: 14px;
+    }
+    .feature-title em { color: var(--orange); font-style: normal; }
+    .feature-desc {
+      font-size: 15px; color: var(--t3); line-height: 1.75;
+      margin-bottom: 24px;
+    }
+    .feature-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 28px; }
+    .feature-item {
+      display: flex; align-items: flex-start; gap: 10px;
+    }
+    .fi-icon {
+      width: 28px; height: 28px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; flex-shrink: 0; margin-top: 1px;
+    }
+    .fi-orange { background: var(--orange-soft); }
+    .fi-purple { background: #F3F0FF; }
+    .fi-green  { background: #EDFFF6; }
+    .fi-blue   { background: #EEF3FF; }
+    .fi-text {}
+    .fi-text b { display: block; font-size: 14px; font-weight: 700; color: var(--t1); margin-bottom: 2px; }
+    .fi-text span { font-size: 13px; color: var(--t3); }
+    .btn-feature {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 12px 24px; border-radius: var(--r-md);
+      font-size: 14px; font-weight: 700;
+      background: var(--orange); color: #fff;
+      box-shadow: 0 3px 12px rgba(255,111,15,.25);
+      transition: .15s;
+    }
+    .btn-feature:hover { background: var(--orange-dark); transform: translateY(-1px); }
+
+    /* 쿠폰 비주얼 데모 */
+    .feature-visual {
+      background: var(--white);
+      border-radius: var(--r-2xl);
+      padding: 28px 24px;
+      box-shadow: var(--sh-md);
+      border: 1px solid var(--border);
+    }
+    .fv-title {
+      font-size: 12px; font-weight: 700; color: var(--t3);
+      margin-bottom: 14px; letter-spacing: .04em; text-transform: uppercase;
+    }
+
+    /* 쿠폰 카드 */
+    .coupon-card {
+      display: flex; align-items: stretch;
+      border-radius: var(--r-md); overflow: hidden;
+      margin-bottom: 10px;
+      border: 1px solid var(--border);
+      box-shadow: var(--sh-xs);
+    }
+    .cc-bar {
+      width: 48px; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 4px;
+      flex-shrink: 0; padding: 10px 0;
+    }
+    .cc-emoji { font-size: 18px; }
+    .cc-lbl {
+      font-size: 7.5px; font-weight: 800; color: #fff;
+      writing-mode: vertical-rl; letter-spacing: .1em;
+    }
+    .cc-body { flex: 1; padding: 10px 14px; background: var(--white); }
+    .cc-name { font-size: 12px; font-weight: 700; color: var(--t1); margin-bottom: 3px; }
+    .cc-store { font-size: 10px; color: var(--t4); }
+    .cc-val {
+      font-size: 18px; font-weight: 900;
+      margin-top: 4px;
+    }
+    .cc-exp { font-size: 10px; color: var(--t4); margin-top: 2px; }
+    /* 스탬프 카드 */
+    .stamp-card {
+      background: var(--white); border-radius: var(--r-md);
+      padding: 14px; border: 1px solid var(--border); margin-bottom: 10px;
+    }
+    .sc-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .sc-icon { font-size: 20px; }
+    .sc-name { font-size: 13px; font-weight: 800; color: var(--t1); }
+    .sc-sub  { font-size: 11px; color: var(--t4); }
+    .sc-prog { display: flex; gap: 5px; flex-wrap: wrap; }
+    .sc-dot {
+      width: 30px; height: 30px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; border: 1.5px solid var(--border);
+      background: var(--bg);
+    }
+    .sc-dot.filled { background: var(--orange); border-color: var(--orange); color: #fff; }
+    .sc-dot.reward {
+      background: linear-gradient(135deg, #FFD700, #FF9A00);
+      border-color: #FFD700; color: #fff;
+    }
+
+    /* ── HOW IT WORKS ─────────────────────────────────────── */
+    .how-section { padding: 64px 0; }
+    .how-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
+      margin-top: 40px;
+    }
+    .how-card {
+      background: var(--white); border-radius: var(--r-xl);
+      padding: 32px 28px; border: 1.5px solid var(--border);
+      position: relative; transition: .18s;
+    }
+    .how-card:hover {
+      border-color: var(--orange-mid);
+      box-shadow: var(--sh-sm); transform: translateY(-3px);
+    }
+    .how-num {
+      position: absolute; top: 24px; right: 24px;
+      font-size: 52px; font-weight: 900; color: var(--bg2);
+      line-height: 1; letter-spacing: -2px;
+    }
+    .how-icon {
+      width: 56px; height: 56px; border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px; margin-bottom: 18px;
+    }
+    .hi-orange { background: var(--orange-soft); }
+    .hi-green  { background: #EDFFF6; }
+    .hi-blue   { background: #EEF3FF; }
+    .how-title {
+      font-size: 18px; font-weight: 800; color: var(--t1);
+      margin-bottom: 10px; letter-spacing: -.3px;
+    }
+    .how-desc { font-size: 14px; color: var(--t3); line-height: 1.7; }
+    .how-arrow {
+      display: flex; justify-content: center; align-items: center;
+      color: var(--border2); font-size: 20px; padding-top: 28px;
+    }
+
+    /* ── APP DOWNLOAD BANNER ─────────────────────────────── */
+    .app-banner {
+      background: linear-gradient(135deg, #1A1A2E 0%, #16213E 50%, #0F3460 100%);
+      padding: 60px 0;
+    }
+    .app-inner {
+      display: grid; grid-template-columns: 1fr auto;
+      align-items: center; gap: 40px;
+    }
+    .app-tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(255,255,255,.1); color: rgba(255,255,255,.8);
+      padding: 5px 14px; border-radius: 100px;
+      font-size: 12px; font-weight: 700;
+      margin-bottom: 16px; border: 1px solid rgba(255,255,255,.15);
+    }
+    .app-title {
+      font-size: 32px; font-weight: 900; color: #fff;
+      letter-spacing: -.5px; line-height: 1.3; margin-bottom: 12px;
+    }
+    .app-title em { color: var(--orange); font-style: normal; }
+    .app-sub {
+      font-size: 15px; color: rgba(255,255,255,.65);
+      line-height: 1.7; max-width: 480px; margin-bottom: 28px;
+    }
+    .app-btns { display: flex; gap: 12px; flex-wrap: wrap; }
+    .app-btn {
+      display: flex; align-items: center; gap: 10px;
+      padding: 13px 22px; border-radius: var(--r-md);
+      border: 1.5px solid rgba(255,255,255,.3);
+      background: rgba(255,255,255,.08);
+      color: #fff; transition: .15s; cursor: pointer;
+      font-size: 14px; font-weight: 700;
+    }
+    .app-btn:hover {
+      background: rgba(255,255,255,.18);
+      border-color: rgba(255,255,255,.6);
+    }
+    .app-btn-icon { font-size: 22px; }
+    .app-btn-sub { font-size: 10px; font-weight: 500; opacity: .7; display: block; }
+    .app-stores {
+      display: flex; gap: 8px;
+    }
+    .app-store-badge {
+      background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2);
+      border-radius: var(--r-md); padding: 10px 16px;
+      color: #fff; font-size: 11px; font-weight: 700;
+      text-align: center; cursor: pointer; transition: .12s;
+    }
+    .app-store-badge:hover { background: rgba(255,255,255,.18); }
+    .asb-icon { font-size: 24px; margin-bottom: 4px; }
+
+    /* 폰 스크린 in 배너 */
+    .app-phone {
+      width: 200px; background: #111; border-radius: 36px;
+      padding: 10px; box-shadow: 0 20px 60px rgba(0,0,0,.4);
+      flex-shrink: 0;
+    }
+    .app-phone-screen {
+      background: var(--bg); border-radius: 28px;
+      overflow: hidden; padding: 12px;
+    }
+
+    /* ── OWNER SECTION ────────────────────────────────────── */
+    .owner-section { padding: 64px 0; background: var(--bg); }
+    .owner-inner {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 64px;
+      align-items: center;
+    }
+    .owner-tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 14px; border-radius: 100px;
+      background: #EEF3FF; color: var(--blue);
+      font-size: 11px; font-weight: 800;
+      margin-bottom: 18px;
+    }
+    .owner-title {
+      font-size: 28px; font-weight: 900; color: var(--t1);
+      letter-spacing: -.4px; line-height: 1.3; margin-bottom: 14px;
+    }
+    .owner-desc { font-size: 15px; color: var(--t3); line-height: 1.75; margin-bottom: 28px; }
+    .owner-steps { display: flex; flex-direction: column; gap: 14px; }
+    .owner-step {
+      display: flex; align-items: flex-start; gap: 14px;
+    }
+    .os-num {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--blue); color: #fff;
+      font-size: 13px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 1px;
+    }
+    .os-text b { font-size: 14px; font-weight: 700; color: var(--t1); display: block; margin-bottom: 2px; }
+    .os-text span { font-size: 13px; color: var(--t3); }
+    .btn-owner {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 13px 28px; border-radius: var(--r-md);
+      font-size: 14px; font-weight: 800;
+      background: var(--blue); color: #fff;
+      box-shadow: 0 3px 12px rgba(45,111,245,.25);
+      transition: .15s; margin-top: 24px;
+    }
+    .btn-owner:hover { background: #1E5CE5; transform: translateY(-1px); }
+
+    /* 사장님 대시보드 데모 카드 */
+    .owner-demo {
+      background: var(--white); border-radius: var(--r-xl);
+      padding: 24px; box-shadow: var(--sh-md); border: 1px solid var(--border);
+    }
+    .od-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 18px;
+    }
+    .od-title { font-size: 14px; font-weight: 800; color: var(--t1); }
+    .od-badge {
+      padding: 4px 10px; border-radius: 100px;
+      font-size: 10px; font-weight: 700;
+      background: #EDFFF6; color: var(--green);
+    }
+    .od-stats {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+      margin-bottom: 16px;
+    }
+    .od-stat {
+      background: var(--bg); border-radius: var(--r-md);
+      padding: 12px; text-align: center;
+    }
+    .od-stat-num {
+      font-size: 20px; font-weight: 900; color: var(--t1); line-height: 1.2;
+    }
+    .od-stat-num b { color: var(--orange); }
+    .od-stat-lbl { font-size: 10px; color: var(--t4); margin-top: 2px; }
+    .od-coupon-row {
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--orange-soft); border-radius: var(--r-md);
+      padding: 12px 14px; margin-bottom: 10px;
+      border: 1px solid var(--orange-mid);
+    }
+    .ocr-left { display: flex; align-items: center; gap: 8px; }
+    .ocr-emoji { font-size: 18px; }
+    .ocr-name { font-size: 13px; font-weight: 700; color: var(--t1); }
+    .ocr-count { font-size: 11px; color: var(--t4); }
+    .ocr-right { font-size: 13px; font-weight: 800; color: var(--orange); }
+    .od-qr-btn {
+      width: 100%; padding: 11px;
+      border-radius: var(--r-md); border: 1.5px solid var(--border2);
+      background: var(--white); font-size: 13px; font-weight: 700; color: var(--t2);
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      cursor: pointer; transition: .12s;
+    }
+    .od-qr-btn:hover { border-color: var(--orange); color: var(--orange); }
+
+    /* ── REVIEWS / PRICE REPORT ──────────────────────────── */
+    .social-section { padding: 64px 0; }
+    .social-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+      margin-top: 40px;
+    }
+    .social-card {
+      background: var(--white); border-radius: var(--r-xl);
+      padding: 28px; border: 1.5px solid var(--border);
+      transition: .15s;
+    }
+    .social-card:hover {
+      border-color: var(--orange-mid);
+      box-shadow: var(--sh-sm); transform: translateY(-3px);
+    }
+    .sc-top {
+      display: flex; align-items: center; gap: 12px; margin-bottom: 14px;
+    }
+    .sc-iconb {
+      width: 48px; height: 48px; border-radius: 14px;
+      display: flex; align-items: center; justify-content: center; font-size: 24px;
+    }
+    .scb-green  { background: #EDFFF6; }
+    .scb-orange { background: var(--orange-soft); }
+    .sc-ttl { font-size: 17px; font-weight: 800; color: var(--t1); }
+    .sc-stl { font-size: 12px; color: var(--t4); margin-top: 2px; }
+    .sc-desc { font-size: 14px; color: var(--t3); line-height: 1.7; margin-bottom: 16px; }
+    .sc-bullets { display: flex; flex-direction: column; gap: 8px; }
+    .sc-bullet {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 13px; color: var(--t2);
+    }
+    .sc-bullet-dot { color: var(--orange); font-weight: 900; flex-shrink: 0; }
+
+    /* ── TESTIMONIALS ────────────────────────────────────── */
+    .review-section { padding: 56px 0; background: var(--bg); }
+    .review-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+      margin-top: 36px;
+    }
+    .review-card {
+      background: var(--white); border-radius: var(--r-lg);
+      padding: 22px; border: 1px solid var(--border);
+      transition: .15s;
+    }
+    .review-card:hover { box-shadow: var(--sh-sm); transform: translateY(-2px); }
+    .rv-stars { color: #FFB800; font-size: 14px; margin-bottom: 10px; }
+    .rv-text {
+      font-size: 14px; color: var(--t2); line-height: 1.7;
+      margin-bottom: 14px;
+    }
+    .rv-text::before { content: '"'; font-size: 20px; color: var(--orange); }
+    .rv-text::after  { content: '"'; font-size: 20px; color: var(--orange); }
+    .rv-bottom { display: flex; align-items: center; gap: 10px; }
+    .rv-avatar {
+      width: 34px; height: 34px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; background: var(--orange-soft);
+      flex-shrink: 0;
+    }
+    .rv-name { font-size: 13px; font-weight: 700; color: var(--t1); }
+    .rv-from { font-size: 11px; color: var(--t4); }
+
+    /* ── STATS BANNER ────────────────────────────────────── */
+    .stats-banner { padding: 48px 0; background: var(--orange); }
+    .stats-inner {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
+      text-align: center;
+    }
+    .stat-item { padding: 8px 0; }
+    .stat-num {
+      font-size: 36px; font-weight: 900; color: #fff;
+      line-height: 1.1; letter-spacing: -1px;
+    }
+    .stat-lbl { font-size: 13px; color: rgba(255,255,255,.8); margin-top: 4px; }
+    .stat-div { width: 1px; background: rgba(255,255,255,.25); margin: 0 auto; }
+
+    /* ── FOOTER ──────────────────────────────────────────── */
+    .footer {
+      background: #111827;
+      color: rgba(255,255,255,.6);
+      padding: 52px 0 36px;
+    }
+    .footer-top {
+      display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+      gap: 40px; padding-bottom: 40px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .footer-logo {
+      font-size: 20px; font-weight: 900; color: var(--orange);
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 14px;
+    }
+    .footer-brand-desc {
+      font-size: 13px; line-height: 1.7; color: rgba(255,255,255,.5);
+      max-width: 200px; margin-bottom: 20px;
+    }
+    .footer-socials { display: flex; gap: 8px; }
+    .footer-social {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: rgba(255,255,255,.08);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; cursor: pointer; transition: .12s;
+    }
+    .footer-social:hover { background: rgba(255,255,255,.16); }
+    .footer-col-title {
+      font-size: 13px; font-weight: 700; color: rgba(255,255,255,.9);
+      margin-bottom: 14px;
+    }
+    .footer-links { display: flex; flex-direction: column; gap: 8px; }
+    .footer-links a {
+      font-size: 13px; color: rgba(255,255,255,.5);
+      transition: .12s;
+    }
+    .footer-links a:hover { color: rgba(255,255,255,.9); }
+    .footer-bottom {
+      display: flex; align-items: center; justify-content: space-between;
+      padding-top: 28px; font-size: 12px; color: rgba(255,255,255,.35);
+      flex-wrap: wrap; gap: 12px;
+    }
+    .footer-biz { display: flex; gap: 20px; }
+    .footer-terms { display: flex; gap: 16px; }
+    .footer-terms a { color: rgba(255,255,255,.4); transition: .12s; }
+    .footer-terms a:hover { color: rgba(255,255,255,.8); }
+
+    /* ── TAB (쿠폰 섹션) ──────────────────────────────────── */
+    .tab-btns {
+      display: flex; gap: 0;
+      background: var(--bg); border-radius: var(--r-md);
+      padding: 4px; margin-bottom: 28px;
+      width: fit-content;
+    }
+    .tab-btn {
+      padding: 8px 20px; border-radius: var(--r-sm);
+      font-size: 13px; font-weight: 700; color: var(--t3);
+      background: transparent; cursor: pointer; transition: .15s;
+    }
+    .tab-btn.active {
+      background: var(--white); color: var(--orange);
+      box-shadow: var(--sh-xs);
+    }
+
+    /* ── 반응형 ───────────────────────────────────────────── */
+    @media (max-width: 1024px) {
+      .cat-grid { grid-template-columns: repeat(5, 1fr); }
+      .hero-inner { grid-template-columns: 1fr; gap: 40px; }
+      .ph-wrap.sub { display: none; }
+      .float-badge { display: none; }
+      .footer-top { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 768px) {
+      .gnb-nav { display: none; }
+      .gnb-loc { display: none; }
+      .hero { padding: 40px 0; }
+      .hero-title { font-size: 28px; }
+      .feature-grid, .owner-inner, .how-grid,
+      .social-grid, .review-grid, .stats-inner { grid-template-columns: 1fr; }
+      .feature-grid.rev .feature-visual { order: 0; }
+      .cat-grid { grid-template-columns: repeat(4, 1fr); }
+      .footer-top { grid-template-columns: 1fr; }
+      .app-inner { grid-template-columns: 1fr; }
+      .app-phone { display: none; }
+    }
+    @media (max-width: 480px) {
+      .hero-title { font-size: 24px; }
+      .cat-grid { grid-template-columns: repeat(3, 1fr); }
+      .sec-title { font-size: 20px; }
+      .feature-title { font-size: 22px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══ HEADER ══════════════════════════════════════════════════════ -->
+<header class="gnb">
+  <div class="wrap">
+    <div class="gnb-inner">
+      <a href="#" class="logo">
+        <div class="logo-mark">🩷</div>
+        언니픽
+      </a>
+
+      <nav class="gnb-nav">
+        <a href="#stores" class="active">가게찾기</a>
+        <a href="#coupon">쿠폰</a>
+        <a href="#stamp">스탬프</a>
+        <a href="#review">리뷰인증</a>
+        <a href="#owner">사장님</a>
+      </nav>
+
+      <button class="gnb-loc" onclick="alert('위치 변경')">
+        📍 강남구 &nbsp;▾
+      </button>
+
+      <div class="gnb-right">
+        <button class="btn-login" onclick="alert('로그인')">로그인</button>
+        <button class="btn-app" onclick="alert('앱 다운로드')">앱 다운로드</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- 위치 서브바 -->
+<div class="loc-bar">
+  <div class="wrap">
+    <div class="loc-inner">
+      <button class="loc-chip">📍 현재 위치 ▾</button>
+      <div class="loc-list">
+        <button class="loc-tag">강남구</button>
+        <button class="loc-tag">서초구</button>
+        <button class="loc-tag">마포구</button>
+        <button class="loc-tag">송파구</button>
+        <button class="loc-tag">종로구</button>
+        <button class="loc-tag">용산구</button>
+        <button class="loc-tag">성동구</button>
+        <button class="loc-tag">광진구</button>
+        <button class="loc-tag">동작구</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ HERO ═════════════════════════════════════════════════════════ -->
+<section class="hero">
+  <div class="wrap">
+    <div class="hero-inner">
+      <!-- 텍스트 -->
+      <div>
+        <div class="hero-eyebrow">🩷 내 주변 가게 혜택 앱 #1</div>
+        <h1 class="hero-title">
+          내 주변 가게 혜택,<br>
+          <em>한눈에 모아보는</em><br>
+          언니픽
+        </h1>
+        <p class="hero-sub">
+          쿠폰·스탬프·타임세일까지 — 근처 가게 혜택을 지도에서 실시간으로 확인하고,
+          리뷰 인증으로 쿠폰도 받아보세요.
+        </p>
+
+        <!-- 검색창 -->
+        <div class="hero-search">
+          <div class="search-loc">📍 강남구 ▾</div>
+          <input class="search-input" type="text" placeholder="가게 이름, 업종, 메뉴 검색..." />
+          <button class="search-btn" onclick="alert('검색')">🔍</button>
+        </div>
+
+        <!-- 인기 검색어 -->
+        <div class="search-tags">
+          <span class="search-tag-label">인기 ·</span>
+          <button class="search-tag">아메리카노</button>
+          <button class="search-tag">헤어샵</button>
+          <button class="search-tag">삼겹살</button>
+          <button class="search-tag">마사지</button>
+          <button class="search-tag">스터디카페</button>
+        </div>
+
+        <!-- 신뢰 수치 -->
+        <div class="hero-trust">
+          <div class="trust-item">
+            <div class="trust-num"><b>2,400</b>+</div>
+            <div class="trust-lbl">등록 가게</div>
+          </div>
+          <div class="trust-div"></div>
+          <div class="trust-item">
+            <div class="trust-num"><b>18,000</b>+</div>
+            <div class="trust-lbl">발급된 쿠폰</div>
+          </div>
+          <div class="trust-div"></div>
+          <div class="trust-item">
+            <div class="trust-num"><b>4.8</b>⭐</div>
+            <div class="trust-lbl">앱 평점</div>
+          </div>
+          <div class="trust-div"></div>
+          <div class="trust-item">
+            <div class="trust-num"><b>9,600</b>+</div>
+            <div class="trust-lbl">사용자</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 폰 비주얼 -->
+      <div class="hero-visual">
+        <!-- 메인 폰 -->
+        <div class="ph-wrap main">
+          <div class="ph-screen">
+            <div class="ph-status">
+              <span>9:41</span><span>🔋</span>
+            </div>
+            <div class="ph-head">
+              <div style="font-size:9px;font-weight:800;color:#FF6F0F;">📍 강남구</div>
+              <span style="font-size:13px;">🔔</span>
+            </div>
+            <!-- 카드 1 -->
+            <div class="ph-card">
+              <div class="ph-card-top">
+                <div class="ph-card-icon" style="background:#FFF4E8;">☕</div>
+                <div>
+                  <div class="ph-card-name">빈스커피 강남점</div>
+                  <div class="ph-card-cat">카페 · 강남구</div>
+                </div>
+              </div>
+              <div class="ph-coupon">
+                <span class="ph-coupon-txt">🎟 아메리카노 500원 할인</span>
+              </div>
+            </div>
+            <!-- 카드 2 -->
+            <div class="ph-card">
+              <div class="ph-card-top">
+                <div class="ph-card-icon" style="background:#FFF0FA;">✂️</div>
+                <div>
+                  <div class="ph-card-name">헤어스튜디오 K</div>
+                  <div class="ph-card-cat">뷰티·미용 · 서초구</div>
+                </div>
+              </div>
+              <div class="ph-coupon">
+                <span class="ph-coupon-txt">🔖 커트 20% 할인쿠폰</span>
+              </div>
+            </div>
+            <!-- 스탬프 -->
+            <div class="ph-stamp">
+              <div class="ph-stamp-ttl">☕ 빈스커피 스탬프 7/10</div>
+              <div class="ph-dots">
+                <div class="ph-dot on">✓</div>
+                <div class="ph-dot on">✓</div>
+                <div class="ph-dot on">✓</div>
+                <div class="ph-dot on">✓</div>
+                <div class="ph-dot on">✓</div>
+                <div class="ph-dot on">✓</div>
+                <div class="ph-dot on">✓</div>
+                <div class="ph-dot"></div>
+                <div class="ph-dot"></div>
+                <div class="ph-dot" style="font-size:8px;border-color:#FFD700;background:#FFF8E0;">🎁</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 백 폰 -->
+        <div class="ph-wrap sub">
+          <div class="ph-screen">
+            <div class="ph-status">
+              <span>9:41</span><span>🔋</span>
+            </div>
+            <div style="font-size:9px;font-weight:800;color:#111;margin-bottom:8px;text-align:center;">🗺️ 언니픽 지도</div>
+            <div style="background:#e8f0e8;border-radius:12px;height:100px;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:8px;">🗺️</div>
+            <div class="ph-card" style="margin-bottom:0">
+              <div class="ph-card-top">
+                <div class="ph-card-icon" style="background:#EDFFF6;">🍜</div>
+                <div>
+                  <div class="ph-card-name">청담국수</div>
+                  <div class="ph-card-cat">음식점 · 143m</div>
+                </div>
+              </div>
+              <div class="ph-coupon">
+                <span class="ph-coupon-txt">⏰ 타임세일 12~14시</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 플로팅 배지 -->
+        <div class="float-badge fb-top">
+          <div class="fb-icon">🎟</div>
+          <div class="fb-text"><b>쿠폰 사용됨!</b><span>방금 전 · 강남구</span></div>
+        </div>
+        <div class="float-badge fb-bot">
+          <div class="fb-icon">⭐</div>
+          <div class="fb-text"><b>스탬프 적립</b><span>7 / 10 달성</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ PROMO STRIP ════════════════════════════════════════════════ -->
+<div class="promo-strip">
+  <div class="wrap">
+    <div class="promo-inner">
+      <div class="promo-card orange">
+        <div class="promo-emoji">🎟</div>
+        <div>
+          <div class="promo-text-sm">이번 주 신규 쿠폰</div>
+          <div class="promo-text-lg">120+ 가게 새 쿠폰 등록</div>
+        </div>
+      </div>
+      <div class="promo-card green">
+        <div class="promo-emoji">⏰</div>
+        <div>
+          <div class="promo-text-sm">지금 타임세일 중</div>
+          <div class="promo-text-lg">점심 할인 32개 진행 중</div>
+        </div>
+      </div>
+      <div class="promo-card blue">
+        <div class="promo-emoji">📝</div>
+        <div>
+          <div class="promo-text-sm">네이버 리뷰 인증</div>
+          <div class="promo-text-lg">리뷰 쓰고 무료 쿠폰 받기</div>
+        </div>
+      </div>
+      <div class="promo-card purple">
+        <div class="promo-emoji">🗺️</div>
+        <div>
+          <div class="promo-text-sm">내 근처 지도 탐색</div>
+          <div class="promo-text-lg">500m 내 혜택 가게 보기</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CATEGORY GRID ══════════════════════════════════════════════ -->
+<section class="cat-section" id="stores">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-label">카테고리</div>
+      <h2 class="sec-title">어떤 가게를 찾고 있나요?</h2>
+      <p class="sec-sub">업종별로 근처 혜택 가게를 빠르게 찾아보세요.</p>
+    </div>
+
+    <div class="cat-grid">
+      <div class="cat-item">
+        <div class="cat-icon-wrap c-cafe">☕</div>
+        <div class="cat-name">카페</div>
+        <div class="cat-count">324개</div>
+      </div>
+      <div class="cat-item">
+        <div class="cat-icon-wrap c-food">🍽️</div>
+        <div class="cat-name">음식점</div>
+        <div class="cat-count">512개</div>
+      </div>
+      <div class="cat-item">
+        <div class="cat-icon-wrap c-snack">🥢</div>
+        <div class="cat-name">분식·간식</div>
+        <div class="cat-count">186개</div>
+      </div>
+      <div class="cat-item">
+        <div class="cat-icon-wrap c-beauty">💅</div>
+        <div class="cat-name">뷰티·미용</div>
+        <div class="cat-count">245개</div>
+      </div>
+      <div class="cat-item">
+        <div class="cat-icon-wrap c-health">🏥</div>
+        <div class="cat-name">병원·건강</div>
+        <div class="cat-count">148개</div>
+      </div>
+      <div class="cat-item">
+        <div class="cat-icon-wrap c-fitness">💪</div>
+        <div class="cat-name">피트니스</div>
+        <div class="cat-count">97개</div>
+      </div>
+      <div class="cat-item">
+        <div class="cat-icon-wrap c-shop">🛍️</div>
+        <div class="cat-name">쇼핑</div>
+        <div class="cat-count">203개</div>
+      </div>
+      <div class="cat-item">
+        <div class="cat-icon-wrap c-pet">🐾</div>
+        <div class="cat-name">반려동물</div>
+        <div class="cat-count">62개</div>
+      </div>
+      <div class="cat-item">
+        <div class="cat-icon-wrap c-more">✨</div>
+        <div class="cat-name">기타</div>
+        <div class="cat-count">전체보기</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══ NEARBY STORES CAROUSEL ════════════════════════════════════ -->
+<section class="carousel-section">
+  <div class="wrap">
+    <div class="carousel-head">
+      <div>
+        <div class="sec-label">주변 인기 가게</div>
+        <h2 class="sec-title">지금 내 근처 핫한 혜택 🔥</h2>
+      </div>
+      <a href="#" class="more-link">전체보기 →</a>
+    </div>
+
+    <div class="carousel-track">
+      <div class="store-card">
+        <div class="store-thumb" style="background: linear-gradient(135deg,#FFF4E8,#FFE4C4);">
+          ☕
+          <span class="store-thumb-badge">쿠폰 2개</span>
+        </div>
+        <div class="store-body">
+          <div class="store-cat">카페</div>
+          <div class="store-name">빈스커피 강남점</div>
+          <div class="store-loc">📍 강남구 · 210m</div>
+          <div class="store-tags">
+            <span class="store-tag tag-coupon">할인쿠폰</span>
+            <span class="store-tag tag-stamp">스탬프</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="store-card">
+        <div class="store-thumb" style="background: linear-gradient(135deg,#FFF0FA,#FFD6F5);">
+          ✂️
+          <span class="store-thumb-badge">타임세일</span>
+          <span class="store-thumb-new">NEW</span>
+        </div>
+        <div class="store-body">
+          <div class="store-cat">뷰티·미용</div>
+          <div class="store-name">헤어스튜디오 K</div>
+          <div class="store-loc">📍 서초구 · 480m</div>
+          <div class="store-tags">
+            <span class="store-tag tag-coupon">20% 할인</span>
+            <span class="store-tag tag-new">신규</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="store-card">
+        <div class="store-thumb" style="background: linear-gradient(135deg,#FFF8E8,#FFE4A0);">
+          🍜
+          <span class="store-thumb-badge">⏰ 점심세일</span>
+        </div>
+        <div class="store-body">
+          <div class="store-cat">음식점</div>
+          <div class="store-name">청담국수</div>
+          <div class="store-loc">📍 강남구 · 143m</div>
+          <div class="store-tags">
+            <span class="store-tag tag-sale">타임세일</span>
+            <span class="store-tag tag-stamp">스탬프</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="store-card">
+        <div class="store-thumb" style="background: linear-gradient(135deg,#EDFFF6,#C8FFE4);">
+          💆
+          <span class="store-thumb-badge">쿠폰 1개</span>
+        </div>
+        <div class="store-body">
+          <div class="store-cat">마사지·힐링</div>
+          <div class="store-name">힐링스파 강남</div>
+          <div class="store-loc">📍 강남구 · 620m</div>
+          <div class="store-tags">
+            <span class="store-tag tag-coupon">1만원 할인</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="store-card">
+        <div class="store-thumb" style="background: linear-gradient(135deg,#F0F4FF,#D6E4FF);">
+          📚
+          <span class="store-thumb-badge">쿠폰 3개</span>
+        </div>
+        <div class="store-body">
+          <div class="store-cat">스터디카페</div>
+          <div class="store-name">스터디룸 플러스</div>
+          <div class="store-loc">📍 서초구 · 350m</div>
+          <div class="store-tags">
+            <span class="store-tag tag-coupon">1시간 무료</span>
+            <span class="store-tag tag-stamp">스탬프</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="store-card">
+        <div class="store-thumb" style="background: linear-gradient(135deg,#FFF0F0,#FFD6D6);">
+          🍣
+          <span class="store-thumb-badge">NEW</span>
+        </div>
+        <div class="store-body">
+          <div class="store-cat">음식점</div>
+          <div class="store-name">스시오마카세</div>
+          <div class="store-loc">📍 강남구 · 900m</div>
+          <div class="store-tags">
+            <span class="store-tag tag-new">신규 등록</span>
+            <span class="store-tag tag-coupon">쿠폰</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ 타임세일 CAROUSEL ══════════════════════════════════════════ -->
+<section class="carousel-section" style="padding-top:0; background: var(--bg);">
+  <div class="wrap" style="padding-top:40px;padding-bottom:40px;">
+    <div class="carousel-head">
+      <div>
+        <div class="sec-label">⏰ 타임세일</div>
+        <h2 class="sec-title">지금 이 시간만 할인 중</h2>
+      </div>
+      <a href="#" class="more-link">전체보기 →</a>
+    </div>
+
+    <div class="carousel-track">
+      <div class="store-card">
+        <div class="store-thumb" style="background: linear-gradient(135deg,#FFF8E8,#FFE4A0);">
+          🍱
+          <span class="store-thumb-badge" style="background: #E05F00;">⏰ 12:00~14:00</span>
+        </div>
+        <div class="store-body">
+          <div class="store-cat">분식·간식</div>
+          <div class="store-name">도시락공방</div>
+          <div class="store-loc">📍 강남구 · 250m</div>
+          <div class="store-tags">
+            <span class="store-tag tag-sale">런치 30% 할인</span>
+          </div>
+        </div>
+      </div>
+      <div class="store-card">
+        <div class="store-thumb" style="background: linear-gradient(135deg,#F0FFF5,#C8FFE0);">
+          🧋
+          <span class="store-thumb-badge" style="background: #E05F00;">⏰ 14:00~16:00</span>
+        </div>
+        <div class="store-body">
+          <div class="store-cat">카페</div>
+          <div class="store-name">모카팩토리</div>
+          <div class="store-loc">📍 서초구 · 180m</div>
+          <div class="store-tags">
+            <span class="store-tag tag-sale">버블티 2+1</span>
+          </div>
+        </div>
+      </div>
+      <div class="store-card">
+        <div class="store-thumb" style="background: linear-gradient(135deg,#FFF0FA,#FFD6F0);">
+          💇
+          <span class="store-thumb-badge" style="background: #E05F00;">⏰ 13:00~17:00</span>
+        </div>
+        <div class="store-body">
+          <div class="store-cat">뷰티·미용</div>
+          <div class="store-name">네일팝 강남</div>
+          <div class="store-loc">📍 강남구 · 400m</div>
+          <div class="store-tags">
+            <span class="store-tag tag-sale">젤네일 25% 할인</span>
+          </div>
+        </div>
+      </div>
+      <div class="store-card">
+        <div class="store-thumb" style="background: linear-gradient(135deg,#F5F0FF,#E0D0FF);">
+          🍕
+          <span class="store-thumb-badge" style="background: #E05F00;">⏰ 18:00~20:00</span>
+        </div>
+        <div class="store-body">
+          <div class="store-cat">음식점</div>
+          <div class="store-name">피자마루 강남</div>
+          <div class="store-loc">📍 강남구 · 550m</div>
+          <div class="store-tags">
+            <span class="store-tag tag-sale">저녁 피자 20% 할인</span>
+          </div>
+        </div>
+      </div>
+      <div class="store-card">
+        <div class="store-thumb" style="background: linear-gradient(135deg,#FFFBE8,#FFE8A0);">
+          🥐
+          <span class="store-thumb-badge" style="background: #E05F00;">⏰ 08:00~10:00</span>
+        </div>
+        <div class="store-body">
+          <div class="store-cat">베이커리</div>
+          <div class="store-name">아침빵공방</div>
+          <div class="store-loc">📍 서초구 · 320m</div>
+          <div class="store-tags">
+            <span class="store-tag tag-sale">오전 빵 1+1</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══ COUPON FEATURE ════════════════════════════════════════════ -->
+<section class="feature-section" id="coupon">
+  <div class="wrap">
+    <div class="feature-grid">
+      <div class="feature-text">
+        <div class="feature-label fl-orange">🎟 쿠폰 시스템</div>
+        <h2 class="feature-title">
+          다양한 쿠폰으로<br>
+          <em>더 스마트하게</em> 혜택 받기
+        </h2>
+        <p class="feature-desc">
+          할인·스탬프·타임세일·QR 쿠폰까지 — 가게마다 다양한 쿠폰을
+          앱 하나로 모아서 관리하세요.
+        </p>
+        <div class="feature-list">
+          <div class="feature-item">
+            <div class="fi-icon fi-orange">🏷️</div>
+            <div class="fi-text">
+              <b>할인 쿠폰</b>
+              <span>원하는 메뉴를 정해진 할인가에 바로 사용</span>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="fi-icon fi-orange">⏰</div>
+            <div class="fi-text">
+              <b>타임세일 쿠폰</b>
+              <span>시간대별 특가 — 놓치면 손해!</span>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="fi-icon fi-orange">📱</div>
+            <div class="fi-text">
+              <b>QR 쿠폰</b>
+              <span>앱에서 QR 코드를 바로 스캔해 즉시 사용</span>
+            </div>
+          </div>
+        </div>
+        <a href="#" class="btn-feature">쿠폰 보러가기 →</a>
+      </div>
+
+      <div class="feature-visual">
+        <div class="fv-title">내 쿠폰함 · 3개 보유</div>
+
+        <!-- 할인 쿠폰 -->
+        <div class="coupon-card">
+          <div class="cc-bar" style="background: var(--orange);">
+            <span class="cc-emoji">🏷️</span>
+            <span class="cc-lbl">할인쿠폰</span>
+          </div>
+          <div class="cc-body">
+            <div class="cc-name">아메리카노 (HOT/ICE)</div>
+            <div class="cc-store">☕ 빈스커피 강남점</div>
+            <div class="cc-val" style="color: var(--orange);">500원 할인</div>
+            <div class="cc-exp">~2026.05.31 만료</div>
+          </div>
+        </div>
+
+        <!-- 타임세일 쿠폰 -->
+        <div class="coupon-card">
+          <div class="cc-bar" style="background: var(--red);">
+            <span class="cc-emoji">⏰</span>
+            <span class="cc-lbl">타임세일</span>
+          </div>
+          <div class="cc-body">
+            <div class="cc-name">런치 도시락 세트</div>
+            <div class="cc-store">🍱 도시락공방 강남</div>
+            <div class="cc-val" style="color: var(--red);">30% 할인</div>
+            <div class="cc-exp">오늘 12:00~14:00 한정</div>
+          </div>
+        </div>
+
+        <!-- QR 쿠폰 -->
+        <div class="coupon-card">
+          <div class="cc-bar" style="background: var(--purple);">
+            <span class="cc-emoji">📱</span>
+            <span class="cc-lbl">QR쿠폰</span>
+          </div>
+          <div class="cc-body">
+            <div class="cc-name">커트 + 드라이 패키지</div>
+            <div class="cc-store">✂️ 헤어스튜디오 K</div>
+            <div class="cc-val" style="color: var(--purple);">20% 할인</div>
+            <div class="cc-exp">~2026.06.15 만료</div>
+          </div>
+        </div>
+
+        <button onclick="alert('쿠폰함 전체보기')" style="width:100%;padding:11px;border-radius:var(--r-md);border:1.5px solid var(--border2);background:var(--white);font-size:13px;font-weight:700;color:var(--t3);cursor:pointer;margin-top:4px;">
+          쿠폰함 전체보기 →
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══ STAMP FEATURE ══════════════════════════════════════════════ -->
+<section class="feature-section gray" id="stamp">
+  <div class="wrap">
+    <div class="feature-grid rev">
+      <div class="feature-text">
+        <div class="feature-label fl-purple">💜 스탬프 카드</div>
+        <h2 class="feature-title">
+          도장 모아서<br>
+          <em>무료 메뉴</em> 받자
+        </h2>
+        <p class="feature-desc">
+          가게를 방문할 때마다 스탬프를 적립하고, 목표를 달성하면
+          사장님이 설정한 리워드를 받아요. 영수증 스캔만 하면 끝!
+        </p>
+        <div class="feature-list">
+          <div class="feature-item">
+            <div class="fi-icon fi-purple">🧾</div>
+            <div class="fi-text">
+              <b>영수증 스캔 적립</b>
+              <span>영수증 찍으면 자동으로 스탬프 추가</span>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="fi-icon fi-purple">🎟</div>
+            <div class="fi-text">
+              <b>동반자 코드 적립</b>
+              <span>파티 코드 입력해서 함께 스탬프 받기</span>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="fi-icon fi-purple">🎁</div>
+            <div class="fi-text">
+              <b>리워드 자동 지급</b>
+              <span>목표 달성 시 무료 쿠폰 즉시 발급</span>
+            </div>
+          </div>
+        </div>
+        <a href="#" class="btn-feature" style="background:var(--purple);box-shadow:0 3px 12px rgba(123,92,245,.25);">내 스탬프 카드 보기 →</a>
+      </div>
+
+      <div class="feature-visual">
+        <div class="fv-title">내 스탬프 카드 · 2개</div>
+
+        <div class="stamp-card">
+          <div class="sc-head">
+            <span class="sc-icon">☕</span>
+            <div>
+              <div class="sc-name">빈스커피 강남점</div>
+              <div class="sc-sub">10개 모으면 아메리카노 1잔 무료 🎁</div>
+            </div>
+          </div>
+          <div class="sc-prog">
+            <div class="sc-dot filled">✓</div>
+            <div class="sc-dot filled">✓</div>
+            <div class="sc-dot filled">✓</div>
+            <div class="sc-dot filled">✓</div>
+            <div class="sc-dot filled">✓</div>
+            <div class="sc-dot filled">✓</div>
+            <div class="sc-dot filled">✓</div>
+            <div class="sc-dot"></div>
+            <div class="sc-dot"></div>
+            <div class="sc-dot reward">🎁</div>
+          </div>
+        </div>
+
+        <div class="stamp-card">
+          <div class="sc-head">
+            <span class="sc-icon">✂️</span>
+            <div>
+              <div class="sc-name">헤어스튜디오 K</div>
+              <div class="sc-sub">5개 모으면 드라이 1회 무료 🎁</div>
+            </div>
+          </div>
+          <div class="sc-prog">
+            <div class="sc-dot filled">✓</div>
+            <div class="sc-dot filled">✓</div>
+            <div class="sc-dot filled">✓</div>
+            <div class="sc-dot"></div>
+            <div class="sc-dot reward">🎁</div>
+          </div>
+        </div>
+
+        <div style="background:var(--orange-soft);border-radius:var(--r-md);padding:14px 16px;display:flex;align-items:center;gap:10px;margin-top:4px;">
+          <span style="font-size:22px;">🎉</span>
+          <div>
+            <div style="font-size:13px;font-weight:800;color:var(--t1);">7/10 달성! 3개만 더!</div>
+            <div style="font-size:11px;color:var(--t4);">다음 방문 시 스탬프 자동 적립</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══ REVIEW + PRICE REPORT ═════════════════════════════════════ -->
+<section class="social-section" id="review">
+  <div class="wrap">
+    <div class="sec-head" style="text-align:center;">
+      <div class="sec-label">더 많은 혜택</div>
+      <h2 class="sec-title">리뷰 인증하고 쿠폰 받고, 가격 제보하고 포인트 받기</h2>
+      <p class="sec-sub" style="margin:8px auto 0;max-width:480px;">참여할수록 더 많이 돌아오는 언니픽만의 특별한 보상 시스템</p>
+    </div>
+
+    <div class="social-grid">
+      <!-- 네이버 리뷰 인증 -->
+      <div class="social-card">
+        <div class="sc-top">
+          <div class="sc-iconb scb-green">📝</div>
+          <div>
+            <div class="sc-ttl">네이버 리뷰 인증</div>
+            <div class="sc-stl">리뷰 쓰고 쿠폰 받기</div>
+          </div>
+        </div>
+        <p class="sc-desc">
+          가게에 네이버 영수증 리뷰를 작성하고 언니픽에서 인증하면,
+          사장님이 설정한 특별 쿠폰을 즉시 받을 수 있어요.
+        </p>
+        <div class="sc-bullets">
+          <div class="sc-bullet">
+            <span class="sc-bullet-dot">①</span>
+            <span>가게 방문 후 네이버 영수증 리뷰 작성</span>
+          </div>
+          <div class="sc-bullet">
+            <span class="sc-bullet-dot">②</span>
+            <span>언니픽 앱에서 리뷰 URL 제출</span>
+          </div>
+          <div class="sc-bullet">
+            <span class="sc-bullet-dot">③</span>
+            <span>관리자 승인 후 쿠폰 즉시 발급!</span>
+          </div>
+        </div>
+        <div style="margin-top:16px;padding:12px;background:var(--bg);border-radius:var(--r-md);display:flex;align-items:center;gap:10px;">
+          <span style="font-size:18px;">🎁</span>
+          <div>
+            <div style="font-size:12px;font-weight:800;color:var(--t1);">승인 완료 — 쿠폰 발급!</div>
+            <div style="font-size:11px;color:var(--t4);">리뷰 인증 쿠폰 · 유효기간 30일</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 가격 제보 -->
+      <div class="social-card">
+        <div class="sc-top">
+          <div class="sc-iconb scb-orange">💰</div>
+          <div>
+            <div class="sc-ttl">가격 제보</div>
+            <div class="sc-stl">제보하고 포인트 받기</div>
+          </div>
+        </div>
+        <p class="sc-desc">
+          주변 가게의 최신 가격 정보를 제보하면 포인트를 드려요.
+          모두가 정확한 가격 정보를 공유하는 커뮤니티를 만들어요.
+        </p>
+        <div class="sc-bullets">
+          <div class="sc-bullet">
+            <span class="sc-bullet-dot">①</span>
+            <span>방문한 가게의 메뉴 가격 제보</span>
+          </div>
+          <div class="sc-bullet">
+            <span class="sc-bullet-dot">②</span>
+            <span>영수증 사진으로 신뢰도 높이기</span>
+          </div>
+          <div class="sc-bullet">
+            <span class="sc-bullet-dot">③</span>
+            <span>채택 시 포인트 적립 → 쿠폰 교환</span>
+          </div>
+        </div>
+        <div style="margin-top:16px;padding:12px;background:var(--orange-soft);border-radius:var(--r-md);display:flex;align-items:center;gap:10px;border:1px solid var(--orange-mid);">
+          <span style="font-size:18px;">⭐</span>
+          <div>
+            <div style="font-size:12px;font-weight:800;color:var(--orange);">+50P 제보 포인트 적립!</div>
+            <div style="font-size:11px;color:var(--t4);">100P = 쿠폰 1개 교환 가능</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══ HOW IT WORKS ════════════════════════════════════════════ -->
+<section class="how-section" style="background:var(--bg);">
+  <div class="wrap">
+    <div class="sec-head" style="text-align:center;">
+      <div class="sec-label">이용방법</div>
+      <h2 class="sec-title">3단계로 간단하게 시작</h2>
+      <p class="sec-sub" style="margin:8px auto 0;max-width:420px;">앱 설치부터 첫 쿠폰 사용까지, 딱 3분이면 충분해요.</p>
+    </div>
+
+    <div class="how-grid">
+      <div class="how-card">
+        <div class="how-num">01</div>
+        <div class="how-icon hi-orange">📍</div>
+        <div class="how-title">위치 설정하고<br>가게 탐색</div>
+        <p class="how-desc">앱을 켜면 내 주변 혜택 가게가 지도와 목록으로 바로 보여요. 업종별·거리별로 필터링도 가능해요.</p>
+      </div>
+      <div class="how-card">
+        <div class="how-num">02</div>
+        <div class="how-icon hi-green">🎟</div>
+        <div class="how-title">쿠폰 받고<br>스탬프 적립</div>
+        <p class="how-desc">마음에 드는 쿠폰을 쿠폰함에 저장하고, 방문 후 영수증 스캔으로 스탬프를 차곡차곡 모아요.</p>
+      </div>
+      <div class="how-card">
+        <div class="how-num">03</div>
+        <div class="how-icon hi-blue">🎁</div>
+        <div class="how-title">리워드 달성하고<br>무료 혜택</div>
+        <p class="how-desc">스탬프를 다 모으면 무료 메뉴 쿠폰이 자동 발급! 리뷰 인증·가격 제보로 포인트도 함께 쌓아요.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ STATS ════════════════════════════════════════════════════ -->
+<div class="stats-banner">
+  <div class="wrap">
+    <div class="stats-inner">
+      <div class="stat-item">
+        <div class="stat-num">2,400<span style="font-size:20px;">+</span></div>
+        <div class="stat-lbl">등록된 가게</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">18,000<span style="font-size:20px;">+</span></div>
+        <div class="stat-lbl">발급된 쿠폰</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">9,600<span style="font-size:20px;">+</span></div>
+        <div class="stat-lbl">앱 사용자</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">4.8<span style="font-size:20px;">⭐</span></div>
+        <div class="stat-lbl">앱스토어 평점</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TESTIMONIALS ════════════════════════════════════════════ -->
+<section class="review-section">
+  <div class="wrap">
+    <div class="sec-head" style="text-align:center;">
+      <div class="sec-label">사용자 후기</div>
+      <h2 class="sec-title">언니픽 사용자들의 이야기</h2>
+    </div>
+
+    <div class="review-grid">
+      <div class="review-card">
+        <div class="rv-stars">★★★★★</div>
+        <p class="rv-text">출근길 카페에서 매번 스탬프 찍고 있는데, 10개 모아서 아메리카노 무료로 받았을 때 너무 뿌듯했어요. 앱 UI도 깔끔해서 자주 쓰게 돼요.</p>
+        <div class="rv-bottom">
+          <div class="rv-avatar">👩</div>
+          <div>
+            <div class="rv-name">김지영</div>
+            <div class="rv-from">직장인 · 강남구</div>
+          </div>
+        </div>
+      </div>
+      <div class="review-card">
+        <div class="rv-stars">★★★★★</div>
+        <p class="rv-text">타임세일 알림이 진짜 유용해요! 점심에 30% 할인하는 거 딱 알림 받고 갔는데 완전 득템. 이제 점심 메뉴는 언니픽으로 결정합니다.</p>
+        <div class="rv-bottom">
+          <div class="rv-avatar">👨</div>
+          <div>
+            <div class="rv-name">박민준</div>
+            <div class="rv-from">대학생 · 서초구</div>
+          </div>
+        </div>
+      </div>
+      <div class="review-card">
+        <div class="rv-stars">★★★★☆</div>
+        <p class="rv-text">네이버 리뷰 쓰고 쿠폰 받는 시스템이 신선해요. 어차피 리뷰 쓸 거 언니픽으로 인증하면 쿠폰까지 주니까 안 할 이유가 없죠.</p>
+        <div class="rv-bottom">
+          <div class="rv-avatar">👩</div>
+          <div>
+            <div class="rv-name">이수현</div>
+            <div class="rv-from">프리랜서 · 마포구</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ APP DOWNLOAD ════════════════════════════════════════════ -->
+<section class="app-banner">
+  <div class="wrap">
+    <div class="app-inner">
+      <div>
+        <div class="app-tag">📱 지금 무료 다운로드</div>
+        <h2 class="app-title">
+          내 주변 혜택을 놓치지 마세요.<br>
+          <em>언니픽 앱</em>으로 시작하세요.
+        </h2>
+        <p class="app-sub">
+          가게 방문 전 쿠폰 확인, 방문 후 스탬프 적립 — 모두 언니픽 앱 하나로.
+          지금 설치하면 첫 쿠폰 즉시 제공!
+        </p>
+        <div class="app-btns">
+          <button class="app-btn" onclick="alert('App Store')">
+            <span class="app-btn-icon">🍎</span>
+            <div>
+              <span class="app-btn-sub">Download on the</span>
+              App Store
+            </div>
+          </button>
+          <button class="app-btn" onclick="alert('Google Play')">
+            <span class="app-btn-icon">▶️</span>
+            <div>
+              <span class="app-btn-sub">Get it on</span>
+              Google Play
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <!-- 폰 -->
+      <div class="app-phone">
+        <div class="app-phone-screen">
+          <div style="font-size:8px;font-weight:700;color:#888;display:flex;justify-content:space-between;padding:0 4px 8px;">
+            <span>9:41</span><span>🔋</span>
+          </div>
+          <div style="background:var(--white);border-radius:10px;padding:10px;margin-bottom:8px;">
+            <div style="font-size:9px;font-weight:800;color:var(--orange);margin-bottom:6px;">🩷 언니픽</div>
+            <div style="font-size:8px;font-weight:700;color:var(--t3);">오늘의 내 쿠폰</div>
+          </div>
+          <div style="background:linear-gradient(135deg,#FFF4E8,#FFE0C8);border-radius:10px;padding:10px;margin-bottom:6px;border:1px solid var(--orange-mid);">
+            <div style="font-size:8px;font-weight:800;color:var(--orange);">🏷️ 할인쿠폰 · 빈스커피</div>
+            <div style="font-size:14px;font-weight:900;color:var(--orange);margin-top:2px;">500원 할인</div>
+            <div style="font-size:8px;color:var(--t4);">~2026.05.31</div>
+          </div>
+          <div style="background:var(--white);border-radius:10px;padding:10px;border:1px solid var(--border);">
+            <div style="font-size:8px;font-weight:700;color:var(--t2);margin-bottom:6px;">☕ 스탬프 7/10</div>
+            <div style="display:flex;gap:3px;">
+              <div style="width:14px;height:14px;border-radius:50%;background:var(--orange);display:flex;align-items:center;justify-content:center;font-size:6px;color:#fff;">✓</div>
+              <div style="width:14px;height:14px;border-radius:50%;background:var(--orange);display:flex;align-items:center;justify-content:center;font-size:6px;color:#fff;">✓</div>
+              <div style="width:14px;height:14px;border-radius:50%;background:var(--orange);display:flex;align-items:center;justify-content:center;font-size:6px;color:#fff;">✓</div>
+              <div style="width:14px;height:14px;border-radius:50%;background:var(--orange);display:flex;align-items:center;justify-content:center;font-size:6px;color:#fff;">✓</div>
+              <div style="width:14px;height:14px;border-radius:50%;background:var(--orange);display:flex;align-items:center;justify-content:center;font-size:6px;color:#fff;">✓</div>
+              <div style="width:14px;height:14px;border-radius:50%;background:var(--orange);display:flex;align-items:center;justify-content:center;font-size:6px;color:#fff;">✓</div>
+              <div style="width:14px;height:14px;border-radius:50%;background:var(--orange);display:flex;align-items:center;justify-content:center;font-size:6px;color:#fff;">✓</div>
+              <div style="width:14px;height:14px;border-radius:50%;background:var(--bg);border:1px solid var(--border);font-size:6px;display:flex;align-items:center;justify-content:center;"></div>
+              <div style="width:14px;height:14px;border-radius:50%;background:var(--bg);border:1px solid var(--border);font-size:6px;display:flex;align-items:center;justify-content:center;"></div>
+              <div style="width:14px;height:14px;border-radius:50%;background:#FFF8E0;border:1px solid #FFD700;font-size:6px;display:flex;align-items:center;justify-content:center;">🎁</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ OWNER SECTION ══════════════════════════════════════════ -->
+<section class="owner-section" id="owner">
+  <div class="wrap">
+    <div class="owner-inner">
+      <div>
+        <div class="owner-tag">🏪 사장님 전용</div>
+        <h2 class="owner-title">
+          우리 가게 단골 고객을<br>
+          언니픽으로 만드세요
+        </h2>
+        <p class="owner-desc">
+          쿠폰 발행부터 스탬프 관리, 타임세일 설정까지 — 사장님 대시보드에서
+          간편하게 설정하고 고객 재방문율을 높이세요.
+        </p>
+        <div class="owner-steps">
+          <div class="owner-step">
+            <div class="os-num">1</div>
+            <div class="os-text">
+              <b>가게 등록 신청</b>
+              <span>사업자등록증 제출 후 간단 심사 완료</span>
+            </div>
+          </div>
+          <div class="owner-step">
+            <div class="os-num">2</div>
+            <div class="os-text">
+              <b>쿠폰 & 스탬프 설정</b>
+              <span>원하는 할인 조건으로 쿠폰을 손쉽게 만들기</span>
+            </div>
+          </div>
+          <div class="owner-step">
+            <div class="os-num">3</div>
+            <div class="os-text">
+              <b>QR 스캔으로 쿠폰 사용 처리</b>
+              <span>고객이 QR 코드 제시 → 사장님이 스캔하면 완료</span>
+            </div>
+          </div>
+        </div>
+        <button class="btn-owner" onclick="alert('가게 등록 신청')">🏪 가게 등록 신청하기 →</button>
+      </div>
+
+      <!-- 사장님 대시보드 데모 -->
+      <div class="owner-demo">
+        <div class="od-header">
+          <span class="od-title">사장님 대시보드 · 빈스커피 강남점</span>
+          <span class="od-badge">운영 중</span>
+        </div>
+        <div class="od-stats">
+          <div class="od-stat">
+            <div class="od-stat-num"><b>124</b></div>
+            <div class="od-stat-lbl">이번 달 사용</div>
+          </div>
+          <div class="od-stat">
+            <div class="od-stat-num"><b>87</b></div>
+            <div class="od-stat-lbl">스탬프 적립</div>
+          </div>
+          <div class="od-stat">
+            <div class="od-stat-num"><b>4.9</b>⭐</div>
+            <div class="od-stat-lbl">리뷰 평점</div>
+          </div>
+        </div>
+        <div class="od-coupon-row">
+          <div class="ocr-left">
+            <span class="ocr-emoji">🏷️</span>
+            <div>
+              <div class="ocr-name">아메리카노 500원 할인</div>
+              <div class="ocr-count">이번 달 82건 사용</div>
+            </div>
+          </div>
+          <div class="ocr-right">-41,000원</div>
+        </div>
+        <div class="od-coupon-row" style="background:#FFF0F0;border-color:#FFD0D0;">
+          <div class="ocr-left">
+            <span class="ocr-emoji">⏰</span>
+            <div>
+              <div class="ocr-name">런치 타임세일 (12~14시)</div>
+              <div class="ocr-count">오늘 17건 · 진행 중</div>
+            </div>
+          </div>
+          <div class="ocr-right" style="color:var(--red);">D-1h 30m</div>
+        </div>
+        <button class="od-qr-btn">
+          📱 QR 스캔 쿠폰 사용 처리
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ FOOTER ══════════════════════════════════════════════════ -->
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-top">
+      <div>
+        <div class="footer-logo">
+          <div class="logo-mark">🩷</div>
+          언니픽
+        </div>
+        <p class="footer-brand-desc">
+          내 주변 가게 혜택을 한눈에.<br>
+          쿠폰·스탬프·타임세일을 모아드려요.
+        </p>
+        <div class="footer-socials">
+          <div class="footer-social">📷</div>
+          <div class="footer-social">📘</div>
+          <div class="footer-social">▶️</div>
+          <div class="footer-social">💬</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="footer-col-title">서비스</div>
+        <div class="footer-links">
+          <a href="#">가게 찾기</a>
+          <a href="#">쿠폰함</a>
+          <a href="#">스탬프 카드</a>
+          <a href="#">지도 보기</a>
+          <a href="#">타임세일</a>
+        </div>
+      </div>
+
+      <div>
+        <div class="footer-col-title">고객 안내</div>
+        <div class="footer-links">
+          <a href="#">이용 방법</a>
+          <a href="#">자주 묻는 질문</a>
+          <a href="#">공지사항</a>
+          <a href="#">리뷰 인증 가이드</a>
+          <a href="#">가격 제보 안내</a>
+        </div>
+      </div>
+
+      <div>
+        <div class="footer-col-title">사장님</div>
+        <div class="footer-links">
+          <a href="#">가게 등록 신청</a>
+          <a href="#">사장님 가이드</a>
+          <a href="#">쿠폰 만들기</a>
+          <a href="#">대시보드 로그인</a>
+        </div>
+      </div>
+
+      <div>
+        <div class="footer-col-title">회사</div>
+        <div class="footer-links">
+          <a href="#">언니픽 소개</a>
+          <a href="#">팀 블로그</a>
+          <a href="#">채용</a>
+          <a href="#">문의하기</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <div>
+        <div class="footer-biz" style="margin-bottom:6px;">
+          <span>상호명: (주)언니픽</span>
+          <span>대표: 방주</span>
+          <span>사업자등록번호: 000-00-00000</span>
+        </div>
+        <div>고객센터: help@unniepick.com · 운영시간 평일 10:00~18:00</div>
+      </div>
+      <div class="footer-terms">
+        <a href="#">이용약관</a>
+        <a href="#">개인정보처리방침</a>
+        <a href="#">위치기반서비스 이용약관</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // ── 카테고리 클릭 ────────────────────────────────────────────
+  document.querySelectorAll('.cat-item').forEach(el => {
+    el.addEventListener('click', () => {
+      const name = el.querySelector('.cat-name').textContent;
+      alert(`"${name}" 카테고리 가게 목록 페이지로 이동합니다.`);
+    });
+  });
+
+  // ── 가게 카드 클릭 ───────────────────────────────────────────
+  document.querySelectorAll('.store-card').forEach(el => {
+    el.addEventListener('click', () => {
+      const name = el.querySelector('.store-name').textContent;
+      alert(`"${name}" 가게 상세 페이지로 이동합니다.`);
+    });
+  });
+
+  // ── 위치 태그 ────────────────────────────────────────────────
+  document.querySelectorAll('.loc-tag').forEach(el => {
+    el.addEventListener('click', () => {
+      document.querySelectorAll('.loc-tag').forEach(t => t.style.borderColor = '');
+      el.style.borderColor = 'var(--orange)';
+      el.style.color = 'var(--orange)';
+      document.querySelector('.search-loc').textContent = `📍 ${el.textContent} ▾`;
+      document.querySelector('.gnb-loc').textContent = `📍 ${el.textContent} \u00a0▾`;
+    });
+  });
+
+  // ── 헤더 활성 탭 ─────────────────────────────────────────────
+  const navLinks = document.querySelectorAll('.gnb-nav a');
+  window.addEventListener('scroll', () => {
+    const sections = ['stores','coupon','stamp','review','owner'];
+    let current = '';
+    sections.forEach(id => {
+      const el = document.getElementById(id);
+      if (el && window.scrollY >= el.offsetTop - 100) current = id;
+    });
+    navLinks.forEach(a => {
+      a.classList.remove('active');
+      if (a.getAttribute('href') === '#' + current) a.classList.add('active');
+    });
+  });
+
+  // ── 검색 엔터 ────────────────────────────────────────────────
+  document.querySelector('.search-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const v = e.target.value.trim();
+      if (v) alert(`"${v}" 검색 결과 페이지로 이동합니다.`);
+    }
+  });
+</script>
+</body>
+</html>
