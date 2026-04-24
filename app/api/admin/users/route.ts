@@ -151,6 +151,25 @@ export async function GET() {
     }
   } catch { /* 테이블 없으면 무시 */ }
 
+  // 7) profiles — 가입지역 + 마지막 사용지역 (부정 사용 방지용)
+  const locationMap: Record<string, {
+    signup_address:    string | null;
+    last_used_address: string | null;
+    last_used_at:      string | null;
+  }> = {};
+  try {
+    const { data: profRows } = await sb
+      .from('profiles')
+      .select('id, signup_address, last_used_address, last_used_at');
+    for (const p of profRows ?? []) {
+      locationMap[p.id] = {
+        signup_address:    p.signup_address    ?? null,
+        last_used_address: p.last_used_address ?? null,
+        last_used_at:      p.last_used_at      ?? null,
+      };
+    }
+  } catch { /* 컬럼 없으면 무시 */ }
+
   return NextResponse.json({
     authUsers,
     providerMap,
@@ -159,6 +178,7 @@ export async function GET() {
     couponCount,
     recentArea,
     usersRoleMap,
+    locationMap,
     _phonesError: phonesError,
     _authUserCount: Object.keys(authUsers).length,
   });

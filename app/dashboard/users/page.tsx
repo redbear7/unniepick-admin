@@ -9,18 +9,21 @@ import {
 
 // ── 타입 ─────────────────────────────────────────────────────────────
 interface UserRow {
-  id:              string;
-  name:            string;
-  phone:           string | null;
-  role:            string;
-  created_at:      string;
-  last_sign_in_at: string | null;
-  recent_area:     string | null;
-  source:          'users' | 'profiles' | 'both';
-  push_enabled:    boolean | null;   // null = 알 수 없음
-  gps_granted:     boolean | null;   // follows 여부로 추론
-  coupon_count:    number;
-  provider:        'phone' | 'kakao' | null; // 가입방식
+  id:                string;
+  name:              string;
+  phone:             string | null;
+  role:              string;
+  created_at:        string;
+  last_sign_in_at:   string | null;
+  recent_area:       string | null;
+  source:            'users' | 'profiles' | 'both';
+  push_enabled:      boolean | null;
+  gps_granted:       boolean | null;
+  coupon_count:      number;
+  provider:          'phone' | 'kakao' | null;
+  signup_address:    string | null;   // 가입 시 GPS 주소
+  last_used_address: string | null;   // 마지막 쿠폰 사용 주소
+  last_used_at:      string | null;   // 마지막 쿠폰 사용 시각
 }
 
 // ── 상수 ─────────────────────────────────────────────────────────────
@@ -268,18 +271,21 @@ export default function UsersPage() {
 
     for (const u of usersRes.data ?? []) {
       usersMap.set(u.id, {
-        id:              u.id,
-        name:            u.name || '(이름 없음)',
-        phone:           u.phone,
-        role:            u.role,
-        created_at:      u.created_at,
-        last_sign_in_at: null,
-        recent_area:     null,
-        source:          'users',
-        push_enabled:    null,
-        gps_granted:     null,
-        coupon_count:    0,
-        provider:        null,
+        id:                u.id,
+        name:              u.name || '(이름 없음)',
+        phone:             u.phone,
+        role:              u.role,
+        created_at:        u.created_at,
+        last_sign_in_at:   null,
+        recent_area:       null,
+        source:            'users',
+        push_enabled:      null,
+        gps_granted:       null,
+        coupon_count:      0,
+        provider:          null,
+        signup_address:    null,
+        last_used_address: null,
+        last_used_at:      null,
       });
     }
 
@@ -289,17 +295,20 @@ export default function UsersPage() {
       } else {
         usersMap.set(p.id, {
           id:              p.id,
-          name:            p.nickname || '(닉네임 없음)',
-          phone:           null,
-          role:            'customer',
-          created_at:      p.created_at,
-          last_sign_in_at: null,
-          recent_area:     null,
-          source:          'profiles',
-          push_enabled:    null,
-          gps_granted:     null,
-          coupon_count:    0,
-          provider:        null,
+          name:              p.nickname || '(닉네임 없음)',
+          phone:             null,
+          role:              'customer',
+          created_at:        p.created_at,
+          last_sign_in_at:   null,
+          recent_area:       null,
+          source:            'profiles',
+          push_enabled:      null,
+          gps_granted:       null,
+          coupon_count:      0,
+          provider:          null,
+          signup_address:    null,
+          last_used_address: null,
+          last_used_at:      null,
         });
       }
     }
@@ -319,24 +328,32 @@ export default function UsersPage() {
       const {
         authUsers = {}, providerMap = {}, pushMap = {},
         followSet = [], couponCount = {}, recentArea = {},
-        usersRoleMap = {},
+        usersRoleMap = {}, locationMap = {},
       } = json;
 
       const followSetObj = new Set<string>(followSet as string[]);
       const roleMap = usersRoleMap as Record<string, { name: string; role: string }>;
+      const locMap  = locationMap  as Record<string, {
+        signup_address: string | null;
+        last_used_address: string | null;
+        last_used_at: string | null;
+      }>;
 
       setUsers(prev => prev.map(u => ({
         ...u,
         // 서비스롤로 조회한 role/name 이 있으면 덮어쓰기 (RLS 우회)
-        name:            roleMap[u.id]?.name  ?? u.name,
-        role:            roleMap[u.id]?.role  ?? u.role,
-        phone:           authUsers[u.id]?.phone ?? u.phone,
-        last_sign_in_at: authUsers[u.id]?.last_sign_in_at ?? null,
-        recent_area:     (recentArea as Record<string, string>)[u.id] ?? null,
-        push_enabled:    pushMap[u.id] === true ? true : null,
-        gps_granted:     followSetObj.has(u.id) ? true : null,
-        coupon_count:    couponCount[u.id] ?? 0,
-        provider:        (providerMap as Record<string, 'phone' | 'kakao'>)[u.id] ?? null,
+        name:              roleMap[u.id]?.name  ?? u.name,
+        role:              roleMap[u.id]?.role  ?? u.role,
+        phone:             authUsers[u.id]?.phone ?? u.phone,
+        last_sign_in_at:   authUsers[u.id]?.last_sign_in_at ?? null,
+        recent_area:       (recentArea as Record<string, string>)[u.id] ?? null,
+        push_enabled:      pushMap[u.id] === true ? true : null,
+        gps_granted:       followSetObj.has(u.id) ? true : null,
+        coupon_count:      couponCount[u.id] ?? 0,
+        provider:          (providerMap as Record<string, 'phone' | 'kakao'>)[u.id] ?? null,
+        signup_address:    locMap[u.id]?.signup_address    ?? null,
+        last_used_address: locMap[u.id]?.last_used_address ?? null,
+        last_used_at:      locMap[u.id]?.last_used_at      ?? null,
       })));
     } catch (e) {
       console.error('[users] /api/admin/users fetch 실패:', e);
@@ -501,7 +518,7 @@ export default function UsersPage() {
               <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">역할</th>
               <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">가입일시</th>
               <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">최근 로그인</th>
-              <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">접속지역</th>
+              <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">가입지역 / 마지막 사용지역</th>
               <th className="text-center px-3 py-3.5 text-xs font-semibold text-muted">
                 <MapPin size={12} className="inline-block mr-0.5 -mt-0.5" />GPS
               </th>
@@ -592,16 +609,29 @@ export default function UsersPage() {
                       : <span className="text-dim">-</span>}
                   </td>
 
-                  {/* 접속지역 */}
+                  {/* 가입지역 / 마지막 사용지역 */}
                   <td className="px-4 py-3.5 text-xs">
-                    {user.recent_area
-                      ? (
+                    <div className="flex flex-col gap-1">
+                      {user.signup_address ? (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 font-medium whitespace-nowrap">
-                          <MapPin size={10} />
-                          {user.recent_area}
+                          <MapPin size={9} />
+                          {user.signup_address}
                         </span>
-                      )
-                      : <span className="text-dim">-</span>}
+                      ) : (
+                        <span className="text-dim text-[10px]">가입지역 없음</span>
+                      )}
+                      {user.last_used_address ? (
+                        <span
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-400 font-medium whitespace-nowrap"
+                          title={user.last_used_at ? `사용: ${fmtDate(user.last_used_at)}` : undefined}
+                        >
+                          <MapPin size={9} />
+                          {user.last_used_address}
+                        </span>
+                      ) : (
+                        <span className="text-dim text-[10px]">사용 기록 없음</span>
+                      )}
+                    </div>
                   </td>
 
                   {/* GPS */}
