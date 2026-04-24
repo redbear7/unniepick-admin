@@ -1,0 +1,1632 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>언니픽 웹앱 목업</title>
+  <style>
+    /* ═══════════════════════════════════════════════════════
+       BASE
+    ═══════════════════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --orange:      #FF6F0F;
+      --orange-dark: #E05F00;
+      --orange-soft: #FFF3EB;
+      --orange-mid:  #FFE0CC;
+      --white:       #FFFFFF;
+      --bg:          #F7F8FA;
+      --text-1:      #191F28;
+      --text-2:      #4E5968;
+      --text-3:      #8B95A1;
+      --border:      #E5E8EB;
+      --border-2:    #EAECEF;
+      --green:       #0AC86E;
+      --green-bg:    #E6FAF1;
+      --blue:        #1A73E8;
+      --blue-bg:     #EAF2FF;
+      --red:         #E53935;
+      --red-bg:      #FFEBEE;
+      --yellow:      #FFC107;
+      --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 20px;
+      --sh:   0 2px 12px rgba(0,0,0,.08);
+      --sh-lg:0 4px 24px rgba(0,0,0,.12);
+    }
+    html, body {
+      font-family: -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+      background: #E8ECF0;
+      color: var(--text-1);
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       PHONE SHELL
+    ═══════════════════════════════════════════════════════ */
+    .shell-wrap {
+      display: flex; justify-content: center; align-items: flex-start;
+      padding: 24px 16px 24px;
+      min-height: 100vh;
+      gap: 32px;
+    }
+    .phone {
+      width: 390px; min-height: 844px;
+      background: var(--bg);
+      border-radius: 44px;
+      overflow: hidden;
+      box-shadow: 0 24px 80px rgba(0,0,0,.28), 0 0 0 1px rgba(0,0,0,.08);
+      display: flex; flex-direction: column;
+      position: relative;
+      flex-shrink: 0;
+    }
+    /* screen 영역 */
+    .screen { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+    .screen.active { display: flex; }
+
+    /* 스크롤 영역 */
+    .scroll-body {
+      flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+      padding-bottom: 80px;
+    }
+    .scroll-body::-webkit-scrollbar { display: none; }
+
+    /* ═══════════════════════════════════════════════════════
+       TOP STATUS BAR
+    ═══════════════════════════════════════════════════════ */
+    .statusbar {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 14px 24px 0;
+      font-size: 12px; font-weight: 600; color: var(--text-1);
+      flex-shrink: 0;
+    }
+    .statusbar-time { font-size: 15px; font-weight: 700; }
+    .statusbar-icons { display: flex; gap: 5px; align-items: center; }
+    .sb-icon { font-size: 13px; }
+
+    /* ═══════════════════════════════════════════════════════
+       APP HEADER
+    ═══════════════════════════════════════════════════════ */
+    .app-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 20px 12px;
+      background: var(--white);
+      border-bottom: 1px solid var(--border-2);
+      flex-shrink: 0;
+    }
+    .logo { font-size: 20px; font-weight: 900; color: var(--orange); letter-spacing: -.5px; }
+    .loc-btn {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 13px; font-weight: 700; color: var(--text-1);
+      background: var(--bg); border-radius: var(--r-sm);
+      padding: 6px 10px; cursor: pointer;
+      border: 1px solid var(--border);
+    }
+    .loc-btn .arrow { font-size: 10px; color: var(--text-3); }
+    .header-right { display: flex; gap: 8px; }
+    .icon-btn {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: var(--bg); display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 18px;
+      border: 1px solid var(--border);
+    }
+    .icon-btn.notif { position: relative; }
+    .notif-dot {
+      position: absolute; top: 6px; right: 6px;
+      width: 8px; height: 8px; border-radius: 50%; background: var(--red);
+      border: 1.5px solid #fff;
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       BOTTOM TAB BAR
+    ═══════════════════════════════════════════════════════ */
+    .tab-bar {
+      display: flex; position: absolute; bottom: 0; left: 0; right: 0;
+      background: var(--white);
+      border-top: 1px solid var(--border);
+      padding: 8px 0 20px;
+      z-index: 100;
+    }
+    .tab-item {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      gap: 3px; cursor: pointer; padding: 4px 0;
+      transition: .12s;
+    }
+    .tab-icon { font-size: 22px; line-height: 1; }
+    .tab-label {
+      font-size: 10px; font-weight: 600; color: var(--text-3);
+      letter-spacing: -.2px;
+    }
+    .tab-item.active .tab-label { color: var(--orange); }
+    .tab-item.active .tab-icon { filter: none; }
+    .tab-dot {
+      width: 4px; height: 4px; border-radius: 50%; background: var(--orange);
+      display: none;
+    }
+    .tab-item.active .tab-dot { display: block; }
+
+    /* ═══════════════════════════════════════════════════════
+       공통 컴포넌트
+    ═══════════════════════════════════════════════════════ */
+    .section { padding: 20px 20px 0; }
+    .section-title {
+      font-size: 16px; font-weight: 800; color: var(--text-1);
+      letter-spacing: -.3px; margin-bottom: 12px;
+    }
+    .section-row {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .more-btn {
+      font-size: 12px; color: var(--text-3); font-weight: 600; cursor: pointer;
+    }
+    .chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 4px 10px; border-radius: 100px;
+      font-size: 11px; font-weight: 700;
+    }
+    .chip-orange { background: var(--orange-soft); color: var(--orange); }
+    .chip-green  { background: var(--green-bg); color: var(--green); }
+    .chip-red    { background: var(--red-bg); color: var(--red); }
+    .chip-blue   { background: var(--blue-bg); color: var(--blue); }
+    .chip-gray   { background: var(--border-2); color: var(--text-3); }
+
+    .divider { height: 8px; background: var(--bg); margin: 16px 0 0; }
+
+    /* ═══════════════════════════════════════════════════════
+       ① 홈 화면
+    ═══════════════════════════════════════════════════════ */
+
+    /* 카테고리 탭 */
+    .cat-scroll {
+      overflow-x: auto; display: flex; gap: 8px;
+      padding: 12px 20px; flex-shrink: 0;
+      scrollbar-width: none;
+      background: var(--white);
+      border-bottom: 1px solid var(--border-2);
+    }
+    .cat-scroll::-webkit-scrollbar { display: none; }
+    .cat-chip {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 4px; flex-shrink: 0; cursor: pointer; padding: 6px 10px;
+      border-radius: var(--r-md); transition: .12s;
+    }
+    .cat-chip:hover { background: var(--orange-soft); }
+    .cat-chip.active { background: var(--orange-soft); }
+    .cat-emoji { font-size: 22px; }
+    .cat-name { font-size: 11px; font-weight: 700; color: var(--text-2); }
+    .cat-chip.active .cat-name { color: var(--orange); }
+
+    /* 긴급 쿠폰 가로 스크롤 */
+    .h-scroll {
+      overflow-x: auto; display: flex; gap: 12px;
+      padding: 0 20px 4px; scrollbar-width: none;
+    }
+    .h-scroll::-webkit-scrollbar { display: none; }
+
+    /* 긴급 쿠폰 카드 */
+    .urgent-card {
+      flex-shrink: 0; width: 200px;
+      background: var(--white); border-radius: var(--r-lg);
+      padding: 14px; box-shadow: var(--sh);
+      border: 1px solid var(--border-2); cursor: pointer;
+      transition: .12s;
+    }
+    .urgent-card:hover { transform: translateY(-2px); box-shadow: var(--sh-lg); }
+    .uc-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .uc-store { font-size: 11px; color: var(--text-3); font-weight: 600; }
+    .uc-title { font-size: 13px; font-weight: 800; color: var(--text-1); margin-bottom: 4px; line-height: 1.4; }
+    .uc-discount { font-size: 18px; font-weight: 900; color: var(--orange); }
+    .uc-timer {
+      display: flex; align-items: center; gap: 4px; margin-top: 8px;
+      font-size: 11px; font-weight: 700; color: var(--red);
+      background: var(--red-bg); padding: 4px 8px; border-radius: 6px;
+    }
+
+    /* 주변 가게 카드 */
+    .nearby-card {
+      flex-shrink: 0; width: 140px;
+      background: var(--white); border-radius: var(--r-lg);
+      overflow: hidden; box-shadow: var(--sh);
+      border: 1px solid var(--border-2); cursor: pointer;
+      transition: .12s;
+    }
+    .nearby-card:hover { transform: translateY(-2px); }
+    .nc-thumb {
+      height: 80px; background: var(--bg);
+      display: flex; align-items: center; justify-content: center; font-size: 36px;
+    }
+    .nc-body { padding: 10px; }
+    .nc-name { font-size: 13px; font-weight: 800; color: var(--text-1); margin-bottom: 2px; }
+    .nc-cat  { font-size: 11px; color: var(--text-3); margin-bottom: 6px; }
+
+    /* 피드 포스트 */
+    .feed-post {
+      background: var(--white); border-radius: var(--r-lg);
+      margin: 0 20px 12px; padding: 16px;
+      box-shadow: var(--sh); border: 1px solid var(--border-2);
+      cursor: pointer;
+    }
+    .fp-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .fp-avatar {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: var(--orange-soft); display: flex; align-items: center;
+      justify-content: center; font-size: 18px; flex-shrink: 0;
+    }
+    .fp-store { font-size: 13px; font-weight: 700; }
+    .fp-time  { font-size: 11px; color: var(--text-3); }
+    .fp-coupon {
+      background: var(--orange-soft); border-radius: var(--r-md);
+      padding: 12px 14px; border-left: 3px solid var(--orange);
+    }
+    .fp-coupon-title { font-size: 14px; font-weight: 800; color: var(--text-1); }
+    .fp-coupon-disc  { font-size: 20px; font-weight: 900; color: var(--orange); margin-top: 3px; }
+    .fp-actions { display: flex; gap: 8px; margin-top: 12px; }
+    .fp-btn {
+      flex: 1; padding: 10px; border-radius: var(--r-md);
+      font-size: 13px; font-weight: 700; text-align: center; cursor: pointer;
+      transition: .12s;
+    }
+    .fp-btn-primary { background: var(--orange); color: #fff; }
+    .fp-btn-outline { background: var(--bg); color: var(--text-2); border: 1px solid var(--border); }
+
+    /* ═══════════════════════════════════════════════════════
+       ② 로그인 화면
+    ═══════════════════════════════════════════════════════ */
+    .login-screen {
+      flex: 1; display: flex; flex-direction: column;
+      padding: 0; background: var(--white);
+    }
+    .login-hero {
+      padding: 40px 32px 32px;
+      background: linear-gradient(160deg, var(--orange-soft) 0%, #fff 100%);
+      text-align: center;
+    }
+    .login-logo { font-size: 40px; font-weight: 900; color: var(--orange); letter-spacing: -1px; }
+    .login-logo-sub { font-size: 14px; color: var(--text-3); margin-top: 6px; }
+    .login-emoji { font-size: 56px; margin-bottom: 16px; }
+    .login-title { font-size: 22px; font-weight: 900; color: var(--text-1); margin-bottom: 8px; }
+    .login-desc  { font-size: 14px; color: var(--text-3); line-height: 1.6; }
+
+    .login-body  { flex: 1; padding: 32px 24px; overflow-y: auto; }
+
+    .login-tab-wrap {
+      display: flex; gap: 4px;
+      background: var(--bg); border-radius: var(--r-md);
+      padding: 4px; margin-bottom: 24px;
+    }
+    .login-tab {
+      flex: 1; padding: 9px; border-radius: var(--r-sm);
+      text-align: center; font-size: 13px; font-weight: 700;
+      color: var(--text-3); cursor: pointer; transition: .12s;
+    }
+    .login-tab.active { background: var(--white); color: var(--text-1); box-shadow: var(--sh); }
+
+    /* 카카오 버튼 */
+    .kakao-btn {
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      width: 100%; padding: 14px;
+      background: #FEE500; border-radius: var(--r-md);
+      font-size: 15px; font-weight: 800; color: #3A1D1D;
+      cursor: pointer; transition: .12s; border: none;
+      margin-bottom: 12px;
+    }
+    .kakao-btn:hover { background: #F0D800; }
+    .kakao-icon { font-size: 20px; }
+
+    .auth-divider {
+      display: flex; align-items: center; gap: 12px; margin: 16px 0;
+    }
+    .auth-divider-line { flex: 1; height: 1px; background: var(--border); }
+    .auth-divider-text { font-size: 12px; color: var(--text-3); font-weight: 600; }
+
+    /* SMS 인증 */
+    .sms-steps { display: flex; flex-direction: column; gap: 12px; }
+    .input-group { display: flex; flex-direction: column; gap: 6px; }
+    .input-label { font-size: 12px; font-weight: 700; color: var(--text-2); }
+    .input-row { display: flex; gap: 8px; }
+    .input-field {
+      flex: 1; padding: 13px 14px;
+      border: 1.5px solid var(--border); border-radius: var(--r-md);
+      font-size: 15px; color: var(--text-1);
+      background: var(--white); outline: none; transition: .12s;
+      font-family: inherit;
+    }
+    .input-field:focus { border-color: var(--orange); }
+    .input-field.code { letter-spacing: 6px; font-weight: 800; font-size: 20px; text-align: center; }
+    .send-btn {
+      padding: 13px 14px; border-radius: var(--r-md);
+      background: var(--orange); color: #fff;
+      font-size: 13px; font-weight: 700; cursor: pointer;
+      border: none; white-space: nowrap; flex-shrink: 0; font-family: inherit;
+    }
+    .send-btn:disabled { background: var(--border); color: var(--text-3); cursor: default; }
+    .login-submit-btn {
+      width: 100%; padding: 15px;
+      background: var(--orange); color: #fff;
+      border-radius: var(--r-lg); font-size: 16px; font-weight: 800;
+      cursor: pointer; border: none; font-family: inherit; margin-top: 8px;
+      transition: .12s;
+    }
+    .login-submit-btn:hover { background: var(--orange-dark); }
+    .login-terms { font-size: 11px; color: var(--text-3); text-align: center; margin-top: 16px; line-height: 1.6; }
+    .login-terms a { color: var(--text-2); text-decoration: underline; }
+
+    /* OTP 인증 진행 상태 */
+    .otp-step { display: none; }
+    .otp-step.active { display: block; }
+    .timer-badge {
+      font-size: 12px; font-weight: 700; color: var(--red);
+      background: var(--red-bg); padding: 3px 8px; border-radius: 6px;
+    }
+    .resend-text { font-size: 12px; color: var(--text-3); margin-top: 8px; text-align: center; }
+    .resend-text a { color: var(--orange); cursor: pointer; }
+
+    /* ═══════════════════════════════════════════════════════
+       ③ 탐색 화면
+    ═══════════════════════════════════════════════════════ */
+    .search-bar-wrap {
+      padding: 12px 20px; background: var(--white);
+      border-bottom: 1px solid var(--border-2);
+    }
+    .search-bar {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--bg); border-radius: var(--r-lg);
+      padding: 11px 14px; border: 1.5px solid var(--border);
+    }
+    .search-bar input {
+      flex: 1; border: none; background: transparent;
+      font-size: 14px; color: var(--text-1); outline: none; font-family: inherit;
+    }
+    .search-bar input::placeholder { color: var(--text-3); }
+
+    .filter-row {
+      display: flex; gap: 8px; overflow-x: auto;
+      padding: 12px 20px 0; scrollbar-width: none;
+    }
+    .filter-row::-webkit-scrollbar { display: none; }
+    .filter-chip {
+      flex-shrink: 0; padding: 7px 14px; border-radius: 100px;
+      border: 1.5px solid var(--border); background: var(--white);
+      font-size: 13px; font-weight: 700; color: var(--text-2); cursor: pointer;
+    }
+    .filter-chip.active { background: var(--orange); border-color: var(--orange); color: #fff; }
+
+    /* 가게 리스트 카드 */
+    .store-list-card {
+      background: var(--white); border-radius: var(--r-lg);
+      margin: 0 20px 10px; overflow: hidden;
+      box-shadow: var(--sh); border: 1px solid var(--border-2); cursor: pointer;
+      transition: .12s;
+    }
+    .store-list-card:hover { box-shadow: var(--sh-lg); }
+    .slc-inner { display: flex; align-items: center; gap: 12px; padding: 14px; }
+    .slc-emoji {
+      width: 52px; height: 52px; border-radius: 14px;
+      background: var(--bg); display: flex; align-items: center;
+      justify-content: center; font-size: 26px; flex-shrink: 0;
+    }
+    .slc-info { flex: 1; min-width: 0; }
+    .slc-name { font-size: 15px; font-weight: 800; color: var(--text-1); margin-bottom: 2px; }
+    .slc-sub  { font-size: 12px; color: var(--text-3); }
+    .slc-badges { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
+    .slc-arrow { font-size: 18px; color: var(--text-3); flex-shrink: 0; }
+    .slc-coupon-bar {
+      background: var(--orange-soft); padding: 8px 14px;
+      border-top: 1px solid var(--orange-mid);
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; font-weight: 700; color: var(--orange);
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       ④ 가게 상세 화면
+    ═══════════════════════════════════════════════════════ */
+    .detail-header {
+      background: var(--white); padding: 16px 20px;
+      border-bottom: 1px solid var(--border-2);
+    }
+    .back-btn {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 14px; font-weight: 700; color: var(--orange);
+      cursor: pointer; margin-bottom: 14px;
+    }
+    .store-hero { display: flex; gap: 14px; align-items: center; }
+    .store-hero-emoji {
+      width: 64px; height: 64px; border-radius: 18px;
+      background: var(--bg); display: flex; align-items: center;
+      justify-content: center; font-size: 32px; flex-shrink: 0;
+    }
+    .store-hero-name { font-size: 20px; font-weight: 900; letter-spacing: -.4px; }
+    .store-hero-cat  { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+    .store-hero-open {
+      display: flex; align-items: center; gap: 5px; margin-top: 6px;
+    }
+    .open-dot {
+      width: 7px; height: 7px; border-radius: 50%; background: var(--green);
+    }
+    .open-label { font-size: 12px; font-weight: 700; color: var(--green); }
+
+    /* 상세 섹션 카드 */
+    .detail-section {
+      background: var(--white); margin: 8px 0 0;
+      padding: 18px 20px;
+    }
+    .ds-title { font-size: 15px; font-weight: 800; margin-bottom: 14px; color: var(--text-1); }
+
+    /* 쿠폰 아이템 */
+    .coupon-item {
+      display: flex; align-items: stretch;
+      border-radius: var(--r-md); overflow: hidden;
+      border: 1px solid var(--border-2); margin-bottom: 10px;
+      box-shadow: var(--sh); cursor: pointer; transition: .12s;
+    }
+    .coupon-item:hover { transform: translateY(-1px); }
+    .ci-left {
+      width: 52px; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 3px; flex-shrink: 0;
+    }
+    .ci-left-emoji { font-size: 18px; }
+    .ci-left-label {
+      font-size: 8px; font-weight: 800; color: #fff;
+      writing-mode: vertical-rl; letter-spacing: .1em;
+    }
+    .ci-body { flex: 1; padding: 12px; background: var(--white); }
+    .ci-title { font-size: 13px; font-weight: 700; color: var(--text-1); margin-bottom: 2px; }
+    .ci-disc { font-size: 16px; font-weight: 900; color: var(--orange); }
+    .ci-meta { display: flex; justify-content: space-between; margin-top: 6px; }
+    .ci-exp { font-size: 11px; color: var(--text-3); }
+    .ci-qty { font-size: 11px; color: var(--text-3); }
+
+    /* 스탬프 카드 */
+    .stamp-card {
+      background: var(--white); border: 1px solid var(--border-2);
+      border-radius: var(--r-lg); padding: 16px;
+      box-shadow: var(--sh);
+    }
+    .sc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .sc-title { font-size: 14px; font-weight: 800; }
+    .sc-count { font-size: 14px; font-weight: 900; color: var(--orange); }
+    .sc-bar { height: 6px; background: var(--bg); border-radius: 3px; overflow: hidden; margin-bottom: 12px; }
+    .sc-fill { height: 100%; background: var(--orange); border-radius: 3px; }
+    .sc-stamps { display: flex; gap: 6px; flex-wrap: wrap; }
+    .sc-stamp {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: var(--bg); border: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: center; font-size: 14px;
+    }
+    .sc-stamp.on { background: var(--orange-soft); border-color: var(--orange); }
+    .sc-hint { font-size: 12px; color: var(--orange); font-weight: 700; text-align: center; margin-top: 10px; }
+
+    /* ═══════════════════════════════════════════════════════
+       ⑤ 쿠폰함 화면
+    ═══════════════════════════════════════════════════════ */
+    .wallet-tab-row {
+      display: flex; background: var(--white);
+      border-bottom: 1px solid var(--border-2); padding: 0 20px;
+    }
+    .wt-tab {
+      flex: 1; padding: 14px 0; text-align: center;
+      font-size: 13px; font-weight: 700; color: var(--text-3); cursor: pointer;
+      border-bottom: 2.5px solid transparent; transition: .12s;
+    }
+    .wt-tab.active { color: var(--orange); border-bottom-color: var(--orange); }
+
+    .my-coupon-card {
+      background: var(--white); margin: 0 20px 12px;
+      border-radius: var(--r-xl); overflow: hidden;
+      box-shadow: var(--sh); border: 1px solid var(--border-2);
+    }
+    .mcc-top {
+      display: flex; align-items: stretch;
+    }
+    .mcc-left {
+      width: 60px; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 4px;
+    }
+    .mcc-left-emoji { font-size: 22px; }
+    .mcc-left-label { font-size: 8px; font-weight: 800; color: #fff; writing-mode: vertical-rl; }
+    .mcc-body { flex: 1; padding: 14px 14px 14px 0; }
+    .mcc-store { font-size: 11px; color: var(--text-3); font-weight: 600; margin-bottom: 3px; }
+    .mcc-title { font-size: 14px; font-weight: 800; color: var(--text-1); margin-bottom: 2px; }
+    .mcc-disc  { font-size: 20px; font-weight: 900; color: var(--orange); }
+    .mcc-divider {
+      height: 1px; background: var(--border-2);
+      margin: 0 16px;
+      background-image: radial-gradient(circle at 0 50%, transparent 8px, var(--border-2) 8px),
+                        radial-gradient(circle at 100% 50%, transparent 8px, var(--border-2) 8px);
+    }
+    .mcc-bottom {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px;
+    }
+    .mcc-exp { font-size: 11px; color: var(--text-3); }
+    .use-btn {
+      padding: 7px 16px; background: var(--orange); color: #fff;
+      border-radius: var(--r-md); font-size: 12px; font-weight: 700; cursor: pointer;
+    }
+
+    /* QR 팝업 */
+    .qr-overlay {
+      position: absolute; inset: 0; background: rgba(0,0,0,.7);
+      display: flex; align-items: flex-end; z-index: 200;
+      display: none;
+    }
+    .qr-overlay.show { display: flex; }
+    .qr-sheet {
+      background: var(--white); border-radius: 28px 28px 0 0;
+      width: 100%; padding: 24px 24px 40px;
+    }
+    .qr-handle {
+      width: 36px; height: 4px; background: var(--border);
+      border-radius: 2px; margin: 0 auto 20px;
+    }
+    .qr-title { font-size: 18px; font-weight: 900; text-align: center; margin-bottom: 4px; }
+    .qr-sub   { font-size: 13px; color: var(--text-3); text-align: center; margin-bottom: 24px; }
+    .qr-box {
+      width: 200px; height: 200px; margin: 0 auto 20px;
+      background: repeating-conic-gradient(var(--text-1) 0% 25%, #fff 0% 50%) 0 0/20px 20px;
+      border-radius: var(--r-lg); border: 8px solid var(--white);
+      box-shadow: 0 0 0 2px var(--border);
+    }
+    .qr-coupon-info {
+      background: var(--orange-soft); border-radius: var(--r-md);
+      padding: 12px 16px; text-align: center; margin-bottom: 16px;
+    }
+    .qr-coupon-title { font-size: 13px; font-weight: 700; color: var(--text-1); }
+    .qr-coupon-disc  { font-size: 22px; font-weight: 900; color: var(--orange); }
+    .qr-close {
+      width: 100%; padding: 14px; background: var(--bg); border-radius: var(--r-lg);
+      font-size: 14px; font-weight: 700; color: var(--text-2);
+      cursor: pointer; text-align: center; border: 1px solid var(--border);
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       ⑥ MY 화면
+    ═══════════════════════════════════════════════════════ */
+    .my-profile {
+      background: var(--white); padding: 24px 20px 20px;
+    }
+    .my-user { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+    .my-avatar {
+      width: 60px; height: 60px; border-radius: 18px;
+      background: var(--orange-soft); display: flex; align-items: center;
+      justify-content: center; font-size: 28px; flex-shrink: 0;
+    }
+    .my-name { font-size: 18px; font-weight: 900; }
+    .my-phone { font-size: 13px; color: var(--text-3); margin-top: 2px; }
+    .my-edit {
+      margin-left: auto; padding: 7px 14px;
+      background: var(--bg); border-radius: var(--r-md);
+      font-size: 12px; font-weight: 700; color: var(--text-2);
+      cursor: pointer; border: 1px solid var(--border);
+    }
+    .my-stats {
+      display: flex; gap: 12px;
+      background: var(--bg); border-radius: var(--r-lg);
+      padding: 16px;
+    }
+    .my-stat { flex: 1; text-align: center; }
+    .my-stat-num { font-size: 20px; font-weight: 900; color: var(--orange); }
+    .my-stat-lbl { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+    .my-stat-div { width: 1px; background: var(--border); }
+
+    /* 스탬프 카드 미니 리스트 */
+    .stamp-mini {
+      background: var(--white); border: 1px solid var(--border-2);
+      border-radius: var(--r-md); padding: 12px 14px;
+      margin: 0 20px 10px; cursor: pointer;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .stamp-mini-emoji {
+      width: 40px; height: 40px; border-radius: 10px; background: var(--bg);
+      display: flex; align-items: center; justify-content: center; font-size: 20px;
+    }
+    .stamp-mini-info { flex: 1; }
+    .stamp-mini-name { font-size: 13px; font-weight: 700; }
+    .stamp-mini-prog { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+    .stamp-mini-dots { display: flex; gap: 4px; margin-top: 6px; }
+    .smd {
+      width: 16px; height: 16px; border-radius: 50%;
+      background: var(--border-2); border: 1px solid var(--border);
+    }
+    .smd.on { background: var(--orange); border-color: var(--orange); }
+
+    .menu-list { background: var(--white); }
+    .menu-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 16px 20px; border-bottom: 1px solid var(--border-2);
+      cursor: pointer;
+    }
+    .menu-item:last-child { border-bottom: none; }
+    .menu-icon { font-size: 20px; }
+    .menu-text { flex: 1; font-size: 14px; font-weight: 600; }
+    .menu-arrow { font-size: 16px; color: var(--text-3); }
+
+    /* ═══════════════════════════════════════════════════════
+       사이드 패널 (데스크탑 설명)
+    ═══════════════════════════════════════════════════════ */
+    .side-panel {
+      width: 260px; flex-shrink: 0;
+      position: sticky; top: 24px; align-self: flex-start;
+    }
+    .side-card {
+      background: var(--white); border-radius: 20px;
+      padding: 20px; margin-bottom: 12px;
+      box-shadow: 0 2px 16px rgba(0,0,0,.07);
+    }
+    .side-title { font-size: 14px; font-weight: 800; color: var(--text-1); margin-bottom: 10px; }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 12px; border-radius: var(--r-md);
+      cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text-2);
+      transition: .12s;
+    }
+    .nav-item:hover { background: var(--bg); }
+    .nav-item.active { background: var(--orange-soft); color: var(--orange); }
+    .nav-item-icon { font-size: 18px; }
+    .prd-note {
+      font-size: 11px; background: #FFFBE6; border-left: 3px solid #FFC107;
+      padding: 8px 12px; border-radius: 0 8px 8px 0;
+      color: #7A5C00; line-height: 1.6; margin-top: 12px;
+    }
+
+    /* 반응형: 모바일에서 side-panel 숨김 */
+    @media (max-width: 700px) {
+      .side-panel { display: none; }
+      .shell-wrap { padding: 0; align-items: stretch; }
+      .phone { width: 100%; border-radius: 0; min-height: 100vh; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="shell-wrap">
+
+  <!-- ════════════════════════════════
+    사이드 패널 (데스크탑)
+  ════════════════════════════════ -->
+  <div class="side-panel">
+    <div class="side-card">
+      <div class="side-title">🗂 화면 네비게이션</div>
+      <div class="nav-item active" onclick="showScreen('home',this)" id="nav-home">
+        <span class="nav-item-icon">🏠</span> 홈
+      </div>
+      <div class="nav-item" onclick="showScreen('login',this)" id="nav-login">
+        <span class="nav-item-icon">🔑</span> 로그인 / 회원가입
+      </div>
+      <div class="nav-item" onclick="showScreen('explore',this)" id="nav-explore">
+        <span class="nav-item-icon">🔍</span> 탐색
+      </div>
+      <div class="nav-item" onclick="showScreen('detail',this)" id="nav-detail">
+        <span class="nav-item-icon">🏪</span> 가게 상세
+      </div>
+      <div class="nav-item" onclick="showScreen('wallet',this)" id="nav-wallet">
+        <span class="nav-item-icon">🎟</span> 쿠폰함
+      </div>
+      <div class="nav-item" onclick="showScreen('my',this)" id="nav-my">
+        <span class="nav-item-icon">👤</span> MY
+      </div>
+    </div>
+
+    <div class="side-card">
+      <div class="side-title">🔐 인증 방식</div>
+      <div style="font-size:12px;color:var(--text-2);line-height:1.8;">
+        <b>SMS OTP</b><br>
+        → Supabase <code>signInWithOtp({ phone })</code><br>
+        → 솔라피 SMS 발송<br>
+        → 6자리 OTP 입력 확인<br><br>
+        <b>카카오 로그인</b><br>
+        → Supabase OAuth<br>
+        <code>signInWithOAuth({ provider: 'kakao' })</code><br>
+        → <code>/auth/callback</code> 콜백 처리<br>
+        → 기존 콜백 라우트 재사용 가능
+      </div>
+    </div>
+
+    <div class="side-card">
+      <div class="side-title">📂 Next.js 라우트 구조</div>
+      <div style="font-size:11px;color:var(--text-2);line-height:2;font-family:monospace;">
+        app/<br>
+        ├── page.tsx &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ← 홈<br>
+        ├── login/ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ← 로그인<br>
+        ├── stores/<br>
+        │&nbsp;&nbsp; └── [id]/ &nbsp;&nbsp;&nbsp; ← 가게 상세<br>
+        ├── wallet/ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ← 쿠폰함<br>
+        ├── stamps/ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ← 스탬프<br>
+        └── my/ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ← 마이페이지
+      </div>
+    </div>
+
+    <div class="prd-note">
+      💡 <b>Web vs App 차이</b><br>
+      · SMS OTP → Supabase phone auth<br>
+      · 카카오 OAuth → 콜백 이미 존재<br>
+      · 스탬프 · 쿠폰 API 재사용<br>
+      · 영수증 인증 → 파일 업로드로
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════
+    폰 셸
+  ════════════════════════════════ -->
+  <div class="phone">
+
+    <!-- 상태바 -->
+    <div class="statusbar">
+      <span class="statusbar-time">9:41</span>
+      <div class="statusbar-icons">
+        <span class="sb-icon">●●●</span>
+        <span class="sb-icon">WiFi</span>
+        <span class="sb-icon">🔋</span>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════
+      ① 홈 화면
+    ══════════════════════════ -->
+    <div class="screen active" id="screen-home">
+      <!-- 앱 헤더 -->
+      <div class="app-header">
+        <div class="logo">언니픽</div>
+        <div class="loc-btn" onclick="alert('위치 변경')">
+          📍 서면동 <span class="arrow">▾</span>
+        </div>
+        <div class="header-right">
+          <div class="icon-btn notif" onclick="alert('알림')">
+            🔔
+            <div class="notif-dot"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 카테고리 탭 -->
+      <div class="cat-scroll">
+        <div class="cat-chip active">
+          <div class="cat-emoji">✨</div>
+          <div class="cat-name">전체</div>
+        </div>
+        <div class="cat-chip">
+          <div class="cat-emoji">☕</div>
+          <div class="cat-name">카페</div>
+        </div>
+        <div class="cat-chip">
+          <div class="cat-emoji">🍖</div>
+          <div class="cat-name">고깃집</div>
+        </div>
+        <div class="cat-chip">
+          <div class="cat-emoji">🍜</div>
+          <div class="cat-name">한식</div>
+        </div>
+        <div class="cat-chip">
+          <div class="cat-emoji">🍗</div>
+          <div class="cat-name">치킨</div>
+        </div>
+        <div class="cat-chip">
+          <div class="cat-emoji">🧁</div>
+          <div class="cat-name">베이커리</div>
+        </div>
+        <div class="cat-chip">
+          <div class="cat-emoji">🍱</div>
+          <div class="cat-name">분식</div>
+        </div>
+      </div>
+
+      <div class="scroll-body">
+
+        <!-- 긴급 쿠폰 -->
+        <div class="section">
+          <div class="section-row">
+            <div class="section-title">⚡ 지금 당장 써요</div>
+            <div class="more-txt more-btn" onclick="showScreen('explore',document.getElementById('nav-explore'))">전체 →</div>
+          </div>
+        </div>
+        <div class="h-scroll" style="padding-bottom:16px;">
+          <!-- 긴급 쿠폰 카드 1 -->
+          <div class="urgent-card" onclick="showScreen('detail',document.getElementById('nav-detail'))">
+            <div class="uc-top">
+              <span class="chip chip-red">⚡ 타임세일</span>
+              <div class="uc-discount">30%</div>
+            </div>
+            <div class="uc-title">아메리카노 · 카페라떼 전 메뉴</div>
+            <div class="uc-store">☕ 카페 봄봄 · 200m</div>
+            <div class="uc-timer">⏰ 01:42:08 남음</div>
+          </div>
+          <!-- 긴급 쿠폰 카드 2 -->
+          <div class="urgent-card">
+            <div class="uc-top">
+              <span class="chip chip-green">🎁 서비스</span>
+              <div class="uc-discount" style="color:var(--green);">무료</div>
+            </div>
+            <div class="uc-title">재방문 고객 음료 1잔 증정</div>
+            <div class="uc-store">🍖 정육식당 · 350m</div>
+            <div class="uc-timer" style="color:var(--text-3);background:var(--border-2);">45명 남음</div>
+          </div>
+          <!-- 긴급 쿠폰 카드 3 -->
+          <div class="urgent-card">
+            <div class="uc-top">
+              <span class="chip chip-orange">🌟 체험단</span>
+              <div class="uc-discount">50%</div>
+            </div>
+            <div class="uc-title">신규 고객 첫 방문 파격 할인</div>
+            <div class="uc-store">🍜 할머니 국밥 · 480m</div>
+            <div class="uc-timer" style="color:var(--text-3);background:var(--border-2);">10명 남음</div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- 주변 가게 -->
+        <div class="section">
+          <div class="section-row">
+            <div class="section-title">📍 주변 가게</div>
+            <div class="more-btn" onclick="showScreen('explore',document.getElementById('nav-explore'))">지도로 보기 →</div>
+          </div>
+        </div>
+        <div class="h-scroll" style="padding-bottom:16px;">
+          <div class="nearby-card" onclick="showScreen('detail',document.getElementById('nav-detail'))">
+            <div class="nc-thumb">☕</div>
+            <div class="nc-body">
+              <div class="nc-name">카페 봄봄</div>
+              <div class="nc-cat">카페 · 200m</div>
+              <div class="chip chip-orange" style="font-size:10px;">🎟 3개</div>
+            </div>
+          </div>
+          <div class="nearby-card">
+            <div class="nc-thumb">🍖</div>
+            <div class="nc-body">
+              <div class="nc-name">정육식당</div>
+              <div class="nc-cat">고깃집 · 350m</div>
+              <div class="chip chip-green" style="font-size:10px;">🎁 서비스</div>
+            </div>
+          </div>
+          <div class="nearby-card">
+            <div class="nc-thumb">🍜</div>
+            <div class="nc-body">
+              <div class="nc-name">할머니 국밥</div>
+              <div class="nc-cat">한식 · 480m</div>
+              <div class="chip chip-orange" style="font-size:10px;">🌟 체험단</div>
+            </div>
+          </div>
+          <div class="nearby-card">
+            <div class="nc-thumb">🍗</div>
+            <div class="nc-body">
+              <div class="nc-name">교촌치킨</div>
+              <div class="nc-cat">치킨 · 620m</div>
+              <div class="chip chip-gray" style="font-size:10px;">영업종료</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- 피드 -->
+        <div class="section">
+          <div class="section-title" style="margin-bottom:14px;">🍀 최신 쿠폰 소식</div>
+        </div>
+
+        <!-- 피드 포스트 1 -->
+        <div class="feed-post" onclick="showScreen('detail',document.getElementById('nav-detail'))">
+          <div class="fp-header">
+            <div class="fp-avatar">☕</div>
+            <div>
+              <div class="fp-store">카페 봄봄</div>
+              <div class="fp-time">3분 전</div>
+            </div>
+            <div class="chip chip-red" style="margin-left:auto;">⚡ 타임세일</div>
+          </div>
+          <div class="fp-coupon">
+            <div class="fp-coupon-title">아메리카노 · 카페라떼 전 메뉴</div>
+            <div class="fp-coupon-disc">30% 할인</div>
+          </div>
+          <div class="fp-actions">
+            <div class="fp-btn fp-btn-primary">쿠폰 받기</div>
+            <div class="fp-btn fp-btn-outline">가게 보기</div>
+          </div>
+        </div>
+
+        <!-- 피드 포스트 2 -->
+        <div class="feed-post">
+          <div class="fp-header">
+            <div class="fp-avatar">🍖</div>
+            <div>
+              <div class="fp-store">정육식당 부산점</div>
+              <div class="fp-time">12분 전</div>
+            </div>
+            <div class="chip chip-green" style="margin-left:auto;">🎁 서비스</div>
+          </div>
+          <div class="fp-coupon" style="background:var(--green-bg);border-left-color:var(--green);">
+            <div class="fp-coupon-title">재방문 고객 음료 1잔 무료 증정</div>
+            <div class="fp-coupon-disc" style="color:var(--green);">무료 제공</div>
+          </div>
+          <div class="fp-actions">
+            <div class="fp-btn fp-btn-primary">쿠폰 받기</div>
+            <div class="fp-btn fp-btn-outline">가게 보기</div>
+          </div>
+        </div>
+
+        <div style="height:12px;"></div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════
+      ② 로그인 화면
+    ══════════════════════════ -->
+    <div class="screen" id="screen-login">
+      <div class="login-screen">
+        <!-- 히어로 -->
+        <div class="login-hero">
+          <div style="font-size:48px;margin-bottom:12px;">🍖</div>
+          <div class="login-logo">언니픽</div>
+          <div class="login-logo-sub">주변 가게 쿠폰 · 스탬프 앱</div>
+        </div>
+
+        <div class="login-body">
+          <!-- 탭: SMS / 카카오 -->
+          <div class="login-tab-wrap">
+            <div class="login-tab active" onclick="switchLoginTab('sms',this)">📱 휴대폰 인증</div>
+            <div class="login-tab" onclick="switchLoginTab('kakao',this)">💛 카카오 로그인</div>
+          </div>
+
+          <!-- SMS 인증 패널 -->
+          <div id="panel-sms">
+            <div class="sms-steps">
+              <!-- STEP 1: 번호 입력 -->
+              <div class="otp-step active" id="step-phone">
+                <div class="input-group">
+                  <div class="input-label">휴대폰 번호</div>
+                  <div class="input-row">
+                    <input class="input-field" type="tel" placeholder="010-0000-0000" id="phone-input" />
+                    <button class="send-btn" onclick="sendOTP()">인증 요청</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- STEP 2: OTP 입력 (숨김 → 인증 요청 후 표시) -->
+              <div class="otp-step" id="step-otp">
+                <div class="input-group">
+                  <div class="input-label" style="display:flex;align-items:center;justify-content:space-between;">
+                    <span>인증번호 6자리</span>
+                    <span class="timer-badge" id="otp-timer">3:00</span>
+                  </div>
+                  <input class="input-field code" type="tel" maxlength="6" placeholder="● ● ● ● ● ●" id="otp-input" />
+                  <div class="resend-text">문자가 오지 않나요? <a onclick="resendOTP()">재발송</a></div>
+                </div>
+                <button class="login-submit-btn" onclick="verifyOTP()">로그인 · 회원가입</button>
+              </div>
+            </div>
+
+            <div class="auth-divider">
+              <div class="auth-divider-line"></div>
+              <div class="auth-divider-text">또는</div>
+              <div class="auth-divider-line"></div>
+            </div>
+
+            <!-- 카카오 버튼 (보조) -->
+            <button class="kakao-btn" onclick="kakaoLogin()">
+              <span class="kakao-icon">💛</span>
+              카카오로 3초 로그인
+            </button>
+          </div>
+
+          <!-- 카카오 전용 패널 -->
+          <div id="panel-kakao" style="display:none;">
+            <div style="text-align:center;padding:20px 0 28px;">
+              <div style="font-size:64px;margin-bottom:16px;">💛</div>
+              <div style="font-size:16px;font-weight:800;margin-bottom:8px;">카카오로 간편 로그인</div>
+              <div style="font-size:13px;color:var(--text-3);line-height:1.7;margin-bottom:28px;">
+                카카오 계정으로 빠르게 가입하고<br>주변 가게 혜택을 바로 받으세요
+              </div>
+              <button class="kakao-btn" onclick="kakaoLogin()">
+                <span class="kakao-icon">💛</span>
+                카카오로 시작하기
+              </button>
+            </div>
+
+            <div class="auth-divider">
+              <div class="auth-divider-line"></div>
+              <div class="auth-divider-text">또는</div>
+              <div class="auth-divider-line"></div>
+            </div>
+
+            <div style="text-align:center;">
+              <div style="font-size:13px;color:var(--text-3);margin-bottom:12px;">휴대폰 번호로 로그인</div>
+              <div class="input-row" style="gap:8px;">
+                <input class="input-field" type="tel" placeholder="010-0000-0000" style="flex:1;" />
+                <button class="send-btn" onclick="sendOTP()">인증</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 약관 -->
+          <div class="login-terms">
+            로그인 시 <a href="#">이용약관</a> 및 <a href="#">개인정보처리방침</a>에<br>동의한 것으로 간주됩니다
+          </div>
+
+          <!-- 비회원 탐색 -->
+          <div style="text-align:center;margin-top:16px;">
+            <span style="font-size:12px;color:var(--text-3);cursor:pointer;"
+              onclick="showScreen('home',document.getElementById('nav-home'))">
+              로그인 없이 둘러보기 →
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════
+      ③ 탐색 화면
+    ══════════════════════════ -->
+    <div class="screen" id="screen-explore">
+      <div class="app-header">
+        <div class="logo">언니픽</div>
+        <div class="loc-btn">📍 서면동 <span class="arrow">▾</span></div>
+        <div class="header-right">
+          <div class="icon-btn" onclick="showScreen('home',document.getElementById('nav-home'))">✕</div>
+        </div>
+      </div>
+
+      <!-- 검색 바 -->
+      <div class="search-bar-wrap">
+        <div class="search-bar">
+          <span>🔍</span>
+          <input type="text" placeholder="가게명, 카테고리 검색..." />
+          <span style="font-size:18px;cursor:pointer;">⊕</span>
+        </div>
+      </div>
+
+      <!-- 필터 -->
+      <div class="filter-row">
+        <div class="filter-chip active">전체</div>
+        <div class="filter-chip">🎟 쿠폰 있는</div>
+        <div class="filter-chip">⚡ 타임세일</div>
+        <div class="filter-chip">🟢 영업중</div>
+        <div class="filter-chip">📍 500m 이내</div>
+      </div>
+
+      <div class="scroll-body" style="padding-top:12px;">
+        <!-- 가게 리스트 -->
+        <div class="store-list-card" onclick="showScreen('detail',document.getElementById('nav-detail'))">
+          <div class="slc-inner">
+            <div class="slc-emoji">☕</div>
+            <div class="slc-info">
+              <div class="slc-name">카페 봄봄</div>
+              <div class="slc-sub">카페 · 서면 · 200m · 🟢 영업중</div>
+              <div class="slc-badges">
+                <span class="chip chip-red" style="font-size:10px;">⚡ 타임세일</span>
+                <span class="chip chip-orange" style="font-size:10px;">🎟 3개</span>
+              </div>
+            </div>
+            <div class="slc-arrow">›</div>
+          </div>
+          <div class="slc-coupon-bar">
+            🎟 아메리카노 30% 할인 · 01:42 남음
+          </div>
+        </div>
+
+        <div class="store-list-card">
+          <div class="slc-inner">
+            <div class="slc-emoji">🍖</div>
+            <div class="slc-info">
+              <div class="slc-name">정육식당 부산점</div>
+              <div class="slc-sub">고깃집 · 해운대 · 350m · 🟢 영업중</div>
+              <div class="slc-badges">
+                <span class="chip chip-green" style="font-size:10px;">🎁 서비스</span>
+              </div>
+            </div>
+            <div class="slc-arrow">›</div>
+          </div>
+          <div class="slc-coupon-bar" style="background:var(--green-bg);border-color:var(--green-bg);color:var(--green);">
+            🎁 재방문 고객 음료 무료 · 45명 남음
+          </div>
+        </div>
+
+        <div class="store-list-card">
+          <div class="slc-inner">
+            <div class="slc-emoji">🍜</div>
+            <div class="slc-info">
+              <div class="slc-name">할머니 국밥</div>
+              <div class="slc-sub">한식 · 남포동 · 480m · 🟢 영업중</div>
+              <div class="slc-badges">
+                <span class="chip chip-orange" style="font-size:10px;">🌟 체험단</span>
+                <span class="chip chip-orange" style="font-size:10px;">🎟 1개</span>
+              </div>
+            </div>
+            <div class="slc-arrow">›</div>
+          </div>
+          <div class="slc-coupon-bar">🌟 신규 고객 첫 방문 50% 할인</div>
+        </div>
+
+        <div class="store-list-card">
+          <div class="slc-inner">
+            <div class="slc-emoji">🍗</div>
+            <div class="slc-info">
+              <div class="slc-name">교촌치킨 전포점</div>
+              <div class="slc-sub">치킨 · 전포 · 620m · ⚫ 영업종료</div>
+              <div class="slc-badges">
+                <span class="chip chip-gray" style="font-size:10px;">영업종료</span>
+              </div>
+            </div>
+            <div class="slc-arrow">›</div>
+          </div>
+        </div>
+
+        <div style="height:12px;"></div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════
+      ④ 가게 상세 화면
+    ══════════════════════════ -->
+    <div class="screen" id="screen-detail">
+      <div class="scroll-body" style="padding-top:0;padding-bottom:80px;">
+        <!-- 헤더 -->
+        <div class="detail-header">
+          <div class="back-btn" onclick="showScreen('home',document.getElementById('nav-home'))">
+            ‹ 뒤로
+          </div>
+          <div class="store-hero">
+            <div class="store-hero-emoji">☕</div>
+            <div>
+              <div class="store-hero-name">카페 봄봄</div>
+              <div class="store-hero-cat">카페 · 부산 서면</div>
+              <div class="store-hero-open">
+                <div class="open-dot"></div>
+                <div class="open-label">영업중 · 08:00 ~ 22:00</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 쿠폰 섹션 -->
+        <div class="detail-section">
+          <div class="ds-title">🎟 발행 중인 쿠폰</div>
+
+          <div class="coupon-item" onclick="showQR()">
+            <div class="ci-left" style="background:linear-gradient(180deg,#4A90E2,#1A73E8);">
+              <div class="ci-left-emoji">⚡</div>
+              <div class="ci-left-label">타임세일</div>
+            </div>
+            <div class="ci-body">
+              <div class="ci-title">아메리카노 · 카페라떼 전 메뉴</div>
+              <div class="ci-disc">30% 할인</div>
+              <div class="ci-meta">
+                <div class="ci-exp">오늘 18:00까지</div>
+                <div class="ci-qty">잔여 28명</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="coupon-item">
+            <div class="ci-left" style="background:linear-gradient(180deg,#FF6F0F,#E05F00);">
+              <div class="ci-left-emoji">🎟</div>
+              <div class="ci-left-label">일반</div>
+            </div>
+            <div class="ci-body">
+              <div class="ci-title">전 메뉴 2,000원 할인</div>
+              <div class="ci-disc">2,000원 할인</div>
+              <div class="ci-meta">
+                <div class="ci-exp">~2026.06.30</div>
+                <div class="ci-qty">잔여 100명</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 스탬프 섹션 -->
+        <div class="detail-section">
+          <div class="ds-title">🍀 내 스탬프 카드</div>
+          <div class="stamp-card">
+            <div class="sc-header">
+              <div class="sc-title">🍀 카페 봄봄 스탬프</div>
+              <div class="sc-count">7 / 10</div>
+            </div>
+            <div class="sc-bar">
+              <div class="sc-fill" style="width:70%"></div>
+            </div>
+            <div class="sc-stamps">
+              <div class="sc-stamp on">🍖</div>
+              <div class="sc-stamp on">🍖</div>
+              <div class="sc-stamp on">🍖</div>
+              <div class="sc-stamp on">🍖</div>
+              <div class="sc-stamp on">🍖</div>
+              <div class="sc-stamp on">🍖</div>
+              <div class="sc-stamp on">🍖</div>
+              <div class="sc-stamp" style="font-size:10px;color:var(--text-3);">8</div>
+              <div class="sc-stamp" style="font-size:10px;color:var(--text-3);">9</div>
+              <div class="sc-stamp" style="font-size:16px;">🎁</div>
+            </div>
+            <div class="sc-hint">3개 더 모으면 리워드 쿠폰 발급!</div>
+          </div>
+
+          <!-- 영수증 인증 버튼 -->
+          <div style="margin-top:12px;display:flex;gap:8px;">
+            <div onclick="alert('영수증 촬영으로 스탬프 적립!')"
+              style="flex:1;padding:12px;background:var(--orange-soft);border:1.5px dashed var(--orange);
+              border-radius:var(--r-md);text-align:center;cursor:pointer;font-size:13px;font-weight:700;color:var(--orange);">
+              🧾 영수증 인증
+            </div>
+            <div onclick="alert('동반자 코드 입력!')"
+              style="flex:1;padding:12px;background:var(--bg);border:1.5px solid var(--border);
+              border-radius:var(--r-md);text-align:center;cursor:pointer;font-size:13px;font-weight:700;color:var(--text-2);">
+              🎟 동반자 코드
+            </div>
+          </div>
+        </div>
+
+        <!-- 가격 정보 섹션 -->
+        <div class="detail-section" style="margin-bottom:0;">
+          <div class="ds-title">💰 가격 정보</div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div style="background:var(--bg);border-radius:var(--r-md);padding:12px 14px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                <span style="font-size:14px;font-weight:700;">아메리카노</span>
+                <span style="font-size:15px;font-weight:900;color:var(--orange);">4,500원</span>
+              </div>
+              <div style="display:flex;gap:8px;">
+                <div style="flex:1;padding:6px;background:var(--green-bg);border-radius:8px;
+                  text-align:center;font-size:12px;font-weight:700;color:var(--green);">
+                  👍 맞아요 24
+                </div>
+                <div style="flex:1;padding:6px;background:var(--border-2);border-radius:8px;
+                  text-align:center;font-size:12px;font-weight:700;color:var(--text-3);">
+                  👎 틀려요 1
+                </div>
+              </div>
+            </div>
+            <div style="background:var(--bg);border-radius:var(--r-md);padding:12px 14px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                <span style="font-size:14px;font-weight:700;">카페라떼</span>
+                <span style="font-size:15px;font-weight:900;color:var(--orange);">5,000원</span>
+              </div>
+              <div style="display:flex;gap:8px;">
+                <div style="flex:1;padding:6px;background:var(--green-bg);border-radius:8px;
+                  text-align:center;font-size:12px;font-weight:700;color:var(--green);">
+                  👍 맞아요 18
+                </div>
+                <div style="flex:1;padding:6px;background:var(--border-2);border-radius:8px;
+                  text-align:center;font-size:12px;font-weight:700;color:var(--text-3);">
+                  👎 틀려요 0
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="height:8px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════
+      ⑤ 쿠폰함 화면
+    ══════════════════════════ -->
+    <div class="screen" id="screen-wallet">
+      <div class="app-header" style="border-bottom:none;">
+        <div class="logo">쿠폰함</div>
+      </div>
+
+      <!-- 탭 -->
+      <div class="wallet-tab-row">
+        <div class="wt-tab active">사용 가능 (3)</div>
+        <div class="wt-tab">사용 완료</div>
+        <div class="wt-tab">만료</div>
+      </div>
+
+      <div class="scroll-body" style="padding-top:16px;">
+        <!-- 쿠폰 카드 1 -->
+        <div class="my-coupon-card">
+          <div class="mcc-top">
+            <div class="mcc-left" style="background:linear-gradient(180deg,#4A90E2,#1A73E8);">
+              <div class="mcc-left-emoji">⚡</div>
+              <div class="mcc-left-label">타임세일</div>
+            </div>
+            <div class="mcc-body">
+              <div class="mcc-store">☕ 카페 봄봄</div>
+              <div class="mcc-title">아메리카노 · 카페라떼 전 메뉴</div>
+              <div class="mcc-disc">30% 할인</div>
+            </div>
+          </div>
+          <div class="mcc-divider"></div>
+          <div class="mcc-bottom">
+            <div class="mcc-exp">⏰ 오늘 18:00까지</div>
+            <div class="use-btn" onclick="showQR()">QR 사용</div>
+          </div>
+        </div>
+
+        <!-- 쿠폰 카드 2 -->
+        <div class="my-coupon-card">
+          <div class="mcc-top">
+            <div class="mcc-left" style="background:linear-gradient(180deg,#0AC86E,#07A85A);">
+              <div class="mcc-left-emoji">🎁</div>
+              <div class="mcc-left-label">서비스</div>
+            </div>
+            <div class="mcc-body">
+              <div class="mcc-store">🍖 정육식당 부산점</div>
+              <div class="mcc-title">재방문 고객 음료 1잔 증정</div>
+              <div class="mcc-disc" style="color:var(--green);">무료 제공</div>
+            </div>
+          </div>
+          <div class="mcc-divider"></div>
+          <div class="mcc-bottom">
+            <div class="mcc-exp">~2026.05.31</div>
+            <div class="use-btn" style="background:var(--green);" onclick="showQR()">QR 사용</div>
+          </div>
+        </div>
+
+        <!-- 쿠폰 카드 3 -->
+        <div class="my-coupon-card">
+          <div class="mcc-top">
+            <div class="mcc-left" style="background:linear-gradient(180deg,#FF6F0F,#E05F00);">
+              <div class="mcc-left-emoji">🎟</div>
+              <div class="mcc-left-label">일반</div>
+            </div>
+            <div class="mcc-body">
+              <div class="mcc-store">🍜 할머니 국밥</div>
+              <div class="mcc-title">전 메뉴 2,000원 할인</div>
+              <div class="mcc-disc">2,000원 할인</div>
+            </div>
+          </div>
+          <div class="mcc-divider"></div>
+          <div class="mcc-bottom">
+            <div class="mcc-exp">~2026.06.30</div>
+            <div class="use-btn" onclick="showQR()">QR 사용</div>
+          </div>
+        </div>
+
+        <div style="height:12px;"></div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════
+      ⑥ MY 화면
+    ══════════════════════════ -->
+    <div class="screen" id="screen-my">
+      <div class="app-header" style="border-bottom:none;">
+        <div class="logo">MY</div>
+        <div class="header-right">
+          <div class="icon-btn" onclick="showScreen('login',document.getElementById('nav-login'))">⚙️</div>
+        </div>
+      </div>
+
+      <div class="scroll-body">
+        <!-- 프로필 -->
+        <div class="my-profile">
+          <div class="my-user">
+            <div class="my-avatar">👩</div>
+            <div>
+              <div class="my-name">김언니</div>
+              <div class="my-phone">010-****-1234 · 카카오 연동</div>
+            </div>
+            <div class="my-edit">편집</div>
+          </div>
+          <div class="my-stats">
+            <div class="my-stat">
+              <div class="my-stat-num">3</div>
+              <div class="my-stat-lbl">보유 쿠폰</div>
+            </div>
+            <div class="my-stat-div"></div>
+            <div class="my-stat">
+              <div class="my-stat-num">7</div>
+              <div class="my-stat-lbl">스탬프</div>
+            </div>
+            <div class="my-stat-div"></div>
+            <div class="my-stat">
+              <div class="my-stat-num">12</div>
+              <div class="my-stat-lbl">방문 기록</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="divider" style="margin:0 0 16px;"></div>
+
+        <!-- 스탬프 카드 목록 -->
+        <div class="section" style="padding-bottom:12px;">
+          <div class="section-row">
+            <div class="section-title">🍀 내 스탬프 카드</div>
+            <div class="more-btn">전체 →</div>
+          </div>
+        </div>
+
+        <div class="stamp-mini" onclick="showScreen('detail',document.getElementById('nav-detail'))">
+          <div class="stamp-mini-emoji">☕</div>
+          <div class="stamp-mini-info">
+            <div class="stamp-mini-name">카페 봄봄</div>
+            <div class="stamp-mini-prog">7 / 10 · 3개 더 모으면 리워드!</div>
+            <div class="stamp-mini-dots">
+              <div class="smd on"></div><div class="smd on"></div><div class="smd on"></div>
+              <div class="smd on"></div><div class="smd on"></div><div class="smd on"></div>
+              <div class="smd on"></div><div class="smd"></div><div class="smd"></div><div class="smd"></div>
+            </div>
+          </div>
+          <div style="font-size:16px;color:var(--text-3);">›</div>
+        </div>
+
+        <div class="stamp-mini">
+          <div class="stamp-mini-emoji">🍖</div>
+          <div class="stamp-mini-info">
+            <div class="stamp-mini-name">정육식당 부산점</div>
+            <div class="stamp-mini-prog">4 / 10</div>
+            <div class="stamp-mini-dots">
+              <div class="smd on"></div><div class="smd on"></div><div class="smd on"></div>
+              <div class="smd on"></div><div class="smd"></div><div class="smd"></div>
+              <div class="smd"></div><div class="smd"></div><div class="smd"></div><div class="smd"></div>
+            </div>
+          </div>
+          <div style="font-size:16px;color:var(--text-3);">›</div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- 메뉴 -->
+        <div class="menu-list">
+          <div class="menu-item">
+            <span class="menu-icon">📋</span>
+            <span class="menu-text">쿠폰 사용 내역</span>
+            <span class="menu-arrow">›</span>
+          </div>
+          <div class="menu-item">
+            <span class="menu-icon">📍</span>
+            <span class="menu-text">내 위치 설정</span>
+            <span class="menu-arrow">›</span>
+          </div>
+          <div class="menu-item">
+            <span class="menu-icon">🔔</span>
+            <span class="menu-text">알림 설정</span>
+            <span class="menu-arrow">›</span>
+          </div>
+          <div class="menu-item">
+            <span class="menu-icon">❓</span>
+            <span class="menu-text">고객센터</span>
+            <span class="menu-arrow">›</span>
+          </div>
+          <div class="menu-item" onclick="showScreen('login',document.getElementById('nav-login'))">
+            <span class="menu-icon">🔑</span>
+            <span class="menu-text">로그아웃</span>
+            <span class="menu-arrow">›</span>
+          </div>
+        </div>
+
+        <div style="height:12px;"></div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════
+      QR 팝업 오버레이
+    ══════════════════════════ -->
+    <div class="qr-overlay" id="qr-overlay" onclick="hideQR()">
+      <div class="qr-sheet" onclick="event.stopPropagation()">
+        <div class="qr-handle"></div>
+        <div class="qr-title">쿠폰 QR 코드</div>
+        <div class="qr-sub">매장 직원에게 보여주세요</div>
+        <div class="qr-box"></div>
+        <div class="qr-coupon-info">
+          <div class="qr-coupon-title">☕ 카페 봄봄 · 아메리카노 전 메뉴</div>
+          <div class="qr-coupon-disc">30% 할인</div>
+        </div>
+        <div class="qr-close" onclick="hideQR()">닫기</div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════
+      하단 탭바
+    ══════════════════════════ -->
+    <div class="tab-bar">
+      <div class="tab-item active" id="tab-home" onclick="showScreen('home',document.getElementById('nav-home'))">
+        <div class="tab-icon">🏠</div>
+        <div class="tab-label">홈</div>
+        <div class="tab-dot"></div>
+      </div>
+      <div class="tab-item" id="tab-explore" onclick="showScreen('explore',document.getElementById('nav-explore'))">
+        <div class="tab-icon">🔍</div>
+        <div class="tab-label">탐색</div>
+        <div class="tab-dot"></div>
+      </div>
+      <div class="tab-item" id="tab-map" onclick="alert('지도 탭 — 카카오맵 풀페이지')">
+        <div class="tab-icon">🗺️</div>
+        <div class="tab-label">지도</div>
+        <div class="tab-dot"></div>
+      </div>
+      <div class="tab-item" id="tab-wallet" onclick="showScreen('wallet',document.getElementById('nav-wallet'))">
+        <div class="tab-icon">🎟</div>
+        <div class="tab-label">쿠폰함</div>
+        <div class="tab-dot"></div>
+      </div>
+      <div class="tab-item" id="tab-my" onclick="showScreen('my',document.getElementById('nav-my'))">
+        <div class="tab-icon">👤</div>
+        <div class="tab-label">MY</div>
+        <div class="tab-dot"></div>
+      </div>
+    </div>
+
+  </div><!-- /phone -->
+</div><!-- /shell-wrap -->
+
+<script>
+  /* ── 화면 전환 ── */
+  const SCREENS = ['home','login','explore','detail','wallet','my'];
+  const TABS    = ['home','explore','map','wallet','my'];
+
+  function showScreen(name, navEl) {
+    SCREENS.forEach(s => {
+      document.getElementById('screen-'+s)?.classList.remove('active');
+    });
+    document.getElementById('screen-'+name)?.classList.add('active');
+
+    // 사이드 네비 활성화
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    if (navEl) navEl.classList.add('active');
+
+    // 탭바 활성화
+    document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active'));
+    const tabMap = {home:'tab-home',explore:'tab-explore',wallet:'tab-wallet',my:'tab-my'};
+    if (tabMap[name]) document.getElementById(tabMap[name])?.classList.add('active');
+  }
+
+  /* ── 로그인 탭 전환 ── */
+  function switchLoginTab(tab, el) {
+    document.querySelectorAll('.login-tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('panel-sms').style.display   = tab === 'sms'   ? 'block' : 'none';
+    document.getElementById('panel-kakao').style.display = tab === 'kakao' ? 'block' : 'none';
+  }
+
+  /* ── SMS OTP 플로우 ── */
+  let timerInterval = null;
+
+  function sendOTP() {
+    const phone = document.getElementById('phone-input')?.value;
+    if (!phone || phone.length < 10) {
+      alert('올바른 휴대폰 번호를 입력해주세요.');
+      return;
+    }
+    document.getElementById('step-otp')?.classList.add('active');
+    startTimer();
+    // 실제 구현: POST /api/auth/sms-otp { phone }
+    // → Supabase signInWithOtp({ phone }) 또는 솔라피 직접 발송
+  }
+
+  function startTimer() {
+    let remaining = 180;
+    const el = document.getElementById('otp-timer');
+    clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+      remaining--;
+      const m = Math.floor(remaining / 60);
+      const s = remaining % 60;
+      if (el) el.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+      if (remaining <= 0) {
+        clearInterval(timerInterval);
+        if (el) el.textContent = '만료';
+        el.style.color = 'var(--text-3)';
+      }
+    }, 1000);
+  }
+
+  function resendOTP() {
+    alert('인증번호를 재발송했습니다.');
+    startTimer();
+  }
+
+  function verifyOTP() {
+    const code = document.getElementById('otp-input')?.value;
+    if (!code || code.length < 6) {
+      alert('6자리 인증번호를 입력해주세요.');
+      return;
+    }
+    // 실제 구현: POST /api/auth/verify-otp { phone, token: code }
+    // → Supabase verifyOtp({ phone, token, type: 'sms' })
+    clearInterval(timerInterval);
+    showScreen('home', document.getElementById('nav-home'));
+    setTimeout(() => alert('🎉 로그인 성공! 주변 가게 혜택을 확인해보세요'), 300);
+  }
+
+  function kakaoLogin() {
+    // 실제 구현: supabase.auth.signInWithOAuth({ provider: 'kakao', options: { redirectTo: '/auth/callback' } })
+    alert('카카오 로그인 → /auth/callback 으로 리다이렉트\n(기존 admin /auth/callback 재사용 가능)');
+    showScreen('home', document.getElementById('nav-home'));
+  }
+
+  /* ── QR 팝업 ── */
+  function showQR() { document.getElementById('qr-overlay').classList.add('show'); }
+  function hideQR() { document.getElementById('qr-overlay').classList.remove('show'); }
+</script>
+
+</body>
+</html>
