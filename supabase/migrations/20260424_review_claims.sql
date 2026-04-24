@@ -62,16 +62,33 @@ VALUES (
 )
 ON CONFLICT (id) DO NOTHING;
 
--- 스토리지 정책: 로그인 유저 업로드 허용
+-- 스토리지 정책: storage.objects RLS 정책으로 설정
 DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM storage.policies WHERE name='review screenshots upload' AND bucket_id='review-screenshots') THEN
-    INSERT INTO storage.policies (name, bucket_id, definition, check_definition, command)
-    VALUES (
-      'review screenshots upload',
-      'review-screenshots',
-      'true',
-      '(auth.role() = ''authenticated'')',
-      'INSERT'
-    );
+  -- 로그인 유저 업로드 허용
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'storage' AND tablename = 'objects'
+    AND policyname = 'review screenshots upload'
+  ) THEN
+    EXECUTE $policy$
+      CREATE POLICY "review screenshots upload"
+      ON storage.objects FOR INSERT
+      TO authenticated
+      WITH CHECK (bucket_id = 'review-screenshots')
+    $policy$;
+  END IF;
+
+  -- 퍼블릭 조회 허용 (public 버킷이므로 anon 포함)
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'storage' AND tablename = 'objects'
+    AND policyname = 'review screenshots public read'
+  ) THEN
+    EXECUTE $policy$
+      CREATE POLICY "review screenshots public read"
+      ON storage.objects FOR SELECT
+      TO public
+      USING (bucket_id = 'review-screenshots')
+    $policy$;
   END IF;
 END $$;
