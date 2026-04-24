@@ -1,0 +1,1522 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>언니픽 — 내 주변 가게 혜택</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <!-- 카카오 JS SDK -->
+  <script type="text/javascript"
+    src="//dapi.kakao.com/v2/maps/sdk.js?appkey=1e8def4aebde26a40dbdfe38bf42db24&libraries=services,clusterer">
+  </script>
+  <style>
+    /* ── Reset ──────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --orange:      #FF6F0F;
+      --orange-d:    #E05F00;
+      --orange-soft: #FFF4EC;
+      --orange-mid:  #FFD9B8;
+      --purple:      #6742F5;
+      --purple-d:    #5433D6;
+      --white:       #FFFFFF;
+      --bg:          #F7F8FA;
+      --t1:          #111827;
+      --t2:          #374151;
+      --t3:          #6B7280;
+      --t4:          #9CA3AF;
+      --border:      #E5E7EB;
+      --border2:     #D1D5DB;
+      --r-sm: 6px; --r-md: 12px; --r-lg: 16px; --r-xl: 24px;
+      --sh-sm: 0 2px 8px rgba(0,0,0,.08);
+      --sh-md: 0 4px 20px rgba(0,0,0,.12);
+      --sh-lg: 0 8px 40px rgba(0,0,0,.18);
+      --header-h: 60px;
+    }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      font-family: 'Noto Sans KR', -apple-system, sans-serif;
+      background: var(--white); color: var(--t1);
+      font-size: 15px; -webkit-font-smoothing: antialiased;
+      display: flex; flex-direction: column;
+    }
+    a { text-decoration: none; color: inherit; }
+    ul { list-style: none; }
+    button { font-family: inherit; cursor: pointer; border: none; outline: none; }
+
+    /* ── PAGE ROUTER ─────────────────────────────────────────── */
+    .page { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+    .page.active { display: flex; }
+
+    /* ══ HEADER ══════════════════════════════════════════════ */
+    .gnb {
+      position: relative; z-index: 300; flex-shrink: 0;
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+    }
+    .gnb-inner {
+      max-width: 1200px; margin: 0 auto; padding: 0 24px;
+      display: flex; align-items: center; height: var(--header-h);
+      gap: 0;
+    }
+    .logo {
+      display: flex; align-items: center; gap: 7px;
+      font-size: 21px; font-weight: 900; color: var(--orange);
+      letter-spacing: -.5px; flex-shrink: 0; margin-right: 32px;
+      cursor: pointer;
+    }
+    .logo-mark {
+      width: 30px; height: 30px; background: var(--orange);
+      border-radius: 8px; display: flex; align-items: center;
+      justify-content: center; font-size: 16px; color: #fff;
+    }
+    .gnb-nav {
+      display: flex; align-items: center; flex: 1;
+    }
+    .gnb-nav a {
+      padding: 0 15px; height: var(--header-h);
+      display: flex; align-items: center;
+      font-size: 14px; font-weight: 600; color: var(--t3);
+      cursor: pointer; transition: color .12s;
+      border-bottom: 2.5px solid transparent;
+      margin-bottom: -1px; white-space: nowrap;
+    }
+    .gnb-nav a:hover { color: var(--t1); }
+    .gnb-nav a.active { color: var(--t1); border-bottom-color: var(--orange); }
+    .gnb-right {
+      display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+    }
+    .btn-login {
+      padding: 8px 16px; border-radius: var(--r-sm);
+      font-size: 13px; font-weight: 600; color: var(--t3);
+      background: none; transition: color .12s;
+    }
+    .btn-login:hover { color: var(--t1); }
+    .btn-owner-join {
+      padding: 9px 18px; border-radius: var(--r-sm);
+      font-size: 13px; font-weight: 700; color: #fff;
+      background: var(--purple);
+      transition: background .12s;
+    }
+    .btn-owner-join:hover { background: var(--purple-d); }
+
+    /* ══ PAGE: HOME ══════════════════════════════════════════ */
+    #page-home { overflow: hidden; }
+
+    /* 위치 + 검색 블록 */
+    .search-block {
+      flex-shrink: 0; background: var(--white);
+      border-bottom: 1px solid var(--border);
+      padding: 28px 0 20px;
+    }
+    .search-block-inner {
+      max-width: 860px; margin: 0 auto; padding: 0 24px;
+    }
+
+    /* 위치 헤딩 */
+    .loc-heading {
+      display: flex; align-items: center; justify-content: center;
+      gap: 0; font-size: 28px; font-weight: 900;
+      color: var(--t1); letter-spacing: -.5px;
+      margin-bottom: 20px; text-align: center;
+      flex-wrap: wrap; gap: 6px;
+    }
+    .loc-btn {
+      display: inline-flex; align-items: center; gap: 4px;
+      color: var(--t1); font-weight: 900; font-size: 28px;
+      padding: 2px 6px; border-radius: 6px;
+      cursor: pointer; border-bottom: 2px dashed var(--border2);
+      transition: .12s; background: none;
+      font-family: inherit; letter-spacing: -.5px;
+    }
+    .loc-btn:hover { border-bottom-color: var(--orange); color: var(--orange); }
+    .loc-btn .arrow { font-size: 18px; color: var(--t3); margin-left: 2px; }
+    .loc-suffix { color: var(--t1); font-size: 28px; font-weight: 900; letter-spacing: -.5px; }
+
+    /* 검색창 */
+    .search-bar {
+      display: flex; align-items: center;
+      background: var(--white);
+      border: 2px solid var(--border2); border-radius: 100px;
+      box-shadow: var(--sh-sm);
+      overflow: hidden;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .search-bar:focus-within {
+      border-color: var(--orange);
+      box-shadow: 0 4px 20px rgba(255,111,15,.15);
+    }
+    .sb-icon {
+      width: 52px; height: 52px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--t4); font-size: 18px;
+    }
+    .sb-input {
+      flex: 1; height: 52px; padding: 0 4px;
+      border: none; outline: none; background: transparent;
+      font-family: inherit; font-size: 16px; color: var(--t2);
+    }
+    .sb-input::placeholder { color: var(--t4); }
+    .sb-ai {
+      margin: 6px; padding: 0 18px; height: 40px;
+      border-radius: 100px; border: none;
+      background: linear-gradient(135deg, var(--purple), #9B6FF5);
+      color: #fff; font-size: 13px; font-weight: 700;
+      display: flex; align-items: center; gap: 6px;
+      cursor: pointer; transition: .12s; flex-shrink: 0;
+      white-space: nowrap;
+      box-shadow: 0 2px 8px rgba(103,66,245,.25);
+    }
+    .sb-ai:hover { background: linear-gradient(135deg, var(--purple-d), #8B5FE5); }
+    .sb-ai-icon { font-size: 15px; }
+
+    /* 예시 쿼리 */
+    .search-examples {
+      display: flex; align-items: center; gap: 7px;
+      margin-top: 12px; overflow-x: auto; scrollbar-width: none;
+      padding-bottom: 2px;
+    }
+    .search-examples::-webkit-scrollbar { display: none; }
+    .se-label { font-size: 12px; color: var(--t4); white-space: nowrap; flex-shrink: 0; }
+    .se-chip {
+      padding: 5px 13px; border-radius: 100px;
+      background: var(--bg); border: 1px solid var(--border);
+      font-size: 12px; font-weight: 600; color: var(--t3);
+      cursor: pointer; white-space: nowrap; flex-shrink: 0;
+      transition: .12s;
+    }
+    .se-chip:hover { border-color: var(--orange); color: var(--orange); background: var(--orange-soft); }
+
+    /* 카테고리 그리드 */
+    .cat-bar {
+      flex-shrink: 0; background: var(--white);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 0;
+    }
+    .cat-inner {
+      max-width: 1200px; margin: 0 auto; padding: 0 24px;
+      display: flex; align-items: flex-start;
+      gap: 0; overflow-x: auto; scrollbar-width: none;
+    }
+    .cat-inner::-webkit-scrollbar { display: none; }
+    .cat-item {
+      display: flex; flex-direction: column; align-items: center; gap: 7px;
+      padding: 8px 16px; border-radius: var(--r-md);
+      cursor: pointer; transition: .15s; flex-shrink: 0; min-width: 72px;
+    }
+    .cat-item:hover { background: var(--orange-soft); }
+    .cat-item.active { background: var(--orange-soft); }
+    .cat-item.active .cat-name { color: var(--orange); font-weight: 800; }
+    .cat-ico {
+      width: 48px; height: 48px; border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; transition: .15s;
+    }
+    .cat-item:hover .cat-ico { transform: scale(1.1); }
+    .cat-name { font-size: 12px; font-weight: 600; color: var(--t2); text-align: center; }
+
+    /* 카테고리 색상 */
+    .c-all    { background: #F0F0FF; }
+    .c-cafe   { background: #FFF4E8; }
+    .c-food   { background: #FFF0F0; }
+    .c-snack  { background: #FFF8E8; }
+    .c-beauty { background: #FFF0FA; }
+    .c-health { background: #F0FFF5; }
+    .c-fit    { background: #F0F4FF; }
+    .c-shop   { background: #F5F0FF; }
+    .c-pet    { background: #FFFBE8; }
+    .c-etc    { background: #F5F5F5; }
+
+    /* 지도 영역 */
+    .map-wrap {
+      flex: 1; position: relative; overflow: hidden;
+    }
+    #kakao-map {
+      width: 100%; height: 100%;
+    }
+
+    /* 지도 위 정보 패널 */
+    .map-info-bar {
+      position: absolute; top: 12px; left: 12px; right: 12px;
+      z-index: 10; pointer-events: none;
+      display: flex; align-items: flex-start; gap: 8px;
+    }
+    .map-badge {
+      pointer-events: auto;
+      background: rgba(255,255,255,.95); backdrop-filter: blur(8px);
+      border: 1px solid var(--border); border-radius: 100px;
+      padding: 7px 14px; font-size: 12px; font-weight: 700;
+      color: var(--t2); display: flex; align-items: center; gap: 6px;
+      box-shadow: var(--sh-sm); cursor: pointer; transition: .12s;
+    }
+    .map-badge:hover { border-color: var(--orange); color: var(--orange); }
+    .map-badge b { color: var(--orange); }
+    .map-badge-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--orange); }
+
+    /* GPS 버튼 */
+    .map-gps-btn {
+      position: absolute; bottom: 80px; right: 12px; z-index: 10;
+      width: 44px; height: 44px; border-radius: 50%;
+      background: rgba(255,255,255,.95); backdrop-filter: blur(8px);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; cursor: pointer; transition: .12s;
+      box-shadow: var(--sh-sm);
+    }
+    .map-gps-btn:hover { border-color: var(--orange); transform: scale(1.05); }
+
+    /* 가게 사이드 패널 */
+    .store-panel {
+      position: absolute; top: 0; left: 0; bottom: 0;
+      width: 360px; background: var(--white);
+      border-right: 1px solid var(--border);
+      z-index: 20; transform: translateX(-100%);
+      transition: transform .25s cubic-bezier(.4,0,.2,1);
+      display: flex; flex-direction: column;
+      box-shadow: var(--sh-md);
+    }
+    .store-panel.open { transform: translateX(0); }
+    .sp-header {
+      padding: 14px 16px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .sp-title { font-size: 14px; font-weight: 800; color: var(--t1); }
+    .sp-close {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--bg); display: flex; align-items: center;
+      justify-content: center; font-size: 14px; cursor: pointer;
+    }
+    .sp-list { flex: 1; overflow-y: auto; padding: 10px; }
+    .sp-card {
+      display: flex; gap: 10px; padding: 12px;
+      border-radius: var(--r-md); border: 1px solid var(--border);
+      margin-bottom: 8px; cursor: pointer; transition: .15s;
+    }
+    .sp-card:hover { border-color: var(--orange-mid); box-shadow: var(--sh-sm); }
+    .sp-card.selected { border-color: var(--orange); background: var(--orange-soft); }
+    .sp-emoji {
+      width: 44px; height: 44px; border-radius: 12px;
+      background: var(--bg); display: flex; align-items: center;
+      justify-content: center; font-size: 22px; flex-shrink: 0;
+    }
+    .sp-info { flex: 1; min-width: 0; }
+    .sp-name { font-size: 13px; font-weight: 700; color: var(--t1); }
+    .sp-cat  { font-size: 11px; color: var(--t4); margin-top: 1px; }
+    .sp-coupon {
+      display: inline-flex; align-items: center; gap: 3px;
+      background: var(--orange-soft); color: var(--orange);
+      font-size: 10px; font-weight: 800;
+      padding: 3px 8px; border-radius: 100px;
+      margin-top: 5px;
+    }
+
+    /* AI 검색 패널 */
+    .ai-panel {
+      position: absolute; top: 0; right: 0; bottom: 0;
+      width: 400px; background: var(--white);
+      border-left: 1px solid var(--border);
+      z-index: 25; transform: translateX(100%);
+      transition: transform .25s cubic-bezier(.4,0,.2,1);
+      display: flex; flex-direction: column;
+      box-shadow: var(--sh-lg);
+    }
+    .ai-panel.open { transform: translateX(0); }
+    .ai-header {
+      padding: 14px 16px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .ai-header-title {
+      font-size: 14px; font-weight: 800; color: var(--t1);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .ai-close {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--bg); display: flex; align-items: center;
+      justify-content: center; font-size: 14px; cursor: pointer;
+    }
+    .ai-body { flex: 1; overflow-y: auto; padding: 14px; }
+
+    /* AI 진행 상태 */
+    .ai-stage {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 10px 0;
+    }
+    .ai-stage-ico {
+      width: 22px; height: 22px; border-radius: 50%;
+      flex-shrink: 0; margin-top: 1px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px;
+    }
+    .ais-wait  { background: var(--bg); border: 1px solid var(--border); }
+    .ais-spin  { background: var(--orange-soft); border: 1px solid var(--orange-mid); }
+    .ais-done  { background: #EDFFF6; border: 1px solid #86EFAC; }
+    .ai-stage-label { font-size: 13px; font-weight: 600; color: var(--t3); }
+    .ai-stage-label.active { color: var(--orange); }
+    .ai-stage-label.done   { color: var(--t2); }
+    .ai-chips  { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+    .ai-chip {
+      padding: 3px 10px; border-radius: 100px;
+      font-size: 11px; font-weight: 700; border: 1px solid;
+    }
+    .aic-blue   { background: #EFF6FF; color: #3B82F6; border-color: #BFDBFE; }
+    .aic-purple { background: #F5F3FF; color: #7C3AED; border-color: #DDD6FE; }
+    .aic-orange { background: var(--orange-soft); color: var(--orange); border-color: var(--orange-mid); }
+    .aic-green  { background: #EDFFF6; color: #059669; border-color: #A7F3D0; }
+    .aic-red    { background: #FFF0F0; color: #DC2626; border-color: #FECACA; }
+
+    /* AI 결과 카드 */
+    .ai-result {
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg); overflow: hidden;
+      margin-bottom: 12px; transition: .15s; cursor: pointer;
+    }
+    .ai-result:hover { border-color: var(--orange-mid); box-shadow: var(--sh-sm); }
+    .ar-img {
+      width: 100%; height: 140px; object-fit: cover; background: var(--bg);
+      display: flex; align-items: center; justify-content: center; font-size: 40px;
+    }
+    .ar-body { padding: 12px 14px; }
+    .ar-rank-name { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+    .ar-rank {
+      width: 24px; height: 24px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 900; color: #fff; flex-shrink: 0;
+    }
+    .rk1 { background: #F59E0B; }
+    .rk2 { background: #94A3B8; }
+    .rk3 { background: #B45309; }
+    .rkn { background: var(--t4); }
+    .ar-name { font-size: 15px; font-weight: 800; color: var(--t1); }
+    .ar-meta { font-size: 11px; color: var(--t4); margin-bottom: 8px; }
+    .ar-why {
+      background: var(--orange-soft); border-radius: var(--r-sm);
+      padding: 8px 10px; font-size: 12px; color: var(--t2); line-height: 1.6;
+      margin-bottom: 8px;
+    }
+    .ar-why-label { font-size: 10px; font-weight: 700; color: var(--orange); margin-bottom: 3px; }
+    .ar-coupon {
+      display: flex; align-items: center; gap: 8px;
+      background: linear-gradient(135deg, var(--orange-soft), #FFF8F4);
+      border: 1.5px dashed var(--orange-mid);
+      border-radius: var(--r-sm); padding: 8px 10px;
+      margin-bottom: 8px;
+    }
+    .arc-disc {
+      background: var(--orange); color: #fff;
+      padding: 6px 10px; border-radius: var(--r-sm);
+      font-size: 14px; font-weight: 900; text-align: center;
+      flex-shrink: 0; min-width: 48px;
+    }
+    .arc-info { flex: 1; }
+    .arc-title { font-size: 12px; font-weight: 700; color: var(--orange); }
+    .arc-desc  { font-size: 11px; color: var(--t4); margin-top: 1px; }
+    .arc-btn {
+      background: var(--orange); color: #fff;
+      padding: 6px 12px; border-radius: var(--r-sm);
+      font-size: 11px; font-weight: 700; flex-shrink: 0;
+      cursor: pointer; transition: .12s;
+    }
+    .arc-btn:hover { background: var(--orange-d); }
+
+    /* 위치 선택 드롭다운 */
+    .loc-dropdown {
+      position: absolute; top: calc(var(--header-h) + 100px); left: 50%;
+      transform: translateX(-50%);
+      width: 320px; background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: var(--r-xl); box-shadow: var(--sh-lg);
+      z-index: 500; display: none;
+      overflow: hidden;
+    }
+    .loc-dropdown.open { display: block; }
+    .ld-header {
+      padding: 14px 16px; border-bottom: 1px solid var(--border);
+      font-size: 13px; font-weight: 800; color: var(--t1);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .ld-gps {
+      display: flex; align-items: center; gap: 6px; padding: 12px 16px;
+      border-bottom: 1px solid var(--border); cursor: pointer;
+      transition: .12s;
+    }
+    .ld-gps:hover { background: var(--orange-soft); }
+    .ld-gps-icon { font-size: 18px; }
+    .ld-gps-text b { display: block; font-size: 13px; font-weight: 700; color: var(--orange); }
+    .ld-gps-text span { font-size: 11px; color: var(--t4); }
+    .ld-list { padding: 8px; max-height: 240px; overflow-y: auto; }
+    .ld-item {
+      padding: 9px 12px; border-radius: var(--r-sm);
+      font-size: 13px; font-weight: 600; color: var(--t2);
+      cursor: pointer; transition: .12s;
+    }
+    .ld-item:hover { background: var(--bg); color: var(--t1); }
+    .ld-item.selected { background: var(--orange-soft); color: var(--orange); }
+
+    /* ══ PAGE: 가게찾기 ══════════════════════════════════════ */
+    #page-stores {
+      overflow: hidden;
+    }
+    .stores-layout {
+      display: grid; grid-template-columns: 300px 1fr;
+      flex: 1; overflow: hidden;
+    }
+    .stores-sidebar {
+      border-right: 1px solid var(--border);
+      overflow-y: auto; padding: 16px 12px;
+    }
+    .stores-main {
+      overflow-y: auto; padding: 24px 28px;
+    }
+
+    /* ══ PAGE: 쿠폰 ══════════════════════════════════════════ */
+    #page-coupons {
+      overflow-y: auto;
+    }
+    .coupons-inner {
+      max-width: 900px; margin: 0 auto; padding: 32px 24px;
+    }
+
+    /* ══ PAGE: 스탬프 ════════════════════════════════════════ */
+    #page-stamps { overflow-y: auto; }
+    .stamps-inner { max-width: 700px; margin: 0 auto; padding: 32px 24px; }
+
+    /* ══ PAGE: 사장님 ════════════════════════════════════════ */
+    #page-owner { overflow-y: auto; }
+    .owner-inner { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+
+    /* ── 공통 페이지 헤더 ────────────────────────────────── */
+    .pg-head { margin-bottom: 28px; }
+    .pg-head h1 { font-size: 24px; font-weight: 900; color: var(--t1); letter-spacing: -.4px; }
+    .pg-head p  { font-size: 14px; color: var(--t4); margin-top: 5px; }
+
+    /* 쿠폰 카드 */
+    .coupon-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+    .coupon-card {
+      border-radius: var(--r-lg); overflow: hidden;
+      border: 1.5px solid var(--border); transition: .15s;
+      cursor: pointer;
+    }
+    .coupon-card:hover { transform: translateY(-3px); box-shadow: var(--sh-md); border-color: var(--orange-mid); }
+    .cc-top {
+      display: flex; align-items: stretch;
+    }
+    .cc-bar {
+      width: 52px; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 4px;
+      padding: 14px 0; flex-shrink: 0;
+    }
+    .cc-bar-emoji { font-size: 20px; }
+    .cc-bar-lbl {
+      font-size: 7px; font-weight: 800; color: #fff;
+      writing-mode: vertical-rl; letter-spacing: .1em;
+    }
+    .cc-body { flex: 1; padding: 14px; background: var(--white); }
+    .cc-store { font-size: 11px; color: var(--orange); font-weight: 700; margin-bottom: 3px; }
+    .cc-name  { font-size: 14px; font-weight: 800; color: var(--t1); margin-bottom: 4px; }
+    .cc-val   { font-size: 22px; font-weight: 900; }
+    .cc-exp   { font-size: 11px; color: var(--t4); margin-top: 4px; }
+    .cc-bottom {
+      padding: 10px 14px; background: var(--bg);
+      border-top: 1px dashed var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .cc-cond { font-size: 11px; color: var(--t4); }
+    .cc-use  {
+      padding: 5px 14px; border-radius: 100px;
+      font-size: 12px; font-weight: 700; color: #fff;
+      background: var(--orange); cursor: pointer;
+    }
+
+    /* 스탬프 카드 */
+    .stamp-card {
+      border: 1.5px solid var(--border); border-radius: var(--r-xl);
+      padding: 20px; margin-bottom: 14px; transition: .15s; cursor: pointer;
+    }
+    .stamp-card:hover { border-color: var(--orange-mid); box-shadow: var(--sh-sm); }
+    .scard-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .scard-ico  { font-size: 28px; }
+    .scard-name { font-size: 16px; font-weight: 800; color: var(--t1); }
+    .scard-goal { font-size: 12px; color: var(--t4); margin-top: 2px; }
+    .scard-dots { display: flex; gap: 8px; flex-wrap: wrap; }
+    .sdot {
+      width: 36px; height: 36px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; border: 1.5px solid var(--border);
+      background: var(--bg); transition: .15s;
+    }
+    .sdot.filled { background: var(--orange); border-color: var(--orange); color: #fff; font-size: 16px; }
+    .sdot.reward { background: linear-gradient(135deg, #FFD700, #FF9A00); border-color: #FFD700; color: #fff; }
+    .scard-prog {
+      margin-top: 12px; display: flex; align-items: center; gap: 8px;
+    }
+    .scard-bar-wrap {
+      flex: 1; height: 6px; background: var(--bg);
+      border-radius: 100px; overflow: hidden;
+    }
+    .scard-bar { height: 100%; background: var(--orange); border-radius: 100px; transition: width .5s; }
+    .scard-count { font-size: 12px; font-weight: 700; color: var(--t3); }
+
+    /* 사장님 페이지 */
+    .owner-hero {
+      background: linear-gradient(135deg, var(--t1), #1E3A5F);
+      border-radius: var(--r-xl); padding: 36px 32px; margin-bottom: 28px;
+      color: #fff;
+    }
+    .oh-tag {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: rgba(255,255,255,.12); color: rgba(255,255,255,.9);
+      padding: 4px 12px; border-radius: 100px;
+      font-size: 11px; font-weight: 700; margin-bottom: 16px;
+      border: 1px solid rgba(255,255,255,.2);
+    }
+    .oh-title { font-size: 26px; font-weight: 900; line-height: 1.3; margin-bottom: 12px; letter-spacing: -.4px; }
+    .oh-title em { color: var(--orange); font-style: normal; }
+    .oh-sub { font-size: 14px; color: rgba(255,255,255,.65); line-height: 1.7; margin-bottom: 24px; }
+    .oh-btns { display: flex; gap: 10px; }
+    .oh-btn-primary {
+      padding: 11px 24px; border-radius: var(--r-md);
+      background: var(--orange); color: #fff;
+      font-size: 14px; font-weight: 700;
+      box-shadow: 0 3px 12px rgba(255,111,15,.3);
+      cursor: pointer; transition: .12s;
+    }
+    .oh-btn-primary:hover { background: var(--orange-d); }
+    .oh-btn-outline {
+      padding: 11px 24px; border-radius: var(--r-md);
+      background: rgba(255,255,255,.1); color: #fff;
+      font-size: 14px; font-weight: 700;
+      border: 1px solid rgba(255,255,255,.25);
+      cursor: pointer; transition: .12s;
+    }
+    .oh-btn-outline:hover { background: rgba(255,255,255,.18); }
+    .owner-features {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+    }
+    .of-card {
+      border: 1.5px solid var(--border); border-radius: var(--r-xl);
+      padding: 20px; transition: .15s;
+    }
+    .of-card:hover { border-color: var(--orange-mid); box-shadow: var(--sh-sm); }
+    .of-ico { font-size: 28px; margin-bottom: 12px; }
+    .of-title { font-size: 15px; font-weight: 800; color: var(--t1); margin-bottom: 6px; }
+    .of-desc  { font-size: 13px; color: var(--t4); line-height: 1.6; }
+
+    /* ── 스피너 ─────────────────────────────────────────── */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner { animation: spin .8s linear infinite; display: inline-block; }
+
+    /* ── Toast ──────────────────────────────────────────── */
+    .toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      background: var(--t1); color: #fff;
+      padding: 10px 20px; border-radius: 100px;
+      font-size: 13px; font-weight: 600;
+      box-shadow: var(--sh-md); z-index: 9999;
+      opacity: 0; transition: opacity .25s;
+      pointer-events: none; white-space: nowrap;
+    }
+    .toast.show { opacity: 1; }
+
+    /* ── 반응형 ─────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .loc-heading { font-size: 20px; }
+      .loc-btn, .loc-suffix { font-size: 20px; }
+      .gnb-nav a[data-page="stamps"],
+      .gnb-nav a[data-page="owner"] { display: none; }
+      .stores-layout { grid-template-columns: 1fr; }
+      .stores-sidebar { display: none; }
+      .coupon-grid { grid-template-columns: 1fr; }
+      .owner-features { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══ HEADER (공통) ════════════════════════════════════════════ -->
+<header class="gnb">
+  <div class="gnb-inner">
+    <div class="logo" onclick="goPage('home')">
+      <div class="logo-mark">🩷</div>
+      언니픽
+    </div>
+    <nav class="gnb-nav">
+      <a data-page="home"    class="active" onclick="goPage('home')">홈</a>
+      <a data-page="stores"  onclick="goPage('stores')">가게찾기</a>
+      <a data-page="coupons" onclick="goPage('coupons')">쿠폰</a>
+      <a data-page="stamps"  onclick="goPage('stamps')">스탬프</a>
+      <a data-page="owner"   onclick="goPage('owner')">사장님</a>
+    </nav>
+    <div class="gnb-right">
+      <button class="btn-login" onclick="showToast('로그인 페이지로 이동합니다.')">로그인 / 회원가입</button>
+      <button class="btn-owner-join" onclick="goPage('owner')">사장님 가입</button>
+    </div>
+  </div>
+</header>
+
+<!-- ══ PAGE: 홈 ════════════════════════════════════════════════ -->
+<div class="page active" id="page-home">
+
+  <!-- 검색 블록 -->
+  <div class="search-block">
+    <div class="search-block-inner">
+
+      <!-- 위치 헤딩 -->
+      <div class="loc-heading">
+        <button class="loc-btn" id="loc-btn" onclick="toggleLocDropdown()">
+          <span id="loc-text">📍 위치 확인 중...</span>
+          <span class="arrow">▾</span>
+        </button>
+        <span class="loc-suffix">에서 어떤 혜택이 필요하세요?</span>
+      </div>
+
+      <!-- 검색창 -->
+      <form class="search-bar" id="search-form" onsubmit="doSearch(event)">
+        <div class="sb-icon">🔍</div>
+        <input
+          class="sb-input" type="text" id="search-input"
+          placeholder="가게 이름, 메뉴, 상황 검색... (예: 상남동 카페)"
+        />
+        <button type="button" class="sb-ai" onclick="openAiPanel()">
+          <span class="sb-ai-icon">✨</span>
+          AI 추천
+        </button>
+      </form>
+
+      <!-- 예시 쿼리 -->
+      <div class="search-examples">
+        <span class="se-label">예시 ·</span>
+        <button class="se-chip" onclick="setAndSearch('상남동 카페')">상남동 카페</button>
+        <button class="se-chip" onclick="setAndSearch('혼밥 매운거')">혼밥 매운거</button>
+        <button class="se-chip" onclick="setAndSearch('헤어샵 할인')">헤어샵 할인</button>
+        <button class="se-chip" onclick="setAndSearch('진해 벚꽃 카페')">진해 벚꽃 카페</button>
+        <button class="se-chip" onclick="setAndSearch('가족외식 고기집')">가족외식 고기집</button>
+        <button class="se-chip" onclick="setAndSearch('타임세일 점심')">타임세일 점심</button>
+        <button class="se-chip" onclick="setAndSearch('스터디카페')">스터디카페</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 카테고리 바 -->
+  <div class="cat-bar">
+    <div class="cat-inner">
+      <div class="cat-item active" onclick="filterCat('all', this)">
+        <div class="cat-ico c-all">🗺️</div>
+        <div class="cat-name">전체</div>
+      </div>
+      <div class="cat-item" onclick="filterCat('cafe', this)">
+        <div class="cat-ico c-cafe">☕</div>
+        <div class="cat-name">카페</div>
+      </div>
+      <div class="cat-item" onclick="filterCat('food', this)">
+        <div class="cat-ico c-food">🍽️</div>
+        <div class="cat-name">음식점</div>
+      </div>
+      <div class="cat-item" onclick="filterCat('snack', this)">
+        <div class="cat-ico c-snack">🥢</div>
+        <div class="cat-name">분식·간식</div>
+      </div>
+      <div class="cat-item" onclick="filterCat('beauty', this)">
+        <div class="cat-ico c-beauty">💅</div>
+        <div class="cat-name">뷰티·미용</div>
+      </div>
+      <div class="cat-item" onclick="filterCat('health', this)">
+        <div class="cat-ico c-health">🏥</div>
+        <div class="cat-name">병원·건강</div>
+      </div>
+      <div class="cat-item" onclick="filterCat('fitness', this)">
+        <div class="cat-ico c-fit">💪</div>
+        <div class="cat-name">피트니스</div>
+      </div>
+      <div class="cat-item" onclick="filterCat('shop', this)">
+        <div class="cat-ico c-shop">🛍️</div>
+        <div class="cat-name">쇼핑</div>
+      </div>
+      <div class="cat-item" onclick="filterCat('pet', this)">
+        <div class="cat-ico c-pet">🐾</div>
+        <div class="cat-name">반려동물</div>
+      </div>
+      <div class="cat-item" onclick="filterCat('etc', this)">
+        <div class="cat-ico c-etc">✨</div>
+        <div class="cat-name">기타</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 지도 영역 -->
+  <div class="map-wrap">
+    <div id="kakao-map"></div>
+
+    <!-- 지도 상단 정보 -->
+    <div class="map-info-bar">
+      <div class="map-badge" onclick="toggleStorePanel()">
+        <div class="map-badge-dot"></div>
+        쿠폰 있는 가게 <b id="store-count">10</b>개
+      </div>
+      <div class="map-badge" id="timesale-badge">
+        ⏰ 타임세일 진행 중 <b>3</b>개
+      </div>
+    </div>
+
+    <!-- GPS 버튼 -->
+    <div class="map-gps-btn" onclick="moveToMyLocation()" title="내 위치로 이동">📍</div>
+
+    <!-- 가게 목록 사이드 패널 -->
+    <div class="store-panel" id="store-panel">
+      <div class="sp-header">
+        <div class="sp-title">📍 주변 가게 목록</div>
+        <div class="sp-close" onclick="toggleStorePanel()">✕</div>
+      </div>
+      <div class="sp-list" id="store-list"></div>
+    </div>
+
+    <!-- AI 추천 패널 -->
+    <div class="ai-panel" id="ai-panel">
+      <div class="ai-header">
+        <div class="ai-header-title">✨ AI 가게 추천</div>
+        <div class="ai-close" onclick="closeAiPanel()">✕</div>
+      </div>
+      <div class="ai-body" id="ai-body">
+        <!-- AI 결과 동적 삽입 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 위치 드롭다운 -->
+  <div class="loc-dropdown" id="loc-dropdown">
+    <div class="ld-header">
+      <span>지역 선택</span>
+      <span style="font-size:12px;color:var(--t4);font-weight:500;">창원시</span>
+    </div>
+    <div class="ld-gps" onclick="getGPS()">
+      <div class="ld-gps-icon">🎯</div>
+      <div class="ld-gps-text">
+        <b>현재 위치 사용</b>
+        <span>GPS로 자동 감지</span>
+      </div>
+    </div>
+    <div class="ld-list">
+      <div class="ld-item" onclick="setLocation('의창구', 35.2399, 128.6909)">의창구</div>
+      <div class="ld-item selected" onclick="setLocation('성산구', 35.2296, 128.6862)">성산구</div>
+      <div class="ld-item" onclick="setLocation('마산합포구', 35.1999, 128.5747)">마산합포구</div>
+      <div class="ld-item" onclick="setLocation('마산회원구', 35.2148, 128.5832)">마산회원구</div>
+      <div class="ld-item" onclick="setLocation('진해구', 35.1496, 128.7082)">진해구</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PAGE: 가게찾기 ══════════════════════════════════════════ -->
+<div class="page" id="page-stores">
+  <div class="stores-layout">
+    <!-- 사이드바 필터 -->
+    <div class="stores-sidebar">
+      <div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:14px;">🔍 필터</div>
+      <div style="margin-bottom:16px;">
+        <div style="font-size:11px;font-weight:700;color:var(--t4);margin-bottom:8px;">업종</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          <button style="padding:5px 12px;border-radius:100px;font-size:12px;font-weight:700;background:var(--orange);color:#fff;border:none;cursor:pointer;">전체</button>
+          <button style="padding:5px 12px;border-radius:100px;font-size:12px;font-weight:600;background:var(--bg);color:var(--t3);border:1px solid var(--border);cursor:pointer;">카페</button>
+          <button style="padding:5px 12px;border-radius:100px;font-size:12px;font-weight:600;background:var(--bg);color:var(--t3);border:1px solid var(--border);cursor:pointer;">음식점</button>
+          <button style="padding:5px 12px;border-radius:100px;font-size:12px;font-weight:600;background:var(--bg);color:var(--t3);border:1px solid var(--border);cursor:pointer;">뷰티</button>
+          <button style="padding:5px 12px;border-radius:100px;font-size:12px;font-weight:600;background:var(--bg);color:var(--t3);border:1px solid var(--border);cursor:pointer;">건강</button>
+        </div>
+      </div>
+      <div style="margin-bottom:16px;">
+        <div style="font-size:11px;font-weight:700;color:var(--t4);margin-bottom:8px;">쿠폰 종류</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--t2);cursor:pointer;">
+            <input type="checkbox" checked style="accent-color:var(--orange);width:16px;height:16px;"> 할인쿠폰
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--t2);cursor:pointer;">
+            <input type="checkbox" checked style="accent-color:var(--orange);width:16px;height:16px;"> 스탬프쿠폰
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--t2);cursor:pointer;">
+            <input type="checkbox" checked style="accent-color:var(--orange);width:16px;height:16px;"> 타임세일
+          </label>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--t4);margin-bottom:8px;">거리</div>
+        <input type="range" min="100" max="3000" value="1000" style="width:100%;accent-color:var(--orange);" oninput="document.getElementById('dist-val').textContent=this.value+'m'">
+        <div id="dist-val" style="font-size:12px;font-weight:700;color:var(--orange);text-align:center;margin-top:4px;">1000m</div>
+      </div>
+    </div>
+
+    <!-- 가게 목록 -->
+    <div class="stores-main">
+      <div class="pg-head">
+        <h1>🏪 가게찾기</h1>
+        <p>내 주변 쿠폰·스탬프 있는 가게를 찾아보세요</p>
+      </div>
+      <div id="stores-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PAGE: 쿠폰 ═══════════════════════════════════════════════ -->
+<div class="page" id="page-coupons">
+  <div class="coupons-inner">
+    <div class="pg-head">
+      <h1>🎟 내 쿠폰함</h1>
+      <p>보유 중인 쿠폰을 확인하고 사용하세요</p>
+    </div>
+    <!-- 탭 -->
+    <div style="display:flex;gap:0;background:var(--bg);border-radius:var(--r-md);padding:4px;width:fit-content;margin-bottom:22px;">
+      <button onclick="switchCouponTab('active',this)" style="padding:8px 20px;border-radius:var(--r-sm);font-size:13px;font-weight:700;background:var(--white);color:var(--orange);box-shadow:0 1px 3px rgba(0,0,0,.06);cursor:pointer;border:none;">사용 가능</button>
+      <button onclick="switchCouponTab('used',this)" style="padding:8px 20px;border-radius:var(--r-sm);font-size:13px;font-weight:700;background:transparent;color:var(--t3);cursor:pointer;border:none;">사용 완료</button>
+      <button onclick="switchCouponTab('expired',this)" style="padding:8px 20px;border-radius:var(--r-sm);font-size:13px;font-weight:700;background:transparent;color:var(--t3);cursor:pointer;border:none;">만료</button>
+    </div>
+    <div class="coupon-grid" id="coupon-grid"></div>
+  </div>
+</div>
+
+<!-- ══ PAGE: 스탬프 ════════════════════════════════════════════ -->
+<div class="page" id="page-stamps">
+  <div class="stamps-inner">
+    <div class="pg-head">
+      <h1>⭐ 내 스탬프</h1>
+      <p>방문할 때마다 스탬프를 모아 무료 리워드를 받아보세요</p>
+    </div>
+    <div id="stamps-list"></div>
+  </div>
+</div>
+
+<!-- ══ PAGE: 사장님 ════════════════════════════════════════════ -->
+<div class="page" id="page-owner">
+  <div class="owner-inner">
+    <div class="owner-hero">
+      <div class="oh-tag">🏪 사장님 전용</div>
+      <h1 class="oh-title">우리 가게 단골 고객을<br><em>언니픽</em>으로 만드세요</h1>
+      <p class="oh-sub">쿠폰 발행 · 스탬프 설정 · 타임세일 · QR 스캔 — 대시보드에서 간편하게 관리하세요.</p>
+      <div class="oh-btns">
+        <button class="oh-btn-primary" onclick="showToast('가게 등록 신청 페이지로 이동합니다.')">🏪 가게 등록 신청</button>
+        <button class="oh-btn-outline" onclick="showToast('사장님 대시보드로 이동합니다.')">대시보드 로그인</button>
+      </div>
+    </div>
+    <div class="owner-features">
+      <div class="of-card">
+        <div class="of-ico">🎟</div>
+        <div class="of-title">쿠폰 발행</div>
+        <div class="of-desc">할인·타임세일·QR 쿠폰을 만들고 고객에게 바로 공개. 조건·기간·수량 자유 설정.</div>
+      </div>
+      <div class="of-card">
+        <div class="of-ico">⭐</div>
+        <div class="of-title">스탬프 카드</div>
+        <div class="of-desc">방문할 때마다 적립되는 스탬프. 목표 달성 시 무료 메뉴 쿠폰이 자동 발급됩니다.</div>
+      </div>
+      <div class="of-card">
+        <div class="of-ico">⏰</div>
+        <div class="of-title">타임세일</div>
+        <div class="of-desc">특정 시간대에만 노출되는 타임세일 쿠폰으로 한산한 시간대 매출을 높이세요.</div>
+      </div>
+      <div class="of-card">
+        <div class="of-ico">📱</div>
+        <div class="of-title">QR 스캔 처리</div>
+        <div class="of-desc">고객이 QR 코드 제시 시 앱으로 바로 스캔. 종이 쿠폰 없이 깔끔하게 사용 처리.</div>
+      </div>
+      <div class="of-card">
+        <div class="of-ico">📊</div>
+        <div class="of-title">통계 대시보드</div>
+        <div class="of-desc">쿠폰 사용 현황, 스탬프 적립, 방문 고객 수를 한눈에 확인하세요.</div>
+      </div>
+      <div class="of-card">
+        <div class="of-ico">📝</div>
+        <div class="of-title">리뷰 인증 쿠폰</div>
+        <div class="of-desc">네이버 영수증 리뷰 작성 고객에게 자동으로 쿠폰을 지급하는 리뷰 마케팅 도구.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════════════════════════
+// 목업 데이터
+// ════════════════════════════════════════════════════════════════
+
+// 창원시청 기본 좌표 (GPS 없을 때)
+const DEFAULT_LAT = 35.2279;
+const DEFAULT_LNG = 128.6811;
+
+const MOCK_STORES = [
+  { id:1,  name:'빈스커피 상남점',   emoji:'☕', cat:'cafe',    lat:35.2295, lng:128.6838, coupon:'아메리카노 500원 할인',  timesale:false, dist:'143m' },
+  { id:2,  name:'헤어스튜디오K',     emoji:'✂️', cat:'beauty',  lat:35.2308, lng:128.6875, coupon:'커트 20% 할인',         timesale:false, dist:'380m' },
+  { id:3,  name:'청담국수',          emoji:'🍜', cat:'food',    lat:35.2278, lng:128.6845, coupon:'점심 런치 30% 할인',    timesale:true,  dist:'210m' },
+  { id:4,  name:'힐링스파',          emoji:'💆', cat:'health',  lat:35.2322, lng:128.6820, coupon:'1만원 할인',            timesale:false, dist:'620m' },
+  { id:5,  name:'도시락공방',        emoji:'🍱', cat:'snack',   lat:35.2265, lng:128.6855, coupon:'런치세트 2+1',          timesale:true,  dist:'255m' },
+  { id:6,  name:'네일팝 강남',       emoji:'💅', cat:'beauty',  lat:35.2312, lng:128.6842, coupon:'젤네일 25% 할인',       timesale:true,  dist:'400m' },
+  { id:7,  name:'스터디룸플러스',    emoji:'📚', cat:'etc',     lat:35.2301, lng:128.6828, coupon:'1시간 무료 이용',       timesale:false, dist:'350m' },
+  { id:8,  name:'모카팩토리',        emoji:'🧋', cat:'cafe',    lat:35.2275, lng:128.6892, coupon:'버블티 2+1',            timesale:false, dist:'520m' },
+  { id:9,  name:'피자마루 상남',     emoji:'🍕', cat:'food',    lat:35.2288, lng:128.6870, coupon:'저녁 피자 20% 할인',    timesale:true,  dist:'470m' },
+  { id:10, name:'굿바디피트니스',    emoji:'💪', cat:'fitness', lat:35.2340, lng:128.6850, coupon:'1일 무료 체험',         timesale:false, dist:'880m' },
+];
+
+const MOCK_COUPONS = [
+  { id:'cp1', store:'빈스커피 상남점', name:'아메리카노 (HOT/ICE)', discount:'500원 할인', type:'discount', color:'var(--orange)', exp:'2026.05.31', cond:'1인 1매 / 음료 구매 시' },
+  { id:'cp2', store:'청담국수',        name:'런치 점심 세트',       discount:'30% 할인',  type:'timesale', color:'var(--red,#E53935)', exp:'오늘 12~14시', cond:'점심 타임세일' },
+  { id:'cp3', store:'헤어스튜디오K',   name:'커트 + 드라이',        discount:'20% 할인',  type:'discount', color:'#7B5CF5', exp:'2026.06.15', cond:'예약 필수' },
+  { id:'cp4', store:'힐링스파',        name:'전신 마사지 60분',     discount:'1만원 할인',type:'discount', color:'var(--orange)', exp:'2026.06.30', cond:'2인 이상 방문 시' },
+];
+
+const MOCK_STAMPS = [
+  { store:'빈스커피 상남점', emoji:'☕', goal:10, current:7, reward:'아메리카노 1잔 무료', goalStamp:10 },
+  { store:'헤어스튜디오K',   emoji:'✂️', goal:5,  current:3, reward:'드라이 1회 무료',   goalStamp:5  },
+  { store:'모카팩토리',      emoji:'🧋', goal:8,  current:1, reward:'버블티 1잔 무료',   goalStamp:8  },
+];
+
+// ════════════════════════════════════════════════════════════════
+// 페이지 라우팅
+// ════════════════════════════════════════════════════════════════
+function goPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.gnb-nav a').forEach(a => a.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  const navLink = document.querySelector(`.gnb-nav a[data-page="${page}"]`);
+  if (navLink) navLink.classList.add('active');
+
+  if (page === 'stores')  renderStores();
+  if (page === 'coupons') renderCoupons('active');
+  if (page === 'stamps')  renderStamps();
+}
+
+// ════════════════════════════════════════════════════════════════
+// 카카오 지도 초기화
+// ════════════════════════════════════════════════════════════════
+let kakaoMap = null;
+let myLocMarker = null;
+let storeMarkers = [];
+let currentLat = DEFAULT_LAT;
+let currentLng = DEFAULT_LNG;
+let currentCat = 'all';
+
+function initMap() {
+  const container = document.getElementById('kakao-map');
+  const options = {
+    center: new kakao.maps.LatLng(DEFAULT_LAT, DEFAULT_LNG),
+    level: 5,
+  };
+  kakaoMap = new kakao.maps.Map(container, options);
+  kakaoMap.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.RIGHT);
+
+  renderMapMarkers(MOCK_STORES);
+  renderStorePanel(MOCK_STORES);
+
+  // 클릭 시 패널 닫기
+  kakao.maps.event.addListener(kakaoMap, 'click', () => {
+    closeAiPanel();
+  });
+}
+
+function renderMapMarkers(stores) {
+  // 기존 마커 제거
+  storeMarkers.forEach(m => {
+    if (m.overlay) m.overlay.setMap(null);
+  });
+  storeMarkers = [];
+
+  stores.forEach(store => {
+    const pos = new kakao.maps.LatLng(store.lat, store.lng);
+    const content = `
+      <div onclick="selectStore(${store.id})" style="
+        background:#FF6F0F;color:#fff;
+        border-radius:20px;border:2px solid #fff;
+        padding:5px 10px;cursor:pointer;
+        font-size:12px;font-weight:800;
+        box-shadow:0 2px 8px rgba(0,0,0,.2);
+        display:flex;align-items:center;gap:4px;
+        white-space:nowrap;
+        ${store.timesale ? 'background: linear-gradient(135deg,#E53935,#FF7043);' : ''}
+      ">
+        ${store.emoji} ${store.timesale ? '⏰' : '🎟'} ${store.name}
+        <div style="
+          width:0;height:0;
+          border-left:6px solid transparent;border-right:6px solid transparent;
+          border-top:8px solid ${store.timesale ? '#E53935' : '#FF6F0F'};
+          position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);
+        "></div>
+      </div>
+    `;
+    const overlay = new kakao.maps.CustomOverlay({
+      position: pos,
+      content: content,
+      yAnchor: 1.3,
+    });
+    overlay.setMap(kakaoMap);
+    storeMarkers.push({ id: store.id, overlay });
+  });
+}
+
+function renderStorePanel(stores) {
+  const list = document.getElementById('store-list');
+  list.innerHTML = '';
+  stores.forEach(store => {
+    const div = document.createElement('div');
+    div.className = 'sp-card';
+    div.id = `sp-card-${store.id}`;
+    div.onclick = () => selectStore(store.id);
+    div.innerHTML = `
+      <div class="sp-emoji" style="background:${catBg(store.cat)}">${store.emoji}</div>
+      <div class="sp-info">
+        <div class="sp-name">${store.name}</div>
+        <div class="sp-cat">${catLabel(store.cat)} · ${store.dist}</div>
+        <div class="sp-coupon">
+          ${store.timesale ? '⏰' : '🎟'} ${store.coupon}
+        </div>
+      </div>
+    `;
+    list.appendChild(div);
+  });
+}
+
+function selectStore(id) {
+  const store = MOCK_STORES.find(s => s.id === id);
+  if (!store) return;
+
+  // 지도 이동
+  if (kakaoMap) {
+    kakaoMap.setCenter(new kakao.maps.LatLng(store.lat, store.lng));
+    kakaoMap.setLevel(4);
+  }
+
+  // 사이드 패널 강조
+  document.querySelectorAll('.sp-card').forEach(c => c.classList.remove('selected'));
+  const card = document.getElementById(`sp-card-${store.id}`);
+  if (card) {
+    card.classList.add('selected');
+    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+  showToast(`${store.name} 선택됨`);
+}
+
+function catBg(cat) {
+  const m = { cafe:'#FFF4E8', food:'#FFF0F0', snack:'#FFF8E8', beauty:'#FFF0FA',
+              health:'#F0FFF5', fitness:'#F0F4FF', shop:'#F5F0FF', pet:'#FFFBE8', etc:'#F5F5F5' };
+  return m[cat] || '#F5F5F5';
+}
+function catLabel(cat) {
+  const m = { cafe:'카페', food:'음식점', snack:'분식·간식', beauty:'뷰티·미용',
+              health:'병원·건강', fitness:'피트니스', shop:'쇼핑', pet:'반려동물', etc:'기타' };
+  return m[cat] || cat;
+}
+
+// ════════════════════════════════════════════════════════════════
+// GPS
+// ════════════════════════════════════════════════════════════════
+function getGPS() {
+  closeLocDropdown();
+  document.getElementById('loc-text').innerHTML = '📍 <span class="spinner">⏳</span> 위치 감지 중...';
+
+  if (!navigator.geolocation) {
+    setLocationText('창원시청');
+    showToast('이 브라우저는 GPS를 지원하지 않습니다.');
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      currentLat = pos.coords.latitude;
+      currentLng = pos.coords.longitude;
+
+      // Kakao 역지오코딩
+      const geocoder = new kakao.maps.services.Geocoder();
+      geocoder.coord2RegionCode(currentLng, currentLat, (result, status) => {
+        let locName = '현재 위치';
+        if (status === kakao.maps.services.Status.OK) {
+          const region = result.find(r => r.region_type === 'H') || result[0];
+          if (region) {
+            locName = region.region_2depth_name + ' ' + (region.region_3depth_name || '');
+          }
+        }
+        setLocationText(locName.trim());
+        moveMapTo(currentLat, currentLng);
+      });
+    },
+    err => {
+      console.warn('GPS 오류:', err.message);
+      currentLat = DEFAULT_LAT;
+      currentLng = DEFAULT_LNG;
+      setLocationText('창원시청');
+      showToast('위치 정보를 가져올 수 없어 창원시청을 기준으로 표시합니다.');
+    },
+    { timeout: 8000, maximumAge: 60000 }
+  );
+}
+
+function setLocationText(text) {
+  document.getElementById('loc-text').textContent = '📍 ' + text;
+}
+
+function moveToMyLocation() {
+  moveMapTo(currentLat, currentLng);
+  showToast('내 위치로 이동했습니다.');
+}
+
+function moveMapTo(lat, lng) {
+  if (!kakaoMap) return;
+  kakaoMap.setCenter(new kakao.maps.LatLng(lat, lng));
+  kakaoMap.setLevel(5);
+
+  // 내 위치 마커 (파란 점)
+  if (myLocMarker) myLocMarker.setMap(null);
+  const content = `<div style="width:16px;height:16px;border-radius:50%;background:rgba(66,133,244,.9);border:2px solid #fff;box-shadow:0 0 0 6px rgba(66,133,244,.2);"></div>`;
+  myLocMarker = new kakao.maps.CustomOverlay({
+    position: new kakao.maps.LatLng(lat, lng),
+    content: content,
+    yAnchor: 0.5, xAnchor: 0.5,
+  });
+  myLocMarker.setMap(kakaoMap);
+}
+
+// ════════════════════════════════════════════════════════════════
+// 위치 드롭다운
+// ════════════════════════════════════════════════════════════════
+function toggleLocDropdown() {
+  document.getElementById('loc-dropdown').classList.toggle('open');
+}
+function closeLocDropdown() {
+  document.getElementById('loc-dropdown').classList.remove('open');
+}
+function setLocation(name, lat, lng) {
+  currentLat = lat; currentLng = lng;
+  setLocationText(name);
+  moveMapTo(lat, lng);
+  closeLocDropdown();
+  document.querySelectorAll('.ld-item').forEach(el => el.classList.remove('selected'));
+  event.target.classList.add('selected');
+}
+
+// 외부 클릭 시 드롭다운 닫기
+document.addEventListener('click', e => {
+  if (!e.target.closest('#loc-dropdown') && !e.target.closest('#loc-btn')) {
+    closeLocDropdown();
+  }
+});
+
+// ════════════════════════════════════════════════════════════════
+// 카테고리 필터
+// ════════════════════════════════════════════════════════════════
+function filterCat(cat, el) {
+  currentCat = cat;
+  document.querySelectorAll('.cat-item').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+
+  const filtered = cat === 'all' ? MOCK_STORES : MOCK_STORES.filter(s => s.cat === cat);
+  renderMapMarkers(filtered);
+  renderStorePanel(filtered);
+  document.getElementById('store-count').textContent = filtered.length;
+}
+
+// ════════════════════════════════════════════════════════════════
+// 가게 목록 패널 토글
+// ════════════════════════════════════════════════════════════════
+function toggleStorePanel() {
+  document.getElementById('store-panel').classList.toggle('open');
+}
+
+// ════════════════════════════════════════════════════════════════
+// AI 검색 패널
+// ════════════════════════════════════════════════════════════════
+const AI_MOCK = {
+  '상남동 카페': {
+    chips: [
+      { text: '상남동', cls: 'aic-blue' },
+      { text: '카페', cls: 'aic-orange' },
+    ],
+    intent: '상남동에서 분위기 좋은 카페',
+    count: 12,
+    results: [
+      { rank:1, name:'빈스커피 상남점', cat:'카페', rating:4.7, review:312,
+        why:'아메리카노 500원 할인 쿠폰 보유. "분위기가 좋아요" 리뷰 다수.',
+        coupon: { disc:'500원 할인', title:'아메리카노 할인', desc:'HOT/ICE 선택 가능' }},
+      { rank:2, name:'모카팩토리', cat:'카페', rating:4.5, review:198,
+        why:'버블티 2+1 쿠폰 진행 중. 인스타 감성 인테리어로 유명.',
+        coupon: { disc:'2+1', title:'버블티 2+1', desc:'오후 2~6시 한정' }},
+    ]
+  },
+  '혼밥 매운거': {
+    chips: [
+      { text: '혼밥', cls: 'aic-purple' },
+      { text: '매운거', cls: 'aic-red' },
+      { text: '1만원↓', cls: 'aic-orange' },
+    ],
+    intent: '혼자 먹기 편한 매운 음식 1만원대',
+    count: 18,
+    results: [
+      { rank:1, name:'청담국수', cat:'음식점', rating:4.6, review:289,
+        why:'점심 30% 타임세일. 1인석 있어 혼밥하기 좋음.',
+        coupon: { disc:'30%', title:'런치 점심 세트', desc:'12:00~14:00 한정' }},
+    ]
+  },
+};
+
+function openAiPanel() {
+  const q = document.getElementById('search-input').value.trim();
+  if (!q) {
+    document.getElementById('search-input').focus();
+    showToast('검색어를 입력해주세요.');
+    return;
+  }
+  runAiSearch(q);
+}
+
+function setAndSearch(q) {
+  document.getElementById('search-input').value = q;
+  runAiSearch(q);
+}
+
+function doSearch(e) {
+  e.preventDefault();
+  const q = document.getElementById('search-input').value.trim();
+  if (q) runAiSearch(q);
+}
+
+async function runAiSearch(q) {
+  const panel = document.getElementById('ai-panel');
+  const body  = document.getElementById('ai-body');
+  panel.classList.add('open');
+  body.innerHTML = '';
+
+  const mock = AI_MOCK[q] || {
+    chips: [{ text: q, cls: 'aic-orange' }],
+    intent: `"${q}"에 맞는 가게`,
+    count: 0,
+    results: [],
+  };
+
+  // 단계 1: 파싱
+  body.innerHTML = renderAiStage('쿼리 분석 중...', 'active', null, null);
+  await wait(700);
+
+  // 단계 2: 검색
+  body.innerHTML = renderAiStage('쿼리 분석', 'done', mock.chips, mock.intent)
+    + renderAiStage('가게 검색 중...', 'active', null, null);
+  await wait(600);
+
+  body.innerHTML = renderAiStage('쿼리 분석', 'done', mock.chips, mock.intent)
+    + renderAiStage('AI 추천 선별 중...', 'active', null, null)
+    + `<p style="font-size:12px;color:var(--t4);padding:0 4px 8px;">조건에 맞는 가게 <b style="color:var(--orange)">${mock.count}</b>개 발견</p>`;
+  await wait(600);
+
+  // 결과
+  let html = renderAiStage('쿼리 분석', 'done', mock.chips, mock.intent)
+    + renderAiStage('가게 검색 완료', 'done', null, null)
+    + renderAiStage('AI 추천 완료', 'done', null, null)
+    + `<hr style="border:none;border-top:1px solid var(--border);margin:12px 0;"/>
+       <p style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:10px;">🏆 AI 추천 ${mock.results.length}개</p>`;
+
+  mock.results.forEach(r => {
+    html += renderAiResult(r);
+  });
+
+  if (mock.results.length === 0) {
+    html += `<div style="text-align:center;padding:24px 0;color:var(--t4);font-size:13px;">결과가 없습니다. 조건을 조금 바꿔보세요.</div>`;
+  }
+
+  body.innerHTML = html;
+}
+
+function renderAiStage(label, status, chips, intent) {
+  const icoClass = status === 'done' ? 'ais-done' : status === 'active' ? 'ais-spin' : 'ais-wait';
+  const icoContent = status === 'done' ? '✓' : status === 'active' ? '<span class="spinner">⏳</span>' : '';
+  const labelClass = status === 'done' ? 'done' : status === 'active' ? 'active' : '';
+  let html = `<div class="ai-stage">
+    <div class="ai-stage-ico ${icoClass}">${icoContent}</div>
+    <div style="flex:1;">
+      <div class="ai-stage-label ${labelClass}">${label}</div>`;
+  if (chips) {
+    html += `<div class="ai-chips">`;
+    chips.forEach(c => { html += `<span class="ai-chip ${c.cls}">${c.text}</span>`; });
+    html += `</div>`;
+  }
+  if (intent) {
+    html += `<p style="font-size:11px;color:var(--t4);margin-top:4px;font-style:italic;">💭 ${intent}</p>`;
+  }
+  html += `</div></div>`;
+  return html;
+}
+
+function renderAiResult(r) {
+  const rankCls = r.rank === 1 ? 'rk1' : r.rank === 2 ? 'rk2' : r.rank === 3 ? 'rk3' : 'rkn';
+  return `
+    <div class="ai-result">
+      <div class="ar-body">
+        <div class="ar-rank-name">
+          <div class="ar-rank ${rankCls}">${r.rank}</div>
+          <div class="ar-name">${r.name}</div>
+        </div>
+        <div class="ar-meta">${r.cat} · ⭐${r.rating} · 리뷰 ${r.review}</div>
+        <div class="ar-why">
+          <div class="ar-why-label">✨ AI 추천 이유</div>
+          ${r.why}
+        </div>
+        ${r.coupon ? `
+        <div class="ar-coupon">
+          <div class="arc-disc">${r.coupon.disc}</div>
+          <div class="arc-info">
+            <div class="arc-title">${r.coupon.title}</div>
+            <div class="arc-desc">${r.coupon.desc}</div>
+          </div>
+          <button class="arc-btn" onclick="showToast('쿠폰이 쿠폰함에 저장됐어요 🎟')">받기</button>
+        </div>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+function closeAiPanel() {
+  document.getElementById('ai-panel').classList.remove('open');
+}
+
+// ════════════════════════════════════════════════════════════════
+// 가게찾기 페이지
+// ════════════════════════════════════════════════════════════════
+function renderStores() {
+  const grid = document.getElementById('stores-grid');
+  grid.innerHTML = '';
+  MOCK_STORES.forEach(store => {
+    const div = document.createElement('div');
+    div.style.cssText = `border:1.5px solid var(--border);border-radius:16px;overflow:hidden;cursor:pointer;transition:.15s;`;
+    div.onmouseover = () => { div.style.transform='translateY(-3px)'; div.style.boxShadow='0 4px 20px rgba(0,0,0,.1)'; div.style.borderColor='#FFD9B8'; };
+    div.onmouseout  = () => { div.style.transform=''; div.style.boxShadow=''; div.style.borderColor='var(--border)'; };
+    div.onclick = () => showToast(`${store.name} 상세 페이지로 이동합니다.`);
+    div.innerHTML = `
+      <div style="height:110px;background:${catBg(store.cat)};display:flex;align-items:center;justify-content:center;font-size:44px;position:relative;">
+        ${store.emoji}
+        ${store.timesale ? '<span style="position:absolute;top:8px;left:8px;background:#E53935;color:#fff;font-size:9px;font-weight:800;padding:3px 7px;border-radius:100px;">⏰ 타임세일</span>' : ''}
+      </div>
+      <div style="padding:10px 12px 12px;">
+        <div style="font-size:10px;font-weight:700;color:var(--orange);margin-bottom:2px;">${catLabel(store.cat)}</div>
+        <div style="font-size:14px;font-weight:800;color:var(--t1);margin-bottom:2px;">${store.name}</div>
+        <div style="font-size:11px;color:var(--t4);margin-bottom:8px;">📍 ${store.dist}</div>
+        <div style="display:inline-flex;align-items:center;gap:3px;background:var(--orange-soft);color:var(--orange);font-size:10px;font-weight:800;padding:3px 9px;border-radius:100px;">
+          🎟 ${store.coupon}
+        </div>
+      </div>
+    `;
+    grid.appendChild(div);
+  });
+}
+
+// ════════════════════════════════════════════════════════════════
+// 쿠폰 페이지
+// ════════════════════════════════════════════════════════════════
+function renderCoupons(tab) {
+  const grid = document.getElementById('coupon-grid');
+  grid.innerHTML = '';
+  const coupons = tab === 'active' ? MOCK_COUPONS : [];
+  if (coupons.length === 0) {
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:48px 0;color:var(--t4);font-size:14px;">쿠폰이 없습니다.</div>`;
+    return;
+  }
+  const typeLabel = { discount:'할인쿠폰', timesale:'타임세일', stamp:'스탬프' };
+  coupons.forEach(cp => {
+    const div = document.createElement('div');
+    div.className = 'coupon-card';
+    div.innerHTML = `
+      <div class="cc-top">
+        <div class="cc-bar" style="background:${cp.color}">
+          <div class="cc-bar-emoji">🎟</div>
+          <div class="cc-bar-lbl">${typeLabel[cp.type]||'쿠폰'}</div>
+        </div>
+        <div class="cc-body">
+          <div class="cc-store">${cp.store}</div>
+          <div class="cc-name">${cp.name}</div>
+          <div class="cc-val" style="color:${cp.color}">${cp.discount}</div>
+          <div class="cc-exp">~${cp.exp}</div>
+        </div>
+      </div>
+      <div class="cc-bottom">
+        <div class="cc-cond">· ${cp.cond}</div>
+        <div class="cc-use" onclick="showToast('QR 코드를 매장에 제시해주세요 📱')">사용하기</div>
+      </div>
+    `;
+    grid.appendChild(div);
+  });
+}
+
+function switchCouponTab(tab, el) {
+  document.querySelectorAll('#page-coupons button').forEach(b => {
+    b.style.background = 'transparent';
+    b.style.color = 'var(--t3)';
+    b.style.boxShadow = 'none';
+  });
+  el.style.background = 'var(--white)';
+  el.style.color = 'var(--orange)';
+  el.style.boxShadow = '0 1px 3px rgba(0,0,0,.06)';
+  renderCoupons(tab);
+}
+
+// ════════════════════════════════════════════════════════════════
+// 스탬프 페이지
+// ════════════════════════════════════════════════════════════════
+function renderStamps() {
+  const list = document.getElementById('stamps-list');
+  list.innerHTML = '';
+  MOCK_STAMPS.forEach(s => {
+    const div = document.createElement('div');
+    div.className = 'stamp-card';
+    const dots = Array.from({ length: s.goal }, (_, i) => {
+      if (i < s.current) return `<div class="sdot filled">✓</div>`;
+      if (i === s.goal - 1) return `<div class="sdot reward">🎁</div>`;
+      return `<div class="sdot"></div>`;
+    }).join('');
+    const pct = Math.round((s.current / s.goal) * 100);
+    div.innerHTML = `
+      <div class="scard-head">
+        <div class="scard-ico">${s.emoji}</div>
+        <div>
+          <div class="scard-name">${s.store}</div>
+          <div class="scard-goal">${s.goal}개 모으면 ${s.reward} 🎁</div>
+        </div>
+      </div>
+      <div class="scard-dots">${dots}</div>
+      <div class="scard-prog">
+        <div class="scard-bar-wrap"><div class="scard-bar" style="width:${pct}%"></div></div>
+        <div class="scard-count">${s.current} / ${s.goal}</div>
+      </div>
+    `;
+    list.appendChild(div);
+  });
+}
+
+// ════════════════════════════════════════════════════════════════
+// Toast & 유틸
+// ════════════════════════════════════════════════════════════════
+let toastTimer = null;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ════════════════════════════════════════════════════════════════
+// 초기화
+// ════════════════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  // 카카오맵 초기화 (SDK 로드 후)
+  if (typeof kakao !== 'undefined' && kakao.maps) {
+    kakao.maps.load(() => {
+      initMap();
+      getGPS(); // GPS 시도 → 실패 시 창원시청 기본값
+    });
+  } else {
+    document.getElementById('kakao-map').innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;background:var(--bg);color:var(--t4);">
+        <div style="font-size:48px;margin-bottom:12px;">🗺️</div>
+        <div style="font-size:14px;font-weight:700;">카카오맵 SDK 로드 실패</div>
+        <div style="font-size:12px;margin-top:6px;">인터넷 연결 또는 도메인 설정을 확인해주세요.</div>
+      </div>
+    `;
+  }
+});
+</script>
+</body>
+</html>
