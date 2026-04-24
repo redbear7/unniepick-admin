@@ -56,7 +56,10 @@ export default function LoginPage() {
       setError(json.error ?? '로그인 실패');
       setPin(['', '', '', '']);
       setLoading(false);
-      setTimeout(() => pinRefs[0].current?.focus(), 50);
+      // 429: 쿨다운 동안 입력 불가 표시
+      if (res.status !== 429) {
+        setTimeout(() => pinRefs[0].current?.focus(), 50);
+      }
       return;
     }
 

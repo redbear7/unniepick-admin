@@ -56,11 +56,21 @@ export async function PATCH(req: NextRequest) {
   if (!updatedRows || updatedRows.length === 0) {
     // auth.users 에서 email 가져오기 (NOT NULL 컬럼)
     const { data: authUser, error: authErr } = await sb.auth.admin.getUserById(userId);
-    if (authErr || !authUser?.user) {
+    if (authErr) {
+      // Supabase Auth rate limit 처리
+      if (authErr.status === 429 || (authErr as { code?: string }).code === 'over_request_rate_limit') {
+        return NextResponse.json(
+          { error: 'Supabase 요청이 너무 많아요. 잠시 후 다시 시도해주세요.' },
+          { status: 429 },
+        );
+      }
       return NextResponse.json(
-        { error: `auth 유저 조회 실패: ${authErr?.message ?? '없음'}` },
+        { error: `auth 유저 조회 실패: ${authErr.message}` },
         { status: 500 },
       );
+    }
+    if (!authUser?.user) {
+      return NextResponse.json({ error: 'auth 유저를 찾을 수 없어요' }, { status: 404 });
     }
     const email = authUser.user.email ?? authUser.user.user_metadata?.email ?? '';
 
