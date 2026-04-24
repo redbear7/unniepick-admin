@@ -20,6 +20,7 @@ export default function LandingNav() {
           <Link href="/#features" className="hover:text-primary transition">기능</Link>
           <Link href="/#pricing" className="hover:text-primary transition">요금제</Link>
           <Link href="/#reviews" className="hover:text-primary transition">후기</Link>
+          <Link href="/apply" className="hover:text-primary transition text-[#FF6F0F] font-semibold">가게등록</Link>
         </div>
 
         <div className="flex items-center gap-3">
@@ -44,6 +45,7 @@ export default function LandingNav() {
           <Link href="/#features" onClick={() => setMobileMenu(false)} className="block text-sm font-medium text-tertiary hover:text-primary">기능</Link>
           <Link href="/#pricing" onClick={() => setMobileMenu(false)} className="block text-sm font-medium text-tertiary hover:text-primary">요금제</Link>
           <Link href="/#reviews" onClick={() => setMobileMenu(false)} className="block text-sm font-medium text-tertiary hover:text-primary">후기</Link>
+          <Link href="/apply" onClick={() => setMobileMenu(false)} className="block text-sm font-semibold text-[#FF6F0F] hover:text-primary">가게등록</Link>
           <Link href="/apply" className="block text-center py-3 rounded-xl bg-[#FF6F0F] text-white text-sm font-bold">
             무료로 시작하기
           </Link>
