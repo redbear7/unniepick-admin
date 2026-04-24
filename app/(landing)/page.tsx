@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Script from 'next/script';
 import Link from 'next/link';
+import { createClient } from '@/lib/supabase';
 
 declare global {
   interface Window { kakao: any; __selectStore: (id: number) => void; }
@@ -147,6 +148,16 @@ export default function HomePage() {
   const [aiCount,   setAiCount]   = useState(0);
   const [aiResults, setAiResults] = useState<AiResult[]>([]);
 
+  /* ── Auth ───────────────────────────────────────────── */
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authMenuOpen,  setAuthMenuOpen]  = useState(false);
+  const [authStep,      setAuthStep]      = useState<'phone'|'otp'>('phone');
+  const [authPhone,     setAuthPhone]     = useState('');
+  const [authOtp,       setAuthOtp]       = useState('');
+  const [authLoading,   setAuthLoading]   = useState(false);
+  const [authError,     setAuthError]     = useState('');
+  const [authUser,      setAuthUser]      = useState<{ id: string; nickname?: string } | null>(null);
+
   /* ── Toast ───────────────────────────────────────────── */
   const showToast = useCallback((msg: string) => {
     setToastMsg(msg);
@@ -290,6 +301,8 @@ export default function HomePage() {
         setSearchDropOpen(false);
       if (!t.closest('#loc-drop') && !t.closest('#loc-btn'))
         setLocDropOpen(false);
+      if (!t.closest('#auth-menu') && !t.closest('#auth-btn'))
+        setAuthMenuOpen(false);
     };
     document.addEventListener('mousedown', h);
     return () => document.removeEventListener('mousedown', h);
@@ -366,6 +379,84 @@ export default function HomePage() {
       kakaoMapRef.current.setLevel(5);
     });
   }, [initMap]);
+
+  /* ── Auth helpers ───────────────────────────────────── */
+  const toE164 = (p: string) => '+82' + p.replace(/\D/g, '').slice(1);
+
+  const openAuthModal = useCallback(() => {
+    setAuthStep('phone');
+    setAuthPhone('');
+    setAuthOtp('');
+    setAuthError('');
+    setAuthModalOpen(true);
+  }, []);
+
+  const sendPhoneOtp = useCallback(async () => {
+    const digits = authPhone.replace(/\D/g, '');
+    if (digits.length < 10) { setAuthError('올바른 번호를 입력해주세요'); return; }
+    setAuthLoading(true);
+    setAuthError('');
+    try {
+      const sb = createClient();
+      const { error } = await sb.auth.signInWithOtp({ phone: toE164(authPhone) });
+      if (error) throw error;
+      setAuthStep('otp');
+    } catch (e: any) {
+      setAuthError(e?.message ?? '인증번호 발송에 실패했어요');
+    } finally {
+      setAuthLoading(false);
+    }
+  }, [authPhone]);
+
+  const verifyPhoneOtp = useCallback(async (codeOverride?: string) => {
+    const code = codeOverride ?? authOtp;
+    if (code.length < 6) { setAuthError('6자리를 모두 입력해주세요'); return; }
+    setAuthLoading(true);
+    setAuthError('');
+    try {
+      const sb = createClient();
+      const { error } = await sb.auth.verifyOtp({
+        phone: toE164(authPhone),
+        token: code,
+        type: 'sms',
+      });
+      if (error) throw error;
+      setAuthModalOpen(false);
+      setAuthStep('phone');
+      setAuthPhone('');
+      setAuthOtp('');
+      showToast('로그인 됐어요 🎉');
+    } catch (e: any) {
+      setAuthError(e?.message ?? '인증번호가 올바르지 않아요');
+    } finally {
+      setAuthLoading(false);
+    }
+  }, [authPhone, authOtp, showToast]);
+
+  const handleSignOut = useCallback(async () => {
+    const sb = createClient();
+    await sb.auth.signOut();
+    setAuthUser(null);
+    setAuthMenuOpen(false);
+    showToast('로그아웃 됐어요');
+  }, [showToast]);
+
+  /* ── Auth 세션 복원 ─────────────────────────────────── */
+  useEffect(() => {
+    const sb = createClient();
+    const loadProfile = (userId: string) => {
+      sb.from('profiles').select('nickname').eq('id', userId).maybeSingle()
+        .then(({ data }) => setAuthUser({ id: userId, nickname: data?.nickname ?? undefined }));
+    };
+    sb.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) loadProfile(session.user.id);
+    });
+    const { data: { subscription } } = sb.auth.onAuthStateChange((_evt, session) => {
+      if (session?.user) loadProfile(session.user.id);
+      else setAuthUser(null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   /* ──────────────────────────────────────────────────── */
   /* Render                                               */
@@ -559,6 +650,54 @@ export default function HomePage() {
 
           {/* Right — 우측 정렬 */}
           <div style={{ display:'flex', alignItems:'center', gap:8, justifyContent:'flex-end' }}>
+
+            {/* 로그인 / 프로필 */}
+            {authUser ? (
+              <div style={{ position:'relative' }}>
+                <button id="auth-btn" onClick={() => setAuthMenuOpen(v => !v)}
+                  style={{ display:'flex', alignItems:'center', gap:6, padding:'6px 12px',
+                    borderRadius:100, border:`1.5px solid ${OR}`, cursor:'pointer',
+                    background:'#fff', fontFamily:'inherit', transition:'all .15s' }}>
+                  <div style={{ width:24, height:24, borderRadius:'50%', background:OR,
+                    color:'#fff', fontSize:11, fontWeight:800, flexShrink:0,
+                    display:'flex', alignItems:'center', justifyContent:'center' }}>
+                    {(authUser.nickname ?? '나')[0]}
+                  </div>
+                  <span style={{ fontSize:12, fontWeight:700, color:'#374151' }}>
+                    {authUser.nickname ?? '언니픽회원'}
+                  </span>
+                  <span style={{ fontSize:9, color:'#9CA3AF' }}>▾</span>
+                </button>
+                {authMenuOpen && (
+                  <div id="auth-menu" style={{ position:'absolute', top:'calc(100% + 8px)', right:0,
+                    background:'#fff', border:'1px solid #E5E7EB', borderRadius:12,
+                    boxShadow:'0 8px 24px rgba(0,0,0,.1)', zIndex:500, minWidth:160,
+                    overflow:'hidden' }}>
+                    <div style={{ padding:'12px 16px', borderBottom:'1px solid #E5E7EB' }}>
+                      <div style={{ fontSize:13, fontWeight:700, color:'#111827' }}>
+                        {authUser.nickname ?? '언니픽회원'}
+                      </div>
+                    </div>
+                    <button onClick={handleSignOut}
+                      style={{ width:'100%', padding:'10px 16px', background:'none', border:'none',
+                        textAlign:'left', fontSize:13, color:'#6B7280', cursor:'pointer',
+                        fontFamily:'inherit', transition:'background .1s' }}
+                      onMouseEnter={e => (e.currentTarget.style.background = '#F9FAFB')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                      로그아웃
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <button onClick={openAuthModal}
+                style={{ padding:'7px 16px', borderRadius:100, fontSize:12, fontWeight:700,
+                  color:'#fff', background:OR, border:'none', cursor:'pointer',
+                  fontFamily:'inherit', boxShadow:'0 1px 6px rgba(255,111,15,.25)' }}>
+                로그인
+              </button>
+            )}
+
             <button onClick={() => window.open('/app', '_blank')}
               style={{ padding:'7px 14px', borderRadius:6, fontSize:12, fontWeight:600,
                 color:'#6B7280', background:'none', border:'1px solid #E5E7EB', cursor:'pointer' }}>
@@ -777,6 +916,169 @@ export default function HomePage() {
         opacity: toastVis ? 1 : 0, transition:'opacity .25s', pointerEvents:'none' }}>
         {toastMsg}
       </div>
+
+      {/* ═══ AUTH MODAL ════════════════════════════════════ */}
+      {authModalOpen && (
+        <div
+          style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.5)',
+            display:'flex', alignItems:'center', justifyContent:'center',
+            zIndex:9000, padding:20 }}
+          onMouseDown={e => { if (e.target === e.currentTarget) setAuthModalOpen(false); }}
+        >
+          <div style={{ background:'#fff', borderRadius:20, width:'100%', maxWidth:400,
+            padding:28, boxShadow:'0 20px 60px rgba(0,0,0,.2)', position:'relative',
+            fontFamily:"'Pretendard Variable','Noto Sans KR',-apple-system,sans-serif" }}>
+
+            {/* 닫기 */}
+            <button onClick={() => setAuthModalOpen(false)}
+              style={{ position:'absolute', top:16, right:16, width:30, height:30,
+                borderRadius:'50%', background:'#F3F4F6', border:'none',
+                display:'flex', alignItems:'center', justifyContent:'center',
+                fontSize:14, cursor:'pointer', fontFamily:'inherit', color:'#374151' }}>
+              ✕
+            </button>
+
+            {/* 로고 */}
+            <div style={{ display:'flex', flexDirection:'column', alignItems:'center', marginBottom:24 }}>
+              <div style={{ width:52, height:52, background:OR, borderRadius:15,
+                display:'flex', alignItems:'center', justifyContent:'center',
+                fontSize:26, color:'#fff', marginBottom:10 }}>
+                🩷
+              </div>
+              <div style={{ fontSize:20, fontWeight:900, color:OR }}>언니픽</div>
+              <div style={{ fontSize:13, color:'#9CA3AF', marginTop:4 }}>
+                {authStep === 'phone' ? '휴대폰 번호로 로그인' : '인증번호를 입력해주세요'}
+              </div>
+            </div>
+
+            {/* ── STEP 1: 전화번호 ── */}
+            {authStep === 'phone' && (
+              <>
+                <label style={{ fontSize:12, fontWeight:700, color:'#374151',
+                  display:'block', marginBottom:6 }}>
+                  휴대폰 번호
+                </label>
+                <input
+                  type="tel"
+                  value={authPhone}
+                  onChange={e => {
+                    const d = e.target.value.replace(/\D/g, '').slice(0, 11);
+                    let fmt = d;
+                    if (d.length > 3 && d.length <= 7) fmt = d.slice(0,3)+'-'+d.slice(3);
+                    else if (d.length > 7) fmt = d.slice(0,3)+'-'+d.slice(3,7)+'-'+d.slice(7);
+                    setAuthPhone(fmt);
+                    setAuthError('');
+                  }}
+                  onKeyDown={e => { if (e.key === 'Enter') sendPhoneOtp(); }}
+                  placeholder="010-0000-0000"
+                  maxLength={13}
+                  autoFocus
+                  style={{ width:'100%', height:50, padding:'0 16px', borderRadius:12,
+                    border:`1.5px solid ${authError ? '#EF4444' : '#D1D5DB'}`,
+                    fontSize:17, fontFamily:'inherit', outline:'none',
+                    boxSizing:'border-box', letterSpacing:1, transition:'border-color .15s' }}
+                  onFocus={e  => (e.target.style.borderColor = OR)}
+                  onBlur={e   => (e.target.style.borderColor = authError ? '#EF4444' : '#D1D5DB')}
+                />
+                {authError && (
+                  <div style={{ fontSize:11, color:'#EF4444', marginTop:5 }}>{authError}</div>
+                )}
+                <button onClick={sendPhoneOtp} disabled={authLoading}
+                  style={{ width:'100%', height:50, marginTop:12, borderRadius:12, border:'none',
+                    background: authLoading ? '#FFD9B8' : OR,
+                    color:'#fff', fontSize:15, fontWeight:800,
+                    cursor: authLoading ? 'wait' : 'pointer', fontFamily:'inherit',
+                    transition:'background .15s' }}>
+                  {authLoading ? '발송 중...' : '인증번호 받기'}
+                </button>
+                <p style={{ fontSize:11, color:'#9CA3AF', textAlign:'center', marginTop:14,
+                  lineHeight:1.7, margin:'14px 0 0' }}>
+                  처음 오셨다면 자동으로 가입됩니다.<br />
+                  계속 진행하시면{' '}
+                  <span style={{ color:OR, fontWeight:700, cursor:'pointer' }}>이용약관</span>에
+                  동의하는 것으로 간주됩니다.
+                </p>
+              </>
+            )}
+
+            {/* ── STEP 2: OTP ── */}
+            {authStep === 'otp' && (
+              <>
+                <p style={{ fontSize:13, color:'#6B7280', marginBottom:18, textAlign:'center',
+                  lineHeight:1.7 }}>
+                  <strong style={{ color:'#111827' }}>{authPhone}</strong>으로<br />
+                  6자리 인증번호를 전송했어요
+                </p>
+                <div style={{ display:'flex', gap:8, justifyContent:'center', marginBottom:16 }}>
+                  {[0,1,2,3,4,5].map(i => (
+                    <input key={i}
+                      id={`otp-digit-${i}`}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={1}
+                      value={authOtp[i] ?? ''}
+                      autoFocus={i === 0}
+                      onChange={e => {
+                        const v = e.target.value.replace(/\D/g, '');
+                        const arr = authOtp.padEnd(6, ' ').split('');
+                        arr[i] = v.slice(-1);
+                        const next = arr.join('').trimEnd();
+                        setAuthOtp(next);
+                        setAuthError('');
+                        if (v && i < 5) {
+                          (document.getElementById(`otp-digit-${i+1}`) as HTMLInputElement)?.focus();
+                        }
+                        const filled = arr.join('').replace(/ /g,'');
+                        if (filled.length === 6) {
+                          setTimeout(() => verifyPhoneOtp(filled), 80);
+                        }
+                      }}
+                      onKeyDown={e => {
+                        if (e.key === 'Backspace' && !authOtp[i] && i > 0) {
+                          (document.getElementById(`otp-digit-${i-1}`) as HTMLInputElement)?.focus();
+                        }
+                      }}
+                      onPaste={i === 0 ? (e) => {
+                        e.preventDefault();
+                        const p = e.clipboardData.getData('text').replace(/\D/g,'').slice(0,6);
+                        setAuthOtp(p);
+                        if (p.length === 6) setTimeout(() => verifyPhoneOtp(p), 80);
+                      } : undefined}
+                      style={{ width:44, height:54, textAlign:'center', fontSize:22, fontWeight:800,
+                        border:`1.5px solid ${authError ? '#EF4444' : authOtp[i] && authOtp[i] !== ' ' ? OR : '#D1D5DB'}`,
+                        borderRadius:12, outline:'none', fontFamily:'inherit',
+                        background:'#fff', transition:'border-color .15s', boxSizing:'border-box' }}
+                    />
+                  ))}
+                </div>
+                {authError && (
+                  <div style={{ fontSize:11, color:'#EF4444', textAlign:'center', marginBottom:8 }}>
+                    {authError}
+                  </div>
+                )}
+                <button onClick={() => verifyPhoneOtp()}
+                  disabled={authLoading || authOtp.replace(/\s/g,'').length < 6}
+                  style={{ width:'100%', height:50, borderRadius:12, border:'none',
+                    background: (authLoading || authOtp.replace(/\s/g,'').length < 6) ? '#FFD9B8' : OR,
+                    color:'#fff', fontSize:15, fontWeight:800, fontFamily:'inherit',
+                    cursor: (authLoading || authOtp.replace(/\s/g,'').length < 6) ? 'default' : 'pointer' }}>
+                  {authLoading ? '확인 중...' : '확인'}
+                </button>
+                <div style={{ display:'flex', justifyContent:'center', alignItems:'center',
+                  gap:6, marginTop:14 }}>
+                  <span style={{ fontSize:12, color:'#9CA3AF' }}>번호가 오지 않나요?</span>
+                  <button
+                    onClick={() => { setAuthStep('phone'); setAuthOtp(''); setAuthError(''); }}
+                    style={{ fontSize:12, color:OR, fontWeight:700, background:'none', border:'none',
+                      cursor:'pointer', fontFamily:'inherit', padding:0 }}>
+                    다시 받기
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
