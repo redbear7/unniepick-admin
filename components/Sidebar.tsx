@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase';
 import {
   LayoutDashboard, Store, FileText, Music, Ticket,
   Users, LogOut, ChevronRight, ScrollText, MapPin, PlaySquare, Zap, Map, ListMusic, Tag, Building2, Megaphone, Film, Video, KeyRound, Bell,
-  GripVertical, Pencil, Check, X, Settings, ImagePlus, PanelBottom, ClipboardList, UtensilsCrossed, BarChart3, Search, BookOpen, Sparkles, Brain, Gift,
+  GripVertical, Pencil, Check, X, Settings, ImagePlus, PanelBottom, ClipboardList, UtensilsCrossed, BarChart3, Search, BookOpen, Sparkles, Brain, Gift, Star,
   FolderInput,
 } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
@@ -37,7 +37,7 @@ import { CSS } from '@dnd-kit/utilities';
 
 const ICON_MAP: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
   LayoutDashboard, Store, FileText, Music, Ticket,
-  Users, ScrollText, MapPin, PlaySquare, Zap, Map, ListMusic, Tag, Building2, Megaphone, Film, Video, KeyRound, Bell, ImagePlus, PanelBottom, ClipboardList, UtensilsCrossed, BarChart3, Search, BookOpen, Sparkles, Brain, Gift,
+  Users, ScrollText, MapPin, PlaySquare, Zap, Map, ListMusic, Tag, Building2, Megaphone, Film, Video, KeyRound, Bell, ImagePlus, PanelBottom, ClipboardList, UtensilsCrossed, BarChart3, Search, BookOpen, Sparkles, Brain, Gift, Star,
 };
 
 interface NavItem {
@@ -99,10 +99,11 @@ const DEFAULT_GROUPS: NavGroup[] = [
       { id: 'owners',  href: '/dashboard/owners',  icon: 'KeyRound', label: '사장님 PIN 관리' },
       { id: 'notices', href: '/dashboard/notices', icon: 'ScrollText', label: '공지사항' },
       { id: 'posts',   href: '/dashboard/posts',   icon: 'FileText', label: '게시물 관리' },
-      { id: 'coupons',   href: '/dashboard/coupons',   icon: 'Ticket',      label: '쿠폰 관리' },
-      { id: 'banners',   href: '/dashboard/banners',   icon: 'PanelBottom', label: '배너 관리' },
-      { id: 'ai-images', href: '/dashboard/ai-images', icon: 'ImagePlus',   label: 'AI 이미지 생성' },
-      { id: 'points',    href: '/dashboard/points',    icon: 'Gift',        label: '영수증 리뷰' },
+      { id: 'coupons',        href: '/dashboard/coupons',        icon: 'Ticket',      label: '쿠폰 관리' },
+      { id: 'review-claims', href: '/dashboard/review-claims', icon: 'Star',        label: '리뷰 인증 쿠폰' },
+      { id: 'banners',       href: '/dashboard/banners',       icon: 'PanelBottom', label: '배너 관리' },
+      { id: 'ai-images',     href: '/dashboard/ai-images',     icon: 'ImagePlus',   label: 'AI 이미지 생성' },
+      { id: 'points',        href: '/dashboard/points',        icon: 'Gift',        label: '영수증 리뷰' },
     ],
   },
   {
