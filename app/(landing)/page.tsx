@@ -384,18 +384,23 @@ export default function HomePage() {
           display:'grid', gridTemplateColumns:'1fr auto 1fr',
           alignItems:'center', height:64 }}>
 
-          {/* Logo — 좌측 */}
-          <div style={{ display:'flex', alignItems:'center', gap:8,
-            fontSize:20, fontWeight:900, color:OR, cursor:'pointer' }}>
-            <div style={{ width:30, height:30, background:OR, borderRadius:8,
-              display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, color:'#fff' }}>
-              🩷
-            </div>
-            언니픽
-          </div>
+          {/* 좌측 여백 */}
+          <div />
 
-          {/* ── 검색창 (정확히 가운데) ──────────────────────── */}
-          <div style={{ width:480, position:'relative' }}>
+          {/* ── 로고 + 검색창 (가운데) ──────────────────────── */}
+          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+
+            {/* 로고 */}
+            <div style={{ display:'flex', alignItems:'center', gap:7,
+              fontSize:18, fontWeight:900, color:OR, cursor:'pointer', flexShrink:0 }}>
+              <div style={{ width:28, height:28, background:OR, borderRadius:7,
+                display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, color:'#fff' }}>
+                🩷
+              </div>
+              언니픽
+            </div>
+
+          <div style={{ width:440, position:'relative' }}>
             <form onSubmit={onSubmit}
               style={{ display:'flex', alignItems:'center', background:'#fff',
                 border:`1.5px solid ${searchDropOpen ? OR : '#D1D5DB'}`,
@@ -541,6 +546,7 @@ export default function HomePage() {
               </div>
             )}
           </div>
+          </div>{/* 로고+검색창 wrapper 끝 */}
 
           {/* Right — 우측 정렬 */}
           <div style={{ display:'flex', alignItems:'center', gap:8, justifyContent:'flex-end' }}>
