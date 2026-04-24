@@ -51,9 +51,19 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: updateErr.message }, { status: 500 });
   }
 
-  // 0 rows → users 테이블에 행 없음 (전화번호 OTP 가입 등)
-  // → profiles 에서 닉네임 조회 후 INSERT 로 행 생성
+  // 0 rows → users 테이블에 행 없음 (카카오/소셜 가입 등)
+  // → auth.users에서 email 조회 + profiles 닉네임 조회 후 INSERT
   if (!updatedRows || updatedRows.length === 0) {
+    // auth.users 에서 email 가져오기 (NOT NULL 컬럼)
+    const { data: authUser, error: authErr } = await sb.auth.admin.getUserById(userId);
+    if (authErr || !authUser?.user) {
+      return NextResponse.json(
+        { error: `auth 유저 조회 실패: ${authErr?.message ?? '없음'}` },
+        { status: 500 },
+      );
+    }
+    const email = authUser.user.email ?? authUser.user.user_metadata?.email ?? '';
+
     // profiles 에서 닉네임 가져오기 (name 미제공 시 fallback)
     const { data: prof } = await sb
       .from('profiles')
@@ -62,9 +72,10 @@ export async function PATCH(req: NextRequest) {
       .maybeSingle();
 
     const insertRow: Record<string, string> = {
-      id:   userId,
-      name: usersUpdate.name ?? prof?.nickname ?? '(이름 없음)',
-      role: usersUpdate.role ?? 'customer',
+      id:    userId,
+      email: email,
+      name:  usersUpdate.name ?? prof?.nickname ?? authUser.user.user_metadata?.full_name ?? '(이름 없음)',
+      role:  usersUpdate.role ?? 'customer',
     };
 
     const { data: inserted, error: insertErr } = await sb
