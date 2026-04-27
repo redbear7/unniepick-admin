@@ -1,0 +1,281 @@
+'use client';
+
+import { useState, useEffect, useRef, useCallback, use } from 'react';
+import { createClient } from '@/lib/supabase';
+import { Send, Paperclip, X, FileText, Loader2, ArrowRight } from 'lucide-react';
+
+interface Message {
+  id: string;
+  inquiry_id: string;
+  sender_type: 'admin' | 'business' | 'system';
+  content: string | null;
+  file_url: string | null;
+  file_type: string | null;
+  file_name: string | null;
+  created_at: string;
+}
+
+interface Inquiry {
+  id: string;
+  business_name: string;
+  status: string;
+}
+
+function formatTime(iso: string) {
+  return new Date(iso).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+}
+
+export default function ConsultChatPage({ params }: { params: Promise<{ token: string }> }) {
+  const { token } = use(params);
+  const supabase = createClient();
+  const [inquiry, setInquiry] = useState<Inquiry | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState('');
+  const [isSending, setIsSending] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [filePreview, setFilePreview] = useState<{ file: File; preview: string } | null>(null);
+  const [notFound, setNotFound] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const loadMessages = useCallback(async () => {
+    const res = await fetch(`/api/consult/${token}/messages`);
+    if (!res.ok) { setNotFound(true); return; }
+    const data = await res.json();
+    setMessages(data.messages ?? []);
+  }, [token]);
+
+  useEffect(() => {
+    // 상담 정보 조회
+    supabase
+      .from('consult_inquiries')
+      .select('id, business_name, status')
+      .eq('token', token)
+      .single()
+      .then(({ data, error }) => {
+        if (error || !data) { setNotFound(true); return; }
+        setInquiry(data as Inquiry);
+      });
+
+    loadMessages();
+  }, [token, loadMessages, supabase]);
+
+  // Realtime 구독
+  useEffect(() => {
+    if (!inquiry) return;
+    const channel = supabase
+      .channel(`consult:${inquiry.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'consult_messages', filter: `inquiry_id=eq.${inquiry.id}` },
+        (payload) => setMessages((prev) => [...prev, payload.new as Message])
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [inquiry, supabase]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const sendMessage = async (content: string, fileUrl?: string, fileType?: string, fileName?: string) => {
+    setIsSending(true);
+    try {
+      await fetch(`/api/consult/${token}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content, file_url: fileUrl, file_type: fileType, file_name: fileName }),
+      });
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleSend = async () => {
+    const text = input.trim();
+    if (!text && !filePreview) return;
+
+    if (filePreview) {
+      setIsUploading(true);
+      try {
+        const file = filePreview.file;
+        const ext = file.name.split('.').pop();
+        const path = `consult/${token}/${Date.now()}.${ext}`;
+        await supabase.storage.from('consult-files').upload(path, file);
+        const { data: { publicUrl } } = supabase.storage.from('consult-files').getPublicUrl(path);
+        await sendMessage(text, publicUrl, file.type.startsWith('image/') ? 'image' : 'file', file.name);
+        setFilePreview(null);
+        setInput('');
+      } catch { alert('파일 전송 오류'); }
+      finally { setIsUploading(false); }
+    } else {
+      setInput('');
+      await sendMessage(text);
+    }
+  };
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setFilePreview({ file, preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : '' });
+    e.target.value = '';
+  };
+
+  if (notFound) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#fafafa] px-5">
+        <div className="text-center">
+          <div className="text-5xl mb-4">🔍</div>
+          <p className="text-[18px] font-bold text-gray-800">상담을 찾을 수 없어요</p>
+          <p className="text-[14px] text-gray-500 mt-2">링크가 올바른지 확인해주세요</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-dvh flex flex-col bg-[#fafafa]">
+      {/* 헤더 */}
+      <div className="bg-white border-b border-gray-100 px-4 h-14 flex items-center gap-3 shrink-0">
+        <div className="w-8 h-8 bg-[#FF6F0F] rounded-full flex items-center justify-center text-white text-[14px]">🌸</div>
+        <div className="flex-1">
+          <p className="text-[15px] font-bold text-gray-900 leading-tight">창원언니쓰</p>
+          <p className="text-[12px] text-green-500 font-medium">온라인</p>
+        </div>
+        {inquiry?.status === 'completed' && (
+          <span className="text-[11px] bg-green-50 text-green-700 px-2.5 py-1 rounded-full font-semibold border border-green-100">
+            상담 완료
+          </span>
+        )}
+      </div>
+
+      {/* 언니픽 등록 유도 배너 */}
+      <div className="bg-gradient-to-r from-orange-500 to-orange-400 px-4 py-3 flex items-center gap-3">
+        <div className="flex-1">
+          <p className="text-[13px] font-bold text-white">언니픽에 가게를 등록해보세요!</p>
+          <p className="text-[11px] text-orange-100">창원 최대 맛집 앱 · 쿠폰 · 리뷰 관리</p>
+        </div>
+        <a
+          href="/apply"
+          className="flex items-center gap-1 px-3 py-1.5 bg-white text-[#FF6F0F] text-[12px] font-bold rounded-full hover:opacity-90 transition-opacity shrink-0"
+        >
+          등록하기
+          <ArrowRight className="w-3.5 h-3.5" />
+        </a>
+      </div>
+
+      {/* 메시지 */}
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-1">
+        {messages.length === 0 && (
+          <div className="text-center py-12">
+            <p className="text-[14px] text-gray-400">상담이 시작되었습니다 🌸</p>
+            <p className="text-[13px] text-gray-400 mt-1">궁금하신 점을 편하게 물어보세요</p>
+          </div>
+        )}
+
+        {messages.map((msg) => {
+          if (msg.sender_type === 'system') {
+            return (
+              <div key={msg.id} className="text-center py-2">
+                <span className="text-[12px] text-gray-400 bg-gray-100 px-3 py-1.5 rounded-full">
+                  상담이 접수되었습니다
+                </span>
+              </div>
+            );
+          }
+
+          const isAdmin = msg.sender_type === 'admin';
+          return (
+            <div key={msg.id} className={`flex items-end gap-2 ${isAdmin ? 'flex-row' : 'flex-row-reverse'} mb-1`}>
+              {isAdmin && (
+                <div className="w-7 h-7 bg-[#FF6F0F] rounded-full flex items-center justify-center text-white text-[12px] shrink-0 mb-0.5">
+                  🌸
+                </div>
+              )}
+              <div className={`max-w-[75%] flex flex-col gap-1 ${isAdmin ? 'items-start' : 'items-end'}`}>
+                {msg.file_url && msg.file_type === 'image' && (
+                  <a href={msg.file_url} target="_blank" rel="noopener noreferrer">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={msg.file_url} alt={msg.file_name || '이미지'} className="rounded-2xl max-h-60 object-cover" />
+                  </a>
+                )}
+                {msg.file_url && msg.file_type === 'file' && (
+                  <a
+                    href={msg.file_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[13px] font-medium ${
+                      isAdmin ? 'bg-[#FF6F0F] text-white' : 'bg-white text-gray-800 border border-gray-200'
+                    }`}
+                  >
+                    <FileText className="w-4 h-4 shrink-0" />
+                    <span className="truncate max-w-[140px]">{msg.file_name}</span>
+                  </a>
+                )}
+                {msg.content && (
+                  <div className={`px-4 py-2.5 text-[15px] leading-relaxed rounded-2xl ${
+                    isAdmin
+                      ? 'bg-[#FF6F0F] text-white rounded-tl-sm'
+                      : 'bg-white text-gray-800 border border-gray-100 rounded-tr-sm'
+                  }`}>
+                    {msg.content}
+                  </div>
+                )}
+                <span className="text-[11px] text-gray-400">{formatTime(msg.created_at)}</span>
+              </div>
+            </div>
+          );
+        })}
+        <div ref={bottomRef} />
+      </div>
+
+      {/* 파일 미리보기 */}
+      {filePreview && (
+        <div className="px-4 py-2 bg-white border-t border-gray-100 flex items-center gap-3">
+          {filePreview.preview ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={filePreview.preview} alt="미리보기" className="w-12 h-12 rounded-xl object-cover" />
+          ) : (
+            <div className="w-12 h-12 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-center">
+              <FileText className="w-5 h-5 text-gray-400" />
+            </div>
+          )}
+          <p className="flex-1 text-[13px] text-gray-700 truncate">{filePreview.file.name}</p>
+          <button onClick={() => setFilePreview(null)} className="p-1 text-gray-400 hover:text-gray-700">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* 입력창 */}
+      <div className="px-4 py-3 bg-white border-t border-gray-100 safe-bottom">
+        <div className="flex items-end gap-2 bg-gray-50 rounded-2xl px-3 py-2">
+          <button onClick={() => fileInputRef.current?.click()} className="p-1.5 text-gray-400 hover:text-[#FF6F0F] transition-colors shrink-0 mb-0.5">
+            <Paperclip className="w-5 h-5" />
+          </button>
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+            placeholder="메시지를 입력하세요..."
+            rows={1}
+            className="flex-1 bg-transparent text-[15px] text-gray-900 placeholder:text-gray-400 resize-none focus:outline-none py-1.5 max-h-32 leading-relaxed"
+            onInput={(e) => {
+              const t = e.target as HTMLTextAreaElement;
+              t.style.height = 'auto';
+              t.style.height = `${Math.min(t.scrollHeight, 128)}px`;
+            }}
+          />
+          <button
+            onClick={handleSend}
+            disabled={(!input.trim() && !filePreview) || isSending || isUploading}
+            className="w-9 h-9 bg-[#FF6F0F] text-white rounded-xl flex items-center justify-center shrink-0 hover:opacity-90 disabled:opacity-40 mb-0.5"
+          >
+            {isSending || isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+          </button>
+        </div>
+        <input ref={fileInputRef} type="file" accept="image/*,.pdf,.doc,.docx" onChange={handleFile} className="hidden" />
+      </div>
+    </div>
+  );
+}

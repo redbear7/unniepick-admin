@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Store, FileText, Music, Ticket,
   Users, LogOut, ChevronRight, ScrollText, MapPin, PlaySquare, Zap, Map, ListMusic, Tag, Building2, Megaphone, Film, Video, KeyRound, Bell,
   GripVertical, Pencil, Check, X, Settings, ImagePlus, PanelBottom, ClipboardList, UtensilsCrossed, BarChart3, Search, BookOpen, Sparkles, Brain, Gift, Star,
-  FolderInput,
+  FolderInput, MessageSquare,
 } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 import {
@@ -37,7 +37,7 @@ import { CSS } from '@dnd-kit/utilities';
 
 const ICON_MAP: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
   LayoutDashboard, Store, FileText, Music, Ticket,
-  Users, ScrollText, MapPin, PlaySquare, Zap, Map, ListMusic, Tag, Building2, Megaphone, Film, Video, KeyRound, Bell, ImagePlus, PanelBottom, ClipboardList, UtensilsCrossed, BarChart3, Search, BookOpen, Sparkles, Brain, Gift, Star,
+  Users, ScrollText, MapPin, PlaySquare, Zap, Map, ListMusic, Tag, Building2, Megaphone, Film, Video, KeyRound, Bell, ImagePlus, PanelBottom, ClipboardList, UtensilsCrossed, BarChart3, Search, BookOpen, Sparkles, Brain, Gift, Star, MessageSquare,
 };
 
 interface NavItem {
@@ -66,8 +66,9 @@ const DEFAULT_GROUPS: NavGroup[] = [
     id: 'store',
     label: '매장 관리',
     items: [
-      { id: 'stores',       href: '/dashboard/stores',       icon: 'Store',         label: '가게 관리' },
-      { id: 'applications', href: '/dashboard/applications', icon: 'ClipboardList', label: '가게 등록 신청' },
+      { id: 'stores',         href: '/dashboard/stores',         icon: 'Store',         label: '가게 관리' },
+      { id: 'consultations',  href: '/dashboard/consultations',  icon: 'MessageSquare', label: '업체 상담' },
+      { id: 'applications',   href: '/dashboard/applications',   icon: 'ClipboardList', label: '가게 등록 신청' },
       { id: 'contexts',     href: '/dashboard/contexts',     icon: 'MapPin',        label: '매장 컨텍스트' },
       { id: 'brands',       href: '/dashboard/brands',       icon: 'Building2',         label: '브랜드관' },
       { id: 'restaurants',        href: '/dashboard/restaurants',              icon: 'UtensilsCrossed', label: '창원 맛집' },
