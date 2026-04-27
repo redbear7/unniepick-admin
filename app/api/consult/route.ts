@@ -50,9 +50,12 @@ export async function POST(req: NextRequest) {
     });
 
     // 텔레그램 알림 (비동기 — 실패해도 응답에 영향 없음)
-    const origin = req.headers.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || '';
-    const chatUrl = `${origin}/consult/chat/${data.token}`;
-    const adminUrl = `${origin}/dashboard/consultations?id=${data.id}`;
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
+      || req.headers.get('origin')
+      || req.headers.get('referer')?.split('/').slice(0, 3).join('/')
+      || '';
+    const chatUrl = `${siteUrl}/consult/chat/${data.token}`;
+    const adminUrl = `${siteUrl}/dashboard/consultations?id=${data.id}`;
 
     notifyNewConsult({
       businessName: business_name.trim(),

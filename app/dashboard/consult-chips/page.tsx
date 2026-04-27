@@ -7,6 +7,7 @@ interface Chip {
   id: string;
   label: string;
   message: string;
+  auto_reply: string | null;
   sort_order: number;
   is_active: boolean;
 }
@@ -17,9 +18,11 @@ export default function ConsultChipsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editLabel, setEditLabel] = useState('');
   const [editMessage, setEditMessage] = useState('');
+  const [editAutoReply, setEditAutoReply] = useState('');
   const [adding, setAdding] = useState(false);
   const [newLabel, setNewLabel] = useState('');
   const [newMessage, setNewMessage] = useState('');
+  const [newAutoReply, setNewAutoReply] = useState('');
   const [saving, setSaving] = useState(false);
 
   const load = async () => {
@@ -39,9 +42,9 @@ export default function ConsultChipsPage() {
     await fetch('/api/admin/consult-chips', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ label: newLabel.trim(), message: newMessage.trim(), sort_order: maxOrder }),
+      body: JSON.stringify({ label: newLabel.trim(), message: newMessage.trim(), auto_reply: newAutoReply.trim() || null, sort_order: maxOrder }),
     });
-    setNewLabel(''); setNewMessage(''); setAdding(false);
+    setNewLabel(''); setNewMessage(''); setNewAutoReply(''); setAdding(false);
     await load();
     setSaving(false);
   };
@@ -52,7 +55,7 @@ export default function ConsultChipsPage() {
     await fetch(`/api/admin/consult-chips/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ label: editLabel.trim(), message: editMessage.trim() }),
+      body: JSON.stringify({ label: editLabel.trim(), message: editMessage.trim(), auto_reply: editAutoReply.trim() || null }),
     });
     setEditingId(null);
     await load();
@@ -150,6 +153,18 @@ export default function ConsultChipsPage() {
                       className={`mt-1 ${inputCls} resize-none`}
                     />
                   </div>
+                  <div>
+                    <label className="text-[11px] font-semibold text-[--text-dim] uppercase tracking-wide flex items-center gap-1.5">
+                      자동 답변 <span className="text-[10px] font-normal text-[--text-dim] normal-case tracking-normal">(클릭 2초 후 관리자 답변으로 자동 전송, 비워두면 없음)</span>
+                    </label>
+                    <textarea
+                      value={editAutoReply}
+                      onChange={e => setEditAutoReply(e.target.value)}
+                      rows={2}
+                      placeholder="예: 안녕하세요! 광고 문의 주셔서 감사합니다. 담당자가 곧 연락드릴게요 😊"
+                      className={`mt-1 ${inputCls} resize-none border-[--accent]/40`}
+                    />
+                  </div>
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleSave(chip.id)}
@@ -190,7 +205,7 @@ export default function ConsultChipsPage() {
 
                   <div
                     className="flex-1 min-w-0 cursor-pointer"
-                    onClick={() => { setEditingId(chip.id); setEditLabel(chip.label); setEditMessage(chip.message); }}
+                    onClick={() => { setEditingId(chip.id); setEditLabel(chip.label); setEditMessage(chip.message); setEditAutoReply(chip.auto_reply ?? ''); }}
                   >
                     <div className="flex items-center gap-2">
                       <span className="text-[14px] font-semibold text-[--text-primary]">{chip.label}</span>
@@ -201,6 +216,11 @@ export default function ConsultChipsPage() {
                       )}
                     </div>
                     <p className="text-[12px] text-[--text-muted] mt-0.5 truncate">{chip.message}</p>
+                    {chip.auto_reply && (
+                      <p className="text-[11px] text-[--accent] mt-0.5 truncate flex items-center gap-1">
+                        <span className="shrink-0">↩</span> {chip.auto_reply}
+                      </p>
+                    )}
                   </div>
 
                   {/* 토글 */}
@@ -248,6 +268,18 @@ export default function ConsultChipsPage() {
               placeholder="예: 안녕하세요! 광고 문의드리고 싶어요."
               rows={2}
               className={`mt-1 ${inputCls} resize-none`}
+            />
+          </div>
+          <div>
+            <label className="text-[11px] font-semibold text-[--text-dim] uppercase tracking-wide flex items-center gap-1.5">
+              자동 답변 <span className="text-[10px] font-normal text-[--text-dim] normal-case tracking-normal">(클릭 2초 후 관리자 답변으로 자동 전송)</span>
+            </label>
+            <textarea
+              value={newAutoReply}
+              onChange={e => setNewAutoReply(e.target.value)}
+              placeholder="예: 안녕하세요! 광고 문의 주셔서 감사합니다. 담당자가 곧 연락드릴게요 😊"
+              rows={2}
+              className={`mt-1 ${inputCls} resize-none border-[--accent]/40`}
             />
           </div>
           <div className="flex gap-2">

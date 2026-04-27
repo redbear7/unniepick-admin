@@ -25,6 +25,7 @@ interface Chip {
   id: string;
   label: string;
   message: string;
+  auto_reply: string | null;
 }
 
 function formatTime(iso: string) {
@@ -45,6 +46,7 @@ export default function ConsultChatPage({ params }: { params: Promise<{ token: s
   const [filePreview, setFilePreview] = useState<{ file: File; preview: string } | null>(null);
   const [loadError, setLoadError] = useState<LoadError>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [chipsUsed, setChipsUsed] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropZoneRef = useRef<HTMLDivElement>(null);
@@ -132,7 +134,8 @@ export default function ConsultChatPage({ params }: { params: Promise<{ token: s
   };
 
   const handleChip = async (chip: Chip) => {
-    if (isSending) return;
+    if (isSending || chipsUsed) return;
+    setChipsUsed(true); // 즉시 칩 숨김
     setIsSending(true);
     try {
       const res = await fetch(`/api/consult/${token}/messages`, {
@@ -140,7 +143,20 @@ export default function ConsultChatPage({ params }: { params: Promise<{ token: s
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: chip.message }),
       });
-      if (res.ok) await loadMessages();
+      if (res.ok) {
+        await loadMessages();
+        // 자동 답변이 있으면 2초 후 전송
+        if (chip.auto_reply?.trim()) {
+          setTimeout(async () => {
+            await fetch(`/api/consult/${token}/auto-reply`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ content: chip.auto_reply }),
+            });
+            await loadMessages();
+          }, 2000);
+        }
+      }
     } finally { setIsSending(false); }
   };
 
@@ -310,8 +326,8 @@ export default function ConsultChatPage({ params }: { params: Promise<{ token: s
         <div ref={bottomRef} />
       </div>
 
-      {/* 빠른 질문 칩 */}
-      {chips.length > 0 && (
+      {/* 빠른 질문 칩 — 1회 사용 후 사라짐 */}
+      {chips.length > 0 && !chipsUsed && (
         <div className="shrink-0 px-3 py-2 bg-white border-t border-gray-100">
           <div className="flex gap-2 overflow-x-auto pb-0.5 scrollbar-hide">
             {chips.map(chip => (

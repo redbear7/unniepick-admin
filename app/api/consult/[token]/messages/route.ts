@@ -90,16 +90,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
     })
     .eq('id', inquiry.id);
 
-  // 텔레그램 포워드 (비동기)
-  const origin = req.headers.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || '';
+  // 텔레그램 포워드 (비동기 — 실패해도 응답에 영향 없음)
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
+    || req.headers.get('origin')
+    || req.headers.get('referer')?.split('/').slice(0, 3).join('/')
+    || '';
   forwardBusinessMessage({
     businessName: inquiry.business_name,
     content: content?.trim() || null,
     fileType: file_type || null,
     fileName: file_name || null,
     replyToMessageId: inquiry.telegram_message_id ?? undefined,
-    adminUrl: `${origin}/dashboard/consultations?id=${inquiry.id}`,
-  });
+    adminUrl: `${siteUrl}/dashboard/consultations?id=${inquiry.id}`,
+  }).catch(e => console.error('[telegram forward]', e));
 
   return NextResponse.json({ message: msg });
 }
