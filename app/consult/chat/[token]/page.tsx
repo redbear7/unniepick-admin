@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, use } from 'react';
 import { createClient } from '@/lib/supabase';
-import { Send, Paperclip, X, FileText, Loader2, ArrowRight } from 'lucide-react';
+import { Send, Paperclip, X, FileText, Loader2 } from 'lucide-react';
 
 interface Message {
   id: string;
@@ -134,38 +134,37 @@ export default function ConsultChatPage({ params }: { params: Promise<{ token: s
   }
 
   return (
-    <div className="h-dvh flex flex-col bg-[#fafafa]">
+    <div className="fixed inset-0 flex flex-col bg-[#f5f5f5]">
       {/* 헤더 */}
-      <div className="bg-white border-b border-gray-100 px-4 h-14 flex items-center gap-3 shrink-0">
-        <div className="w-8 h-8 bg-[#FF6F0F] rounded-full flex items-center justify-center text-white text-[14px]">🌸</div>
-        <div className="flex-1">
-          <p className="text-[15px] font-bold text-gray-900 leading-tight">창원언니쓰</p>
+      <div className="bg-white border-b border-gray-100 px-4 h-14 flex items-center gap-3 shrink-0 z-10">
+        <div className="w-8 h-8 bg-[#FF6F0F] rounded-full flex items-center justify-center text-[14px] shrink-0">🌸</div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[15px] font-bold text-gray-900 leading-tight truncate">
+            {inquiry?.business_name ?? '창원언니쓰 상담'}
+          </p>
           <p className="text-[12px] text-green-500 font-medium">온라인</p>
         </div>
         {inquiry?.status === 'completed' && (
-          <span className="text-[11px] bg-green-50 text-green-700 px-2.5 py-1 rounded-full font-semibold border border-green-100">
+          <span className="text-[11px] bg-green-50 text-green-700 px-2.5 py-1 rounded-full font-semibold border border-green-100 shrink-0">
             상담 완료
           </span>
         )}
       </div>
 
-      {/* 언니픽 등록 유도 배너 */}
-      <div className="bg-gradient-to-r from-orange-500 to-orange-400 px-4 py-3 flex items-center gap-3">
+      {/* 언니픽 등록 유도 배너 — 추후 활성화 */}
+      {/* <div className="bg-gradient-to-r from-orange-500 to-orange-400 px-4 py-3 flex items-center gap-3">
         <div className="flex-1">
           <p className="text-[13px] font-bold text-white">언니픽에 가게를 등록해보세요!</p>
           <p className="text-[11px] text-orange-100">창원 최대 맛집 앱 · 쿠폰 · 리뷰 관리</p>
         </div>
-        <a
-          href="/apply"
-          className="flex items-center gap-1 px-3 py-1.5 bg-white text-[#FF6F0F] text-[12px] font-bold rounded-full hover:opacity-90 transition-opacity shrink-0"
-        >
+        <a href="/apply" className="flex items-center gap-1 px-3 py-1.5 bg-white text-[#FF6F0F] text-[12px] font-bold rounded-full hover:opacity-90 transition-opacity shrink-0">
           등록하기
           <ArrowRight className="w-3.5 h-3.5" />
         </a>
-      </div>
+      </div> */}
 
       {/* 메시지 */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-1">
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-1 overscroll-contain">
         {messages.length === 0 && (
           <div className="text-center py-12">
             <p className="text-[14px] text-gray-400">상담이 시작되었습니다 🌸</p>
@@ -248,9 +247,13 @@ export default function ConsultChatPage({ params }: { params: Promise<{ token: s
       )}
 
       {/* 입력창 */}
-      <div className="px-4 py-3 bg-white border-t border-gray-100 safe-bottom">
+      <div className="shrink-0 bg-white border-t border-gray-100 px-3 pt-2 pb-[env(safe-area-inset-bottom,12px)]"
+           style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
         <div className="flex items-end gap-2 bg-gray-50 rounded-2xl px-3 py-2">
-          <button onClick={() => fileInputRef.current?.click()} className="p-1.5 text-gray-400 hover:text-[#FF6F0F] transition-colors shrink-0 mb-0.5">
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="p-1.5 text-gray-400 active:text-[#FF6F0F] shrink-0 mb-0.5"
+          >
             <Paperclip className="w-5 h-5" />
           </button>
           <textarea
@@ -259,17 +262,18 @@ export default function ConsultChatPage({ params }: { params: Promise<{ token: s
             onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
             placeholder="메시지를 입력하세요..."
             rows={1}
-            className="flex-1 bg-transparent text-[15px] text-gray-900 placeholder:text-gray-400 resize-none focus:outline-none py-1.5 max-h-32 leading-relaxed"
+            className="flex-1 bg-transparent text-[16px] text-gray-900 placeholder:text-gray-400 resize-none focus:outline-none py-1.5 leading-relaxed"
+            style={{ maxHeight: '96px' }}
             onInput={(e) => {
               const t = e.target as HTMLTextAreaElement;
               t.style.height = 'auto';
-              t.style.height = `${Math.min(t.scrollHeight, 128)}px`;
+              t.style.height = `${Math.min(t.scrollHeight, 96)}px`;
             }}
           />
           <button
             onClick={handleSend}
             disabled={(!input.trim() && !filePreview) || isSending || isUploading}
-            className="w-9 h-9 bg-[#FF6F0F] text-white rounded-xl flex items-center justify-center shrink-0 hover:opacity-90 disabled:opacity-40 mb-0.5"
+            className="w-9 h-9 bg-[#FF6F0F] text-white rounded-xl flex items-center justify-center shrink-0 disabled:opacity-40 mb-0.5"
           >
             {isSending || isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
           </button>
