@@ -191,21 +191,26 @@ export default function ConsultPage() {
 
         {/* 검색 엔진 탭 */}
         <div className="flex gap-1.5 mb-3 p-1 bg-gray-100 rounded-2xl">
-          {([
-            { key: 'naver' as const, label: '네이버', color: '#fff',    bg: '#03C75A' },
-            { key: 'kakao' as const, label: '카카오', color: '#3A1D1D', bg: '#FEE500' },
-          ]).map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => { setEngine(tab.key); setResults(null); setSearchError(''); }}
-              style={engine === tab.key ? { backgroundColor: tab.bg, color: tab.color } : {}}
-              className={`flex-1 py-2.5 rounded-xl text-[13px] font-bold transition-all ${
-                engine === tab.key ? 'shadow-sm' : 'text-gray-400 hover:text-gray-600'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+          <button
+            onClick={() => { setEngine('naver'); setResults(null); setSearchError(''); }}
+            className={`flex-1 py-2.5 rounded-xl text-[13px] font-bold transition-all shadow-sm ${
+              engine === 'naver'
+                ? 'bg-[#03C75A] text-white'
+                : 'text-gray-400 hover:text-gray-600'
+            }`}
+          >
+            네이버
+          </button>
+          <button
+            onClick={() => { setEngine('kakao'); setResults(null); setSearchError(''); }}
+            className={`flex-1 py-2.5 rounded-xl text-[13px] font-bold transition-all shadow-sm ${
+              engine === 'kakao'
+                ? 'bg-[#FEE500] text-[#3A1D1D]'
+                : 'text-gray-400 hover:text-gray-600'
+            }`}
+          >
+            카카오
+          </button>
         </div>
 
         {/* 검색창 */}
@@ -240,12 +245,13 @@ export default function ConsultPage() {
             <button
               onClick={() => handleSearch()}
               disabled={!query.trim() || searching}
-              style={{ backgroundColor: engine === 'kakao' ? '#FEE500' : '#03C75A' }}
-              className="shrink-0 w-14 flex items-center justify-center rounded-2xl disabled:opacity-40 transition hover:opacity-90"
+              className={`shrink-0 w-14 flex items-center justify-center rounded-2xl disabled:opacity-40 transition hover:opacity-90 ${
+                engine === 'naver' ? 'bg-[#03C75A]' : 'bg-[#FEE500]'
+              }`}
             >
               {searching
-                ? <Loader2 className="w-5 h-5 animate-spin" style={{ color: engine === 'kakao' ? '#3A1D1D' : '#fff' }} />
-                : <Search className="w-5 h-5" style={{ color: engine === 'kakao' ? '#3A1D1D' : '#fff' }} />}
+                ? <Loader2 className={`w-5 h-5 animate-spin ${engine === 'naver' ? 'text-white' : 'text-[#3A1D1D]'}`} />
+                : <Search className={`w-5 h-5 ${engine === 'naver' ? 'text-white' : 'text-[#3A1D1D]'}`} />}
             </button>
           </div>
           {searchError && <p className="mt-2 text-[13px] text-red-500 px-1">{searchError}</p>}
@@ -254,9 +260,9 @@ export default function ConsultPage() {
         {/* 검색 결과 */}
         {results !== null && results.length > 0 && (
           <div className="space-y-2 mb-4">
-            {results.map(place => (
+            {results.map((place, idx) => (
               <button
-                key={place.kakao_id}
+                key={idx}
                 onClick={() => handleSelectPlace(place)}
                 className="w-full flex items-start gap-3 p-4 bg-white border-2 border-gray-100 hover:border-[#FEE500] hover:bg-yellow-50 rounded-2xl text-left transition group"
               >
@@ -279,7 +285,7 @@ export default function ConsultPage() {
         {/* 하단 버튼들 */}
         <div className="mt-auto pt-4 space-y-3">
           <button
-            onClick={() => { setKakaoPlace(null); setBusinessName(''); setArea(''); setStep('confirm'); }}
+            onClick={() => { setSelectedPlace(null); setBusinessName(''); setArea(''); setStep('confirm'); }}
             className="w-full py-4 rounded-2xl border-2 border-gray-200 hover:border-gray-300 text-gray-600 hover:text-gray-800 font-semibold text-[14px] transition"
           >
             네이버, 카카오에 아직 없어요 → 직접 입력할게요
@@ -343,7 +349,7 @@ export default function ConsultPage() {
               상호명 <span className="text-[#FF6F0F]">*</span>
             </span>
             <input
-              autoFocus={!kakaoPlace}
+              autoFocus={!selectedPlace}
               type="text"
               value={businessName}
               onChange={e => setBusinessName(e.target.value)}
