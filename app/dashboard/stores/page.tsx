@@ -7,7 +7,7 @@ import {
   Search, ToggleLeft, ToggleRight, MapPin, Phone,
   Plus, Pencil, Trash2, X, ImageIcon,
   ExternalLink, User, FlaskConical, History, Calendar, Tag,
-  Camera, Loader2, ChevronDown, ChevronUp,
+  Camera, Loader2, Star,
 } from 'lucide-react';
 
 /* ================================================================== */
@@ -245,12 +245,12 @@ export default function StoresPage() {
   const [naverSearching, setNaverSearching] = useState(false);
   const [naverErr,      setNaverErr]      = useState('');
 
-  /* menu image extraction */
+  /* menu items */
   const menuFileRef = useRef<HTMLInputElement>(null);
-  const [menuExtracting, setMenuExtracting] = useState(false);
-  const [menuExtractErr, setMenuExtractErr] = useState('');
-  const [menuItems, setMenuItems] = useState<{ name: string; price: number | null }[]>([]);
-  const [showMenuItems, setShowMenuItems] = useState(false);
+  const [menuExtracting, setMenuExtracting]   = useState(false);
+  const [menuExtractErr, setMenuExtractErr]   = useState('');
+  const [formMenuItems,  setFormMenuItems]    = useState<{ name: string; price: number | null }[]>([]);
+  const [repIdx,         setRepIdx]           = useState<number | null>(null);
 
   /* coupon counts (list) */
   const [couponCountMap, setCouponCountMap] = useState<Record<string, number>>({});
@@ -404,7 +404,7 @@ export default function StoresPage() {
   const openNew = () => {
     setForm(EMPTY_FORM);
     setNaverQ(''); setNaverResults([]); setNaverErr(''); setSaveError('');
-    setMenuItems([]); setMenuExtractErr(''); setShowMenuItems(false);
+    setFormMenuItems([]); setRepIdx(null); setMenuExtractErr('');
     setActiveTab('info'); setStoreCoupons([]); setShowCouponAdd(false);
     setEditModal('new');
   };
@@ -423,7 +423,13 @@ export default function StoresPage() {
       category_detail:  store.category_detail ?? null,
     });
     setNaverQ(''); setNaverResults([]); setNaverErr(''); setSaveError('');
-    setMenuItems([]); setMenuExtractErr(''); setShowMenuItems(false);
+    setMenuExtractErr('');
+    // price_range에 저장된 메뉴 목록 복원
+    let items: { name: string; price: number | null }[] = [];
+    try { if (store.price_range) items = JSON.parse(store.price_range); } catch { items = []; }
+    setFormMenuItems(items);
+    const idx = items.findIndex(m => m.name === store.price_label && m.price === store.representative_price);
+    setRepIdx(idx >= 0 ? idx : null);
     setActiveTab('info'); setShowCouponAdd(false);
     setCouponError(''); setEditCouponId(null);
     loadStoreCoupons(store.id);
@@ -431,22 +437,18 @@ export default function StoresPage() {
   };
 
   const handleMenuImageExtract = async (file: File) => {
-    setMenuExtracting(true); setMenuExtractErr(''); setMenuItems([]); setShowMenuItems(false);
+    setMenuExtracting(true); setMenuExtractErr('');
     const fd = new FormData();
     fd.append('file', file);
     try {
       const r = await fetch('/api/admin/extract-menu', { method: 'POST', body: fd });
       const data = await r.json();
       if (!r.ok) { setMenuExtractErr(data.error ?? '분석 실패'); return; }
-      setMenuItems(data.items ?? []);
-      setShowMenuItems(true);
-      if (data.representative_price != null) {
-        setForm(f => ({
-          ...f,
-          representative_price: data.representative_price,
-          price_label: data.price_label || f.price_label,
-        }));
-      }
+      const items: { name: string; price: number | null }[] = data.items ?? [];
+      setFormMenuItems(items);
+      // AI가 추천한 대표 메뉴 자동 선택
+      const idx = items.findIndex(m => m.price === data.representative_price);
+      setRepIdx(idx >= 0 ? idx : (items.length > 0 ? 0 : null));
     } catch { setMenuExtractErr('네트워크 오류가 발생했습니다'); }
     finally  { setMenuExtracting(false); }
   };
@@ -465,8 +467,9 @@ export default function StoresPage() {
       image_url:               form.image_url,
       tts_policy_id:           form.tts_policy_id || null,
       subscription_expires_at: form.subscription_expires_at || null,
-      representative_price:    form.representative_price,
-      price_label:             form.price_label   || null,
+      representative_price:    repIdx != null ? (formMenuItems[repIdx]?.price ?? null) : null,
+      price_label:             repIdx != null ? (formMenuItems[repIdx]?.name || null) : null,
+      price_range:             formMenuItems.length > 0 ? JSON.stringify(formMenuItems) : null,
       geo_discoverable:        form.geo_discoverable,
       ...(form.latitude  != null ? { latitude:  form.latitude  } : {}),
       ...(form.longitude != null ? { longitude: form.longitude } : {}),
@@ -1393,11 +1396,11 @@ export default function StoresPage() {
 
                   {/* 가격 정보 */}
                   <div className="border-t border-border-main pt-3">
-                    <div className="flex items-center justify-between mb-2.5">
+                    {/* 헤더 */}
+                    <div className="flex items-center justify-between mb-3">
                       <p className="text-xs font-bold text-[#FF6F0F] flex items-center gap-1">
-                        💰 가격 정보 <span className="font-normal text-dim">(지도 핀 · 가성비 픽 표시)</span>
+                        💰 메뉴 &amp; 가격 <span className="font-normal text-dim">(⭐ 클릭 → 대표 메뉴 지정)</span>
                       </p>
-                      {/* 메뉴판 이미지 자동 입력 */}
                       <button
                         type="button"
                         onClick={() => menuFileRef.current?.click()}
@@ -1406,99 +1409,102 @@ export default function StoresPage() {
                       >
                         {menuExtracting
                           ? <><Loader2 className="w-3 h-3 animate-spin" /> 분석 중...</>
-                          : <><Camera className="w-3 h-3" /> 메뉴판 자동 입력</>
-                        }
+                          : <><Camera className="w-3 h-3" /> 메뉴판 자동 입력</>}
                       </button>
-                      <input
-                        ref={menuFileRef}
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={e => {
-                          const f = e.target.files?.[0];
-                          if (f) { handleMenuImageExtract(f); e.target.value = ''; }
-                        }}
+                      <input ref={menuFileRef} type="file" accept="image/*" className="hidden"
+                        onChange={e => { const f = e.target.files?.[0]; if (f) { handleMenuImageExtract(f); e.target.value = ''; } }}
                       />
                     </div>
 
-                    {/* 오류 */}
                     {menuExtractErr && (
                       <p className="text-[11px] text-red-400 flex items-center gap-1 mb-2">
                         <X className="w-3 h-3" />{menuExtractErr}
                       </p>
                     )}
 
-                    {/* 추출된 메뉴 목록 */}
-                    {menuItems.length > 0 && (
-                      <div className="mb-3 rounded-xl border border-violet-500/20 bg-violet-500/5 overflow-hidden">
-                        <button
-                          type="button"
-                          onClick={() => setShowMenuItems(v => !v)}
-                          className="w-full flex items-center justify-between px-3 py-2 text-[11px] text-violet-400 font-semibold"
-                        >
-                          <span>📋 추출된 메뉴 {menuItems.length}개</span>
-                          {showMenuItems ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                        </button>
-                        {showMenuItems && (
-                          <div className="px-3 pb-2 space-y-1 max-h-40 overflow-y-auto">
-                            {menuItems.map((item, i) => (
-                              <button
-                                key={i}
-                                type="button"
-                                onClick={() => setForm(f => ({
-                                  ...f,
-                                  representative_price: item.price ?? f.representative_price,
-                                  price_label: item.price ? `${item.name} ${item.price.toLocaleString()}원~` : f.price_label,
-                                }))}
-                                className="w-full flex items-center justify-between text-[11px] py-1 px-2 rounded-lg hover:bg-violet-500/10 transition text-left group"
-                              >
-                                <span className="text-primary">{item.name}</span>
-                                <span className="text-violet-400 font-medium">
-                                  {item.price != null ? `${item.price.toLocaleString()}원` : '-'}
-                                  <span className="text-[9px] text-dim ml-1 opacity-0 group-hover:opacity-100 transition">→ 적용</span>
-                                </span>
-                              </button>
-                            ))}
-                          </div>
-                        )}
+                    {/* 메뉴 목록 */}
+                    <div className="space-y-1.5 mb-2">
+                      {formMenuItems.map((item, i) => (
+                        <div key={i} className={`flex items-center gap-1.5 px-2 py-1.5 rounded-xl border transition ${
+                          repIdx === i
+                            ? 'border-amber-400/40 bg-amber-400/5'
+                            : 'border-border-subtle bg-sidebar'
+                        }`}>
+                          {/* 대표 메뉴 별 */}
+                          <button
+                            type="button"
+                            onClick={() => setRepIdx(repIdx === i ? null : i)}
+                            title={repIdx === i ? '대표 메뉴 해제' : '대표 메뉴로 지정'}
+                            className="shrink-0 p-0.5 transition"
+                          >
+                            <Star className={`w-3.5 h-3.5 ${repIdx === i ? 'fill-amber-400 text-amber-400' : 'text-border-subtle hover:text-amber-400'}`} />
+                          </button>
+                          {/* 메뉴명 */}
+                          <input
+                            value={item.name}
+                            onChange={e => setFormMenuItems(prev => prev.map((m, j) => j === i ? { ...m, name: e.target.value } : m))}
+                            placeholder="메뉴명"
+                            className="flex-1 min-w-0 bg-transparent text-sm text-primary placeholder-gray-600 focus:outline-none"
+                          />
+                          {/* 가격 */}
+                          <input
+                            type="number"
+                            value={item.price ?? ''}
+                            onChange={e => setFormMenuItems(prev => prev.map((m, j) => j === i ? { ...m, price: e.target.value ? Number(e.target.value) : null } : m))}
+                            placeholder="가격"
+                            className="w-20 shrink-0 bg-transparent text-sm text-primary placeholder-gray-600 text-right focus:outline-none"
+                          />
+                          <span className="text-[11px] text-dim shrink-0">원</span>
+                          {/* 삭제 */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFormMenuItems(prev => prev.filter((_, j) => j !== i));
+                              setRepIdx(prev => prev === i ? null : prev != null && prev > i ? prev - 1 : prev);
+                            }}
+                            className="shrink-0 p-0.5 text-dim hover:text-red-400 transition"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* 메뉴 추가 */}
+                    <button
+                      type="button"
+                      onClick={() => setFormMenuItems(prev => [...prev, { name: '', price: null }])}
+                      className="w-full py-2 rounded-xl border border-dashed border-border-subtle text-[11px] text-muted hover:text-primary hover:border-border-main flex items-center justify-center gap-1 transition mb-3"
+                    >
+                      <Plus className="w-3 h-3" /> 메뉴 추가
+                    </button>
+
+                    {/* 가격 프리셋 */}
+                    {repIdx != null && (
+                      <div className="flex gap-1.5 mb-2">
+                        {PRICE_PRESETS.map(({ label, value }) => (
+                          <button key={value} type="button"
+                            onClick={() => setFormMenuItems(prev => prev.map((m, j) => j === repIdx ? { ...m, price: value } : m))}
+                            className={`flex-1 py-1.5 rounded-lg text-[10px] font-medium border transition ${
+                              formMenuItems[repIdx]?.price === value
+                                ? 'border-[#FF6F0F] bg-[#FF6F0F]/10 text-[#FF6F0F]'
+                                : 'border-border-subtle bg-sidebar text-muted hover:text-primary'
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        ))}
                       </div>
                     )}
 
-                    <div className="grid grid-cols-2 gap-2 mb-2">
-                      <div>
-                        <label className="text-[10px] text-dim mb-1 block">대표 메뉴 가격 (원)</label>
-                        <input type="number"
-                          value={form.representative_price ?? ''}
-                          onChange={e => setForm(f => ({ ...f, representative_price: e.target.value ? Number(e.target.value) : null }))}
-                          placeholder="예) 8000"
-                          className="w-full bg-sidebar border border-border-subtle rounded-xl px-3 py-2.5 text-sm text-primary placeholder-gray-600 focus:outline-none focus:border-[#FF6F0F] transition" />
-                      </div>
-                      <div>
-                        <label className="text-[10px] text-dim mb-1 block">가격 라벨 (선택)</label>
-                        <input value={form.price_label ?? ''}
-                          onChange={e => setForm(f => ({ ...f, price_label: e.target.value || null }))}
-                          placeholder="런치 8,000원~"
-                          className="w-full bg-sidebar border border-border-subtle rounded-xl px-3 py-2.5 text-sm text-primary placeholder-gray-600 focus:outline-none focus:border-[#FF6F0F] transition" />
-                      </div>
-                    </div>
-                    <div className="flex gap-1.5 mb-2">
-                      {PRICE_PRESETS.map(({ label, value }) => (
-                        <button key={value}
-                          onClick={() => setForm(f => ({ ...f, representative_price: value }))}
-                          className={`flex-1 py-1.5 rounded-lg text-[10px] font-medium border transition ${
-                            form.representative_price === value
-                              ? 'border-[#FF6F0F] bg-[#FF6F0F]/10 text-[#FF6F0F]'
-                              : 'border-border-subtle bg-sidebar text-muted hover:text-primary'
-                          }`}
-                        >
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-                    {form.representative_price != null && (
+                    {/* 대표 메뉴 미리보기 */}
+                    {repIdx != null && formMenuItems[repIdx] && (
                       <p className="text-[10px] text-[#FF6F0F]">
-                        지도 핀: {form.price_label || `${form.representative_price.toLocaleString()}원~`}
-                        {' '}· 가격대: {form.representative_price <= 6000 ? '~6천원' : form.representative_price <= 8000 ? '~8천원' : form.representative_price <= 12000 ? '~1.2만원' : '~2만원'}
+                        ⭐ 대표: {formMenuItems[repIdx].name || '(이름 없음)'}
+                        {formMenuItems[repIdx].price != null && (
+                          <> · {formMenuItems[repIdx].price!.toLocaleString()}원
+                          {' '}({formMenuItems[repIdx].price! <= 6000 ? '~6천원' : formMenuItems[repIdx].price! <= 8000 ? '~8천원' : formMenuItems[repIdx].price! <= 12000 ? '~1.2만원' : '~2만원'})</>
+                        )}
                       </p>
                     )}
                   </div>
