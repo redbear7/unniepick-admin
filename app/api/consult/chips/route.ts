@@ -11,7 +11,7 @@ function adminClient() {
 export async function GET() {
   const { data } = await adminClient()
     .from('consult_chips')
-    .select('id, label, message')
+    .select('id, label, message, auto_reply')
     .eq('is_active', true)
     .order('sort_order', { ascending: true });
 

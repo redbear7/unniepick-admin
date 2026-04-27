@@ -21,13 +21,13 @@ export async function GET() {
 
 // POST — 칩 추가
 export async function POST(req: NextRequest) {
-  const { label, message, sort_order } = await req.json();
+  const { label, message, auto_reply, sort_order } = await req.json();
   if (!label?.trim() || !message?.trim())
     return NextResponse.json({ error: '라벨과 메시지를 입력해주세요.' }, { status: 400 });
 
   const { data, error } = await adminClient()
     .from('consult_chips')
-    .insert({ label: label.trim(), message: message.trim(), sort_order: sort_order ?? 0 })
+    .insert({ label: label.trim(), message: message.trim(), auto_reply: auto_reply?.trim() || null, sort_order: sort_order ?? 0 })
     .select()
     .single();
 
