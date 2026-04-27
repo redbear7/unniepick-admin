@@ -405,7 +405,7 @@ function AddModal({ user, onClose, onAdded }: {
 }
 
 // ── 메인 컴포넌트 ────────────────────────────────────────────
-export default function RecommendFeed() {
+export default function RecommendFeed({ compact = false }: { compact?: boolean }) {
   const [user,     setUser]     = useState<User | null>(null);
   const [recs,     setRecs]     = useState<Rec[]>([]);
   const [loading,  setLoading]  = useState(true);
@@ -469,8 +469,12 @@ export default function RecommendFeed() {
     setAuthLoad(false);
   };
 
+  const wrapStyle: React.CSSProperties = compact
+    ? { maxWidth: '100%', margin: 0, padding: '16px 16px 24px' }
+    : sectionWrap;
+
   return (
-    <section style={sectionWrap}>
+    <section style={wrapStyle}>
       {/* 헤더 */}
       <div style={sectionHead}>
         <div>

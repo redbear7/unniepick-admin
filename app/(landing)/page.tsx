@@ -150,7 +150,7 @@ export default function HomePage() {
   const [aiCount,   setAiCount]   = useState(0);
   const [aiResults, setAiResults] = useState<AiResult[]>([]);
 
-  const [mainView,  setMainView]  = useState<'map'|'recommend'>('map');
+  const [recommendOpen, setRecommendOpen] = useState(false);
 
   /* ── Auth ───────────────────────────────────────────── */
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -724,25 +724,25 @@ export default function HomePage() {
           display:'flex', alignItems:'center', gap:6, overflowX:'auto',
           scrollbarWidth:'none' }}>
 
-          {/* 추천맛집 탭 */}
-          <button onClick={() => setMainView(v => v === 'recommend' ? 'map' : 'recommend')}
+          {/* 추천맛집 버튼 */}
+          <button onClick={() => setRecommendOpen(v => !v)}
             style={{ display:'inline-flex', alignItems:'center', gap:5,
               padding:'7px 15px', borderRadius:100,
-              border: mainView === 'recommend' ? `1.5px solid #FF6F0F` : '1.5px solid #E5E7EB',
-              background: mainView === 'recommend'
+              border: recommendOpen ? `1.5px solid #FF6F0F` : '1.5px solid #E5E7EB',
+              background: recommendOpen
                 ? 'linear-gradient(135deg,#FF6F0F,#FF9A3D)' : '#fff',
               fontSize:13, fontWeight:700,
-              color: mainView === 'recommend' ? '#fff' : '#374151',
+              color: recommendOpen ? '#fff' : '#374151',
               cursor:'pointer', flexShrink:0, whiteSpace:'nowrap',
               fontFamily:'inherit', transition:'all .15s',
-              boxShadow: mainView === 'recommend' ? '0 2px 10px rgba(255,111,15,.3)' : 'none' }}>
+              boxShadow: recommendOpen ? '0 2px 10px rgba(255,111,15,.3)' : 'none' }}>
             🏆 추천맛집
           </button>
 
           {/* 구분선 */}
           <div style={{ width:1, height:20, background:'#E5E7EB', flexShrink:0 }} />
 
-          {mainView === 'map' && CATEGORIES.map(c => (
+          {CATEGORIES.map(c => (
             <button key={c.key} onClick={() => filterCat(c.key)}
               style={{ display:'inline-flex', alignItems:'center', gap:5,
                 padding:'7px 15px', borderRadius:100,
@@ -758,15 +758,8 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* ═══ RECOMMEND FEED VIEW ══════════════════════════ */}
-      {mainView === 'recommend' && (
-        <div style={{ flex:1, overflowY:'auto', background:'linear-gradient(180deg,#FFF8F5 0%,#fff 100%)' }}>
-          <RecommendFeed />
-        </div>
-      )}
-
       {/* ═══ MAP AREA ══════════════════════════════════════ */}
-      <div style={{ flex:1, position:'relative', overflow:'hidden', display: mainView === 'map' ? 'block' : 'none' }}>
+      <div style={{ flex:1, position:'relative', overflow:'hidden' }}>
 
         {/* Kakao Map */}
         <div ref={mapContainerRef} style={{ width:'100%', height:'100%' }} />
@@ -936,6 +929,52 @@ export default function HomePage() {
                 조건에 맞는 가게를 찾지 못했어요.<br />조건을 조금 바꿔보세요.
               </div>
             )}
+          </div>
+        </div>
+
+        {/* ── 추천맛집 바텀 시트 ────────────────────────── */}
+        {/* 반투명 딤 (지도 위) */}
+        {recommendOpen && (
+          <div
+            onClick={() => setRecommendOpen(false)}
+            style={{ position:'absolute', inset:0, background:'rgba(0,0,0,.25)',
+              zIndex:25, backdropFilter:'blur(1px)' }}
+          />
+        )}
+
+        <div style={{
+          position:'absolute', left:0, right:0, bottom:0,
+          height:'72vh',
+          background:'#fff',
+          borderRadius:'20px 20px 0 0',
+          boxShadow:'0 -8px 40px rgba(0,0,0,.18)',
+          transform: recommendOpen ? 'translateY(0)' : 'translateY(100%)',
+          transition:'transform .3s cubic-bezier(.4,0,.2,1)',
+          zIndex:26,
+          display:'flex', flexDirection:'column',
+          overflow:'hidden',
+        }}>
+          {/* 핸들 + 헤더 */}
+          <div style={{ flexShrink:0, padding:'12px 20px 8px', borderBottom:'1px solid #EAECEF',
+            display:'flex', alignItems:'center', justifyContent:'space-between',
+            background:'#fff' }}>
+            {/* 드래그 핸들 */}
+            <div style={{ position:'absolute', top:8, left:'50%', transform:'translateX(-50%)',
+              width:40, height:4, borderRadius:2, background:'#D1D5DB' }} />
+            <span style={{ fontWeight:800, fontSize:15, color:'#191F28', marginTop:4 }}>
+              🏆 나만의 추천맛집
+            </span>
+            <button onClick={() => setRecommendOpen(false)}
+              style={{ width:28, height:28, borderRadius:'50%', background:'#F3F4F6',
+                border:'none', display:'flex', alignItems:'center', justifyContent:'center',
+                fontSize:14, cursor:'pointer', fontFamily:'inherit', color:'#374151',
+                marginTop:4 }}>
+              ✕
+            </button>
+          </div>
+          {/* 피드 스크롤 영역 */}
+          <div style={{ flex:1, overflowY:'auto' }}>
+            <RecommendFeed compact />
           </div>
         </div>
       </div>
