@@ -11,16 +11,19 @@ import {
 // ── 창원 5개 구 + 기타 ─────────────────────────────────────────────────────────
 const DISTRICTS = ['의창구', '성산구', '마산합포구', '마산회원구', '진해구', '기타'];
 
-interface KakaoPlace {
-  kakao_id: string;
+interface SearchPlace {
   place_name: string;
   address: string;
   road_address: string | null;
   phone: string | null;
-  category: string;
   category_raw: string;
   place_url: string | null;
 }
+
+// 하위 호환용 alias
+type KakaoPlace = SearchPlace & { kakao_id: string };
+
+type SearchEngine = 'kakao' | 'naver';
 
 function detectDistrict(address: string): string {
   for (const d of ['의창구', '성산구', '마산합포구', '마산회원구', '진해구'])
@@ -46,15 +49,16 @@ export default function ConsultPage() {
   const [error, setError] = useState('');
 
   // 검색
+  const [engine, setEngine] = useState<SearchEngine>('kakao');
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<KakaoPlace[] | null>(null);
+  const [results, setResults] = useState<SearchPlace[] | null>(null);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState('');
 
   // 업체 확인 (일반)
   const [businessName, setBusinessName] = useState('');
   const [area, setArea] = useState('');
-  const [kakaoPlace, setKakaoPlace] = useState<KakaoPlace | null>(null);
+  const [selectedPlace, setSelectedPlace] = useState<SearchPlace | null>(null);
 
   // 광고대행사
   const [agencyName, setAgencyName] = useState('');
@@ -63,20 +67,26 @@ export default function ConsultPage() {
   const [cardFile, setCardFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // ── 카카오 검색 ──────────────────────────────────────────────────────────────
-  const handleSearch = async () => {
+  // ── 검색 (카카오 / 네이버) ────────────────────────────────────────────────────
+  const handleSearch = async (eng: SearchEngine = engine) => {
     const q = query.trim();
     if (!q) return;
     setSearching(true); setSearchError(''); setResults(null);
     try {
-      let coords = '';
-      try {
-        const pos = await new Promise<GeolocationPosition>((res, rej) =>
-          navigator.geolocation.getCurrentPosition(res, rej, { timeout: 3000 })
-        );
-        coords = `&x=${pos.coords.longitude}&y=${pos.coords.latitude}`;
-      } catch { /* 위치 없이 검색 */ }
-      const res = await fetch(`/api/kakao-place?q=${encodeURIComponent(q)}${coords}&size=5`);
+      let url: string;
+      if (eng === 'kakao') {
+        let coords = '';
+        try {
+          const pos = await new Promise<GeolocationPosition>((res, rej) =>
+            navigator.geolocation.getCurrentPosition(res, rej, { timeout: 3000 })
+          );
+          coords = `&x=${pos.coords.longitude}&y=${pos.coords.latitude}`;
+        } catch { /* 위치 없이 검색 */ }
+        url = `/api/kakao-place?q=${encodeURIComponent(q)}${coords}&size=5`;
+      } else {
+        url = `/api/naver-place?q=${encodeURIComponent(q)}&size=5`;
+      }
+      const res = await fetch(url);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? '검색 실패');
       setResults(data.places ?? []);
@@ -86,8 +96,8 @@ export default function ConsultPage() {
     } finally { setSearching(false); }
   };
 
-  const handleSelectPlace = (place: KakaoPlace) => {
-    setKakaoPlace(place);
+  const handleSelectPlace = (place: SearchPlace) => {
+    setSelectedPlace(place);
     setBusinessName(place.place_name);
     setArea(detectDistrict(place.road_address ?? place.address));
     setStep('confirm');
@@ -117,7 +127,7 @@ export default function ConsultPage() {
     business_name: businessName.trim(),
     area,
     has_agency: false,
-    memo: kakaoPlace?.place_url ? `카카오: ${kakaoPlace.place_url}` : null,
+    memo: selectedPlace?.place_url ? `${engine === 'naver' ? '네이버' : '카카오'}: ${selectedPlace.place_url}` : null,
   });
 
   // ── 광고대행사 제출 ──────────────────────────────────────────────────────────
@@ -179,14 +189,41 @@ export default function ConsultPage() {
           </p>
         </div>
 
-        {/* 카카오 검색창 */}
+        {/* 검색 엔진 탭 */}
+        <div className="flex gap-1.5 mb-3 p-1 bg-gray-100 rounded-2xl">
+          {([
+            { key: 'kakao' as const, label: '카카오', color: '#3A1D1D', bg: '#FEE500' },
+            { key: 'naver' as const, label: '네이버', color: '#fff',    bg: '#03C75A' },
+          ]).map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => { setEngine(tab.key); setResults(null); setSearchError(''); }}
+              style={engine === tab.key ? { backgroundColor: tab.bg, color: tab.color } : {}}
+              className={`flex-1 py-2.5 rounded-xl text-[13px] font-bold transition-all ${
+                engine === tab.key ? 'shadow-sm' : 'text-gray-400 hover:text-gray-600'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* 검색창 */}
         <div className="mb-3">
           <div className="flex gap-2">
-            <div className="flex-1 flex items-center border-2 border-gray-200 focus-within:border-[#FEE500] rounded-2xl overflow-hidden bg-white transition-colors">
+            <div className={`flex-1 flex items-center border-2 rounded-2xl overflow-hidden bg-white transition-colors ${
+              engine === 'kakao' ? 'focus-within:border-[#FEE500]' : 'focus-within:border-[#03C75A]'
+            } border-gray-200`}>
               <span className="pl-4 shrink-0">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="#3A1D1D">
-                  <path d="M12 3C6.477 3 2 6.477 2 10.6c0 2.7 1.707 5.073 4.29 6.424l-.895 3.312a.4.4 0 00.59.44L10.04 18.3a11.3 11.3 0 001.96.17c5.523 0 10-3.477 10-7.87C22 6.477 17.523 3 12 3z"/>
-                </svg>
+                {engine === 'kakao' ? (
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="#3A1D1D">
+                    <path d="M12 3C6.477 3 2 6.477 2 10.6c0 2.7 1.707 5.073 4.29 6.424l-.895 3.312a.4.4 0 00.59.44L10.04 18.3a11.3 11.3 0 001.96.17c5.523 0 10-3.477 10-7.87C22 6.477 17.523 3 12 3z"/>
+                  </svg>
+                ) : (
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="#03C75A">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/>
+                  </svg>
+                )}
               </span>
               <input
                 value={query}
@@ -201,13 +238,14 @@ export default function ConsultPage() {
               )}
             </div>
             <button
-              onClick={handleSearch}
+              onClick={() => handleSearch()}
               disabled={!query.trim() || searching}
-              className="shrink-0 w-14 flex items-center justify-center rounded-2xl bg-[#FEE500] hover:bg-[#f0d800] disabled:opacity-40 transition"
+              style={{ backgroundColor: engine === 'kakao' ? '#FEE500' : '#03C75A' }}
+              className="shrink-0 w-14 flex items-center justify-center rounded-2xl disabled:opacity-40 transition hover:opacity-90"
             >
               {searching
-                ? <Loader2 className="w-5 h-5 animate-spin text-[#3A1D1D]" />
-                : <Search className="w-5 h-5 text-[#3A1D1D]" />}
+                ? <Loader2 className="w-5 h-5 animate-spin" style={{ color: engine === 'kakao' ? '#3A1D1D' : '#fff' }} />
+                : <Search className="w-5 h-5" style={{ color: engine === 'kakao' ? '#3A1D1D' : '#fff' }} />}
             </button>
           </div>
           {searchError && <p className="mt-2 text-[13px] text-red-500 px-1">{searchError}</p>}
@@ -271,15 +309,25 @@ export default function ConsultPage() {
       <Header onBack={() => setStep('search')} />
       <main className="flex-1 px-5 py-8 max-w-[480px] mx-auto w-full">
 
-        {/* 카카오 자동입력 뱃지 */}
-        {kakaoPlace && (
-          <div className="flex items-center gap-2 mb-5 px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-xl">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="#92661a" className="shrink-0">
-              <path d="M12 3C6.477 3 2 6.477 2 10.6c0 2.7 1.707 5.073 4.29 6.424l-.895 3.312a.4.4 0 00.59.44L10.04 18.3a11.3 11.3 0 001.96.17c5.523 0 10-3.477 10-7.87C22 6.477 17.523 3 12 3z"/>
-            </svg>
-            <span className="text-[12px] font-semibold text-yellow-800 flex-1">카카오에서 정보를 불러왔어요 — 확인 후 입장하세요</span>
-            <Check className="w-3.5 h-3.5 text-yellow-600 shrink-0" />
-          </div>
+        {/* 자동입력 뱃지 */}
+        {selectedPlace && (
+          engine === 'naver' ? (
+            <div className="flex items-center gap-2 mb-5 px-3 py-2 bg-green-50 border border-green-200 rounded-xl">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="#03C75A" className="shrink-0">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
+              </svg>
+              <span className="text-[12px] font-semibold text-green-800 flex-1">네이버에서 정보를 불러왔어요 — 확인 후 입장하세요</span>
+              <Check className="w-3.5 h-3.5 text-green-600 shrink-0" />
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 mb-5 px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-xl">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="#92661a" className="shrink-0">
+                <path d="M12 3C6.477 3 2 6.477 2 10.6c0 2.7 1.707 5.073 4.29 6.424l-.895 3.312a.4.4 0 00.59.44L10.04 18.3a11.3 11.3 0 001.96.17c5.523 0 10-3.477 10-7.87C22 6.477 17.523 3 12 3z"/>
+              </svg>
+              <span className="text-[12px] font-semibold text-yellow-800 flex-1">카카오에서 정보를 불러왔어요 — 확인 후 입장하세요</span>
+              <Check className="w-3.5 h-3.5 text-yellow-600 shrink-0" />
+            </div>
+          )
         )}
 
         <div className="mb-7">

@@ -1,124 +1,64 @@
+/**
+ * GET /api/naver-place?q=검색어&size=5
+ *
+ * 네이버 지역 검색 API
+ * 결과: place_name, address, road_address, phone, category, place_url
+ *
+ * 필요 환경변수: NAVER_CLIENT_ID, NAVER_CLIENT_SECRET
+ */
 import { NextRequest, NextResponse } from 'next/server';
 
-const HEADERS = {
-  'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-  'Accept-Language': 'ko-KR,ko;q=0.9',
-  'Accept': 'text/html,application/xhtml+xml',
-};
-
-/** naver.me 단축 URL → 실제 URL (수동 리다이렉트) */
-async function resolveShortUrl(url: string): Promise<string> {
-  let current = url;
-  for (let i = 0; i < 5; i++) {
-    const res = await fetch(current, { method: 'GET', redirect: 'manual', headers: HEADERS });
-    const loc = res.headers.get('location');
-    if (!loc) return current;
-    current = loc.startsWith('http') ? loc : new URL(loc, current).href;
-  }
-  return current;
-}
-
-/** URL에서 장소 ID 추출 */
-function extractPlaceId(url: string): string | null {
-  const m = url.match(/\/(?:place|entry\/place)\/(\d{5,})/);
-  return m ? m[1] : null;
-}
-
-/** URL 쿼리에서 좌표 추출 */
-function extractCoordsFromUrl(url: string) {
-  try {
-    const u = new URL(url);
-    const lat = u.searchParams.get('lat') ?? u.searchParams.get('latitude');
-    const lng = u.searchParams.get('lng') ?? u.searchParams.get('longitude');
-    if (lat && lng) return { lat: parseFloat(lat), lng: parseFloat(lng) };
-  } catch {}
-  return null;
-}
-
-/** HTML에서 첫 번째 og 메타 값 추출 */
-function ogMeta(html: string, prop: string): string {
-  const m = html.match(new RegExp(
-    `<meta[^>]+property=["']${prop}["'][^>]+content=["']([^"']+)["']`, 'i'
-  )) ?? html.match(new RegExp(
-    `<meta[^>]+content=["']([^"']+)["'][^>]+property=["']${prop}["']`, 'i'
-  ));
-  return m ? m[1].replace(/&amp;/g, '&').trim() : '';
+function stripHtml(str: string) {
+  return str.replace(/<[^>]*>/g, '');
 }
 
 export async function GET(req: NextRequest) {
-  const raw = req.nextUrl.searchParams.get('url');
-  if (!raw) return NextResponse.json({ error: 'url 파라미터가 필요합니다' }, { status: 400 });
+  const clientId     = process.env.NAVER_CLIENT_ID;
+  const clientSecret = process.env.NAVER_CLIENT_SECRET;
 
-  let url = raw.trim();
-
-  // 단축 URL 해제
-  if (url.includes('naver.me')) {
-    try { url = await resolveShortUrl(url); }
-    catch { return NextResponse.json({ error: '단축 URL 해석에 실패했습니다' }, { status: 400 }); }
+  if (!clientId || !clientSecret) {
+    return NextResponse.json({ error: 'NAVER_CLIENT_ID/SECRET 환경변수가 없습니다' }, { status: 500 });
   }
 
-  // URL 쿼리에서 좌표 미리 추출
-  const urlCoords = extractCoordsFromUrl(url);
+  const q    = req.nextUrl.searchParams.get('q')?.trim();
+  const size = req.nextUrl.searchParams.get('size') ?? '5';
 
-  const placeId = extractPlaceId(url);
-  if (!placeId) {
-    return NextResponse.json({ error: `유효한 네이버 업체 URL이 아닙니다\n해석 결과: ${url}` }, { status: 400 });
-  }
+  if (!q) return NextResponse.json({ error: '검색어(q)가 필요합니다' }, { status: 400 });
 
-  // pcmap 페이지 fetch — /place/{id} 로 요청하면 올바른 타입으로 자동 리다이렉트됨
-  let html: string;
+  const params = new URLSearchParams({ query: q, display: size, sort: 'comment' });
+
   try {
-    const res = await fetch(`https://pcmap.place.naver.com/place/${placeId}/home`, {
-      headers: HEADERS,
-      redirect: 'follow',
-      next: { revalidate: 0 },
-    });
-    if (!res.ok) return NextResponse.json({ error: `페이지를 가져오지 못했습니다 (${res.status})` }, { status: 502 });
-    html = await res.text();
-  } catch {
-    return NextResponse.json({ error: '네이버 페이지 접근 중 오류가 발생했습니다' }, { status: 500 });
+    const res = await fetch(
+      `https://openapi.naver.com/v1/search/local.json?${params}`,
+      {
+        headers: {
+          'X-Naver-Client-Id':     clientId,
+          'X-Naver-Client-Secret': clientSecret,
+        },
+        next: { revalidate: 0 },
+      }
+    );
+
+    if (!res.ok) {
+      const err = await res.text();
+      console.error('[naver-place] API error', res.status, err);
+      return NextResponse.json({ error: `네이버 API 오류 (${res.status})` }, { status: 502 });
+    }
+
+    const json = await res.json();
+    const places = (json.items ?? []).map((item: any, idx: number) => ({
+      naver_id:     String(idx),
+      place_name:   stripHtml(item.title ?? ''),
+      address:      item.roadAddress || item.address || '',
+      road_address: item.roadAddress || null,
+      phone:        item.telephone || null,
+      category:     item.category || '',
+      category_raw: item.category || '',
+      place_url:    item.link || null,
+    }));
+
+    return NextResponse.json({ places });
+  } catch (e) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 500 });
   }
-
-  /* ---- 가게명: og:title에서 " : 네이버" 제거 ---- */
-  const rawTitle = ogMeta(html, 'og:title');
-  const name = rawTitle.replace(/\s*:\s*네이버.*$/, '').trim();
-
-  /* ---- 주소: data-kakaotalk-description 속성 ---- */
-  const addrMatch = html.match(/data-kakaotalk-description="([^"]+)"/);
-  const address = addrMatch ? addrMatch[1].replace(/&amp;/g, '&').trim() : '';
-
-  /* ---- 전화번호: 0XX(X)-XXXX-XXXX 패턴 (첫 번째) ---- */
-  const phoneMatches = html.match(/0\d{1,3}-\d{3,4}-\d{4}/g) ?? [];
-  const phone = phoneMatches[0] ?? '';
-
-  /* ---- 카테고리: "category":"..." JSON 패턴 ---- */
-  const catMatch = html.match(/"category"\s*:\s*"([^"]{2,30})"/);
-  const category = catMatch ? catMatch[1] : '';
-
-  /* ---- 이미지: og:image ---- */
-  const rawImage = ogMeta(html, 'og:image');
-  // pstatic.net common URL에서 실제 src 추출
-  const imgSrcMatch = rawImage.match(/[?&]src=([^&]+)/);
-  const image_url = imgSrcMatch
-    ? decodeURIComponent(imgSrcMatch[1])
-    : rawImage;
-
-  /* ---- 좌표: URL 쿼리 우선 ---- */
-  const latitude  = urlCoords?.lat ?? null;
-  const longitude = urlCoords?.lng ?? null;
-
-  if (!name) {
-    return NextResponse.json({ error: '업체 정보를 찾을 수 없습니다. 네이버 지도 URL을 확인해 주세요.' }, { status: 404 });
-  }
-
-  return NextResponse.json({
-    name,
-    address,
-    phone,
-    category,
-    latitude,
-    longitude,
-    image_url,
-    naver_place_id: placeId,
-  });
 }
