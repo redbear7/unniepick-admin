@@ -136,8 +136,6 @@ export default function HomePage() {
   const [searchQuery,    setSearchQuery]    = useState('');
   const [searchDropOpen, setSearchDropOpen] = useState(false);
   const [locDropOpen,    setLocDropOpen]    = useState(false);
-  const [storePanelOpen, setStorePanelOpen] = useState(false);
-  const [aiPanelOpen,    setAiPanelOpen]    = useState(false);
   const [randomPicks,    setRandomPicks]    = useState<typeof PICK_POOL>([]);
   const [searchTab,      setSearchTab]      = useState<'popular'|'recent'>('popular');
   const [toastMsg,       setToastMsg]       = useState('');
@@ -150,7 +148,7 @@ export default function HomePage() {
   const [aiCount,   setAiCount]   = useState(0);
   const [aiResults, setAiResults] = useState<AiResult[]>([]);
 
-  const [recommendOpen, setRecommendOpen] = useState(false);
+  const [leftTab, setLeftTab] = useState<'stores'|'recommend'>('stores');
 
   /* ── Auth ───────────────────────────────────────────── */
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -288,7 +286,6 @@ export default function HomePage() {
   useEffect(() => {
     window.__selectStore = (id: number) => {
       setSelectedId(id);
-      setStorePanelOpen(true);
       const s = MOCK_STORES.find(x => x.id === id);
       if (s && kakaoMapRef.current && window.kakao) {
         kakaoMapRef.current.setCenter(new window.kakao.maps.LatLng(s.lat, s.lng));
@@ -337,8 +334,7 @@ export default function HomePage() {
   /* ── AI Search ──────────────────────────────────────── */
   const handleSearch = async (q: string) => {
     if (!q.trim()) return;
-    setAiPanelOpen(true);
-    setStorePanelOpen(false);
+    setLeftTab('stores');
     setAiStage('parsing');
     setAiFilter(null);
     setAiCount(0);
@@ -472,7 +468,7 @@ export default function HomePage() {
   const PU = '#6742F5';
 
   return (
-    <div style={{ height:'100vh', display:'flex', flexDirection:'column', overflow:'hidden',
+    <div style={{ height:'100vh', display:'flex', overflow:'hidden',
       background:'#fff', fontFamily:"'Pretendard Variable','Noto Sans KR',-apple-system,sans-serif",
       color:'#111827' }}>
 
@@ -482,22 +478,20 @@ export default function HomePage() {
         onLoad={handleKakaoLoad}
       />
 
-      {/* ═══ HEADER ════════════════════════════════════════ */}
-      <header style={{ flexShrink:0, background:'#fff', borderBottom:'1px solid #E5E7EB',
-        position:'sticky', top:0, zIndex:200 }}>
-        <div style={{ maxWidth:1400, margin:'0 auto', padding:'0 20px',
-          display:'grid', gridTemplateColumns:'1fr auto 1fr',
-          alignItems:'center', height:64 }}>
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {/* LEFT PANEL                                                   */}
+      {/* ═══════════════════════════════════════════════════════════ */}
+      <div style={{ width:380, flexShrink:0, display:'flex', flexDirection:'column',
+        borderRight:'1px solid #E5E7EB', background:'#fff', zIndex:10,
+        boxShadow:'2px 0 12px rgba(0,0,0,.06)' }}>
 
-          {/* 좌측 여백 */}
-          <div />
-
-          {/* ── 로고 + 검색창 (가운데) ──────────────────────── */}
-          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+        {/* ─ 로고 헤더 ─ */}
+        <div style={{ padding:'14px 16px 0', flexShrink:0 }}>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
 
             {/* 로고 */}
             <div style={{ display:'flex', alignItems:'center', gap:7,
-              fontSize:18, fontWeight:900, color:OR, cursor:'pointer', flexShrink:0 }}>
+              fontSize:18, fontWeight:900, color:OR }}>
               <div style={{ width:28, height:28, background:OR, borderRadius:7,
                 display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, color:'#fff' }}>
                 🩷
@@ -505,481 +499,368 @@ export default function HomePage() {
               언니픽
             </div>
 
-          <div style={{ width:440, position:'relative' }}>
+            {/* 우측 버튼 */}
+            <div style={{ display:'flex', gap:6, alignItems:'center' }}>
+              {authUser ? (
+                <div style={{ position:'relative' }}>
+                  <button id="auth-btn" onClick={() => setAuthMenuOpen(v => !v)}
+                    style={{ display:'flex', alignItems:'center', gap:5, padding:'5px 10px',
+                      borderRadius:100, border:`1.5px solid ${OR}`, cursor:'pointer',
+                      background:'#fff', fontFamily:'inherit' }}>
+                    <div style={{ width:22, height:22, borderRadius:'50%', background:OR,
+                      color:'#fff', fontSize:10, fontWeight:800, flexShrink:0,
+                      display:'flex', alignItems:'center', justifyContent:'center' }}>
+                      {(authUser.nickname ?? '나')[0]}
+                    </div>
+                    <span style={{ fontSize:12, fontWeight:700, color:'#374151' }}>
+                      {authUser.nickname ?? '언니픽회원'}
+                    </span>
+                  </button>
+                  {authMenuOpen && (
+                    <div id="auth-menu" style={{ position:'absolute', top:'calc(100% + 6px)', right:0,
+                      background:'#fff', border:'1px solid #E5E7EB', borderRadius:12,
+                      boxShadow:'0 8px 24px rgba(0,0,0,.1)', zIndex:500, minWidth:140, overflow:'hidden' }}>
+                      <div style={{ padding:'10px 14px', borderBottom:'1px solid #E5E7EB',
+                        fontSize:12, fontWeight:700, color:'#111827' }}>
+                        {authUser.nickname ?? '언니픽회원'}
+                      </div>
+                      <button onClick={handleSignOut}
+                        style={{ width:'100%', padding:'9px 14px', background:'none', border:'none',
+                          textAlign:'left', fontSize:12, color:'#6B7280', cursor:'pointer', fontFamily:'inherit' }}
+                        onMouseEnter={e => (e.currentTarget.style.background='#F9FAFB')}
+                        onMouseLeave={e => (e.currentTarget.style.background='transparent')}>
+                        로그아웃
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <button onClick={openAuthModal}
+                  style={{ padding:'6px 14px', borderRadius:100, fontSize:12, fontWeight:700,
+                    color:'#fff', background:OR, border:'none', cursor:'pointer', fontFamily:'inherit' }}>
+                  로그인
+                </button>
+              )}
+              <button onClick={() => setApplyOpen(true)}
+                style={{ padding:'6px 12px', borderRadius:6, fontSize:12, fontWeight:700,
+                  color:'#fff', background:PU, border:'none', cursor:'pointer', fontFamily:'inherit' }}>
+                가게등록
+              </button>
+            </div>
+          </div>
+
+          {/* ─ 위치 버튼 ─ */}
+          <button id="loc-btn" type="button"
+            onClick={() => setLocDropOpen(v => !v)}
+            style={{ display:'flex', alignItems:'center', gap:4, padding:'5px 0',
+              fontSize:12, fontWeight:700, color: locDropOpen ? OR : '#374151',
+              background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', marginBottom:6 }}>
+            <span>{locText}</span>
+            <span style={{ fontSize:10, color:'#9CA3AF' }}>▾</span>
+          </button>
+
+          {/* 위치 드롭다운 */}
+          {locDropOpen && (
+            <div id="loc-drop" style={{ position:'absolute', top:88, left:16, width:240,
+              background:'#fff', border:'1.5px solid #D1D5DB', borderRadius:16,
+              boxShadow:'0 8px 32px rgba(0,0,0,.12)', zIndex:500, overflow:'hidden' }}>
+              <div style={{ padding:'10px 12px', borderBottom:'1px solid #E5E7EB',
+                fontSize:12, fontWeight:800, color:'#111827', display:'flex', justifyContent:'space-between' }}>
+                <span>지역 선택</span>
+                <span style={{ fontSize:10, fontWeight:500, color:'#9CA3AF' }}>창원시</span>
+              </div>
+              <div onClick={() => { getGPS(); setLocDropOpen(false); }}
+                style={{ display:'flex', alignItems:'center', gap:8, padding:'9px 12px',
+                  borderBottom:'1px solid #E5E7EB', cursor:'pointer' }}
+                onMouseEnter={e => (e.currentTarget.style.background=OR_S)}
+                onMouseLeave={e => (e.currentTarget.style.background='transparent')}>
+                <span style={{ fontSize:14 }}>🎯</span>
+                <div>
+                  <div style={{ fontSize:12, fontWeight:700, color:OR }}>현재 위치 사용</div>
+                  <div style={{ fontSize:10, color:'#9CA3AF' }}>GPS로 자동 감지</div>
+                </div>
+              </div>
+              {[
+                { name:'의창구',     lat:35.2279, lng:128.6811 },
+                { name:'성산구',     lat:35.2229, lng:128.6827 },
+                { name:'마산합포구', lat:35.1946, lng:128.5688 },
+                { name:'마산회원구', lat:35.2065, lng:128.5746 },
+                { name:'진해구',     lat:35.1487, lng:128.6672 },
+              ].map(r => (
+                <div key={r.name} onClick={() => selectRegion(r.name, r.lat, r.lng)}
+                  style={{ padding:'8px 12px', cursor:'pointer' }}
+                  onMouseEnter={e => (e.currentTarget.style.background='#F9FAFB')}
+                  onMouseLeave={e => (e.currentTarget.style.background='transparent')}>
+                  <div style={{ fontSize:12, fontWeight:700, color:'#374151' }}>{r.name}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* ─ 검색창 ─ */}
+          <div style={{ position:'relative', marginBottom:12 }}>
             <form id="search-form" onSubmit={onSubmit}
               style={{ display:'flex', alignItems:'center', background:'#fff',
                 border:`1.5px solid ${searchDropOpen ? OR : '#D1D5DB'}`,
                 borderRadius:100,
-                boxShadow: searchDropOpen ? `0 2px 12px rgba(255,111,15,.12)` : '0 1px 4px rgba(0,0,0,.06)',
-                overflow:'visible', transition:'border-color .15s, box-shadow .15s' }}>
-
-              {/* 위치 버튼 */}
-              <button id="loc-btn" type="button"
-                onClick={() => setLocDropOpen(v => !v)}
-                style={{ display:'flex', alignItems:'center', gap:4, padding:'0 12px', height:40,
-                  flexShrink:0,
-                  fontSize:12, fontWeight:700, color: locDropOpen ? OR : '#374151',
-                  background:'none', border:'none', borderRight:'1px solid #E5E7EB',
-                  cursor:'pointer', fontFamily:'inherit', whiteSpace:'nowrap' }}>
-                <span>{locText}</span>
-                <span style={{ fontSize:10, color:'#9CA3AF' }}>▾</span>
-              </button>
-
-              {/* 검색 아이콘 */}
-              <div style={{ width:34, height:40, flexShrink:0, display:'flex',
+                boxShadow: searchDropOpen ? `0 2px 8px rgba(255,111,15,.12)` : '0 1px 3px rgba(0,0,0,.06)',
+                overflow:'visible' }}>
+              <div style={{ width:32, height:40, flexShrink:0, display:'flex',
                 alignItems:'center', justifyContent:'center', color:'#9CA3AF', fontSize:14 }}>
                 🔍
               </div>
-
-              {/* Input */}
               <input
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 onFocus={openSearchDrop}
-                placeholder="혜택 검색"
+                placeholder="혜택·가게 검색"
                 autoComplete="off"
                 style={{ flex:1, height:40, padding:'0 2px', border:'none', outline:'none',
                   background:'transparent', fontFamily:'inherit', fontSize:13, color:'#374151' }}
               />
-
-              {/* AI 추천 버튼 */}
               <button type="button"
                 onClick={() => handleSearch(searchQuery || randomPicks[0]?.text || '아메리카노 500원 할인')}
-                style={{ margin:4, padding:'0 12px', height:32, borderRadius:100, border:'none',
-                  background:`linear-gradient(135deg, ${PU}, #9B6FF5)`,
+                style={{ margin:4, padding:'0 10px', height:32, borderRadius:100, border:'none',
+                  background:`linear-gradient(135deg,${PU},#9B6FF5)`,
                   color:'#fff', fontSize:12, fontWeight:700,
-                  display:'flex', alignItems:'center', gap:4, cursor:'pointer', flexShrink:0,
-                  whiteSpace:'nowrap', boxShadow:'0 1px 6px rgba(103,66,245,.25)',
-                  fontFamily:'inherit' }}>
+                  display:'flex', alignItems:'center', gap:3, cursor:'pointer', flexShrink:0,
+                  whiteSpace:'nowrap', fontFamily:'inherit' }}>
                 ✨ AI
               </button>
             </form>
 
-            {/* ── 검색 드롭다운 ─────────────────────────────── */}
+            {/* 검색 드롭다운 */}
             {searchDropOpen && (
-              <div id="search-drop" style={{ position:'absolute', top:'calc(100% + 8px)', left:0, right:0,
-                background:'#fff', border:'1.5px solid #D1D5DB', borderRadius:20,
-                boxShadow:'0 8px 40px rgba(0,0,0,.14)', zIndex:500, overflow:'hidden' }}>
-
+              <div id="search-drop" style={{ position:'absolute', top:'calc(100% + 6px)', left:0, right:0,
+                background:'#fff', border:'1.5px solid #D1D5DB', borderRadius:16,
+                boxShadow:'0 8px 32px rgba(0,0,0,.12)', zIndex:500, overflow:'hidden' }}>
                 <div style={{ display:'flex', borderBottom:'1px solid #E5E7EB' }}>
                   {(['popular','recent'] as const).map(tab => (
                     <button key={tab} onClick={() => setSearchTab(tab)}
-                      style={{ flex:1, padding:'12px 0', fontSize:13, fontWeight:700,
+                      style={{ flex:1, padding:'10px 0', fontSize:12, fontWeight:700,
                         color: searchTab === tab ? PU : '#9CA3AF',
                         background:'none', border:'none', cursor:'pointer',
-                        borderBottom: searchTab === tab ? `2.5px solid ${PU}` : '2.5px solid transparent',
+                        borderBottom: searchTab === tab ? `2px solid ${PU}` : '2px solid transparent',
                         marginBottom:-1, fontFamily:'inherit' }}>
                       {tab === 'popular' ? '인기 키워드' : '최근 검색'}
                     </button>
                   ))}
                 </div>
-
-                {searchTab === 'popular' && (
-                  <div>
-                    {randomPicks.map((p, i) => (
-                      <div key={i} onClick={() => pickKeyword(p.text)}
-                        style={{ display:'flex', alignItems:'center', gap:10, padding:'11px 18px',
-                          cursor:'pointer', transition:'background .1s' }}
-                        onMouseEnter={e => (e.currentTarget.style.background = '#F9FAFB')}
-                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                        <div style={{ width:30, height:30, borderRadius:8, background:'#F3F4F6',
-                          display:'flex', alignItems:'center', justifyContent:'center',
-                          fontSize:15, flexShrink:0 }}>
-                          {p.icon}
-                        </div>
-                        <span style={{ fontSize:13, color:'#374151', fontWeight:500 }}>{p.text}</span>
-                      </div>
-                    ))}
+                {searchTab === 'popular' && randomPicks.map((p, i) => (
+                  <div key={i} onClick={() => pickKeyword(p.text)}
+                    style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 14px', cursor:'pointer' }}
+                    onMouseEnter={e => (e.currentTarget.style.background='#F9FAFB')}
+                    onMouseLeave={e => (e.currentTarget.style.background='transparent')}>
+                    <div style={{ width:28, height:28, borderRadius:8, background:'#F3F4F6',
+                      display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, flexShrink:0 }}>
+                      {p.icon}
+                    </div>
+                    <span style={{ fontSize:13, color:'#374151', fontWeight:500 }}>{p.text}</span>
                   </div>
-                )}
-
+                ))}
                 {searchTab === 'recent' && (
-                  <div style={{ padding:'28px 18px', textAlign:'center', color:'#9CA3AF', fontSize:12, lineHeight:1.8 }}>
-                    최근 검색한 가게나 키워드가 없어요.<br />
-                    지금 바로 근처 혜택을 검색해보세요 🔍
+                  <div style={{ padding:'24px 14px', textAlign:'center', color:'#9CA3AF', fontSize:12 }}>
+                    최근 검색한 가게나 키워드가 없어요.
                   </div>
                 )}
-
-                <div style={{ display:'flex', justifyContent:'flex-end',
-                  padding:'8px 14px', borderTop:'1px solid #E5E7EB' }}>
+                <div style={{ display:'flex', justifyContent:'flex-end', padding:'6px 12px', borderTop:'1px solid #E5E7EB' }}>
                   <button onClick={() => setSearchDropOpen(false)}
-                    style={{ fontSize:12, fontWeight:700, color:'#9CA3AF', background:'none',
-                      border:'none', cursor:'pointer', padding:'4px 8px', fontFamily:'inherit' }}>
+                    style={{ fontSize:12, color:'#9CA3AF', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit' }}>
                     닫기
                   </button>
                 </div>
               </div>
             )}
-
-            {/* ── 위치 드롭다운 ────────────────────────────── */}
-            {locDropOpen && (
-              <div id="loc-drop" style={{ position:'absolute', top:'calc(100% + 8px)', left:0, width:260,
-                background:'#fff', border:'1.5px solid #D1D5DB', borderRadius:20,
-                boxShadow:'0 8px 40px rgba(0,0,0,.14)', zIndex:500, overflow:'hidden' }}>
-                <div style={{ padding:'12px 14px', borderBottom:'1px solid #E5E7EB',
-                  fontSize:12, fontWeight:800, color:'#111827',
-                  display:'flex', justifyContent:'space-between' }}>
-                  <span>지역 선택</span>
-                  <span style={{ fontSize:11, fontWeight:500, color:'#9CA3AF' }}>창원시</span>
-                </div>
-                <div onClick={() => { getGPS(); setLocDropOpen(false); }}
-                  style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px',
-                    borderBottom:'1px solid #E5E7EB', cursor:'pointer', transition:'background .1s' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = OR_S)}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                  <span style={{ fontSize:16 }}>🎯</span>
-                  <div>
-                    <div style={{ fontSize:12, fontWeight:700, color:OR }}>현재 위치 사용</div>
-                    <div style={{ fontSize:10, color:'#9CA3AF' }}>GPS로 자동 감지</div>
-                  </div>
-                </div>
-                {[
-                  { name:'의창구',    landmark:'창원시청',      lat:35.2279, lng:128.6811 },
-                  { name:'성산구',    landmark:'NC파크',        lat:35.2229, lng:128.6827 },
-                  { name:'마산합포구', landmark:'마산어시장',    lat:35.1946, lng:128.5688 },
-                  { name:'마산회원구', landmark:'마산역',        lat:35.2065, lng:128.5746 },
-                  { name:'진해구',    landmark:'경화역벚꽃길', lat:35.1487, lng:128.6672 },
-                ].map(r => (
-                  <div key={r.name} onClick={() => selectRegion(r.name, r.lat, r.lng)}
-                    style={{ padding:'9px 14px', cursor:'pointer', transition:'background .1s' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = '#F9FAFB')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                    <div style={{ fontSize:12, fontWeight:700, color:'#374151' }}>{r.name}</div>
-                    <div style={{ fontSize:10, color:'#9CA3AF', marginTop:1 }}>📍 {r.landmark}</div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          </div>{/* 로고+검색창 wrapper 끝 */}
-
-          {/* Right — 우측 정렬 */}
-          <div style={{ display:'flex', alignItems:'center', gap:8, justifyContent:'flex-end' }}>
-
-            {/* 로그인 / 프로필 */}
-            {authUser ? (
-              <div style={{ position:'relative' }}>
-                <button id="auth-btn" onClick={() => setAuthMenuOpen(v => !v)}
-                  style={{ display:'flex', alignItems:'center', gap:6, padding:'6px 12px',
-                    borderRadius:100, border:`1.5px solid ${OR}`, cursor:'pointer',
-                    background:'#fff', fontFamily:'inherit', transition:'all .15s' }}>
-                  <div style={{ width:24, height:24, borderRadius:'50%', background:OR,
-                    color:'#fff', fontSize:11, fontWeight:800, flexShrink:0,
-                    display:'flex', alignItems:'center', justifyContent:'center' }}>
-                    {(authUser.nickname ?? '나')[0]}
-                  </div>
-                  <span style={{ fontSize:12, fontWeight:700, color:'#374151' }}>
-                    {authUser.nickname ?? '언니픽회원'}
-                  </span>
-                  <span style={{ fontSize:9, color:'#9CA3AF' }}>▾</span>
-                </button>
-                {authMenuOpen && (
-                  <div id="auth-menu" style={{ position:'absolute', top:'calc(100% + 8px)', right:0,
-                    background:'#fff', border:'1px solid #E5E7EB', borderRadius:12,
-                    boxShadow:'0 8px 24px rgba(0,0,0,.1)', zIndex:500, minWidth:160,
-                    overflow:'hidden' }}>
-                    <div style={{ padding:'12px 16px', borderBottom:'1px solid #E5E7EB' }}>
-                      <div style={{ fontSize:13, fontWeight:700, color:'#111827' }}>
-                        {authUser.nickname ?? '언니픽회원'}
-                      </div>
-                    </div>
-                    <button onClick={handleSignOut}
-                      style={{ width:'100%', padding:'10px 16px', background:'none', border:'none',
-                        textAlign:'left', fontSize:13, color:'#6B7280', cursor:'pointer',
-                        fontFamily:'inherit', transition:'background .1s' }}
-                      onMouseEnter={e => (e.currentTarget.style.background = '#F9FAFB')}
-                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                      로그아웃
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <button onClick={openAuthModal}
-                style={{ padding:'7px 16px', borderRadius:100, fontSize:12, fontWeight:700,
-                  color:'#fff', background:OR, border:'none', cursor:'pointer',
-                  fontFamily:'inherit', boxShadow:'0 1px 6px rgba(255,111,15,.25)' }}>
-                로그인
-              </button>
-            )}
-
-            <button onClick={() => window.open('/app', '_blank')}
-              style={{ padding:'7px 14px', borderRadius:6, fontSize:12, fontWeight:600,
-                color:'#6B7280', background:'none', border:'1px solid #E5E7EB', cursor:'pointer' }}>
-              📱 앱 다운로드
-            </button>
-            <button
-              onClick={() => setApplyOpen(true)}
-              style={{ padding:'8px 16px', borderRadius:6, fontSize:12, fontWeight:700,
-                color:'#fff', background:PU, border:'none', cursor:'pointer', fontFamily:'inherit' }}>
-              가게 등록
-            </button>
           </div>
         </div>
-      </header>
 
-      {/* ═══ CATEGORY BAR ══════════════════════════════════ */}
-      <div style={{ flexShrink:0, background:'#fff', borderBottom:'1px solid #E5E7EB', padding:'10px 0' }}>
-        <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 24px',
-          display:'flex', alignItems:'center', gap:6, overflowX:'auto',
-          scrollbarWidth:'none' }}>
-
-          {/* 추천맛집 버튼 */}
-          <button onClick={() => setRecommendOpen(v => !v)}
-            style={{ display:'inline-flex', alignItems:'center', gap:5,
-              padding:'7px 15px', borderRadius:100,
-              border: recommendOpen ? `1.5px solid #FF6F0F` : '1.5px solid #E5E7EB',
-              background: recommendOpen
-                ? 'linear-gradient(135deg,#FF6F0F,#FF9A3D)' : '#fff',
-              fontSize:13, fontWeight:700,
-              color: recommendOpen ? '#fff' : '#374151',
-              cursor:'pointer', flexShrink:0, whiteSpace:'nowrap',
-              fontFamily:'inherit', transition:'all .15s',
-              boxShadow: recommendOpen ? '0 2px 10px rgba(255,111,15,.3)' : 'none' }}>
-            🏆 추천맛집
-          </button>
-
-          {/* 구분선 */}
-          <div style={{ width:1, height:20, background:'#E5E7EB', flexShrink:0 }} />
-
-          {CATEGORIES.map(c => (
-            <button key={c.key} onClick={() => filterCat(c.key)}
-              style={{ display:'inline-flex', alignItems:'center', gap:5,
-                padding:'7px 15px', borderRadius:100,
-                border: activeCat === c.key ? `1.5px solid ${OR}` : '1.5px solid #E5E7EB',
-                background: activeCat === c.key ? OR : '#fff',
-                fontSize:13, fontWeight: activeCat === c.key ? 700 : 600,
-                color: activeCat === c.key ? '#fff' : '#374151',
-                cursor:'pointer', flexShrink:0, whiteSpace:'nowrap',
-                fontFamily:'inherit', transition:'all .15s' }}>
-              {c.emoji} {c.label}
+        {/* ─ 탭 바 ─ */}
+        <div style={{ display:'flex', flexShrink:0, borderBottom:'1px solid #E5E7EB' }}>
+          {([
+            { key:'stores',    label:'🗺️ 가게 찾기' },
+            { key:'recommend', label:'🏆 추천맛집' },
+          ] as const).map(t => (
+            <button key={t.key} onClick={() => setLeftTab(t.key)}
+              style={{ flex:1, padding:'11px 0', fontSize:13, fontWeight:700,
+                color: leftTab === t.key ? OR : '#9CA3AF',
+                background:'none', border:'none', cursor:'pointer',
+                borderBottom: leftTab === t.key ? `2.5px solid ${OR}` : '2.5px solid transparent',
+                marginBottom:-1, fontFamily:'inherit', transition:'color .12s' }}>
+              {t.label}
             </button>
           ))}
         </div>
+
+        {/* ─ 콘텐츠 영역 ─ */}
+        <div style={{ flex:1, overflowY:'auto' }}>
+
+          {/* 가게 찾기 탭 */}
+          {leftTab === 'stores' && (
+            <>
+              {/* AI 검색 결과 */}
+              {aiStage !== 'idle' && (
+                <div style={{ padding:14 }}>
+                  <AiStageRow
+                    label={aiStage === 'parsing' ? '쿼리 분석 중...' : '쿼리 분석'}
+                    status={aiStage === 'parsing' ? 'active' : aiFilter ? 'done' : 'wait'}>
+                    {aiFilter && (
+                      <div>
+                        <div style={{ display:'flex', flexWrap:'wrap', gap:4, marginTop:5 }}>
+                          {aiFilter.chips.map((c, i) => (
+                            <span key={i} style={{ padding:'2px 8px', borderRadius:100, fontSize:11,
+                              fontWeight:700, background:OR_S, color:OR, border:`1px solid ${OR_M}` }}>
+                              {c.text}
+                            </span>
+                          ))}
+                        </div>
+                        <p style={{ fontSize:11, color:'#9CA3AF', marginTop:3, fontStyle:'italic' }}>
+                          💭 {aiFilter.intent}
+                        </p>
+                      </div>
+                    )}
+                  </AiStageRow>
+                  {aiStage !== 'idle' && (
+                    <AiStageRow
+                      label={aiStage === 'searching' ? '가게 검색 중...' : '가게 검색 완료'}
+                      status={aiStage === 'searching' ? 'active' : (aiCount > 0 || aiStage === 'done' || aiStage === 'ranking') ? 'done' : 'wait'}>
+                      {aiCount > 0 && (
+                        <p style={{ fontSize:12, color:'#6B7280', marginTop:3 }}>
+                          조건에 맞는 가게 <strong style={{ color:OR }}>{aiCount}</strong>개 발견
+                        </p>
+                      )}
+                    </AiStageRow>
+                  )}
+                  {(aiStage === 'ranking' || aiStage === 'done') && (
+                    <AiStageRow
+                      label={aiStage === 'ranking' ? 'AI 추천 선별 중...' : 'AI 추천 완료'}
+                      status={aiStage === 'ranking' ? 'active' : 'done'}
+                    />
+                  )}
+                  {aiResults.length > 0 && (
+                    <div style={{ marginTop:14 }}>
+                      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
+                        <p style={{ fontSize:13, fontWeight:800, color:'#111827' }}>
+                          🏆 AI 추천 {aiResults.length}개
+                        </p>
+                        <button onClick={() => { setAiStage('idle'); setAiResults([]); setAiFilter(null); }}
+                          style={{ fontSize:11, color:'#9CA3AF', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit' }}>
+                          닫기
+                        </button>
+                      </div>
+                      {aiResults.map(r => (
+                        <AiResultCard key={r.rank} r={r} onToast={showToast} />
+                      ))}
+                    </div>
+                  )}
+                  {aiStage === 'done' && aiResults.length === 0 && (
+                    <div style={{ textAlign:'center', padding:'20px 0', color:'#9CA3AF', fontSize:13 }}>
+                      조건에 맞는 가게를 찾지 못했어요.
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* 가게 목록 */}
+              {aiStage === 'idle' && (
+                <div style={{ padding:10 }}>
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between',
+                    padding:'8px 6px 6px', fontSize:12, color:'#6B7280', fontWeight:600 }}>
+                    <span>
+                      <span style={{ color:OR, fontWeight:800 }}>{displayStores.length}</span>개 가게
+                    </span>
+                    <span style={{ fontSize:11, color:'#9CA3AF' }}>
+                      ⏰ 타임세일 <strong style={{ color:'#E53935' }}>{displayStores.filter(s=>s.timesale).length}</strong>개
+                    </span>
+                  </div>
+                  {displayStores.map(store => (
+                    <div key={store.id} onClick={() => window.__selectStore(store.id)}
+                      style={{ display:'flex', gap:10, padding:12, borderRadius:12,
+                        border: selectedId === store.id ? `1.5px solid ${OR}` : '1px solid #E5E7EB',
+                        background: selectedId === store.id ? OR_S : '#fff',
+                        marginBottom:8, cursor:'pointer', transition:'all .12s' }}
+                      onMouseEnter={e => { if (selectedId !== store.id) e.currentTarget.style.borderColor=OR_M; }}
+                      onMouseLeave={e => { if (selectedId !== store.id) e.currentTarget.style.borderColor='#E5E7EB'; }}>
+                      <div style={{ width:44, height:44, borderRadius:12, background:'#F3F4F6',
+                        display:'flex', alignItems:'center', justifyContent:'center',
+                        fontSize:22, flexShrink:0 }}>
+                        {store.emoji}
+                      </div>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontSize:13, fontWeight:700, color:'#111827' }}>{store.name}</div>
+                        <div style={{ fontSize:11, color:'#9CA3AF', marginTop:1 }}>
+                          {store.cat} · {store.dist}
+                        </div>
+                        <div style={{ display:'inline-flex', alignItems:'center', gap:3,
+                          background:OR_S, color:OR, fontSize:10, fontWeight:800,
+                          padding:'3px 8px', borderRadius:100, marginTop:5 }}>
+                          {store.timesale ? '⏰' : '🎟'} {store.coupon}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* 추천맛집 탭 */}
+          {leftTab === 'recommend' && <RecommendFeed compact />}
+        </div>
       </div>
 
-      {/* ═══ MAP AREA ══════════════════════════════════════ */}
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {/* RIGHT MAP AREA                                              */}
+      {/* ═══════════════════════════════════════════════════════════ */}
       <div style={{ flex:1, position:'relative', overflow:'hidden' }}>
 
-        {/* Kakao Map */}
-        <div ref={mapContainerRef} style={{ width:'100%', height:'100%' }} />
-
-        {/* 지도 상단 배지 */}
-        <div style={{ position:'absolute', top:12, left:12, zIndex:10,
-          display:'flex', alignItems:'center', gap:8 }}>
-          <button onClick={() => setStorePanelOpen(v => !v)}
-            style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 14px',
-              background:'rgba(255,255,255,.95)', backdropFilter:'blur(8px)',
-              border:'1px solid #E5E7EB', borderRadius:100,
-              fontSize:12, fontWeight:700, color:'#374151',
-              boxShadow:'0 2px 8px rgba(0,0,0,.08)', cursor:'pointer',
-              fontFamily:'inherit' }}>
-            <span style={{ width:8, height:8, borderRadius:'50%', background:OR, display:'inline-block' }} />
-            쿠폰 있는 가게 <strong style={{ color:OR }}>{displayStores.length}</strong>개
-          </button>
-          <div style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 14px',
-            background:'rgba(255,255,255,.95)', backdropFilter:'blur(8px)',
-            border:'1px solid #E5E7EB', borderRadius:100,
-            fontSize:12, fontWeight:700, color:'#374151',
-            boxShadow:'0 2px 8px rgba(0,0,0,.08)' }}>
-            ⏰ 타임세일 진행 중 <strong style={{ color:'#E53935' }}>
-              {displayStores.filter(s => s.timesale).length}
-            </strong>개
-          </div>
-        </div>
-
-        {/* GPS 버튼 */}
-        <button onClick={() => { getGPS(); showToast('내 위치로 이동합니다.'); }}
-          style={{ position:'absolute', bottom:80, right:12, zIndex:10,
-            width:44, height:44, borderRadius:'50%',
-            background:'rgba(255,255,255,.95)', backdropFilter:'blur(8px)',
-            border:'1px solid #E5E7EB', display:'flex', alignItems:'center', justifyContent:'center',
-            fontSize:20, cursor:'pointer', boxShadow:'0 2px 8px rgba(0,0,0,.08)',
-            fontFamily:'inherit' }}>
-          📍
-        </button>
-
-        {/* ── 가게 목록 사이드 패널 (왼쪽) ─────────────── */}
-        <div style={{ position:'absolute', top:0, left:0, bottom:0, width:340,
-          background:'#fff', borderRight:'1px solid #E5E7EB',
-          transform: storePanelOpen ? 'translateX(0)' : 'translateX(-100%)',
-          transition:'transform .25s cubic-bezier(.4,0,.2,1)',
-          zIndex:20, display:'flex', flexDirection:'column',
-          boxShadow:'4px 0 20px rgba(0,0,0,.1)' }}>
-          <div style={{ padding:'14px 16px', borderBottom:'1px solid #E5E7EB',
-            display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 }}>
-            <span style={{ fontSize:14, fontWeight:800, color:'#111827' }}>📍 주변 가게 목록</span>
-            <button onClick={() => setStorePanelOpen(false)}
-              style={{ width:28, height:28, borderRadius:'50%', background:'#F3F4F6',
-                display:'flex', alignItems:'center', justifyContent:'center',
-                fontSize:14, cursor:'pointer', border:'none', fontFamily:'inherit' }}>
-              ✕
-            </button>
-          </div>
-          <div style={{ flex:1, overflowY:'auto', padding:10 }}>
-            {displayStores.map(store => (
-              <div key={store.id} onClick={() => window.__selectStore(store.id)}
-                style={{ display:'flex', gap:10, padding:12, borderRadius:12,
-                  border: selectedId === store.id ? `1.5px solid ${OR}` : '1px solid #E5E7EB',
-                  background: selectedId === store.id ? OR_S : '#fff',
-                  marginBottom:8, cursor:'pointer', transition:'all .15s' }}
-                onMouseEnter={e => { if (selectedId !== store.id) e.currentTarget.style.borderColor = OR_M; }}
-                onMouseLeave={e => { if (selectedId !== store.id) e.currentTarget.style.borderColor = '#E5E7EB'; }}>
-                <div style={{ width:44, height:44, borderRadius:12, background:'#F3F4F6',
-                  display:'flex', alignItems:'center', justifyContent:'center',
-                  fontSize:22, flexShrink:0 }}>
-                  {store.emoji}
-                </div>
-                <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ fontSize:13, fontWeight:700, color:'#111827' }}>{store.name}</div>
-                  <div style={{ fontSize:11, color:'#9CA3AF', marginTop:1 }}>
-                    {store.cat} · {store.dist}
-                  </div>
-                  <div style={{ display:'inline-flex', alignItems:'center', gap:3,
-                    background:OR_S, color:OR, fontSize:10, fontWeight:800,
-                    padding:'3px 8px', borderRadius:100, marginTop:5 }}>
-                    {store.timesale ? '⏰' : '🎟'} {store.coupon}
-                  </div>
-                </div>
-              </div>
+        {/* ─ 업종 칩 바 (지도 상단 고정) ─ */}
+        <div style={{ position:'absolute', top:0, left:0, right:0, zIndex:10,
+          background:'rgba(255,255,255,.95)', backdropFilter:'blur(8px)',
+          borderBottom:'1px solid #E5E7EB', padding:'8px 0' }}>
+          <div style={{ display:'flex', gap:6, padding:'0 14px', overflowX:'auto',
+            scrollbarWidth:'none' }}>
+            {CATEGORIES.map(c => (
+              <button key={c.key} onClick={() => filterCat(c.key)}
+                style={{ display:'inline-flex', alignItems:'center', gap:4,
+                  padding:'6px 13px', borderRadius:100,
+                  border: activeCat === c.key ? `1.5px solid ${OR}` : '1.5px solid #E5E7EB',
+                  background: activeCat === c.key ? OR : '#fff',
+                  fontSize:12, fontWeight: activeCat === c.key ? 700 : 600,
+                  color: activeCat === c.key ? '#fff' : '#374151',
+                  cursor:'pointer', flexShrink:0, whiteSpace:'nowrap',
+                  fontFamily:'inherit', transition:'all .12s' }}>
+                {c.emoji} {c.label}
+              </button>
             ))}
           </div>
         </div>
 
-        {/* ── AI 추천 패널 (오른쪽) ─────────────────────── */}
-        <div style={{ position:'absolute', top:0, right:0, bottom:0, width:380,
-          background:'#fff', borderLeft:'1px solid #E5E7EB',
-          transform: aiPanelOpen ? 'translateX(0)' : 'translateX(100%)',
-          transition:'transform .25s cubic-bezier(.4,0,.2,1)',
-          zIndex:20, display:'flex', flexDirection:'column',
-          boxShadow:'-4px 0 20px rgba(0,0,0,.1)' }}>
-          <div style={{ padding:'14px 16px', borderBottom:'1px solid #E5E7EB',
-            display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 }}>
-            <span style={{ fontSize:14, fontWeight:800, color:'#111827',
-              display:'flex', alignItems:'center', gap:6 }}>
-              ✨ AI 가게 추천
-            </span>
-            <button onClick={() => setAiPanelOpen(false)}
-              style={{ width:28, height:28, borderRadius:'50%', background:'#F3F4F6',
-                display:'flex', alignItems:'center', justifyContent:'center',
-                fontSize:14, cursor:'pointer', border:'none', fontFamily:'inherit' }}>
-              ✕
-            </button>
-          </div>
+        {/* ─ Kakao Map ─ */}
+        <div ref={mapContainerRef} style={{ width:'100%', height:'100%' }} />
 
-          <div style={{ flex:1, overflowY:'auto', padding:14 }}>
-            {/* 파싱 단계 */}
-            <AiStageRow
-              label={aiStage === 'parsing' ? '쿼리 분석 중...' : '쿼리 분석'}
-              status={aiStage === 'parsing' ? 'active' : aiFilter ? 'done' : 'wait'}
-            >
-              {aiFilter && (
-                <div>
-                  <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginTop:6 }}>
-                    {aiFilter.chips.map((c, i) => (
-                      <span key={i} style={{ padding:'3px 10px', borderRadius:100, fontSize:11,
-                        fontWeight:700, background:OR_S, color:OR, border:`1px solid ${OR_M}` }}>
-                        {c.text}
-                      </span>
-                    ))}
-                  </div>
-                  <p style={{ fontSize:11, color:'#9CA3AF', marginTop:4, fontStyle:'italic' }}>
-                    💭 {aiFilter.intent}
-                  </p>
-                </div>
-              )}
-            </AiStageRow>
+        {/* ─ GPS 버튼 ─ */}
+        <button onClick={() => { getGPS(); showToast('내 위치로 이동합니다.'); }}
+          style={{ position:'absolute', bottom:24, right:14, zIndex:10,
+            width:44, height:44, borderRadius:'50%',
+            background:'rgba(255,255,255,.95)', backdropFilter:'blur(8px)',
+            border:'1px solid #E5E7EB', display:'flex', alignItems:'center', justifyContent:'center',
+            fontSize:20, cursor:'pointer', boxShadow:'0 2px 8px rgba(0,0,0,.08)', fontFamily:'inherit' }}>
+          📍
+        </button>
 
-            {/* 검색 단계 */}
-            {aiStage !== 'idle' && (
-              <AiStageRow
-                label={aiStage === 'searching' ? '가게 검색 중...' : '가게 검색 완료'}
-                status={aiStage === 'searching' ? 'active' : (aiCount > 0 || aiStage === 'done' || aiStage === 'ranking') ? 'done' : 'wait'}
-              >
-                {aiCount > 0 && (
-                  <p style={{ fontSize:12, color:'#6B7280', marginTop:4 }}>
-                    조건에 맞는 가게 <strong style={{ color:OR }}>{aiCount}</strong>개 발견
-                  </p>
-                )}
-              </AiStageRow>
-            )}
-
-            {/* 랭킹 단계 */}
-            {(aiStage === 'ranking' || aiStage === 'done') && (
-              <AiStageRow
-                label={aiStage === 'ranking' ? 'AI 추천 선별 중...' : 'AI 추천 완료'}
-                status={aiStage === 'ranking' ? 'active' : 'done'}
-              />
-            )}
-
-            {/* 결과 카드 */}
-            {aiResults.length > 0 && (
-              <div style={{ marginTop:16 }}>
-                <p style={{ fontSize:13, fontWeight:800, color:'#111827', marginBottom:10 }}>
-                  🏆 AI 추천 {aiResults.length}개
-                </p>
-                {aiResults.map(r => (
-                  <AiResultCard key={r.rank} r={r} onToast={showToast} />
-                ))}
-              </div>
-            )}
-
-            {aiStage === 'done' && aiResults.length === 0 && (
-              <div style={{ textAlign:'center', padding:'24px 0', color:'#9CA3AF', fontSize:13 }}>
-                조건에 맞는 가게를 찾지 못했어요.<br />조건을 조금 바꿔보세요.
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* ── 추천맛집 바텀 시트 ────────────────────────── */}
-        {/* 반투명 딤 (지도 위) */}
-        {recommendOpen && (
-          <div
-            onClick={() => setRecommendOpen(false)}
-            style={{ position:'absolute', inset:0, background:'rgba(0,0,0,.25)',
-              zIndex:25, backdropFilter:'blur(1px)' }}
-          />
-        )}
-
-        <div style={{
-          position:'absolute', left:0, right:0, bottom:0,
-          height:'72vh',
-          background:'#fff',
-          borderRadius:'20px 20px 0 0',
-          boxShadow:'0 -8px 40px rgba(0,0,0,.18)',
-          transform: recommendOpen ? 'translateY(0)' : 'translateY(100%)',
-          transition:'transform .3s cubic-bezier(.4,0,.2,1)',
-          zIndex:26,
-          display:'flex', flexDirection:'column',
-          overflow:'hidden',
-        }}>
-          {/* 핸들 + 헤더 */}
-          <div style={{ flexShrink:0, padding:'12px 20px 8px', borderBottom:'1px solid #EAECEF',
-            display:'flex', alignItems:'center', justifyContent:'space-between',
-            background:'#fff' }}>
-            {/* 드래그 핸들 */}
-            <div style={{ position:'absolute', top:8, left:'50%', transform:'translateX(-50%)',
-              width:40, height:4, borderRadius:2, background:'#D1D5DB' }} />
-            <span style={{ fontWeight:800, fontSize:15, color:'#191F28', marginTop:4 }}>
-              🏆 나만의 추천맛집
-            </span>
-            <button onClick={() => setRecommendOpen(false)}
-              style={{ width:28, height:28, borderRadius:'50%', background:'#F3F4F6',
-                border:'none', display:'flex', alignItems:'center', justifyContent:'center',
-                fontSize:14, cursor:'pointer', fontFamily:'inherit', color:'#374151',
-                marginTop:4 }}>
-              ✕
-            </button>
-          </div>
-          {/* 피드 스크롤 영역 */}
-          <div style={{ flex:1, overflowY:'auto' }}>
-            <RecommendFeed compact />
-          </div>
-        </div>
+        {/* ─ 앱 다운로드 버튼 ─ */}
+        <button onClick={() => window.open('/app','_blank')}
+          style={{ position:'absolute', bottom:78, right:14, zIndex:10,
+            padding:'8px 12px', borderRadius:10,
+            background:'rgba(255,255,255,.95)', backdropFilter:'blur(8px)',
+            border:'1px solid #E5E7EB', fontSize:11, fontWeight:600, color:'#374151',
+            cursor:'pointer', boxShadow:'0 2px 8px rgba(0,0,0,.08)', fontFamily:'inherit',
+            display:'flex', alignItems:'center', gap:4 }}>
+          📱 앱 다운로드
+        </button>
       </div>
 
-      {/* ═══ TOAST ═════════════════════════════════════════ */}
+      {/* ═══ TOAST ═══════════════════════════════════════════════ */}
       <div style={{ position:'fixed', bottom:24, left:'50%', transform:'translateX(-50%)',
         background:'#111827', color:'#fff', padding:'10px 20px', borderRadius:100,
         fontSize:13, fontWeight:600, boxShadow:'0 4px 20px rgba(0,0,0,.18)',
@@ -988,7 +869,7 @@ export default function HomePage() {
         {toastMsg}
       </div>
 
-      {/* ═══ AUTH MODAL ════════════════════════════════════ */}
+      {/* ═══ AUTH MODAL ══════════════════════════════════════════ */}
       {authModalOpen && (
         <div
           style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.5)',
@@ -1000,7 +881,6 @@ export default function HomePage() {
             padding:28, boxShadow:'0 20px 60px rgba(0,0,0,.2)', position:'relative',
             fontFamily:"'Pretendard Variable','Noto Sans KR',-apple-system,sans-serif" }}>
 
-            {/* 닫기 */}
             <button onClick={() => setAuthModalOpen(false)}
               style={{ position:'absolute', top:16, right:16, width:30, height:30,
                 borderRadius:'50%', background:'#F3F4F6', border:'none',
@@ -1009,7 +889,6 @@ export default function HomePage() {
               ✕
             </button>
 
-            {/* 로고 */}
             <div style={{ display:'flex', flexDirection:'column', alignItems:'center', marginBottom:24 }}>
               <div style={{ width:52, height:52, background:OR, borderRadius:15,
                 display:'flex', alignItems:'center', justifyContent:'center',
@@ -1022,18 +901,16 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* ── STEP 1: 전화번호 ── */}
             {authStep === 'phone' && (
               <>
-                <label style={{ fontSize:12, fontWeight:700, color:'#374151',
-                  display:'block', marginBottom:6 }}>
+                <label style={{ fontSize:12, fontWeight:700, color:'#374151', display:'block', marginBottom:6 }}>
                   휴대폰 번호
                 </label>
                 <input
                   type="tel"
                   value={authPhone}
                   onChange={e => {
-                    const d = e.target.value.replace(/\D/g, '').slice(0, 11);
+                    const d = e.target.value.replace(/\D/g,'').slice(0,11);
                     let fmt = d;
                     if (d.length > 3 && d.length <= 7) fmt = d.slice(0,3)+'-'+d.slice(3);
                     else if (d.length > 7) fmt = d.slice(0,3)+'-'+d.slice(3,7)+'-'+d.slice(7);
@@ -1047,38 +924,28 @@ export default function HomePage() {
                   style={{ width:'100%', height:50, padding:'0 16px', borderRadius:12,
                     border:`1.5px solid ${authError ? '#EF4444' : '#D1D5DB'}`,
                     fontSize:17, fontFamily:'inherit', outline:'none',
-                    boxSizing:'border-box', letterSpacing:1, transition:'border-color .15s' }}
-                  onFocus={e  => (e.target.style.borderColor = OR)}
-                  onBlur={e   => (e.target.style.borderColor = authError ? '#EF4444' : '#D1D5DB')}
+                    boxSizing:'border-box', letterSpacing:1 }}
+                  onFocus={e => (e.target.style.borderColor=OR)}
+                  onBlur={e  => (e.target.style.borderColor=authError?'#EF4444':'#D1D5DB')}
                 />
-                {authError && (
-                  <div style={{ fontSize:11, color:'#EF4444', marginTop:5 }}>{authError}</div>
-                )}
+                {authError && <div style={{ fontSize:11, color:'#EF4444', marginTop:5 }}>{authError}</div>}
                 <button onClick={sendPhoneOtp} disabled={authLoading}
                   style={{ width:'100%', height:50, marginTop:12, borderRadius:12, border:'none',
                     background: authLoading ? '#FFD9B8' : OR,
                     color:'#fff', fontSize:15, fontWeight:800,
-                    cursor: authLoading ? 'wait' : 'pointer', fontFamily:'inherit',
-                    transition:'background .15s' }}>
+                    cursor: authLoading ? 'wait' : 'pointer', fontFamily:'inherit' }}>
                   {authLoading ? '발송 중...' : '인증번호 받기'}
                 </button>
-                <p style={{ fontSize:11, color:'#9CA3AF', textAlign:'center', marginTop:14,
-                  lineHeight:1.7, margin:'14px 0 0' }}>
-                  처음 오셨다면 자동으로 가입됩니다.<br />
-                  계속 진행하시면{' '}
-                  <span style={{ color:OR, fontWeight:700, cursor:'pointer' }}>이용약관</span>에
-                  동의하는 것으로 간주됩니다.
+                <p style={{ fontSize:11, color:'#9CA3AF', textAlign:'center', marginTop:14, lineHeight:1.7, margin:'14px 0 0' }}>
+                  처음 오셨다면 자동으로 가입됩니다.
                 </p>
               </>
             )}
 
-            {/* ── STEP 2: OTP ── */}
             {authStep === 'otp' && (
               <>
-                <p style={{ fontSize:13, color:'#6B7280', marginBottom:18, textAlign:'center',
-                  lineHeight:1.7 }}>
-                  <strong style={{ color:'#111827' }}>{authPhone}</strong>으로<br />
-                  6자리 인증번호를 전송했어요
+                <p style={{ fontSize:13, color:'#6B7280', marginBottom:18, textAlign:'center', lineHeight:1.7 }}>
+                  <strong style={{ color:'#111827' }}>{authPhone}</strong>으로<br />6자리 인증번호를 전송했어요
                 </p>
                 <div style={{ display:'flex', gap:8, justifyContent:'center', marginBottom:16 }}>
                   {[0,1,2,3,4,5].map(i => (
@@ -1090,8 +957,8 @@ export default function HomePage() {
                       value={authOtp[i] ?? ''}
                       autoFocus={i === 0}
                       onChange={e => {
-                        const v = e.target.value.replace(/\D/g, '');
-                        const arr = authOtp.padEnd(6, ' ').split('');
+                        const v = e.target.value.replace(/\D/g,'');
+                        const arr = authOtp.padEnd(6,' ').split('');
                         arr[i] = v.slice(-1);
                         const next = arr.join('').trimEnd();
                         setAuthOtp(next);
@@ -1100,9 +967,7 @@ export default function HomePage() {
                           (document.getElementById(`otp-digit-${i+1}`) as HTMLInputElement)?.focus();
                         }
                         const filled = arr.join('').replace(/ /g,'');
-                        if (filled.length === 6) {
-                          setTimeout(() => verifyPhoneOtp(filled), 80);
-                        }
+                        if (filled.length === 6) setTimeout(() => verifyPhoneOtp(filled), 80);
                       }}
                       onKeyDown={e => {
                         if (e.key === 'Backspace' && !authOtp[i] && i > 0) {
@@ -1116,17 +981,13 @@ export default function HomePage() {
                         if (p.length === 6) setTimeout(() => verifyPhoneOtp(p), 80);
                       } : undefined}
                       style={{ width:44, height:54, textAlign:'center', fontSize:22, fontWeight:800,
-                        border:`1.5px solid ${authError ? '#EF4444' : authOtp[i] && authOtp[i] !== ' ' ? OR : '#D1D5DB'}`,
+                        border:`1.5px solid ${authError ? '#EF4444' : authOtp[i] && authOtp[i]!==' ' ? OR : '#D1D5DB'}`,
                         borderRadius:12, outline:'none', fontFamily:'inherit',
-                        background:'#fff', transition:'border-color .15s', boxSizing:'border-box' }}
+                        background:'#fff', boxSizing:'border-box' }}
                     />
                   ))}
                 </div>
-                {authError && (
-                  <div style={{ fontSize:11, color:'#EF4444', textAlign:'center', marginBottom:8 }}>
-                    {authError}
-                  </div>
-                )}
+                {authError && <div style={{ fontSize:11, color:'#EF4444', textAlign:'center', marginBottom:8 }}>{authError}</div>}
                 <button onClick={() => verifyPhoneOtp()}
                   disabled={authLoading || authOtp.replace(/\s/g,'').length < 6}
                   style={{ width:'100%', height:50, borderRadius:12, border:'none',
@@ -1135,11 +996,9 @@ export default function HomePage() {
                     cursor: (authLoading || authOtp.replace(/\s/g,'').length < 6) ? 'default' : 'pointer' }}>
                   {authLoading ? '확인 중...' : '확인'}
                 </button>
-                <div style={{ display:'flex', justifyContent:'center', alignItems:'center',
-                  gap:6, marginTop:14 }}>
+                <div style={{ display:'flex', justifyContent:'center', alignItems:'center', gap:6, marginTop:14 }}>
                   <span style={{ fontSize:12, color:'#9CA3AF' }}>번호가 오지 않나요?</span>
-                  <button
-                    onClick={() => { setAuthStep('phone'); setAuthOtp(''); setAuthError(''); }}
+                  <button onClick={() => { setAuthStep('phone'); setAuthOtp(''); setAuthError(''); }}
                     style={{ fontSize:12, color:OR, fontWeight:700, background:'none', border:'none',
                       cursor:'pointer', fontFamily:'inherit', padding:0 }}>
                     다시 받기
