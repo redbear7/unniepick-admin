@@ -372,6 +372,11 @@
 .badgeBlue   { background: #EAF2FF; color: var(--blue); }
 
 /* ── 반응형 ────────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .headerNav           { padding: 0 8px; gap: 0; }
+  .headerNav :global(a) { padding: 6px 10px; font-size: 13px; }
+}
+
 @media (max-width: 900px) {
   .heroInner         { grid-template-columns: 1fr; }
   .heroVisual        { display: none; }
@@ -385,4 +390,11 @@
   .storePreviewGrid  { grid-template-columns: repeat(2, 1fr); }
   .testiGrid         { grid-template-columns: 1fr; }
   .footerTop         { grid-template-columns: 1fr 1fr; }
+  .headerNav           { padding: 0 4px; }
+  .headerNav :global(a) { padding: 5px 8px; font-size: 12px; }
+  .headerRight .btn    { padding: 8px 12px; font-size: 12px; }
+}
+
+@media (max-width: 640px) {
+  .headerNav         { display: none; }
 }

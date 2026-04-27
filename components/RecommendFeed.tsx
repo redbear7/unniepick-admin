@@ -433,12 +433,16 @@ export default function RecommendFeed() {
   // 추천 목록 로드
   const loadRecs = useCallback(async (p: number) => {
     setLoading(true);
-    const res = await fetch(`/api/recommendations?page=${p}&limit=${LIMIT}`);
-    const json = await res.json();
-    if (p === 1) setRecs(json.data ?? []);
-    else setRecs(prev => [...prev, ...(json.data ?? [])]);
-    setTotal(json.total ?? 0);
-    setPage(p);
+    try {
+      const res = await fetch(`/api/recommendations?page=${p}&limit=${LIMIT}`);
+      const json = await res.json();
+      if (p === 1) setRecs(json.data ?? []);
+      else setRecs(prev => [...prev, ...(json.data ?? [])]);
+      setTotal(json.total ?? 0);
+      setPage(p);
+    } catch {
+      if (p === 1) setRecs([]);
+    }
     setLoading(false);
   }, []);
 
