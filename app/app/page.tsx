@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import styles from './page.module.css';
 import ApplyModal from '@/components/ApplyModal';
+import RecommendFeed from '@/components/RecommendFeed';
 
 export default function AppPage() {
   const [howTab,    setHowTab]    = useState<'customer' | 'owner'>('customer');
@@ -22,6 +23,7 @@ export default function AppPage() {
             </Link>
             <nav className={styles.headerNav}>
               <a href="#stores" className="active">가게 찾기</a>
+              <a href="#recommend">추천맛집</a>
               <a href="#coupons">쿠폰</a>
               <a href="#stamp">스탬프</a>
               <a href="#owner">사장님</a>
@@ -197,7 +199,12 @@ export default function AppPage() {
         </div>
       </section>
 
-      {/* ⑤ 쿠폰 시스템 */}
+      {/* ⑤ 나만의 추천맛집 */}
+      <section id="recommend" style={{ background: 'linear-gradient(180deg,#FFF8F5 0%,#fff 100%)', borderTop: '1px solid #FFE0C8' }}>
+        <RecommendFeed />
+      </section>
+
+      {/* ⑥ 쿠폰 시스템 */}
       <section id="coupons" className={styles.section}>
         <div className={styles.wrap}>
           <div className={styles.split}>
@@ -249,7 +256,7 @@ export default function AppPage() {
         </div>
       </section>
 
-      {/* ⑥ 스탬프 & 리워드 */}
+      {/* ⑦ 스탬프 & 리워드 */}
       <section id="stamp" className={`${styles.section} ${styles.sectionGray}`}>
         <div className={styles.wrap}>
           <div className={styles.split}>
