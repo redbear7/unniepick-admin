@@ -55,6 +55,9 @@ export async function GET(req: NextRequest) {
       category:     item.category || '',
       category_raw: item.category || '',
       place_url:    item.link || null,
+      // mapx/mapy: WGS84 * 10^7
+      latitude:  item.mapy ? Number(item.mapy) / 1e7 : null,
+      longitude: item.mapx ? Number(item.mapx) / 1e7 : null,
     }));
 
     return NextResponse.json({ places });

@@ -19,7 +19,7 @@ import Script from 'next/script';
 import {
   ChevronLeft, Check, MapPin, Loader2, Percent, CircleDollarSign,
   Gift, Search, X, ChevronDown, ChevronUp, Sparkles, Clock,
-  Users, ShoppingBag, Layers,
+  Users, ShoppingBag, Layers, Building2,
 } from 'lucide-react';
 import { openPostcode } from '@/lib/daum-postcode';
 
@@ -53,23 +53,26 @@ interface FormData {
   timeEnd:          string;
   stackable:        boolean;
   perPersonLimit:   boolean; // 1인 1회 제한
-  // 사장님
-  ownerName:      string;
-  ownerPhone:     string;
+  // 사장님 / 대행사
+  ownerName:    string;
+  ownerPhone:   string;
+  hasAgency:    boolean;
+  agencyName:   string;
 }
 
-interface KakaoPlace {
-  kakao_id:      string;
-  place_name:    string;
-  address:       string;
-  road_address:  string | null;
-  phone:         string | null;
-  category:      string;
-  category_raw:  string;
-  latitude:      number | null;
-  longitude:     number | null;
-  place_url:     string | null;
+interface SearchPlace {
+  place_name:   string;
+  address:      string;
+  road_address: string | null;
+  phone:        string | null;
+  category_raw: string;
+  latitude:     number | null;
+  longitude:    number | null;
+  place_url:    string | null;
 }
+type KakaoPlace = SearchPlace & { kakao_id: string };
+
+type SearchEngine = 'naver' | 'kakao';
 
 interface CouponSuggestion {
   discount_type:  CouponType;
@@ -142,7 +145,7 @@ const INITIAL_FORM: FormData = {
   targetSegment: 'all', minVisitCount: 2, minPeople: 1,
   minOrderAmount: 0, timeStart: '', timeEnd: '',
   stackable: false, perPersonLimit: true,
-  ownerName: '', ownerPhone: '',
+  ownerName: '', ownerPhone: '', hasAgency: false, agencyName: '',
 };
 
 // ── Main ──────────────────────────────────────────────────────────────────────
@@ -154,9 +157,10 @@ export default function ApplyPage() {
   const [error,      setError]      = useState('');
   const [done,       setDone]       = useState(false);
 
-  // Step 0: 카카오 검색
+  // Step 0: 검색
+  const [engine,        setEngine]        = useState<SearchEngine>('naver');
   const [searchQuery,   setSearchQuery]   = useState('');
-  const [searchResults, setSearchResults] = useState<KakaoPlace[] | null>(null);
+  const [searchResults, setSearchResults] = useState<SearchPlace[] | null>(null);
   const [searching,     setSearching]     = useState(false);
   const [searchError,   setSearchError]   = useState('');
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -204,21 +208,26 @@ export default function ApplyPage() {
     }));
   };
 
-  // ── Kakao Search ────────────────────────────────────────────────────────────
-  const handleSearch = async () => {
+  // ── Search (Naver / Kakao) ─────────────────────────────────────────────────
+  const handleSearch = async (eng: SearchEngine = engine) => {
     const q = searchQuery.trim();
     if (!q) return;
     setSearching(true); setSearchError(''); setSearchResults(null);
     try {
-      let coords = '';
-      try {
-        const pos = await new Promise<GeolocationPosition>((res, rej) =>
-          navigator.geolocation.getCurrentPosition(res, rej, { timeout: 3000 })
-        );
-        coords = `&x=${pos.coords.longitude}&y=${pos.coords.latitude}`;
-      } catch { /* 위치 없이 검색 */ }
-
-      const res = await fetch(`/api/kakao-place?q=${encodeURIComponent(q)}${coords}&size=5`);
+      let url: string;
+      if (eng === 'kakao') {
+        let coords = '';
+        try {
+          const pos = await new Promise<GeolocationPosition>((res, rej) =>
+            navigator.geolocation.getCurrentPosition(res, rej, { timeout: 3000 })
+          );
+          coords = `&x=${pos.coords.longitude}&y=${pos.coords.latitude}`;
+        } catch { /* 위치 없이 검색 */ }
+        url = `/api/kakao-place?q=${encodeURIComponent(q)}${coords}&size=5`;
+      } else {
+        url = `/api/naver-place?q=${encodeURIComponent(q)}&size=5`;
+      }
+      const res = await fetch(url);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? '검색 실패');
       setSearchResults(data.places ?? []);
@@ -228,7 +237,7 @@ export default function ApplyPage() {
     } finally { setSearching(false); }
   };
 
-  const handleSelectPlace = (place: KakaoPlace) => {
+  const handleSelectPlace = (place: SearchPlace) => {
     setForm(prev => ({
       ...prev,
       storeName:     place.place_name,
@@ -240,7 +249,7 @@ export default function ApplyPage() {
       longitude:     place.longitude,
       kakaoPlaceUrl: place.place_url,
     }));
-    setSuggestions(null); // 가게 바뀌면 추천 초기화
+    setSuggestions(null);
     setStep(1);
   };
 
@@ -256,7 +265,8 @@ export default function ApplyPage() {
         if (form.couponType === 'free_item') return form.freeItemName.trim().length > 0;
         return form.couponValue.trim().length > 0 && Number(form.couponValue) > 0;
       }
-      case 6: return form.ownerName.trim().length > 0 && form.ownerPhone.replace(/\D/g, '').length >= 10;
+      case 6: return form.ownerName.trim().length > 0 && form.ownerPhone.replace(/\D/g, '').length >= 10
+                     && (!form.hasAgency || form.agencyName.trim().length > 0);
       default: return true;
     }
   };
@@ -299,6 +309,8 @@ export default function ApplyPage() {
           longitude:      form.longitude,
           owner_name:     form.ownerName.trim(),
           owner_phone:    form.ownerPhone.trim(),
+          has_agency:     form.hasAgency,
+          agency_name:    form.hasAgency ? form.agencyName.trim() || null : null,
           coupon_draft:   couponDraft,
         }),
       });
@@ -340,25 +352,43 @@ export default function ApplyPage() {
     );
   }
 
-  // ── Step 0: 카카오 검색 ──────────────────────────────────────────────────────
+  // ── Step 0: 가게 검색 ──────────────────────────────────────────────────────
   if (step === 0) {
+    const hoverCls = engine === 'naver'
+      ? 'hover:border-[#03C75A] hover:bg-green-50'
+      : 'hover:border-[#FEE500] hover:bg-yellow-50';
     return (
       <>
         <Script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" strategy="lazyOnload" />
-        <div className="min-h-[calc(100vh-120px)] flex flex-col px-5 max-w-lg mx-auto w-full pt-10 pb-6">
-          <div className="mb-8">
+        <div className="min-h-[calc(100vh-120px)] flex flex-col px-5 max-w-lg mx-auto w-full pt-8 pb-6">
+          <div className="mb-6">
             <p className="text-3xl mb-3">👋</p>
             <h1 className="text-2xl font-bold text-gray-900 leading-snug">언니픽에<br />가게를 등록해보세요</h1>
-            <p className="text-sm text-gray-400 mt-2">카카오에 등록된 가게라면 정보를 바로 불러올 수 있어요</p>
+            <p className="text-sm text-gray-400 mt-1.5">가게를 검색하면 정보를 바로 불러올 수 있어요</p>
           </div>
 
+          {/* 검색 엔진 탭 */}
+          <div className="flex gap-1.5 mb-3 p-1 bg-gray-100 rounded-2xl">
+            <button
+              onClick={() => { setEngine('naver'); setSearchResults(null); setSearchError(''); }}
+              className={`flex-1 py-2.5 rounded-xl text-[13px] font-bold transition-all ${engine === 'naver' ? 'bg-[#03C75A] text-white shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+            >네이버</button>
+            <button
+              onClick={() => { setEngine('kakao'); setSearchResults(null); setSearchError(''); }}
+              className={`flex-1 py-2.5 rounded-xl text-[13px] font-bold transition-all ${engine === 'kakao' ? 'bg-[#FEE500] text-[#3A1D1D] shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+            >카카오</button>
+          </div>
+
+          {/* 검색창 */}
           <div className="mb-4">
             <div className="flex gap-2">
-              <div className="flex-1 flex items-center border-2 border-gray-200 focus-within:border-[#FEE500] rounded-2xl overflow-hidden transition-colors bg-white">
-                <span className="pl-4">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="#3A1D1D">
-                    <path d="M12 3C6.477 3 2 6.477 2 10.6c0 2.7 1.707 5.073 4.29 6.424l-.895 3.312a.4.4 0 00.59.44L10.04 18.3a11.3 11.3 0 001.96.17c5.523 0 10-3.477 10-7.87C22 6.477 17.523 3 12 3z"/>
-                  </svg>
+              <div className={`flex-1 flex items-center border-2 rounded-2xl overflow-hidden bg-white transition-colors ${engine === 'naver' ? 'focus-within:border-[#03C75A]' : 'focus-within:border-[#FEE500]'} border-gray-200`}>
+                <span className="pl-4 shrink-0">
+                  {engine === 'naver' ? (
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="#03C75A"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/></svg>
+                  ) : (
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="#3A1D1D"><path d="M12 3C6.477 3 2 6.477 2 10.6c0 2.7 1.707 5.073 4.29 6.424l-.895 3.312a.4.4 0 00.59.44L10.04 18.3a11.3 11.3 0 001.96.17c5.523 0 10-3.477 10-7.87C22 6.477 17.523 3 12 3z"/></svg>
+                  )}
                 </span>
                 <input
                   ref={searchInputRef}
@@ -374,25 +404,31 @@ export default function ApplyPage() {
                   </button>
                 )}
               </div>
-              <button onClick={handleSearch} disabled={!searchQuery.trim() || searching}
-                className="shrink-0 w-14 flex items-center justify-center rounded-2xl bg-[#FEE500] hover:bg-[#f0d800] disabled:opacity-40 transition">
-                {searching ? <Loader2 size={18} className="animate-spin text-[#3A1D1D]" /> : <Search size={18} className="text-[#3A1D1D]" />}
+              <button
+                onClick={() => handleSearch()}
+                disabled={!searchQuery.trim() || searching}
+                className={`shrink-0 w-14 flex items-center justify-center rounded-2xl disabled:opacity-40 transition ${engine === 'naver' ? 'bg-[#03C75A]' : 'bg-[#FEE500]'}`}
+              >
+                {searching
+                  ? <Loader2 size={18} className={`animate-spin ${engine === 'naver' ? 'text-white' : 'text-[#3A1D1D]'}`} />
+                  : <Search size={18} className={engine === 'naver' ? 'text-white' : 'text-[#3A1D1D]'} />}
               </button>
             </div>
             {searchError && <p className="mt-2 text-xs text-red-500 px-1">{searchError}</p>}
           </div>
 
+          {/* 검색 결과 */}
           {searchResults !== null && searchResults.length > 0 && (
             <div className="space-y-2 mb-4">
-              {searchResults.map(place => (
-                <button key={place.kakao_id} onClick={() => handleSelectPlace(place)}
-                  className="w-full flex items-start gap-3 p-4 bg-white border-2 border-gray-100 hover:border-[#FEE500] hover:bg-yellow-50 rounded-2xl text-left transition group">
-                  <span className="w-9 h-9 rounded-xl bg-yellow-50 group-hover:bg-yellow-100 flex items-center justify-center shrink-0 text-base transition">
+              {searchResults.map((place, idx) => (
+                <button key={idx} onClick={() => handleSelectPlace(place)}
+                  className={`w-full flex items-start gap-3 p-4 bg-white border-2 border-gray-100 rounded-2xl text-left transition group ${hoverCls}`}>
+                  <span className="w-9 h-9 rounded-xl bg-gray-50 flex items-center justify-center shrink-0 text-base transition">
                     {CATEGORIES.find(c => c.key === kakaoRawToCatKey(place.category_raw))?.emoji ?? '🏪'}
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-gray-900 text-sm">{place.place_name}</p>
-                    <p className="text-xs text-gray-400 mt-0.5 truncate">{place.address}</p>
+                    <p className="text-xs text-gray-400 mt-0.5 truncate">{place.road_address ?? place.address}</p>
                     {place.phone && <p className="text-xs text-gray-400">{place.phone}</p>}
                     <p className="text-[10px] text-gray-300 mt-0.5">{place.category_raw}</p>
                   </div>
@@ -402,10 +438,24 @@ export default function ApplyPage() {
             </div>
           )}
 
-          <div className="mt-auto pt-4">
+          <div className="mt-auto pt-4 space-y-3">
             <button onClick={() => setStep(1)}
               className="w-full py-4 rounded-2xl border-2 border-gray-200 hover:border-gray-300 text-gray-600 hover:text-gray-800 font-semibold text-sm transition">
-              카카오에 없는 가게예요 → 직접 입력하기
+              네이버, 카카오에 없는 가게예요 → 직접 입력
+            </button>
+
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-px bg-gray-100" />
+              <span className="text-xs text-gray-400 shrink-0">또는</span>
+              <div className="flex-1 h-px bg-gray-100" />
+            </div>
+
+            <button
+              onClick={() => { set('hasAgency', true); setStep(1); }}
+              className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl border-2 border-dashed border-gray-200 hover:border-[#FF6F0F]/40 hover:bg-orange-50 text-gray-500 hover:text-[#FF6F0F] font-semibold text-sm transition"
+            >
+              <Building2 size={15} />
+              광고대행사로 신청하기
             </button>
           </div>
         </div>
@@ -438,7 +488,7 @@ export default function ApplyPage() {
             ))}
           </div>
           <div className="flex items-center justify-between">
-            <button onClick={() => step === 1 ? setStep(0) : setStep(s => s - 1)}
+            <button onClick={() => { if (step === 1) { set('hasAgency', false); setStep(0); } else setStep(s => s - 1); }}
               className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1 transition">
               <ChevronLeft size={13} /> 이전
             </button>
@@ -450,6 +500,13 @@ export default function ApplyPage() {
         <div className="flex-1 flex flex-col px-5 max-w-lg mx-auto w-full pt-6 pb-4">
 
           {/* 카카오 자동입력 뱃지 */}
+          {form.storeName && !form.kakaoPlaceUrl && engine === 'naver' && step >= 1 && step <= 4 && (
+            <div className="flex items-center gap-2 mb-5 px-3 py-2 bg-green-50 border border-green-200 rounded-xl">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="#03C75A" className="shrink-0"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/></svg>
+              <span className="text-xs font-semibold text-green-800 flex-1">네이버에서 자동입력됐어요 — 내용을 확인하고 수정해주세요</span>
+              <Check size={12} className="text-green-600 shrink-0" />
+            </div>
+          )}
           {form.kakaoPlaceUrl && step >= 1 && step <= 4 && (
             <div className="flex items-center gap-2 mb-5 px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-xl">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="#92661a" className="shrink-0">
@@ -779,14 +836,29 @@ export default function ApplyPage() {
           {/* ── STEP 6 ── */}
           {step === 6 && (
             <div className="space-y-4">
+              {/* 대행사 표시 */}
+              {form.hasAgency && (
+                <div className="flex items-center gap-2 px-3 py-2 bg-orange-50 border border-orange-100 rounded-xl">
+                  <Building2 size={14} className="text-[#FF6F0F] shrink-0" />
+                  <span className="text-xs font-semibold text-[#FF6F0F]">광고대행사로 신청 중</span>
+                </div>
+              )}
+              {form.hasAgency && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 mb-2">대행사명 *</p>
+                  <input autoFocus value={form.agencyName} onChange={e => set('agencyName', e.target.value)}
+                    placeholder="예: 마케팅홍 에이전시"
+                    className="w-full border-2 border-gray-200 focus:border-[#FF6F0F] outline-none rounded-2xl px-4 py-4 text-base font-semibold text-gray-900 placeholder-gray-400 transition-colors" />
+                </div>
+              )}
               <div>
-                <p className="text-xs font-semibold text-gray-500 mb-2">사장님 이름 *</p>
-                <input autoFocus value={form.ownerName} onChange={e => set('ownerName', e.target.value)}
+                <p className="text-xs font-semibold text-gray-500 mb-2">{form.hasAgency ? '담당자 이름' : '사장님 이름'} *</p>
+                <input autoFocus={!form.hasAgency} value={form.ownerName} onChange={e => set('ownerName', e.target.value)}
                   placeholder="홍길동"
                   className="w-full border-2 border-gray-200 focus:border-[#FF6F0F] outline-none rounded-2xl px-4 py-4 text-base font-semibold text-gray-900 placeholder-gray-400 transition-colors" />
               </div>
               <div>
-                <p className="text-xs font-semibold text-gray-500 mb-2">연락처 (휴대폰) *</p>
+                <p className="text-xs font-semibold text-gray-500 mb-2">{form.hasAgency ? '담당자 연락처' : '연락처 (휴대폰)'} *</p>
                 <input type="tel" inputMode="tel" value={form.ownerPhone} onChange={e => set('ownerPhone', e.target.value)}
                   placeholder="010-0000-0000"
                   className="w-full border-2 border-gray-200 focus:border-[#FF6F0F] outline-none rounded-2xl px-4 py-4 text-base font-semibold text-gray-900 placeholder-gray-400 transition-colors" />
