@@ -79,3 +79,59 @@ Node.js v25.6.1
 💾 50개 DB 저장
 📊 DB 총: 227개
 
+
+==================================================
+[2026. 4. 27. 오전 9:43:54] 크롤링 시작 (1개 키워드)
+==================================================
+기존 DB: 386개
+[32mINFO[39m [33m PlaywrightCrawler:[39m Starting the crawler.
+[32mINFO[39m [33m PlaywrightCrawler:[39m Final request statistics:[90m {"requestsFinished":0,"requestsFailed":0,"retryHistogram":[],"requestAvgFailedDurationMillis":null,"requestAvgFinishedDurationMillis":null,"requestsFinishedPerMinute":0,"requestsFailedPerMinute":0,"requestTotalDurationMillis":0,"requestsTotal":0,"crawlerRuntimeMillis":259}[39m
+[32mINFO[39m [33m PlaywrightCrawler:[39m Finished! Total 0 requests: 0 succeeded, 0 failed.[90m {"terminal":true}[39m
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+Failed to launch browser. Please check the following:
+- Try installing the required dependencies by running `npx playwright install --with-deps` (https://playwright.dev/docs/browsers).
+
+The original error is available in the `cause` property. Below is the error received when trying to launch a browser:
+​
+browserType.launchPersistentContext: Executable doesn't exist at /Users/bangju/Library/Caches/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-mac-arm64/chrome-headless-shell
+╔════════════════════════════════════════════════════════════╗
+║ Looks like Playwright was just installed or updated.       ║
+║ Please run the following command to download new browsers: ║
+║                                                            ║
+║     npx playwright install                                 ║
+║                                                            ║
+║ <3 Playwright Team                                         ║
+╚════════════════════════════════════════════════════════════╝
+    at async Proxy.launchPersistentContext (/Users/bangju/Documents/PROGRAM/unniepick-admin/scripts/crawl-restaurants/node_modules/playwright-extra/src/extra.ts:122:21)
+    ... 2 lines matching cause stack trace ...
+    at async <anonymous> (/Users/bangju/Documents/PROGRAM/unniepick-admin/scripts/crawl-restaurants/node_modules/@crawlee/src/browser-pool.ts:453:37)
+Error thrown at:
+
+    at PlaywrightPlugin._throwAugmentedLaunchError (/Users/bangju/Documents/PROGRAM/unniepick-admin/scripts/crawl-restaurants/node_modules/@crawlee/src/abstract-classes/browser-plugin.ts:261:15)
+    at PlaywrightPlugin._throwOnFailedLaunch (/Users/bangju/Documents/PROGRAM/unniepick-admin/scripts/crawl-restaurants/node_modules/@crawlee/src/playwright/playwright-plugin.ts:194:14)
+    at <anonymous> (/Users/bangju/Documents/PROGRAM/unniepick-admin/scripts/crawl-restaurants/node_modules/@crawlee/src/playwright/playwright-plugin.ts:123:37)
+    at async PlaywrightPlugin._launch (/Users/bangju/Documents/PROGRAM/unniepick-admin/scripts/crawl-restaurants/node_modules/@crawlee/src/playwright/playwright-plugin.ts:120:40)
+    at async BrowserPool._launchBrowser (/Users/bangju/Documents/PROGRAM/unniepick-admin/scripts/crawl-restaurants/node_modules/@crawlee/src/browser-pool.ts:706:29)
+    at async <anonymous> (/Users/bangju/Documents/PROGRAM/unniepick-admin/scripts/crawl-restaurants/node_modules/@crawlee/src/browser-pool.ts:453:37) {
+  name: 'BrowserLaunchError',
+  [cause]: browserType.launchPersistentContext: Executable doesn't exist at /Users/bangju/Library/Caches/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-mac-arm64/chrome-headless-shell
+  ╔════════════════════════════════════════════════════════════╗
+  ║ Looks like Playwright was just installed or updated.       ║
+  ║ Please run the following command to download new browsers: ║
+  ║                                                            ║
+  ║     npx playwright install                                 ║
+  ║                                                            ║
+  ║ <3 Playwright Team                                         ║
+  ╚════════════════════════════════════════════════════════════╝
+      at async Proxy.launchPersistentContext (/Users/bangju/Documents/PROGRAM/unniepick-admin/scripts/crawl-restaurants/node_modules/playwright-extra/src/extra.ts:122:21)
+      at async PlaywrightPlugin._launch (/Users/bangju/Documents/PROGRAM/unniepick-admin/scripts/crawl-restaurants/node_modules/@crawlee/src/playwright/playwright-plugin.ts:120:40)
+      at async BrowserPool._launchBrowser (/Users/bangju/Documents/PROGRAM/unniepick-admin/scripts/crawl-restaurants/node_modules/@crawlee/src/browser-pool.ts:706:29)
+      at async <anonymous> (/Users/bangju/Documents/PROGRAM/unniepick-admin/scripts/crawl-restaurants/node_modules/@crawlee/src/browser-pool.ts:453:37) {
+    name: 'Error'
+  }
+}
+
+Node.js v25.6.1
