@@ -10,7 +10,7 @@
 import 'dotenv/config';
 import { autoTagRestaurant } from './tagger.js';
 import { type Page } from 'playwright';
-import { stealthChromium, LAUNCH_ARGS } from './stealth-browser.js';
+import { stealthChromium, LAUNCH_ARGS, injectStealth, waitForApollo, waitForContent } from './stealth-browser.js';
 import { upsertRestaurants, type RestaurantData, type ReviewKeyword, type MenuKeyword, type BlogReview } from './storage.js';
 import { crawlDetailInfo } from './main.js';
 import { processImage } from './image.js';
@@ -43,7 +43,7 @@ async function getFirstResult(page: Page, query: string): Promise<RestaurantData
     `https://pcmap.place.naver.com/restaurant/list?query=${encodeURIComponent(query)}`,
     { waitUntil: 'networkidle', timeout: 25_000 },
   );
-  await page.waitForTimeout(2500);
+  await waitForApollo(page);
 
   const items: RestaurantData[] = await page.evaluate(() => {
     const apollo = (window as any).__APOLLO_STATE__;
@@ -91,7 +91,7 @@ async function crawlReviews(page: Page, placeId: string): Promise<{
   await page.goto(`https://pcmap.place.naver.com/restaurant/${placeId}/review/visitor`, {
     waitUntil: 'networkidle', timeout: 15_000,
   });
-  await page.waitForTimeout(2000);
+  await waitForContent(page);
 
   const visitorData = await page.evaluate(() => {
     const body = document.body.innerText;
@@ -131,7 +131,7 @@ async function crawlReviews(page: Page, placeId: string): Promise<{
   await page.goto(`https://pcmap.place.naver.com/restaurant/${placeId}/review/ugc`, {
     waitUntil: 'networkidle', timeout: 15_000,
   });
-  await page.waitForTimeout(2000);
+  await waitForContent(page);
 
   const blogReviews: BlogReview[] = await page.evaluate(() => {
     const body = document.body.innerText;
@@ -192,6 +192,7 @@ console.log(`${'─'.repeat(50)}\n`);
 const browser = await stealthChromium.launch(LAUNCH_ARGS as any);
 try {
   const page = await browser.newPage();
+  await injectStealth(page); // stealth 주입
 
   // 1. 검색
   const store = await getFirstResult(page, query);

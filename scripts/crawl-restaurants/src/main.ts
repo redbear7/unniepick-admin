@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { type Page } from 'playwright';
 import { PlaywrightCrawler } from 'crawlee';
-import { stealthChromium, LAUNCH_ARGS } from './stealth-browser.js';
+import { stealthChromium, LAUNCH_ARGS, injectStealth, waitForApollo, waitForContent } from './stealth-browser.js';
 import {
   upsertRestaurants, getStats, getExistingIds,
   getActiveKeywords, updateKeywordStatus,
@@ -31,11 +31,18 @@ async function crawl(keywords: CrawlKeyword[]) {
     retryOnBlocked: true,       // 봇 차단 감지 시 재시도
     requestHandlerTimeoutSecs: 300,
 
-    // Stealth 적용 Chromium 사용
+    // 네이티브 Chromium + stealth args 사용
     launchContext: {
       launcher: stealthChromium as any,
       launchOptions: LAUNCH_ARGS as any,
     },
+
+    // 페이지 생성 후 첫 내비게이션 전에 stealth 스크립트 주입
+    preNavigationHooks: [
+      async ({ page }) => {
+        await injectStealth(page);
+      },
+    ],
 
     async requestHandler({ page, request, log }) {
       const { kw } = request.userData as { kw: CrawlKeyword };
@@ -182,7 +189,7 @@ async function collectFromApollo(page: Page, query: string): Promise<RestaurantD
     `https://pcmap.place.naver.com/restaurant/list?query=${encodeURIComponent(query)}`,
     { waitUntil: 'networkidle', timeout: 20_000 },
   );
-  await page.waitForTimeout(2500);
+  await waitForApollo(page);
 
   for (let pageNum = 1; pageNum <= 5; pageNum++) {
     // Apollo RestaurantListSummary에서 기본 정보 추출
@@ -243,15 +250,19 @@ async function collectFromApollo(page: Page, query: string): Promise<RestaurantD
 
       await nextBtn.click();
 
-      // 페이지 변경 대기
-      for (let w = 0; w < 10; w++) {
-        await page.waitForTimeout(500);
-        const newFirstName = await page.$eval(
-          '[class*="TYaxT"]', (el: Element) => el.textContent?.trim() ?? '',
-        ).catch(() => '');
-        if (newFirstName && newFirstName !== prevFirstName) break;
-      }
-      await page.waitForTimeout(1000);
+      // 첫 번째 업체명이 바뀔 때까지 대기 (페이지 변경 감지)
+      try {
+        await page.waitForFunction(
+          (prev: string) => {
+            const el = document.querySelector('[class*="TYaxT"]');
+            const text = el?.textContent?.trim() ?? '';
+            return text !== '' && text !== prev;
+          },
+          prevFirstName,
+          { timeout: 5_000 },
+        );
+      } catch { /* 타임아웃 — 진행 */ }
+      await page.waitForTimeout(300); // 렌더링 안정화
     }
   }
 
@@ -271,7 +282,7 @@ export async function crawlDetailInfo(page: Page, placeId: string): Promise<{
   await page.goto(`https://pcmap.place.naver.com/restaurant/${placeId}/home`, {
     waitUntil: 'networkidle', timeout: 20_000,
   });
-  await page.waitForTimeout(2000);
+  await waitForApollo(page);
 
   const homeData = await page.evaluate(() => {
     const body = document.body.innerText;
@@ -368,7 +379,7 @@ export async function crawlDetailInfo(page: Page, placeId: string): Promise<{
   await page.goto(`https://pcmap.place.naver.com/restaurant/${placeId}/menu/list`, {
     waitUntil: 'networkidle', timeout: 15_000,
   });
-  await page.waitForTimeout(1500);
+  await waitForApollo(page);
 
   const menuItems: Array<{ name: string; price?: string }> = await page.evaluate(() => {
     const apollo = (window as any).__APOLLO_STATE__ ?? {};
@@ -422,7 +433,7 @@ async function crawlReviews(page: Page, placeId: string): Promise<{
   await page.goto(`https://pcmap.place.naver.com/restaurant/${placeId}/review/visitor`, {
     waitUntil: 'networkidle', timeout: 15_000,
   });
-  await page.waitForTimeout(2000);
+  await waitForContent(page);
 
   const visitorData = await page.evaluate(() => {
     const body = document.body.innerText;
@@ -471,7 +482,7 @@ async function crawlReviews(page: Page, placeId: string): Promise<{
   await page.goto(`https://pcmap.place.naver.com/restaurant/${placeId}/review/ugc`, {
     waitUntil: 'networkidle', timeout: 15_000,
   });
-  await page.waitForTimeout(2000);
+  await waitForContent(page);
 
   const blogReviews: BlogReview[] = await page.evaluate(() => {
     const body = document.body.innerText;

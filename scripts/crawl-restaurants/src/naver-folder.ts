@@ -18,7 +18,7 @@ import { crawlDetailInfo } from './main.js';
 import { processImage } from './image.js';
 import { autoTagRestaurant } from './tagger.js';
 import { upsertRestaurants, type RestaurantData } from './storage.js';
-import { stealthChromium, LAUNCH_ARGS } from './stealth-browser.js';
+import { stealthChromium, LAUNCH_ARGS, injectStealth, waitForApollo } from './stealth-browser.js';
 
 const RESULT_FILE  = path.join(new URL('../logs/folder-result.json', import.meta.url).pathname);
 const COOKIE_FILE  = path.join(new URL('../logs/naver-cookies.json',  import.meta.url).pathname);
@@ -91,13 +91,14 @@ async function naverLogin(page: import('playwright').Page): Promise<boolean> {
 
   try {
     await page.goto('https://nid.naver.com/nidlogin.login', { waitUntil: 'domcontentloaded', timeout: 15_000 });
-    await page.waitForTimeout(1000);
+    await page.waitForSelector('#id', { timeout: 5_000 });
     await page.fill('#id', id);
-    await page.waitForTimeout(500);
     await page.fill('#pw', pw);
-    await page.waitForTimeout(500);
     await page.click('#log\\.login');
-    await page.waitForTimeout(3000);
+    // 로그인 후 URL 변경 대기 (최대 10초)
+    try {
+      await page.waitForURL((url) => !url.href.includes('nid.naver.com'), { timeout: 10_000 });
+    } catch { /* URL 변경 없으면 실패로 처리 */ }
 
     if (page.url().includes('nid.naver.com')) {
       console.log('⚠️  로그인 실패 (captcha 또는 잘못된 계정)');
@@ -133,6 +134,7 @@ async function extractPlaceIdsFromFolder(folderUrl: string): Promise<Array<{
 
   const browser = await stealthChromium.launch(LAUNCH_ARGS as any);
   const context = await browser.newContext();
+  await injectStealth(context); // 컨텍스트 전체에 stealth 주입
 
   // 쿠키 로드 (로그인 세션 복원)
   const cookiesLoaded = await loadCookies(context);
@@ -205,7 +207,7 @@ async function fetchPlaceBasicInfo(page: import('playwright').Page, placeId: str
     await page.goto(`https://pcmap.place.naver.com/restaurant/${placeId}/home`, {
       waitUntil: 'networkidle', timeout: 20_000,
     });
-    await page.waitForTimeout(2000);
+    await waitForApollo(page);
 
     return await page.evaluate((pid) => {
       const apollo = (window as any).__APOLLO_STATE__ ?? {};
@@ -287,6 +289,7 @@ if (newItems.length === 0) {
 // 3. 신규 업체 상세 크롤링
 const browser2 = await stealthChromium.launch(LAUNCH_ARGS as any);
 const page2 = await browser2.newPage();
+await injectStealth(page2); // stealth 주입
 const saved: Array<{ placeId: string; name: string }> = [];
 const failed: Array<{ placeId: string; name: string; error: string }> = [];
 
