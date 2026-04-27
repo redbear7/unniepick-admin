@@ -239,16 +239,10 @@ export default function StoresPage() {
   const [saving,      setSaving]      = useState(false);
   const [saveError,   setSaveError]   = useState('');
   const [deleteId,    setDeleteId]    = useState<string | null>(null);
-  const [naverUrl,    setNaverUrl]    = useState('');
-  const [autoFilling, setAutoFilling] = useState(false);
-  const [autoFillErr, setAutoFillErr] = useState('');
-  const [autoFillTab, setAutoFillTab] = useState<'naver' | 'kakao'>('kakao');
-  const [kakaoQ,          setKakaoQ]          = useState('');
-  const [kakaoResults,    setKakaoResults]    = useState<KakaoPlace[]>([]);
-  const [kakaoSearching,  setKakaoSearching]  = useState(false);
-  const [kakaoErr,        setKakaoErr]        = useState('');
-  const [kakaoPage,       setKakaoPage]       = useState(1);
-  const [kakaoIsEnd,      setKakaoIsEnd]      = useState(true);
+  const [naverQ,        setNaverQ]        = useState('');
+  const [naverResults,  setNaverResults]  = useState<NaverPlace[]>([]);
+  const [naverSearching, setNaverSearching] = useState(false);
+  const [naverErr,      setNaverErr]      = useState('');
 
   /* coupon counts (list) */
   const [couponCountMap, setCouponCountMap] = useState<Record<string, number>>({});
@@ -372,40 +366,36 @@ export default function StoresPage() {
     setToggling(null);
   };
 
-  const searchKakao = async (page = 1) => {
-    if (!kakaoQ.trim()) return;
-    setKakaoSearching(true); setKakaoErr('');
-    if (page === 1) setKakaoResults([]);
+  const searchNaver = async () => {
+    if (!naverQ.trim()) return;
+    setNaverSearching(true); setNaverErr(''); setNaverResults([]);
     try {
-      const r = await fetch(`/api/kakao-place?q=${encodeURIComponent(kakaoQ.trim())}&page=${page}`);
+      const r = await fetch(`/api/naver-place?q=${encodeURIComponent(naverQ.trim())}&size=5`);
       const data = await r.json();
-      if (!r.ok) { setKakaoErr(data.error ?? '검색 오류'); return; }
-      setKakaoResults(prev => page === 1 ? data.places : [...prev, ...data.places]);
-      setKakaoIsEnd(data.meta?.is_end ?? true);
-      setKakaoPage(page);
-    } catch { setKakaoErr('네트워크 오류가 발생했습니다'); }
-    finally   { setKakaoSearching(false); }
+      if (!r.ok) { setNaverErr(data.error ?? '검색 오류'); return; }
+      setNaverResults(data.places ?? []);
+    } catch { setNaverErr('네트워크 오류가 발생했습니다'); }
+    finally   { setNaverSearching(false); }
   };
 
-  const applyKakaoPlace = (place: KakaoPlace) => {
+  const applyNaverPlace = (place: NaverPlace) => {
     setForm(f => ({
       ...f,
-      name:            place.place_name  || f.name,
-      address:         place.address     || f.address,
-      phone:           place.phone       || f.phone,
-      category:        place.category    || f.category,
+      name:            place.place_name   || f.name,
+      address:         place.address      || f.address,
+      phone:           place.phone        || f.phone,
+      category:        place.category     || f.category,
       category_detail: place.category_raw || f.category_detail,
-      latitude:        place.latitude    ?? f.latitude,
-      longitude:       place.longitude   ?? f.longitude,
+      latitude:        place.latitude     ?? f.latitude,
+      longitude:       place.longitude    ?? f.longitude,
     }));
-    setKakaoResults([]);
-    setKakaoQ('');
+    setNaverResults([]);
+    setNaverQ('');
   };
 
   const openNew = () => {
     setForm(EMPTY_FORM);
-    setNaverUrl(''); setAutoFillErr(''); setSaveError('');
-    setKakaoQ(''); setKakaoResults([]); setKakaoErr('');
+    setNaverQ(''); setNaverResults([]); setNaverErr(''); setSaveError('');
     setActiveTab('info'); setStoreCoupons([]); setShowCouponAdd(false);
     setEditModal('new');
   };
@@ -423,33 +413,11 @@ export default function StoresPage() {
       geo_discoverable: store.geo_discoverable ?? false,
       category_detail:  store.category_detail ?? null,
     });
-    setNaverUrl(''); setAutoFillErr(''); setSaveError('');
-    setKakaoQ(''); setKakaoResults([]); setKakaoErr('');
+    setNaverQ(''); setNaverResults([]); setNaverErr(''); setSaveError('');
     setActiveTab('info'); setShowCouponAdd(false);
     setCouponError(''); setEditCouponId(null);
     loadStoreCoupons(store.id);
     setEditModal(store);
-  };
-
-  const handleNaverAutoFill = async () => {
-    if (!naverUrl.trim()) return;
-    setAutoFilling(true); setAutoFillErr('');
-    try {
-      const r    = await fetch(`/api/naver-place?url=${encodeURIComponent(naverUrl.trim())}`);
-      const data = await r.json();
-      if (data.error) { setAutoFillErr(data.error); return; }
-      setForm(f => ({
-        ...f,
-        name:      data.name      || f.name,
-        address:   data.address   || f.address,
-        phone:     data.phone     || f.phone,
-        category:  data.category  || f.category,
-        image_url: data.image_url || f.image_url,
-        latitude:  data.latitude  ?? f.latitude,
-        longitude: data.longitude ?? f.longitude,
-      }));
-    } catch { setAutoFillErr('네트워크 오류가 발생했습니다'); }
-    finally  { setAutoFilling(false); }
   };
 
   const saveStore = async () => {
@@ -1231,118 +1199,62 @@ export default function StoresPage() {
                     </div>
                   )}
 
-                  {/* 자동 입력 — 카카오 / 네이버 탭 */}
-                  <div className="bg-sidebar border border-border-subtle rounded-2xl overflow-hidden">
-                    {/* 탭 헤더 */}
-                    <div className="flex border-b border-border-subtle">
-                      <button
-                        onClick={() => setAutoFillTab('kakao')}
-                        className={`flex-1 py-2.5 text-xs font-bold transition ${autoFillTab === 'kakao' ? 'bg-yellow-400/10 text-yellow-400 border-b-2 border-yellow-400' : 'text-muted hover:text-primary'}`}
-                      >
-                        🟡 카카오 검색
-                      </button>
-                      <button
-                        onClick={() => setAutoFillTab('naver')}
-                        className={`flex-1 py-2.5 text-xs font-bold transition ${autoFillTab === 'naver' ? 'bg-[#03C75A]/10 text-[#03C75A] border-b-2 border-[#03C75A]' : 'text-muted hover:text-primary'}`}
-                      >
-                        🟢 네이버 URL
-                      </button>
+                  {/* 자동 입력 — 네이버 검색 */}
+                  <div className="bg-sidebar border border-[#03C75A]/30 rounded-2xl overflow-hidden">
+                    <div className="px-3 pt-3 pb-0.5">
+                      <p className="text-[10px] font-bold text-[#03C75A] mb-2">🟢 네이버 검색으로 자동 입력</p>
                     </div>
-
                     <div className="p-3 space-y-2">
-                      {/* 카카오 탭 */}
-                      {autoFillTab === 'kakao' && (
-                        <>
-                          <div className="flex gap-2">
-                            <input
-                              value={kakaoQ}
-                              onChange={e => setKakaoQ(e.target.value)}
-                              onKeyDown={e => e.key === 'Enter' && searchKakao(1)}
-                              placeholder="가게명 또는 주소로 검색 (예: 진해 밀면)"
-                              className="flex-1 min-w-0 bg-card border border-border-subtle rounded-xl px-3 py-2.5 text-sm text-primary placeholder-gray-600 focus:outline-none focus:border-yellow-400 transition"
-                            />
-                            <button
-                              onClick={() => searchKakao(1)}
-                              disabled={kakaoSearching || !kakaoQ.trim()}
-                              className="shrink-0 px-4 py-2.5 bg-yellow-400 hover:bg-yellow-300 disabled:opacity-50 text-black text-xs font-bold rounded-xl transition"
-                            >
-                              {kakaoSearching ? '검색 중...' : '검색'}
-                            </button>
-                          </div>
+                      <div className="flex gap-2">
+                        <input
+                          value={naverQ}
+                          onChange={e => setNaverQ(e.target.value)}
+                          onKeyDown={e => e.key === 'Enter' && searchNaver()}
+                          placeholder="가게명 또는 주소로 검색 (예: 진해 밀면)"
+                          className="flex-1 min-w-0 bg-card border border-border-subtle rounded-xl px-3 py-2.5 text-sm text-primary placeholder-gray-600 focus:outline-none focus:border-[#03C75A] transition"
+                        />
+                        <button
+                          onClick={searchNaver}
+                          disabled={naverSearching || !naverQ.trim()}
+                          className="shrink-0 px-4 py-2.5 bg-[#03C75A] hover:bg-[#02b050] disabled:opacity-50 text-white text-xs font-bold rounded-xl transition"
+                        >
+                          {naverSearching ? '검색 중...' : '검색'}
+                        </button>
+                      </div>
 
-                          {kakaoErr && (
-                            <p className="text-xs text-red-400 flex items-center gap-1"><X size={11}/>{kakaoErr}</p>
-                          )}
-
-                          {/* 검색 결과 */}
-                          {kakaoResults.length > 0 && (
-                            <div className="space-y-1.5 max-h-64 overflow-y-auto pr-0.5">
-                              {kakaoResults.map(place => (
-                                <button
-                                  key={place.kakao_id}
-                                  onClick={() => applyKakaoPlace(place)}
-                                  className="w-full text-left px-3 py-2.5 bg-card border border-border-subtle hover:border-yellow-400/50 hover:bg-yellow-400/5 rounded-xl transition group"
-                                >
-                                  <div className="flex items-start justify-between gap-2">
-                                    <div className="min-w-0 flex-1">
-                                      <p className="text-sm font-semibold text-primary group-hover:text-yellow-400 transition truncate">{place.place_name}</p>
-                                      <p className="text-[10px] text-muted mt-0.5 truncate">{place.address}</p>
-                                      <div className="flex items-center gap-2 mt-1">
-                                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-fill-medium text-tertiary">{place.category}</span>
-                                        {place.phone && <span className="text-[9px] text-dim">{place.phone}</span>}
-                                        {place.latitude && <span className="text-[9px] text-emerald-500/70">📍 좌표 포함</span>}
-                                      </div>
-                                    </div>
-                                    <span className="shrink-0 text-[10px] text-yellow-400 opacity-0 group-hover:opacity-100 transition font-bold">적용 →</span>
-                                  </div>
-                                </button>
-                              ))}
-                              {!kakaoIsEnd && (
-                                <button
-                                  onClick={() => searchKakao(kakaoPage + 1)}
-                                  disabled={kakaoSearching}
-                                  className="w-full py-2 text-xs text-muted hover:text-primary border border-dashed border-border-subtle rounded-xl transition disabled:opacity-40"
-                                >
-                                  {kakaoSearching ? '로딩 중...' : '더 보기'}
-                                </button>
-                              )}
-                            </div>
-                          )}
-
-                          {form.latitude != null && (
-                            <p className="text-xs text-emerald-500 flex items-center gap-1">
-                              <MapPin size={10} /> 좌표 입력됨 ({form.latitude.toFixed(4)}, {form.longitude?.toFixed(4)})
-                            </p>
-                          )}
-                        </>
+                      {naverErr && (
+                        <p className="text-xs text-red-400 flex items-center gap-1"><X size={11}/>{naverErr}</p>
                       )}
 
-                      {/* 네이버 탭 */}
-                      {autoFillTab === 'naver' && (
-                        <>
-                          <div className="flex gap-2">
-                            <input
-                              value={naverUrl}
-                              onChange={e => { setNaverUrl(e.target.value); setAutoFillErr(''); }}
-                              onKeyDown={e => e.key === 'Enter' && handleNaverAutoFill()}
-                              placeholder="https://map.naver.com/v5/entry/place/..."
-                              className="flex-1 min-w-0 bg-card border border-border-subtle rounded-xl px-3 py-2.5 text-sm text-primary placeholder-gray-600 focus:outline-none focus:border-[#03C75A] transition"
-                            />
+                      {naverResults.length > 0 && (
+                        <div className="space-y-1.5 max-h-64 overflow-y-auto pr-0.5">
+                          {naverResults.map((place, i) => (
                             <button
-                              onClick={handleNaverAutoFill}
-                              disabled={autoFilling || !naverUrl.trim()}
-                              className="shrink-0 px-4 py-2.5 bg-[#03C75A] hover:bg-[#02b050] disabled:opacity-50 text-primary text-xs font-bold rounded-xl transition"
+                              key={i}
+                              onClick={() => applyNaverPlace(place)}
+                              className="w-full text-left px-3 py-2.5 bg-card border border-border-subtle hover:border-[#03C75A]/50 hover:bg-[#03C75A]/5 rounded-xl transition group"
                             >
-                              {autoFilling ? '조회 중...' : '자동 입력'}
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-sm font-semibold text-primary group-hover:text-[#03C75A] transition truncate">{place.place_name}</p>
+                                  <p className="text-[10px] text-muted mt-0.5 truncate">{place.address}</p>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-fill-medium text-tertiary">{place.category}</span>
+                                    {place.phone && <span className="text-[9px] text-dim">{place.phone}</span>}
+                                    {place.latitude && <span className="text-[9px] text-emerald-500/70">📍 좌표 포함</span>}
+                                  </div>
+                                </div>
+                                <span className="shrink-0 text-[10px] text-[#03C75A] opacity-0 group-hover:opacity-100 transition font-bold">적용 →</span>
+                              </div>
                             </button>
-                          </div>
-                          {autoFillErr && <p className="text-xs text-red-400">{autoFillErr}</p>}
-                          {form.latitude != null && (
-                            <p className="text-xs text-emerald-500 flex items-center gap-1">
-                              <MapPin size={10} /> 좌표 자동 입력됨 ({form.latitude.toFixed(4)}, {form.longitude?.toFixed(4)})
-                            </p>
-                          )}
-                        </>
+                          ))}
+                        </div>
+                      )}
+
+                      {form.latitude != null && (
+                        <p className="text-xs text-emerald-500 flex items-center gap-1">
+                          <MapPin size={10} /> 좌표 입력됨 ({form.latitude.toFixed(4)}, {form.longitude?.toFixed(4)})
+                        </p>
                       )}
                     </div>
                   </div>
