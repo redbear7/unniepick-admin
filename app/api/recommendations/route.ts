@@ -71,5 +71,15 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ data });
+
+  // 랜덤 포인트 지급 (10 ~ 50)
+  const points = Math.floor(Math.random() * 41) + 10;
+  await admin.from('user_points').insert({
+    user_id:      user.id,
+    points,
+    reason:       '추천맛집 등록',
+    reference_id: data.id,
+  }).then(() => {}); // 포인트 실패해도 응답은 성공
+
+  return NextResponse.json({ data, points_earned: points });
 }

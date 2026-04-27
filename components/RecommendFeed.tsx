@@ -266,6 +266,26 @@ function RecCard({ rec: initRec, user }: { rec: Rec; user: User | null }) {
   );
 }
 
+// ── 이미지 리사이즈 ───────────────────────────────────────────
+async function resizeToBlob(file: File, maxPx = 1024, quality = 0.82): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const objUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(objUrl);
+      const scale = Math.min(1, maxPx / Math.max(img.width, img.height));
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d')!.drawImage(img, 0, 0, w, h);
+      canvas.toBlob(b => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/jpeg', quality);
+    };
+    img.onerror = reject;
+    img.src = objUrl;
+  });
+}
+
 // ── 추천 작성 모달 ────────────────────────────────────────────
 function AddModal({ user, onClose, onAdded }: {
   user: User;
@@ -274,16 +294,29 @@ function AddModal({ user, onClose, onAdded }: {
 }) {
   const [searchSource, setSearchSource] = useState<'naver' | 'kakao'>('naver');
   const { query, setQuery, results, loading, search } = usePlaceSearch(searchSource);
-  const [inputVal,  setInputVal]  = useState('');
-  const [selected,  setSelected]  = useState<PlaceResult | null>(null);
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  const [newMenu,   setNewMenu]   = useState({ name: '', price: '' });
-  const [recText,   setRecText]   = useState('');
-  const [saving,    setSaving]    = useState(false);
-  const [step,      setStep]      = useState<'search' | 'edit'>('search');
+  const [inputVal,     setInputVal]     = useState('');
+  const [selected,     setSelected]     = useState<PlaceResult | null>(null);
+  const [menuItems,    setMenuItems]    = useState<MenuItem[]>([]);
+  const [newMenu,      setNewMenu]      = useState({ name: '', price: '' });
+  const [recText,      setRecText]      = useState('');
+  const [saving,       setSaving]       = useState(false);
+  const [step,         setStep]         = useState<'search' | 'edit'>('search');
+  const [photoFile,    setPhotoFile]    = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [pointsEarned, setPointsEarned] = useState<number | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const NAVER_GREEN = '#03C75A';
   const KAKAO_YELLOW = '#FEE500';
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPhotoFile(file);
+    const reader = new FileReader();
+    reader.onload = ev => setPhotoPreview(ev.target?.result as string);
+    reader.readAsDataURL(file);
+  };
 
   // DB에서 해당 가게 메뉴 정보 자동 조회
   const fetchMenuFromDB = useCallback(async (placeName: string) => {
@@ -318,6 +351,25 @@ function AddModal({ user, onClose, onAdded }: {
     const token = await getToken();
     if (!token) { alert('로그인 세션이 만료되었습니다.'); setSaving(false); return; }
 
+    // 이미지 업로드 (실패해도 계속)
+    let imageUrl: string | undefined;
+    if (photoFile) {
+      try {
+        const blob = await resizeToBlob(photoFile);
+        const sb = createClient();
+        const { data: { session } } = await sb.auth.getSession();
+        const uid = session?.user?.id ?? 'anon';
+        const filename = `${uid}/${Date.now()}.jpg`;
+        const { error: upErr } = await sb.storage
+          .from('rec-images')
+          .upload(filename, blob, { contentType: 'image/jpeg', upsert: false });
+        if (!upErr) {
+          const { data: { publicUrl } } = sb.storage.from('rec-images').getPublicUrl(filename);
+          imageUrl = publicUrl;
+        }
+      } catch { /* 이미지 없이 진행 */ }
+    }
+
     const res = await fetch('/api/recommendations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', authorization: `Bearer ${token}` },
@@ -326,7 +378,7 @@ function AddModal({ user, onClose, onAdded }: {
         place_name:          selected.place_name,
         place_category:      selected.category,
         place_address:       selected.road_address ?? selected.address,
-        place_image_url:     undefined,
+        place_image_url:     imageUrl,
         source:              selected.source ?? searchSource,
         menu_items:          menuItems,
         recommendation_text: recText.trim(),
@@ -335,20 +387,39 @@ function AddModal({ user, onClose, onAdded }: {
     const json = await res.json();
     if (json.data) {
       onAdded(json.data);
-      onClose();
+      if (json.points_earned) {
+        setPointsEarned(json.points_earned);
+        setTimeout(() => onClose(), 2400);
+      } else {
+        onClose();
+      }
     } else {
       alert(json.error ?? '저장에 실패했습니다');
+      setSaving(false);
     }
-    setSaving(false);
   };
 
   const sourceColor = searchSource === 'naver' ? NAVER_GREEN : '#3A1D96';
 
   return (
     <div style={overlay} onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={modal}>
+      <div style={{ ...modal, position: 'relative', overflow: 'hidden' }}>
         {/* 닫기 버튼 */}
         <button onClick={onClose} style={{ ...btnClose, position: 'absolute', top: 20, right: 20 }}>✕</button>
+
+        {/* 포인트 획득 축하 오버레이 */}
+        {pointsEarned && (
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,.97)',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            borderRadius: 20, zIndex: 99 }}>
+            <div style={{ fontSize: 72, marginBottom: 16, lineHeight: 1 }}>🎉</div>
+            <div style={{ fontSize: 28, fontWeight: 900, color: '#FF6F0F', marginBottom: 8 }}>
+              +{pointsEarned} 포인트!
+            </div>
+            <div style={{ fontSize: 15, color: '#6B7684', marginBottom: 4 }}>추천글이 등록됐어요</div>
+            <div style={{ fontSize: 13, color: '#ADB5BD' }}>잠시 후 닫힙니다...</div>
+          </div>
+        )}
 
         {step === 'search' ? (
           <>
@@ -448,10 +519,36 @@ function AddModal({ user, onClose, onAdded }: {
                 <span style={{ fontWeight: 800 }}>{selected!.place_name}</span>
               </div>
               <div style={{ fontSize: 12, color: '#666' }}>{selected!.category} · {selected!.road_address ?? selected!.address}</div>
-              <button onClick={() => { setSelected(null); setStep('search'); setMenuItems([]); }} style={btnChangePlace}>
+              <button onClick={() => { setSelected(null); setStep('search'); setMenuItems([]); setPhotoFile(null); setPhotoPreview(null); }} style={btnChangePlace}>
                 가게 변경
               </button>
             </div>
+
+            {/* 사진 업로드 */}
+            <div style={sectionLabel}>📷 사진 (선택, 자동 리사이즈)</div>
+            <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }}
+              onChange={handlePhotoChange} />
+            {photoPreview ? (
+              <div style={{ position: 'relative', marginBottom: 12 }}>
+                <img src={photoPreview} alt="preview"
+                  style={{ width: '100%', height: 160, objectFit: 'cover', borderRadius: 10, display: 'block' }} />
+                <button onClick={() => { setPhotoFile(null); setPhotoPreview(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
+                  style={{ position: 'absolute', top: 6, right: 6, width: 26, height: 26,
+                    borderRadius: '50%', background: 'rgba(0,0,0,.5)', color: '#fff',
+                    border: 'none', fontSize: 12, cursor: 'pointer', display: 'flex',
+                    alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit' }}>
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <button onClick={() => fileInputRef.current?.click()}
+                style={{ width: '100%', height: 80, borderRadius: 10, border: '1.5px dashed #D1D5DB',
+                  background: '#F9FAFB', color: '#8B95A1', fontSize: 13, fontWeight: 600,
+                  cursor: 'pointer', fontFamily: 'inherit', marginBottom: 12,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                📷 사진 추가
+              </button>
+            )}
 
             {/* 메뉴 정보 */}
             <div style={sectionLabel}>🍽️ 메뉴 정보</div>
