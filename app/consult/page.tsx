@@ -49,7 +49,7 @@ export default function ConsultPage() {
   const [error, setError] = useState('');
 
   // 검색
-  const [engine, setEngine] = useState<SearchEngine>('kakao');
+  const [engine, setEngine] = useState<SearchEngine>('naver');
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchPlace[] | null>(null);
   const [searching, setSearching] = useState(false);
