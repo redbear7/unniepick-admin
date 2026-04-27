@@ -34,12 +34,14 @@ interface Rec {
 }
 interface PlaceResult {
   kakao_id?: string;
+  naver_id?: string;
   place_name: string;
   category: string;
   address: string;
   road_address?: string;
   phone?: string;
   place_url?: string;
+  source?: 'kakao' | 'naver';
 }
 
 // ── 유틸 ─────────────────────────────────────────────────────
@@ -60,28 +62,42 @@ async function getToken(): Promise<string | null> {
 }
 
 // ── 가게 검색 훅 ─────────────────────────────────────────────
-function usePlaceSearch() {
+function usePlaceSearch(source: 'kakao' | 'naver') {
   const [query,   setQuery]   = useState('');
   const [results, setResults] = useState<PlaceResult[]>([]);
   const [loading, setLoading] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const search = async (q: string) => {
+    if (q.trim().length < 2) { setResults([]); return; }
+    setLoading(true);
+    try {
+      if (source === 'kakao') {
+        const res = await fetch(`/api/kakao-place?q=${encodeURIComponent(q)}&limit=7`);
+        const json = await res.json();
+        setResults((json.data ?? []).map((p: any) => ({ ...p, source: 'kakao' as const })));
+      } else {
+        const res = await fetch(`/api/naver-place?q=${encodeURIComponent(q)}&size=7`);
+        const json = await res.json();
+        setResults((json.places ?? []).map((p: any) => ({ ...p, source: 'naver' as const })));
+      }
+    } catch { setResults([]); }
+    setLoading(false);
+  };
+
+  // 소스 변경 시 결과 초기화
+  useEffect(() => { setResults([]); }, [source]);
+
+  // 디바운스 자동검색
   useEffect(() => {
     if (query.trim().length < 2) { setResults([]); return; }
     if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(async () => {
-      setLoading(true);
-      try {
-        const res = await fetch(`/api/kakao-place?q=${encodeURIComponent(query)}&limit=5`);
-        const json = await res.json();
-        setResults(json.data ?? []);
-      } catch { setResults([]); }
-      setLoading(false);
-    }, 400);
+    timer.current = setTimeout(() => search(query), 400);
     return () => { if (timer.current) clearTimeout(timer.current); };
-  }, [query]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, source]);
 
-  return { query, setQuery, results, loading };
+  return { query, setQuery, results, loading, search };
 }
 
 // ── 댓글 패널 ────────────────────────────────────────────────
@@ -256,13 +272,18 @@ function AddModal({ user, onClose, onAdded }: {
   onClose: () => void;
   onAdded: (rec: Rec) => void;
 }) {
-  const { query, setQuery, results, loading } = usePlaceSearch();
+  const [searchSource, setSearchSource] = useState<'naver' | 'kakao'>('naver');
+  const { query, setQuery, results, loading, search } = usePlaceSearch(searchSource);
+  const [inputVal,  setInputVal]  = useState('');
   const [selected,  setSelected]  = useState<PlaceResult | null>(null);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [newMenu,   setNewMenu]   = useState({ name: '', price: '' });
   const [recText,   setRecText]   = useState('');
   const [saving,    setSaving]    = useState(false);
   const [step,      setStep]      = useState<'search' | 'edit'>('search');
+
+  const NAVER_GREEN = '#03C75A';
+  const KAKAO_YELLOW = '#FEE500';
 
   // DB에서 해당 가게 메뉴 정보 자동 조회
   const fetchMenuFromDB = useCallback(async (placeName: string) => {
@@ -301,12 +322,12 @@ function AddModal({ user, onClose, onAdded }: {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', authorization: `Bearer ${token}` },
       body: JSON.stringify({
-        place_id:            selected.kakao_id ?? selected.place_name,
+        place_id:            selected.kakao_id ?? selected.naver_id ?? selected.place_name,
         place_name:          selected.place_name,
         place_category:      selected.category,
         place_address:       selected.road_address ?? selected.address,
         place_image_url:     undefined,
-        source:              'kakao',
+        source:              selected.source ?? searchSource,
         menu_items:          menuItems,
         recommendation_text: recText.trim(),
       }),
@@ -321,40 +342,111 @@ function AddModal({ user, onClose, onAdded }: {
     setSaving(false);
   };
 
+  const sourceColor = searchSource === 'naver' ? NAVER_GREEN : '#3A1D96';
+
   return (
     <div style={overlay} onClick={e => e.target === e.currentTarget && onClose()}>
       <div style={modal}>
-        <div style={modalHead}>
-          <span style={{ fontWeight: 800, fontSize: 16 }}>🍽️ 추천맛집 등록</span>
-          <button onClick={onClose} style={btnClose}>✕</button>
-        </div>
+        {/* 닫기 버튼 */}
+        <button onClick={onClose} style={{ ...btnClose, position: 'absolute', top: 20, right: 20 }}>✕</button>
 
         {step === 'search' ? (
           <>
-            <p style={modalSub}>네이버·카카오에 등록된 가게를 검색하세요</p>
-            <input
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-              placeholder="예: 창원 고기집, 마산 카페..."
-              style={inputFull}
-              autoFocus
-            />
+            {/* 헤더 */}
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 28, marginBottom: 8 }}>👋</div>
+              <h2 style={{ fontSize: 20, fontWeight: 900, color: '#191F28', margin: '0 0 6px', lineHeight: 1.3 }}>
+                언니픽에<br />가게를 등록해보세요
+              </h2>
+              <p style={{ fontSize: 13, color: '#8B95A1', margin: 0 }}>
+                가게를 검색하면 정보를 바로 불러올 수 있어요
+              </p>
+            </div>
+
+            {/* 소스 탭 */}
+            <div style={{ display: 'flex', background: '#F2F4F6', borderRadius: 12, padding: 4, marginBottom: 16, gap: 4 }}>
+              {([
+                { key: 'naver' as const, label: '네이버', color: NAVER_GREEN },
+                { key: 'kakao' as const, label: '카카오', color: KAKAO_YELLOW },
+              ]).map(s => (
+                <button key={s.key} onClick={() => { setSearchSource(s.key); setInputVal(''); setQuery(''); }}
+                  style={{
+                    flex: 1, padding: '10px 0', borderRadius: 9, border: 'none',
+                    fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+                    transition: 'all .15s',
+                    background: searchSource === s.key ? s.color : 'transparent',
+                    color: searchSource === s.key
+                      ? (s.key === 'kakao' ? '#3A1D96' : '#fff')
+                      : '#8B95A1',
+                    boxShadow: searchSource === s.key ? '0 2px 8px rgba(0,0,0,.12)' : 'none',
+                  }}>
+                  {s.label}
+                </button>
+              ))}
+            </div>
+
+            {/* 검색 입력 */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8,
+                background: '#F7F8FA', borderRadius: 12, padding: '0 14px',
+                border: '1.5px solid #E5E8EB' }}>
+                <div style={{ width: 10, height: 10, borderRadius: '50%', background: sourceColor, flexShrink: 0 }} />
+                <input
+                  value={inputVal}
+                  onChange={e => { setInputVal(e.target.value); setQuery(e.target.value); }}
+                  onKeyDown={e => e.key === 'Enter' && search(inputVal)}
+                  placeholder="가게 이름 또는 주소로 검색"
+                  style={{ flex: 1, height: 44, border: 'none', outline: 'none',
+                    background: 'transparent', fontSize: 14, fontFamily: 'inherit', color: '#191F28' }}
+                  autoFocus
+                />
+              </div>
+              <button onClick={() => search(inputVal)}
+                style={{ width: 52, height: 52, borderRadius: 12, border: 'none',
+                  background: sourceColor, color: searchSource === 'kakao' ? '#3A1D96' : '#fff',
+                  fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center',
+                  justifyContent: 'center', flexShrink: 0, boxShadow: `0 2px 8px ${sourceColor}44` }}>
+                🔍
+              </button>
+            </div>
+
+            {/* 결과 */}
             {loading && <div style={hint}>검색 중...</div>}
             {results.map((p, i) => (
               <div key={i} onClick={() => selectPlace(p)} style={searchResult}>
-                <div style={{ fontWeight: 700, fontSize: 14 }}>{p.place_name}</div>
-                <div style={{ fontSize: 12, color: '#888' }}>{p.category} · {p.road_address ?? p.address}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4,
+                    background: p.source === 'naver' ? '#E8F9EE' : '#FFF9C4',
+                    color: p.source === 'naver' ? NAVER_GREEN : '#8B6914' }}>
+                    {p.source === 'naver' ? 'N' : 'K'}
+                  </span>
+                  <span style={{ fontWeight: 700, fontSize: 14 }}>{p.place_name}</span>
+                </div>
+                <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>
+                  {p.category}{p.category && ' · '}{p.road_address ?? p.address}
+                </div>
               </div>
             ))}
-            {query.length >= 2 && !loading && results.length === 0 && (
+            {inputVal.length >= 2 && !loading && results.length === 0 && (
               <div style={hint}>검색 결과가 없습니다</div>
             )}
           </>
         ) : (
           <>
+            <div style={modalHead}>
+              <span style={{ fontWeight: 800, fontSize: 16 }}>🍽️ 추천글 작성</span>
+            </div>
+
             {/* 선택된 가게 */}
             <div style={selectedPlace}>
-              <div style={{ fontWeight: 800 }}>{selected!.place_name}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4,
+                  background: selected?.source === 'naver' ? '#E8F9EE' : '#FFF9C4',
+                  color: selected?.source === 'naver' ? NAVER_GREEN : '#8B6914' }}>
+                  {selected?.source === 'naver' ? 'NAVER' : 'KAKAO'}
+                </span>
+                <span style={{ fontWeight: 800 }}>{selected!.place_name}</span>
+              </div>
               <div style={{ fontSize: 12, color: '#666' }}>{selected!.category} · {selected!.road_address ?? selected!.address}</div>
               <button onClick={() => { setSelected(null); setStep('search'); setMenuItems([]); }} style={btnChangePlace}>
                 가게 변경
