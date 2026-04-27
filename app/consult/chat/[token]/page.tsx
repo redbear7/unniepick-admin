@@ -21,6 +21,12 @@ interface Inquiry {
   status: string;
 }
 
+interface Chip {
+  id: string;
+  label: string;
+  message: string;
+}
+
 function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
 }
@@ -30,6 +36,7 @@ export default function ConsultChatPage({ params }: { params: Promise<{ token: s
   const supabase = createClient();
   const [inquiry, setInquiry] = useState<Inquiry | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [chips, setChips] = useState<Chip[]>([]);
   const [input, setInput] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -58,6 +65,11 @@ export default function ConsultChatPage({ params }: { params: Promise<{ token: s
       });
 
     loadMessages();
+
+    // 칩 로드
+    fetch('/api/consult/chips')
+      .then(r => r.json())
+      .then(d => setChips(d.chips ?? []));
   }, [token, loadMessages, supabase]);
 
   // Realtime 구독
@@ -112,6 +124,18 @@ export default function ConsultChatPage({ params }: { params: Promise<{ token: s
       setInput('');
       await sendMessage(text);
     }
+  };
+
+  const handleChip = async (chip: Chip) => {
+    if (isSending) return;
+    setIsSending(true);
+    try {
+      await fetch(`/api/consult/${token}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: chip.message }),
+      });
+    } finally { setIsSending(false); }
   };
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -227,6 +251,24 @@ export default function ConsultChatPage({ params }: { params: Promise<{ token: s
         })}
         <div ref={bottomRef} />
       </div>
+
+      {/* 빠른 질문 칩 */}
+      {chips.length > 0 && (
+        <div className="shrink-0 px-3 py-2 bg-white border-t border-gray-100">
+          <div className="flex gap-2 overflow-x-auto pb-0.5 scrollbar-hide">
+            {chips.map(chip => (
+              <button
+                key={chip.id}
+                onClick={() => handleChip(chip)}
+                disabled={isSending}
+                className="shrink-0 px-3.5 py-2 rounded-full border border-[#FF6F0F] text-[#FF6F0F] text-[13px] font-medium bg-white active:bg-orange-50 disabled:opacity-40 transition-colors whitespace-nowrap"
+              >
+                {chip.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* 파일 미리보기 */}
       {filePreview && (

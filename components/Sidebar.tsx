@@ -67,7 +67,8 @@ const DEFAULT_GROUPS: NavGroup[] = [
     label: '매장 관리',
     items: [
       { id: 'stores',         href: '/dashboard/stores',         icon: 'Store',         label: '가게 관리' },
-      { id: 'consultations',  href: '/dashboard/consultations',  icon: 'MessageSquare', label: '업체 상담' },
+      { id: 'consultations',   href: '/dashboard/consultations',   icon: 'MessageSquare', label: '업체 상담' },
+      { id: 'consult-chips',   href: '/dashboard/consult-chips',   icon: 'Sparkles',      label: '빠른 질문 칩' },
       { id: 'applications',   href: '/dashboard/applications',   icon: 'ClipboardList', label: '가게 등록 신청' },
       { id: 'contexts',     href: '/dashboard/contexts',     icon: 'MapPin',        label: '매장 컨텍스트' },
       { id: 'brands',       href: '/dashboard/brands',       icon: 'Building2',         label: '브랜드관' },
