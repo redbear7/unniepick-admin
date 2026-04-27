@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, use } from 'react';
 import { createClient } from '@/lib/supabase';
-import { Send, Paperclip, X, FileText, Loader2 } from 'lucide-react';
+import { Send, Paperclip, X, FileText, Loader2, RefreshCw } from 'lucide-react';
 
 interface Message {
   id: string;
@@ -31,6 +31,8 @@ function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
 }
 
+type LoadError = 'not_found' | 'server_error' | null;
+
 export default function ConsultChatPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = use(params);
   const supabase = createClient();
@@ -41,36 +43,31 @@ export default function ConsultChatPage({ params }: { params: Promise<{ token: s
   const [isSending, setIsSending] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [filePreview, setFilePreview] = useState<{ file: File; preview: string } | null>(null);
-  const [notFound, setNotFound] = useState(false);
+  const [loadError, setLoadError] = useState<LoadError>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadMessages = useCallback(async () => {
     const res = await fetch(`/api/consult/${token}/messages`);
-    if (!res.ok) { setNotFound(true); return; }
+    if (!res.ok) {
+      setLoadError(res.status === 404 ? 'not_found' : 'server_error');
+      return;
+    }
     const data = await res.json();
+    setLoadError(null);
+    // API가 inquiry 정보도 함께 반환 — 직접 DB 쿼리 불필요
+    if (data.inquiry) setInquiry(data.inquiry as Inquiry);
     setMessages(data.messages ?? []);
   }, [token]);
 
   useEffect(() => {
-    // 상담 정보 조회
-    supabase
-      .from('consult_inquiries')
-      .select('id, business_name, status')
-      .eq('token', token)
-      .single()
-      .then(({ data, error }) => {
-        if (error || !data) { setNotFound(true); return; }
-        setInquiry(data as Inquiry);
-      });
-
     loadMessages();
 
     // 칩 로드
     fetch('/api/consult/chips')
       .then(r => r.json())
       .then(d => setChips(d.chips ?? []));
-  }, [token, loadMessages, supabase]);
+  }, [token, loadMessages]);
 
   // Realtime 구독
   useEffect(() => {
@@ -145,13 +142,32 @@ export default function ConsultChatPage({ params }: { params: Promise<{ token: s
     e.target.value = '';
   };
 
-  if (notFound) {
+  if (loadError === 'not_found') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#fafafa] px-5">
         <div className="text-center">
           <div className="text-5xl mb-4">🔍</div>
           <p className="text-[18px] font-bold text-gray-800">상담을 찾을 수 없어요</p>
           <p className="text-[14px] text-gray-500 mt-2">링크가 올바른지 확인해주세요</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loadError === 'server_error') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#fafafa] px-5">
+        <div className="text-center">
+          <div className="text-5xl mb-4">⚠️</div>
+          <p className="text-[18px] font-bold text-gray-800">일시적인 오류가 발생했어요</p>
+          <p className="text-[14px] text-gray-500 mt-2">잠시 후 다시 시도해주세요</p>
+          <button
+            onClick={loadMessages}
+            className="mt-5 flex items-center gap-2 mx-auto px-5 py-2.5 bg-[#FF6F0F] text-white text-[14px] font-semibold rounded-full"
+          >
+            <RefreshCw className="w-4 h-4" />
+            다시 시도
+          </button>
         </div>
       </div>
     );

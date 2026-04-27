@@ -9,18 +9,25 @@ function adminClient() {
   );
 }
 
-// GET /api/consult/[token]/messages — 메시지 목록 조회
+// GET /api/consult/[token]/messages — 메시지 목록 + 상담 정보 조회
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const supabase = adminClient();
 
-  const { data: inquiry } = await supabase
+  const { data: inquiry, error: inquiryError } = await supabase
     .from('consult_inquiries')
-    .select('id')
+    .select('id, business_name, status')
     .eq('token', token)
     .single();
 
-  if (!inquiry) return NextResponse.json({ error: '존재하지 않는 상담입니다.' }, { status: 404 });
+  if (inquiryError || !inquiry) {
+    // PGRST116 = no rows found → 404, 그 외 DB 오류 → 503
+    const isNotFound = !inquiry || (inquiryError as any)?.code === 'PGRST116';
+    return NextResponse.json(
+      { error: isNotFound ? '존재하지 않는 상담입니다.' : 'DB 오류' },
+      { status: isNotFound ? 404 : 503 }
+    );
+  }
 
   const { data: messages } = await supabase
     .from('consult_messages')
@@ -28,7 +35,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ tok
     .eq('inquiry_id', inquiry.id)
     .order('created_at', { ascending: true });
 
-  return NextResponse.json({ messages: messages ?? [] });
+  return NextResponse.json({
+    inquiry: { id: inquiry.id, business_name: inquiry.business_name, status: inquiry.status },
+    messages: messages ?? [],
+  });
 }
 
 // POST /api/consult/[token]/messages — 메시지 전송 (업체 측)
