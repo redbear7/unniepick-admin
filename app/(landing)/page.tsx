@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import Script from 'next/script';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase';
+import ApplyModal from '@/components/ApplyModal';
 
 declare global {
   interface Window { kakao: any; __selectStore: (id: number) => void; }
@@ -151,6 +152,7 @@ export default function HomePage() {
   /* ── Auth ───────────────────────────────────────────── */
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMenuOpen,  setAuthMenuOpen]  = useState(false);
+  const [applyOpen,     setApplyOpen]     = useState(false);
   const [authStep,      setAuthStep]      = useState<'phone'|'otp'>('phone');
   const [authPhone,     setAuthPhone]     = useState('');
   const [authOtp,       setAuthOtp]       = useState('');
@@ -703,11 +705,12 @@ export default function HomePage() {
                 color:'#6B7280', background:'none', border:'1px solid #E5E7EB', cursor:'pointer' }}>
               📱 앱 다운로드
             </button>
-            <Link href="/apply"
+            <button
+              onClick={() => setApplyOpen(true)}
               style={{ padding:'8px 16px', borderRadius:6, fontSize:12, fontWeight:700,
-                color:'#fff', background:PU, textDecoration:'none', display:'inline-block' }}>
+                color:'#fff', background:PU, border:'none', cursor:'pointer', fontFamily:'inherit' }}>
               가게 등록
-            </Link>
+            </button>
           </div>
         </div>
       </header>
@@ -1079,6 +1082,8 @@ export default function HomePage() {
           </div>
         </div>
       )}
+
+      <ApplyModal isOpen={applyOpen} onClose={() => setApplyOpen(false)} />
     </div>
   );
 }

@@ -3,9 +3,11 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import styles from './page.module.css';
+import ApplyModal from '@/components/ApplyModal';
 
 export default function AppPage() {
-  const [howTab, setHowTab] = useState<'customer' | 'owner'>('customer');
+  const [howTab,    setHowTab]    = useState<'customer' | 'owner'>('customer');
+  const [applyOpen, setApplyOpen] = useState(false);
 
   return (
     <div className={styles.root}>
@@ -523,7 +525,7 @@ export default function AppPage() {
               </div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'flex-start' }}>
-              <Link href="/apply" className={`${styles.btn} ${styles.btnPrimary} ${styles.btnLg}`}>🏪 가게 등록 신청하기</Link>
+              <button onClick={() => setApplyOpen(true)} className={`${styles.btn} ${styles.btnPrimary} ${styles.btnLg}`}>🏪 가게 등록 신청하기</button>
               <Link href="/owner/login" className={`${styles.btn} ${styles.btnOutline}`}>이미 등록한 사장님 →</Link>
             </div>
           </div>
@@ -592,6 +594,7 @@ export default function AppPage() {
         </div>
       </footer>
 
+      <ApplyModal isOpen={applyOpen} onClose={() => setApplyOpen(false)} />
     </div>
   );
 }
