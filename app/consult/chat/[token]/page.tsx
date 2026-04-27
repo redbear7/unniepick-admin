@@ -47,7 +47,7 @@ export default function ConsultChatPage({ params }: { params: Promise<{ token: s
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const loadMessages = useCallback(async () => {
+  const loadMessages = useCallback(async ({ setInquiryData = false } = {}) => {
     const res = await fetch(`/api/consult/${token}/messages`);
     if (!res.ok) {
       setLoadError(res.status === 404 ? 'not_found' : 'server_error');
@@ -55,13 +55,13 @@ export default function ConsultChatPage({ params }: { params: Promise<{ token: s
     }
     const data = await res.json();
     setLoadError(null);
-    // API가 inquiry 정보도 함께 반환 — 직접 DB 쿼리 불필요
-    if (data.inquiry) setInquiry(data.inquiry as Inquiry);
+    if (setInquiryData && data.inquiry) setInquiry(data.inquiry as Inquiry);
     setMessages(data.messages ?? []);
   }, [token]);
 
   useEffect(() => {
-    loadMessages();
+    // 최초 로드: inquiry 정보도 함께 세팅
+    loadMessages({ setInquiryData: true });
 
     // 칩 로드
     fetch('/api/consult/chips')
@@ -90,11 +90,15 @@ export default function ConsultChatPage({ params }: { params: Promise<{ token: s
   const sendMessage = async (content: string, fileUrl?: string, fileType?: string, fileName?: string) => {
     setIsSending(true);
     try {
-      await fetch(`/api/consult/${token}/messages`, {
+      const res = await fetch(`/api/consult/${token}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content, file_url: fileUrl, file_type: fileType, file_name: fileName }),
       });
+      if (res.ok) {
+        // Realtime이 비활성화된 경우에도 즉시 갱신
+        await loadMessages();
+      }
     } finally {
       setIsSending(false);
     }
@@ -127,11 +131,12 @@ export default function ConsultChatPage({ params }: { params: Promise<{ token: s
     if (isSending) return;
     setIsSending(true);
     try {
-      await fetch(`/api/consult/${token}/messages`, {
+      const res = await fetch(`/api/consult/${token}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: chip.message }),
       });
+      if (res.ok) await loadMessages();
     } finally { setIsSending(false); }
   };
 
@@ -162,7 +167,7 @@ export default function ConsultChatPage({ params }: { params: Promise<{ token: s
           <p className="text-[18px] font-bold text-gray-800">일시적인 오류가 발생했어요</p>
           <p className="text-[14px] text-gray-500 mt-2">잠시 후 다시 시도해주세요</p>
           <button
-            onClick={loadMessages}
+            onClick={() => loadMessages({ setInquiryData: true })}
             className="mt-5 flex items-center gap-2 mx-auto px-5 py-2.5 bg-[#FF6F0F] text-white text-[14px] font-semibold rounded-full"
           >
             <RefreshCw className="w-4 h-4" />
