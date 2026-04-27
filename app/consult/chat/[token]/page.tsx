@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, use } from 'react';
 import { createClient } from '@/lib/supabase';
-import { Send, Paperclip, X, FileText, Loader2, RefreshCw } from 'lucide-react';
+import { Send, X, FileText, Loader2, RefreshCw, ImagePlus } from 'lucide-react';
 
 interface Message {
   id: string;
@@ -44,8 +44,10 @@ export default function ConsultChatPage({ params }: { params: Promise<{ token: s
   const [isUploading, setIsUploading] = useState(false);
   const [filePreview, setFilePreview] = useState<{ file: File; preview: string } | null>(null);
   const [loadError, setLoadError] = useState<LoadError>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dropZoneRef = useRef<HTMLDivElement>(null);
 
   const loadMessages = useCallback(async ({ setInquiryData = false } = {}) => {
     const res = await fetch(`/api/consult/${token}/messages`);
@@ -146,8 +148,28 @@ export default function ConsultChatPage({ params }: { params: Promise<{ token: s
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setFilePreview({ file, preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : '' });
+    applyFile(file);
     e.target.value = '';
+  };
+
+  const applyFile = (file: File) => {
+    setFilePreview({ file, preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : '' });
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+  const handleDragLeave = (e: React.DragEvent) => {
+    if (!dropZoneRef.current?.contains(e.relatedTarget as Node)) {
+      setIsDragging(false);
+    }
+  };
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) applyFile(file);
   };
 
   if (loadError === 'not_found') {
@@ -211,8 +233,21 @@ export default function ConsultChatPage({ params }: { params: Promise<{ token: s
         </a>
       </div> */}
 
-      {/* 메시지 */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-1 overscroll-contain">
+      {/* 메시지 — 드래그앤드롭 대상 */}
+      <div
+        ref={dropZoneRef}
+        className="flex-1 overflow-y-auto px-4 py-4 space-y-1 overscroll-contain relative"
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
+        {/* 드래그 오버레이 */}
+        {isDragging && (
+          <div className="absolute inset-0 z-20 bg-[#FF6F0F]/10 border-2 border-dashed border-[#FF6F0F] rounded-2xl flex flex-col items-center justify-center gap-3 pointer-events-none">
+            <ImagePlus className="w-10 h-10 text-[#FF6F0F]" />
+            <p className="text-[15px] font-bold text-[#FF6F0F]">여기에 놓으면 첨부돼요</p>
+          </div>
+        )}
         {messages.length === 0 && (
           <div className="text-center py-12">
             <p className="text-[14px] text-gray-400">상담이 시작되었습니다 🌸</p>
@@ -313,15 +348,23 @@ export default function ConsultChatPage({ params }: { params: Promise<{ token: s
       )}
 
       {/* 입력창 */}
-      <div className="shrink-0 bg-white border-t border-gray-100 px-3 pt-2 pb-[env(safe-area-inset-bottom,12px)]"
+      <div className="shrink-0 bg-white border-t border-gray-100 px-3 pt-2"
            style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
-        <div className="flex items-end gap-2 bg-gray-50 rounded-2xl px-3 py-2">
+
+        {/* 첨부 버튼 행 */}
+        <div className="flex gap-2 mb-2">
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="p-1.5 text-gray-400 active:text-[#FF6F0F] shrink-0 mb-0.5"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-100 hover:bg-orange-50 active:bg-orange-100 text-gray-500 hover:text-[#FF6F0F] text-[12px] font-semibold transition-colors"
           >
-            <Paperclip className="w-5 h-5" />
+            <ImagePlus className="w-4 h-4" />
+            사진·파일 첨부
           </button>
+          <span className="text-[11px] text-gray-300 self-center">또는 채팅창에 드래그</span>
+        </div>
+
+        {/* 텍스트 입력 + 전송 */}
+        <div className="flex items-end gap-2 bg-gray-50 rounded-2xl px-3 py-2">
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
