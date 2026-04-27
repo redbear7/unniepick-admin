@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase';
 import {
   Search, Send, Paperclip, X, FileText, Loader2,
-  Phone, MapPin, Building2, ArrowRight, CheckCircle, Clock, MessageSquare, Tag
+  Phone, MapPin, Building2, ArrowRight, CheckCircle, MessageSquare, Tag, Trash2
 } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
@@ -179,6 +179,17 @@ function ConsultationsInner() {
     if (!file) return;
     setFilePreview({ file, preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : '' });
     e.target.value = '';
+  };
+
+  const handleDeleteMessage = async (messageId: string) => {
+    if (!confirm('이 메시지를 삭제할까요? 첨부파일도 함께 삭제됩니다.')) return;
+    const res = await fetch(`/api/admin/consult/messages/${messageId}`, { method: 'DELETE' });
+    if (res.ok) {
+      setMessages((prev) => prev.filter((m) => m.id !== messageId));
+    } else {
+      const d = await res.json();
+      alert(d.error ?? '삭제 실패');
+    }
   };
 
   const handleStatusChange = async (status: Inquiry['status']) => {
@@ -449,7 +460,7 @@ function ConsultationsInner() {
                       <span className="text-[11px] text-[--text-dim] bg-[--fill-subtle] px-3 py-1 rounded-full">{formatDate(msg.created_at)}</span>
                     </div>
                   )}
-                  <div className={`flex items-end gap-2 ${isAdmin ? 'flex-row-reverse' : 'flex-row'} mb-1`}>
+                  <div className={`group flex items-end gap-2 ${isAdmin ? 'flex-row-reverse' : 'flex-row'} mb-1`}>
                     {!isAdmin && (
                       <div className="w-6 h-6 bg-[--fill-medium] rounded-full flex items-center justify-center text-[11px] shrink-0 border border-[--border-main]">
                         🏪
@@ -457,31 +468,58 @@ function ConsultationsInner() {
                     )}
                     <div className={`max-w-[70%] flex flex-col gap-1 ${isAdmin ? 'items-end' : 'items-start'}`}>
                       {msg.file_url && msg.file_type === 'image' && (
-                        <a href={msg.file_url} target="_blank" rel="noopener noreferrer">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={msg.file_url} alt={msg.file_name || '이미지'} className="rounded-xl max-h-52 object-cover" />
-                        </a>
+                        <div className="relative">
+                          <a href={msg.file_url} target="_blank" rel="noopener noreferrer">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={msg.file_url} alt={msg.file_name || '이미지'} className="rounded-xl max-h-52 object-cover" />
+                          </a>
+                          <button
+                            onClick={() => handleDeleteMessage(msg.id)}
+                            className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 bg-black/60 hover:bg-red-500 text-white rounded-full flex items-center justify-center"
+                            title="메시지 삭제"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
                       )}
                       {msg.file_url && msg.file_type === 'file' && (
-                        <a
-                          href={msg.file_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={`flex items-center gap-2 px-3 py-2 rounded-xl text-[13px] font-medium ${
-                            isAdmin ? 'bg-[--accent] text-white' : 'bg-[--bg-card] text-[--text-primary] border border-[--border-main]'
-                          }`}
-                        >
-                          <FileText className="w-4 h-4 shrink-0" />
-                          <span className="truncate max-w-[120px]">{msg.file_name}</span>
-                        </a>
+                        <div className="relative flex items-center gap-1">
+                          <a
+                            href={msg.file_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`flex items-center gap-2 px-3 py-2 rounded-xl text-[13px] font-medium ${
+                              isAdmin ? 'bg-[--accent] text-white' : 'bg-[--bg-card] text-[--text-primary] border border-[--border-main]'
+                            }`}
+                          >
+                            <FileText className="w-4 h-4 shrink-0" />
+                            <span className="truncate max-w-[120px]">{msg.file_name}</span>
+                          </a>
+                          <button
+                            onClick={() => handleDeleteMessage(msg.id)}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 bg-[--fill-medium] hover:bg-red-500/20 hover:text-red-400 text-[--text-dim] rounded-full flex items-center justify-center border border-[--border-main]"
+                            title="메시지 삭제"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
                       )}
                       {msg.content && (
-                        <div className={`px-4 py-2.5 text-[14px] leading-relaxed rounded-2xl ${
-                          isAdmin
-                            ? 'bg-[--accent] text-white rounded-tr-sm'
-                            : 'bg-[--bg-card] text-[--text-primary] border border-[--border-main] rounded-tl-sm'
-                        }`}>
-                          {msg.content}
+                        <div className={`relative flex items-center gap-1 ${isAdmin ? 'flex-row-reverse' : 'flex-row'}`}>
+                          <div className={`px-4 py-2.5 text-[14px] leading-relaxed rounded-2xl ${
+                            isAdmin
+                              ? 'bg-[--accent] text-white rounded-tr-sm'
+                              : 'bg-[--bg-card] text-[--text-primary] border border-[--border-main] rounded-tl-sm'
+                          }`}>
+                            {msg.content}
+                          </div>
+                          <button
+                            onClick={() => handleDeleteMessage(msg.id)}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 bg-[--fill-medium] hover:bg-red-500/20 hover:text-red-400 text-[--text-dim] rounded-full flex items-center justify-center border border-[--border-main] shrink-0"
+                            title="메시지 삭제"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
                         </div>
                       )}
                       <span className="text-[11px] text-[--text-dim]">{formatTime(msg.created_at)}</span>
