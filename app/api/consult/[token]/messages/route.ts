@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { forwardBusinessMessage } from '@/lib/telegram';
 
 function adminClient() {
   return createClient(
@@ -37,7 +38,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
 
   const { data: inquiry, error: inquiryError } = await supabase
     .from('consult_inquiries')
-    .select('id, unread_count')
+    .select('id, unread_count, business_name, telegram_message_id')
     .eq('token', token)
     .single();
 
@@ -78,6 +79,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
       status: 'chatting',
     })
     .eq('id', inquiry.id);
+
+  // 텔레그램 포워드 (비동기)
+  const origin = req.headers.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || '';
+  forwardBusinessMessage({
+    businessName: inquiry.business_name,
+    content: content?.trim() || null,
+    fileType: file_type || null,
+    fileName: file_name || null,
+    replyToMessageId: inquiry.telegram_message_id ?? undefined,
+    adminUrl: `${origin}/dashboard/consultations?id=${inquiry.id}`,
+  });
 
   return NextResponse.json({ message: msg });
 }
