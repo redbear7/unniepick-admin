@@ -5,6 +5,7 @@ import Script from 'next/script';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase';
 import ApplyModal from '@/components/ApplyModal';
+import RecommendFeed from '@/components/RecommendFeed';
 
 declare global {
   interface Window { kakao: any; __selectStore: (id: number) => void; }
@@ -148,6 +149,8 @@ export default function HomePage() {
   const [aiFilter,  setAiFilter]  = useState<{ chips:{text:string;color:string}[]; intent:string }|null>(null);
   const [aiCount,   setAiCount]   = useState(0);
   const [aiResults, setAiResults] = useState<AiResult[]>([]);
+
+  const [mainView,  setMainView]  = useState<'map'|'recommend'>('map');
 
   /* ── Auth ───────────────────────────────────────────── */
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -720,7 +723,26 @@ export default function HomePage() {
         <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 24px',
           display:'flex', alignItems:'center', gap:6, overflowX:'auto',
           scrollbarWidth:'none' }}>
-          {CATEGORIES.map(c => (
+
+          {/* 추천맛집 탭 */}
+          <button onClick={() => setMainView(v => v === 'recommend' ? 'map' : 'recommend')}
+            style={{ display:'inline-flex', alignItems:'center', gap:5,
+              padding:'7px 15px', borderRadius:100,
+              border: mainView === 'recommend' ? `1.5px solid #FF6F0F` : '1.5px solid #E5E7EB',
+              background: mainView === 'recommend'
+                ? 'linear-gradient(135deg,#FF6F0F,#FF9A3D)' : '#fff',
+              fontSize:13, fontWeight:700,
+              color: mainView === 'recommend' ? '#fff' : '#374151',
+              cursor:'pointer', flexShrink:0, whiteSpace:'nowrap',
+              fontFamily:'inherit', transition:'all .15s',
+              boxShadow: mainView === 'recommend' ? '0 2px 10px rgba(255,111,15,.3)' : 'none' }}>
+            🏆 추천맛집
+          </button>
+
+          {/* 구분선 */}
+          <div style={{ width:1, height:20, background:'#E5E7EB', flexShrink:0 }} />
+
+          {mainView === 'map' && CATEGORIES.map(c => (
             <button key={c.key} onClick={() => filterCat(c.key)}
               style={{ display:'inline-flex', alignItems:'center', gap:5,
                 padding:'7px 15px', borderRadius:100,
@@ -736,8 +758,15 @@ export default function HomePage() {
         </div>
       </div>
 
+      {/* ═══ RECOMMEND FEED VIEW ══════════════════════════ */}
+      {mainView === 'recommend' && (
+        <div style={{ flex:1, overflowY:'auto', background:'linear-gradient(180deg,#FFF8F5 0%,#fff 100%)' }}>
+          <RecommendFeed />
+        </div>
+      )}
+
       {/* ═══ MAP AREA ══════════════════════════════════════ */}
-      <div style={{ flex:1, position:'relative', overflow:'hidden' }}>
+      <div style={{ flex:1, position:'relative', overflow:'hidden', display: mainView === 'map' ? 'block' : 'none' }}>
 
         {/* Kakao Map */}
         <div ref={mapContainerRef} style={{ width:'100%', height:'100%' }} />
