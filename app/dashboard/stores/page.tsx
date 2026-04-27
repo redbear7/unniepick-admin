@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase';
 import KakaoMapPicker from '@/components/KakaoMapPicker';
 import {
   Search, ToggleLeft, ToggleRight, MapPin, Phone,
   Plus, Pencil, Trash2, X, ImageIcon,
   ExternalLink, User, FlaskConical, History, Calendar, Tag,
+  Camera, Loader2, ChevronDown, ChevronUp,
 } from 'lucide-react';
 
 /* ================================================================== */
@@ -244,6 +245,13 @@ export default function StoresPage() {
   const [naverSearching, setNaverSearching] = useState(false);
   const [naverErr,      setNaverErr]      = useState('');
 
+  /* menu image extraction */
+  const menuFileRef = useRef<HTMLInputElement>(null);
+  const [menuExtracting, setMenuExtracting] = useState(false);
+  const [menuExtractErr, setMenuExtractErr] = useState('');
+  const [menuItems, setMenuItems] = useState<{ name: string; price: number | null }[]>([]);
+  const [showMenuItems, setShowMenuItems] = useState(false);
+
   /* coupon counts (list) */
   const [couponCountMap, setCouponCountMap] = useState<Record<string, number>>({});
 
@@ -396,6 +404,7 @@ export default function StoresPage() {
   const openNew = () => {
     setForm(EMPTY_FORM);
     setNaverQ(''); setNaverResults([]); setNaverErr(''); setSaveError('');
+    setMenuItems([]); setMenuExtractErr(''); setShowMenuItems(false);
     setActiveTab('info'); setStoreCoupons([]); setShowCouponAdd(false);
     setEditModal('new');
   };
@@ -414,10 +423,32 @@ export default function StoresPage() {
       category_detail:  store.category_detail ?? null,
     });
     setNaverQ(''); setNaverResults([]); setNaverErr(''); setSaveError('');
+    setMenuItems([]); setMenuExtractErr(''); setShowMenuItems(false);
     setActiveTab('info'); setShowCouponAdd(false);
     setCouponError(''); setEditCouponId(null);
     loadStoreCoupons(store.id);
     setEditModal(store);
+  };
+
+  const handleMenuImageExtract = async (file: File) => {
+    setMenuExtracting(true); setMenuExtractErr(''); setMenuItems([]); setShowMenuItems(false);
+    const fd = new FormData();
+    fd.append('file', file);
+    try {
+      const r = await fetch('/api/admin/extract-menu', { method: 'POST', body: fd });
+      const data = await r.json();
+      if (!r.ok) { setMenuExtractErr(data.error ?? '분석 실패'); return; }
+      setMenuItems(data.items ?? []);
+      setShowMenuItems(true);
+      if (data.representative_price != null) {
+        setForm(f => ({
+          ...f,
+          representative_price: data.representative_price,
+          price_label: data.price_label || f.price_label,
+        }));
+      }
+    } catch { setMenuExtractErr('네트워크 오류가 발생했습니다'); }
+    finally  { setMenuExtracting(false); }
   };
 
   const saveStore = async () => {
@@ -1362,9 +1393,77 @@ export default function StoresPage() {
 
                   {/* 가격 정보 */}
                   <div className="border-t border-border-main pt-3">
-                    <p className="text-xs font-bold text-[#FF6F0F] mb-2.5 flex items-center gap-1">
-                      💰 가격 정보 <span className="font-normal text-dim">(지도 핀 · 가성비 픽 표시)</span>
-                    </p>
+                    <div className="flex items-center justify-between mb-2.5">
+                      <p className="text-xs font-bold text-[#FF6F0F] flex items-center gap-1">
+                        💰 가격 정보 <span className="font-normal text-dim">(지도 핀 · 가성비 픽 표시)</span>
+                      </p>
+                      {/* 메뉴판 이미지 자동 입력 */}
+                      <button
+                        type="button"
+                        onClick={() => menuFileRef.current?.click()}
+                        disabled={menuExtracting}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-violet-500/10 border border-violet-500/30 text-violet-400 hover:bg-violet-500/20 text-[11px] font-semibold transition disabled:opacity-50"
+                      >
+                        {menuExtracting
+                          ? <><Loader2 className="w-3 h-3 animate-spin" /> 분석 중...</>
+                          : <><Camera className="w-3 h-3" /> 메뉴판 자동 입력</>
+                        }
+                      </button>
+                      <input
+                        ref={menuFileRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={e => {
+                          const f = e.target.files?.[0];
+                          if (f) { handleMenuImageExtract(f); e.target.value = ''; }
+                        }}
+                      />
+                    </div>
+
+                    {/* 오류 */}
+                    {menuExtractErr && (
+                      <p className="text-[11px] text-red-400 flex items-center gap-1 mb-2">
+                        <X className="w-3 h-3" />{menuExtractErr}
+                      </p>
+                    )}
+
+                    {/* 추출된 메뉴 목록 */}
+                    {menuItems.length > 0 && (
+                      <div className="mb-3 rounded-xl border border-violet-500/20 bg-violet-500/5 overflow-hidden">
+                        <button
+                          type="button"
+                          onClick={() => setShowMenuItems(v => !v)}
+                          className="w-full flex items-center justify-between px-3 py-2 text-[11px] text-violet-400 font-semibold"
+                        >
+                          <span>📋 추출된 메뉴 {menuItems.length}개</span>
+                          {showMenuItems ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                        </button>
+                        {showMenuItems && (
+                          <div className="px-3 pb-2 space-y-1 max-h-40 overflow-y-auto">
+                            {menuItems.map((item, i) => (
+                              <button
+                                key={i}
+                                type="button"
+                                onClick={() => setForm(f => ({
+                                  ...f,
+                                  representative_price: item.price ?? f.representative_price,
+                                  price_label: item.price ? `${item.name} ${item.price.toLocaleString()}원~` : f.price_label,
+                                }))}
+                                className="w-full flex items-center justify-between text-[11px] py-1 px-2 rounded-lg hover:bg-violet-500/10 transition text-left group"
+                              >
+                                <span className="text-primary">{item.name}</span>
+                                <span className="text-violet-400 font-medium">
+                                  {item.price != null ? `${item.price.toLocaleString()}원` : '-'}
+                                  <span className="text-[9px] text-dim ml-1 opacity-0 group-hover:opacity-100 transition">→ 적용</span>
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     <div className="grid grid-cols-2 gap-2 mb-2">
                       <div>
                         <label className="text-[10px] text-dim mb-1 block">대표 메뉴 가격 (원)</label>
