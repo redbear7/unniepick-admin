@@ -192,8 +192,8 @@ export default function ConsultPage() {
         {/* 검색 엔진 탭 */}
         <div className="flex gap-1.5 mb-3 p-1 bg-gray-100 rounded-2xl">
           {([
-            { key: 'kakao' as const, label: '카카오', color: '#3A1D1D', bg: '#FEE500' },
             { key: 'naver' as const, label: '네이버', color: '#fff',    bg: '#03C75A' },
+            { key: 'kakao' as const, label: '카카오', color: '#3A1D1D', bg: '#FEE500' },
           ]).map(tab => (
             <button
               key={tab.key}
