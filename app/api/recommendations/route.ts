@@ -1,7 +1,8 @@
 /**
- * GET  /api/recommendations?page=1&limit=10
+ * GET  /api/recommendations?page=1&limit=10&sort=recent|likes|distance&lat=&lng=
  * POST /api/recommendations  { place_id, place_name, place_category, place_address,
- *                              place_image_url, source, menu_items, recommendation_text }
+ *                              place_image_url, source, menu_items, recommendation_text,
+ *                              place_lat, place_lng }
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
@@ -13,20 +14,53 @@ function db() {
   );
 }
 
+// Haversine 거리 계산 (km)
+function haversine(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2
+    + Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) * Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const page  = Math.max(1, parseInt(searchParams.get('page')  ?? '1'));
   const limit = Math.min(20, parseInt(searchParams.get('limit') ?? '10'));
+  const sort  = searchParams.get('sort') ?? 'recent'; // recent | likes | distance
+  const userLat = parseFloat(searchParams.get('lat') ?? '');
+  const userLng = parseFloat(searchParams.get('lng') ?? '');
   const from  = (page - 1) * limit;
+
+  // 거리순: 전체 페치 후 서버에서 정렬 (lat/lng 없으면 등록순 fallback)
+  if (sort === 'distance' && !isNaN(userLat) && !isNaN(userLng)) {
+    const { data: all, error, count } = await db()
+      .from('user_recommendations')
+      .select('*', { count: 'exact' })
+      .not('place_lat', 'is', null);
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    const sorted = (all ?? [])
+      .map(r => ({ ...r, _dist: haversine(userLat, userLng, r.place_lat, r.place_lng) }))
+      .sort((a, b) => a._dist - b._dist)
+      .slice(from, from + limit)
+      .map(({ _dist, ...r }) => r);
+
+    return NextResponse.json({ data: sorted, total: count ?? 0, page, limit, sort });
+  }
+
+  const orderCol = sort === 'likes' ? 'like_count' : 'created_at';
 
   const { data, error, count } = await db()
     .from('user_recommendations')
     .select('*', { count: 'exact' })
-    .order('created_at', { ascending: false })
+    .order(orderCol, { ascending: false })
     .range(from, from + limit - 1);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ data, total: count ?? 0, page, limit });
+  return NextResponse.json({ data, total: count ?? 0, page, limit, sort });
 }
 
 export async function POST(req: NextRequest) {
@@ -45,7 +79,8 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
   const { place_id, place_name, place_category, place_address,
-          place_image_url, source, menu_items, recommendation_text } = body;
+          place_image_url, source, menu_items, recommendation_text,
+          place_lat, place_lng } = body;
 
   if (!place_id || !place_name) {
     return NextResponse.json({ error: '가게 정보가 필요합니다' }, { status: 400 });
@@ -76,6 +111,7 @@ export async function POST(req: NextRequest) {
       user_display: display,
       place_id, place_name, place_category, place_address,
       place_image_url, source: source ?? 'kakao',
+      place_lat: place_lat ?? null, place_lng: place_lng ?? null,
       menu_items: menu_items ?? [],
       recommendation_text: recommendation_text ?? '',
     })
@@ -86,7 +122,7 @@ export async function POST(req: NextRequest) {
 
   // 랜덤 포인트 지급 (10 ~ 50)
   const points = Math.floor(Math.random() * 41) + 10;
-  await admin.from('user_points').insert({
+  await db().from('user_points').insert({
     user_id:      user.id,
     points,
     reason:       '추천맛집 등록',

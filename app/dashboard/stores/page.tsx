@@ -67,8 +67,7 @@ interface StoreCoupon {
   is_featured:      boolean;
 }
 
-interface KakaoPlace {
-  kakao_id:      string;
+interface NaverPlace {
   place_name:    string;
   address:       string;
   road_address:  string | null;

@@ -25,6 +25,8 @@ interface Rec {
   place_category: string;
   place_address: string;
   place_image_url?: string;
+  place_lat?: number | null;
+  place_lng?: number | null;
   menu_items: MenuItem[];
   recommendation_text: string;
   like_count: number;
@@ -42,6 +44,8 @@ interface PlaceResult {
   phone?: string;
   place_url?: string;
   source?: 'kakao' | 'naver';
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 // ── 유틸 ─────────────────────────────────────────────────────
@@ -380,6 +384,8 @@ function AddModal({ user, onClose, onAdded }: {
         place_address:       selected.road_address ?? selected.address,
         place_image_url:     imageUrl,
         source:              selected.source ?? searchSource,
+        place_lat:           selected.latitude ?? null,
+        place_lng:           selected.longitude ?? null,
         menu_items:          menuItems,
         recommendation_text: recText.trim(),
       }),
@@ -609,6 +615,9 @@ export default function RecommendFeed({ compact = false }: { compact?: boolean }
   const [otp,      setOtp]      = useState('');
   const [authStep, setAuthStep] = useState<'phone' | 'otp'>('phone');
   const [authLoad, setAuthLoad] = useState(false);
+  const [sort,     setSort]     = useState<'recent' | 'likes' | 'distance'>('recent');
+  const [userPos,  setUserPos]  = useState<{ lat: number; lng: number } | null>(null);
+  const [gpsLoading, setGpsLoading] = useState(false);
 
   const LIMIT = 6;
 
@@ -623,10 +632,14 @@ export default function RecommendFeed({ compact = false }: { compact?: boolean }
   }, []);
 
   // 추천 목록 로드
-  const loadRecs = useCallback(async (p: number) => {
+  const loadRecs = useCallback(async (p: number, sortKey = sort, pos = userPos) => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/recommendations?page=${p}&limit=${LIMIT}`);
+      let url = `/api/recommendations?page=${p}&limit=${LIMIT}&sort=${sortKey}`;
+      if (sortKey === 'distance' && pos) {
+        url += `&lat=${pos.lat}&lng=${pos.lng}`;
+      }
+      const res = await fetch(url);
       const json = await res.json();
       if (p === 1) setRecs(json.data ?? []);
       else setRecs(prev => [...prev, ...(json.data ?? [])]);
@@ -636,9 +649,29 @@ export default function RecommendFeed({ compact = false }: { compact?: boolean }
       if (p === 1) setRecs([]);
     }
     setLoading(false);
-  }, []);
+  }, [sort, userPos]);
 
   useEffect(() => { loadRecs(1); }, [loadRecs]);
+
+  const changeSort = (s: 'recent' | 'likes' | 'distance') => {
+    if (s === 'distance' && !userPos) {
+      setGpsLoading(true);
+      navigator.geolocation?.getCurrentPosition(
+        pos => {
+          const p = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          setUserPos(p);
+          setSort(s);
+          setGpsLoading(false);
+          loadRecs(1, s, p);
+        },
+        () => { alert('위치 정보를 가져올 수 없어요'); setGpsLoading(false); },
+        { timeout: 8000 },
+      );
+      return;
+    }
+    setSort(s);
+    loadRecs(1, s, userPos);
+  };
 
   const onAdded = (rec: Rec) => setRecs(p => [rec, ...p]);
 
@@ -680,6 +713,26 @@ export default function RecommendFeed({ compact = false }: { compact?: boolean }
         >
           ✏️ 추천 올리기
         </button>
+      </div>
+
+      {/* 정렬 탭 */}
+      <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
+        {([
+          { key: 'recent'   as const, label: '등록순' },
+          { key: 'likes'    as const, label: '추천순' },
+          { key: 'distance' as const, label: gpsLoading ? '위치 확인 중...' : '거리순' },
+        ]).map(s => (
+          <button key={s.key} onClick={() => changeSort(s.key)}
+            style={{
+              padding: '6px 14px', borderRadius: 100,
+              border: `1.5px solid ${sort === s.key ? '#FF6F0F' : '#E5E8EB'}`,
+              background: sort === s.key ? '#FF6F0F' : '#fff',
+              color: sort === s.key ? '#fff' : '#374151',
+              fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+            }}>
+            {s.label}
+          </button>
+        ))}
       </div>
 
       {/* 피드 */}
