@@ -7,8 +7,8 @@
 create table if not exists consult_inquiries (
   id            uuid primary key default gen_random_uuid(),
   token         text unique not null default encode(gen_random_bytes(16), 'hex'),
-  owner_name    text not null,
-  phone         text not null,
+  owner_name    text,
+  phone         text,
   business_name text not null,
   area          text,
   has_agency    boolean not null default false,
