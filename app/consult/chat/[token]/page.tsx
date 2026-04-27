@@ -114,12 +114,15 @@ export default function ConsultChatPage({ params }: { params: Promise<{ token: s
         const file = filePreview.file;
         const ext = file.name.split('.').pop();
         const path = `consult/${token}/${Date.now()}.${ext}`;
-        await supabase.storage.from('consult-files').upload(path, file);
+        const { error: upErr } = await supabase.storage.from('consult-files').upload(path, file);
+        if (upErr) throw new Error(`파일 업로드 실패: ${upErr.message}`);
         const { data: { publicUrl } } = supabase.storage.from('consult-files').getPublicUrl(path);
         await sendMessage(text, publicUrl, file.type.startsWith('image/') ? 'image' : 'file', file.name);
         setFilePreview(null);
         setInput('');
-      } catch { alert('파일 전송 오류'); }
+      } catch (e: unknown) {
+        alert((e as Error).message ?? '파일 전송 오류');
+      }
       finally { setIsUploading(false); }
     } else {
       setInput('');
