@@ -113,13 +113,12 @@ export default function ConsultChatPage({ params }: { params: Promise<{ token: s
     if (filePreview) {
       setIsUploading(true);
       try {
-        const file = filePreview.file;
-        const ext = file.name.split('.').pop();
-        const path = `consult/${token}/${Date.now()}.${ext}`;
-        const { error: upErr } = await supabase.storage.from('consult-files').upload(path, file);
-        if (upErr) throw new Error(`파일 업로드 실패: ${upErr.message}`);
-        const { data: { publicUrl } } = supabase.storage.from('consult-files').getPublicUrl(path);
-        await sendMessage(text, publicUrl, file.type.startsWith('image/') ? 'image' : 'file', file.name);
+        const fd = new FormData();
+        fd.append('file', filePreview.file);
+        const uploadRes = await fetch(`/api/consult/${token}/upload`, { method: 'POST', body: fd });
+        const uploadData = await uploadRes.json();
+        if (!uploadRes.ok) throw new Error(uploadData.error ?? '업로드 실패');
+        await sendMessage(text, uploadData.url, uploadData.file_type, uploadData.file_name);
         setFilePreview(null);
         setInput('');
       } catch (e: unknown) {
