@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase';
-import { Store, Users, Ticket, FileText, AlertCircle, Music, CloudRain, Sun, Thermometer, Database, HardDrive, Table2 } from 'lucide-react';
+import { Store, Users, Ticket, FileText, AlertCircle, Music, CloudRain, Sun, Thermometer, Database, HardDrive, Table2, Send, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 
 interface Stats {
   stores:        number;
@@ -26,6 +26,8 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [dbStats, setDbStats] = useState<{ tables: { table: string; count: number | null }[]; buckets: { bucket: string; files: number; bytes: number }[] } | null>(null);
+  const [webhookState, setWebhookState] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle');
+  const [webhookMsg,   setWebhookMsg]   = useState('');
 
   useEffect(() => {
     const sb = createClient();
@@ -358,6 +360,39 @@ export default function DashboardPage() {
             </a>
           ))}
         </div>
+      </div>
+
+      {/* 텔레그램 웹훅 */}
+      <div className="mt-6 p-4 bg-card border border-border-main rounded-2xl flex items-center gap-4">
+        <div className="text-2xl shrink-0">✈️</div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-bold text-primary">텔레그램 웹훅</p>
+          <p className="text-[12px] text-muted mt-0.5">
+            {webhookState === 'ok'    && <span className="text-green-400">{webhookMsg}</span>}
+            {webhookState === 'error' && <span className="text-red-400">{webhookMsg}</span>}
+            {webhookState === 'idle'  && '알림이 안 올 때 버튼을 눌러 재등록하세요.'}
+            {webhookState === 'loading' && '등록 중...'}
+          </p>
+        </div>
+        <button
+          onClick={async () => {
+            setWebhookState('loading'); setWebhookMsg('');
+            try {
+              const r = await fetch('/api/admin/telegram-webhook', { method: 'POST' });
+              const d = await r.json();
+              if (d.ok) { setWebhookState('ok'); setWebhookMsg('✅ 등록 완료: ' + d.webhookUrl); }
+              else { setWebhookState('error'); setWebhookMsg('실패: ' + (d.error ?? JSON.stringify(d))); }
+            } catch { setWebhookState('error'); setWebhookMsg('네트워크 오류'); }
+          }}
+          disabled={webhookState === 'loading'}
+          className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-400 hover:bg-blue-500/20 text-[12px] font-bold transition disabled:opacity-50"
+        >
+          {webhookState === 'loading' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> :
+           webhookState === 'ok'      ? <CheckCircle className="w-3.5 h-3.5" /> :
+           webhookState === 'error'   ? <XCircle className="w-3.5 h-3.5" /> :
+           <Send className="w-3.5 h-3.5" />}
+          웹훅 재등록
+        </button>
       </div>
     </div>
   );
