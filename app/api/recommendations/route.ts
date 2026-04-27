@@ -51,6 +51,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: '가게 정보가 필요합니다' }, { status: 400 });
   }
 
+  // 하루 10개 작성 제한
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const { count: todayCount } = await db()
+    .from('user_recommendations')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+    .gte('created_at', todayStart.toISOString());
+  if ((todayCount ?? 0) >= 10) {
+    return NextResponse.json({ error: '하루 최대 10개까지 작성할 수 있어요' }, { status: 429 });
+  }
+
   // 전화번호 마스킹 표시 (010-****-1234)
   const phone = user.phone ?? '';
   const display = phone.length >= 8

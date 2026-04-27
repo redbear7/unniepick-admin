@@ -427,10 +427,13 @@ function AddModal({ user, onClose, onAdded }: {
             <div style={{ marginBottom: 20 }}>
               <div style={{ fontSize: 28, marginBottom: 8 }}>👋</div>
               <h2 style={{ fontSize: 20, fontWeight: 900, color: '#191F28', margin: '0 0 6px', lineHeight: 1.3 }}>
-                언니픽에<br />가게를 등록해보세요
+                언니픽에 나만의<br />추천맛집을 자랑해보세요!
               </h2>
-              <p style={{ fontSize: 13, color: '#8B95A1', margin: 0 }}>
-                가게를 검색하면 정보를 바로 불러올 수 있어요
+              <p style={{ fontSize: 13, color: '#8B95A1', margin: '0 0 4px' }}>
+                사진을 함께 등록하면 랜덤 포인트가 지급됩니다 🎁
+              </p>
+              <p style={{ fontSize: 12, color: '#ADB5BD', margin: 0 }}>
+                하루 최대 10개 작성 가능
               </p>
             </div>
 
