@@ -282,7 +282,7 @@ export default function ConsultPage() {
             onClick={() => { setKakaoPlace(null); setBusinessName(''); setArea(''); setStep('confirm'); }}
             className="w-full py-4 rounded-2xl border-2 border-gray-200 hover:border-gray-300 text-gray-600 hover:text-gray-800 font-semibold text-[14px] transition"
           >
-            카카오에 없는 가게예요 → 직접 입력
+            네이버, 카카오에 아직 없어요 → 직접 입력할게요
           </button>
 
           <div className="flex items-center gap-3">
