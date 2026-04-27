@@ -53,8 +53,8 @@ export async function sendMessage(
 // 신규 상담 신청 알림
 export async function notifyNewConsult(params: {
   businessName: string;
-  ownerName: string;
-  phone: string;
+  ownerName: string | null;
+  phone: string | null;
   area: string | null;
   hasAgency: boolean;
   agencyName: string | null;
@@ -62,17 +62,20 @@ export async function notifyNewConsult(params: {
   chatUrl: string;
   adminUrl: string;
 }): Promise<number> {
+  const ownerLine = params.ownerName
+    ? `\n👤 ${params.ownerName}${params.area ? ` · ${params.area}` : ''}`
+    : params.area ? `\n📍 ${params.area}` : '';
+  const phoneLine = params.phone ? `\n📞 ${params.phone}` : '';
   const agencyLine = params.hasAgency
-    ? `\n🏢 대행사: ${params.agencyName || '있음'}`
+    ? `\n🏢 광고대행사${params.agencyName ? `: ${params.agencyName}` : ''}`
     : '';
-  const memoLine = params.memo ? `\n💬 메모: ${params.memo}` : '';
+  const memoLine = params.memo ? `\n💬 ${params.memo}` : '';
 
   const text =
     `🔔 <b>새 상담 신청</b>\n\n` +
-    `🏪 <b>${params.businessName}</b>\n` +
-    `👤 ${params.ownerName}` +
-    (params.area ? ` · ${params.area}` : '') +
-    `\n📞 ${params.phone}` +
+    `🏪 <b>${params.businessName}</b>` +
+    ownerLine +
+    phoneLine +
     agencyLine +
     memoLine;
 

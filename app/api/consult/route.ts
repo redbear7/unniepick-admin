@@ -15,18 +15,18 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { owner_name, phone, business_name, area, has_agency, agency_name, memo } = body;
 
-    if (!owner_name?.trim() || !phone?.trim() || !business_name?.trim()) {
-      return NextResponse.json({ error: '필수 항목을 입력해주세요.' }, { status: 400 });
+    if (!business_name?.trim()) {
+      return NextResponse.json({ error: '상호명을 입력해주세요.' }, { status: 400 });
     }
 
     const supabase = adminClient();
-    const phoneClean = phone.replace(/\D/g, '');
+    const phoneClean = phone ? phone.replace(/\D/g, '') : null;
 
     const { data, error } = await supabase
       .from('consult_inquiries')
       .insert({
-        owner_name: owner_name.trim(),
-        phone: phoneClean,
+        owner_name: owner_name?.trim() || null,
+        phone: phoneClean || null,
         business_name: business_name.trim(),
         area: area || null,
         has_agency: has_agency ?? false,
@@ -56,8 +56,8 @@ export async function POST(req: NextRequest) {
 
     notifyNewConsult({
       businessName: business_name.trim(),
-      ownerName: owner_name.trim(),
-      phone: phoneClean.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3'),
+      ownerName: owner_name?.trim() || null,
+      phone: phoneClean ? phoneClean.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3') : null,
       area: area || null,
       hasAgency: has_agency ?? false,
       agencyName: agency_name?.trim() || null,
