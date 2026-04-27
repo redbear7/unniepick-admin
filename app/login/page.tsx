@@ -12,7 +12,12 @@ export default function LoginPage() {
   const [error,   setError]   = useState('');
   const [loading, setLoading] = useState(false);
 
-  const pinRefs = Array.from({ length: 4 }, () => useRef<HTMLInputElement>(null));
+  // Hooks 규칙: Array.from 안에서 useRef 호출 금지 → 개별 선언
+  const ref0 = useRef<HTMLInputElement>(null);
+  const ref1 = useRef<HTMLInputElement>(null);
+  const ref2 = useRef<HTMLInputElement>(null);
+  const ref3 = useRef<HTMLInputElement>(null);
+  const pinRefs = [ref0, ref1, ref2, ref3];
 
   const handlePinInput = (idx: number, val: string) => {
     const digit = val.replace(/\D/g, '').slice(-1);
@@ -22,7 +27,6 @@ export default function LoginPage() {
     if (digit && idx < 3) {
       pinRefs[idx + 1].current?.focus();
     } else if (digit && idx === 3) {
-      // 마지막 칸 입력 시 자동 제출
       handleSubmit([...next]);
     }
   };
