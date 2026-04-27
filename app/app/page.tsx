@@ -27,7 +27,7 @@ export default function AppPage() {
               <a href="#owner">사장님</a>
             </nav>
             <div className={styles.headerRight}>
-              <Link href="/owner/login" className={`${styles.btn} ${styles.btnOutline} ${styles.btnSm}`}>사장님 로그인</Link>
+              <Link href="/apply" className={`${styles.btn} ${styles.btnOutline} ${styles.btnSm}`}>가게 등록</Link>
               <a href="#app-download" className={`${styles.btn} ${styles.btnPrimary} ${styles.btnSm}`}>앱 다운로드</a>
             </div>
           </div>
