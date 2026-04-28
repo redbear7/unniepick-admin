@@ -1284,7 +1284,7 @@ function RestaurantListRow({
   const hasAi        = !!r.ai_summary;
 
   const crawledDate = r.crawled_at
-    ? new Date(r.crawled_at).toLocaleDateString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit' })
+    ? new Date(r.crawled_at).toLocaleString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
     : null;
 
   const openedAt   = (r as any).opened_at as string | null;
@@ -1610,7 +1610,7 @@ function RestaurantCard({
             )}
             <span className="flex items-center gap-1">
               <Clock className="w-3 h-3" />
-              {new Date(r.crawled_at).toLocaleDateString('ko-KR')}
+              {new Date(r.crawled_at).toLocaleString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
             </span>
           </div>
         </div>
