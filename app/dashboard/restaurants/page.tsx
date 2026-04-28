@@ -178,7 +178,7 @@ export default function RestaurantsPage() {
 
   // 단일 업체 즉시 등록
   async function quickRegister(r: Restaurant) {
-    setRegisteringId(r.naver_place_id);
+    setRegisteringId(r.id);
     setRegisterMsg('');
     try {
       const res = await fetch('/api/restaurants/batch-register', {
@@ -866,7 +866,7 @@ export default function RestaurantsPage() {
                       onAiSummary={() => generateAiSummary(r)}
                       aiLoading={aiSummaryingId === r.id}
                       onRegister={() => quickRegister(r)}
-                      registering={registeringId === r.naver_place_id}
+                      registering={registeringId === r.id}
                     />
                   ))}
                 </tbody>
