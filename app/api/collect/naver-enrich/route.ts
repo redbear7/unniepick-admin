@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
 
         await new Promise<void>((resolve) => {
           const proc = spawn(
-            'npx', ['tsx', 'src/kakao-main.ts', '--once', `--keyword=${kw}`, `--limit=${limit}`],
+            'npx', ['tsx', 'src/main.ts', `--keyword=${kw}`, `--limit=${limit}`],
             {
               cwd: CRAWL_DIR,
               env: { ...process.env },

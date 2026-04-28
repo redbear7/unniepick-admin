@@ -581,33 +581,43 @@ function inferTags(category: string, name: string): string[] {
 
 const args         = process.argv.slice(2);
 const keywordIdArg = args.find((a) => a.startsWith('--keyword-id='))?.split('=')[1];
+const keywordArg   = args.find((a) => a.startsWith('--keyword='))?.split('=').slice(1).join('=');
 const isOnce       = args.includes('--once');
 // 키워드당 최대 수집 업체 수 (0 = 무제한, 기본값)
 const limitArg     = parseInt(args.find(a => a.startsWith('--limit='))?.split('=')[1] ?? '0') || 0;
 
-async function runWithKeywords(keywords: CrawlKeyword[]) {
+async function runWithKeywords(keywords: CrawlKeyword[], adhoc = false) {
   if (!keywords.length) {
     console.log('실행할 키워드가 없습니다.');
     return;
   }
-  const allNew: RestaurantData[] = [];
-  const existingBefore = await getExistingIds();
-
   await crawl(keywords);
 
-  // 전체 신규 업체 집계 및 알림 (수동/스케줄러 공통)
-  const stats = await getStats();
-  // 간이 집계: 키워드 row의 last_new_count 합산
-  const { data: updated } = await (await import('@supabase/supabase-js')).createClient(
-    process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  ).from('crawl_keywords').select('last_new_count').in('id', keywords.map((k) => k.id));
-  const newCount = (updated ?? []).reduce((s, r: any) => s + (r.last_new_count ?? 0), 0);
-
-  await notifyDailySummary(stats.total, newCount, keywords.map((k) => k.keyword));
-  console.log(`📊 DB 총: ${stats.total}개\n`);
+  if (!adhoc) {
+    // 전체 신규 업체 집계 및 알림 (수동/스케줄러 공통)
+    const stats = await getStats();
+    const { data: updated } = await (await import('@supabase/supabase-js')).createClient(
+      process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    ).from('crawl_keywords').select('last_new_count').in('id', keywords.map((k) => k.id));
+    const newCount = (updated ?? []).reduce((s, r: any) => s + (r.last_new_count ?? 0), 0);
+    await notifyDailySummary(stats.total, newCount, keywords.map((k) => k.keyword));
+    console.log(`📊 DB 총: ${stats.total}개\n`);
+  }
 }
 
-if (keywordIdArg) {
+if (keywordArg) {
+  // 애드혹 실행: 문자열 키워드 직접 지정 (DB 등록 불필요)
+  const keyword: CrawlKeyword = {
+    id: `adhoc-${Date.now()}`,
+    keyword: keywordArg,
+    enabled: true,
+    is_daily: false,
+    analyze_reviews: true,
+    status: 'idle',
+  };
+  await runWithKeywords([keyword], true);
+  process.exit(0);
+} else if (keywordIdArg) {
   // 수동 실행: 특정 키워드 하나만
   const keywords = await getActiveKeywords({ id: keywordIdArg });
   await runWithKeywords(keywords);

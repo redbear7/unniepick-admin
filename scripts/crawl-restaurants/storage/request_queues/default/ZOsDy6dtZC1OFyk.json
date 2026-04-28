@@ -1,0 +1,9 @@
+{
+	"id": "ZOsDy6dtZC1OFyk",
+	"json": "{\"id\":\"ZOsDy6dtZC1OFyk\",\"url\":\"https://pcmap.place.naver.com/restaurant/list?query=%ED%85%8C%EC%8A%A4%ED%8A%B8\",\"uniqueKey\":\"https://pcmap.place.naver.com/restaurant/list?query=%ED%85%8C%EC%8A%A4%ED%8A%B8\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"kw\":{\"id\":\"adhoc-1777391030909\",\"keyword\":\"테스트\",\"enabled\":true,\"is_daily\":false,\"analyze_reviews\":true,\"status\":\"idle\"}}}",
+	"method": "GET",
+	"orderNo": 1777391031974,
+	"retryCount": 0,
+	"uniqueKey": "https://pcmap.place.naver.com/restaurant/list?query=%ED%85%8C%EC%8A%A4%ED%8A%B8",
+	"url": "https://pcmap.place.naver.com/restaurant/list?query=%ED%85%8C%EC%8A%A4%ED%8A%B8"
+}
