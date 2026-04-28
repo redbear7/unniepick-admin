@@ -824,15 +824,24 @@ function RestaurantListRow({
   const unniepickCat = (r as any).unniepick_category as string | null;
   const source       = (r as any).source as string | null;
   const kakaoPlaceId = (r as any).kakao_place_id as string | null;
+  const kakaoUrl     = (r as any).kakao_place_url as string | null;
 
-  const hasMenu    = Array.isArray(r.menu_items)    && r.menu_items.length    > 0;
-  const hasKeyword = Array.isArray(r.review_keywords) && r.review_keywords.length > 0;
-  const hasAi      = !!r.ai_summary;
+  const menuCount    = Array.isArray(r.menu_items)     ? r.menu_items.length     : 0;
+  const keywordCount = Array.isArray(r.review_keywords) ? r.review_keywords.length : 0;
+  const blogCount    = Array.isArray(r.blog_reviews)    ? r.blog_reviews.length    : 0;
+  const hasAi        = !!r.ai_summary;
+
+  const crawledDate = r.crawled_at
+    ? new Date(r.crawled_at).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })
+    : null;
+  const aiDate = r.ai_summary_at
+    ? new Date(r.ai_summary_at).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })
+    : null;
 
   return (
     <div
       onClick={onClick}
-      className={`flex items-center gap-3 px-4 py-3 bg-card cursor-pointer transition hover:bg-fill-subtle ${
+      className={`flex items-start gap-3 px-4 py-3 bg-card cursor-pointer transition hover:bg-fill-subtle ${
         selected ? 'bg-[#FF6F0F]/5' : ''
       }`}
     >
@@ -840,7 +849,7 @@ function RestaurantListRow({
       {!registered ? (
         <button
           onClick={(e) => { e.stopPropagation(); onSelect?.(); }}
-          className="shrink-0 w-5 h-5 flex items-center justify-center"
+          className="shrink-0 w-5 h-5 flex items-center justify-center mt-0.5"
         >
           {selected
             ? <CheckSquare className="w-4 h-4 text-[#FF6F0F]" />
@@ -848,86 +857,113 @@ function RestaurantListRow({
           }
         </button>
       ) : (
-        <div className="shrink-0 w-5 h-5 flex items-center justify-center">
+        <div className="shrink-0 w-5 h-5 flex items-center justify-center mt-0.5">
           <Check className="w-4 h-4 text-green-500" />
         </div>
       )}
 
       {/* 카테고리 이모지 */}
-      <div className="shrink-0 w-9 h-9 rounded-lg bg-fill-subtle flex items-center justify-center text-lg">
+      <div className="shrink-0 w-9 h-9 rounded-lg bg-fill-subtle flex items-center justify-center text-lg mt-0.5">
         {catEmoji}
       </div>
 
       {/* 메인 정보 */}
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 space-y-0.5">
+
+        {/* ① 상호명 + 출처/상태 배지 */}
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="font-semibold text-sm text-primary truncate">{r.name}</span>
-          {/* 출처 배지 */}
-          {source === 'naver' || r.naver_place_id ? (
+          <span className="font-semibold text-sm text-primary">{r.name}</span>
+          {(source === 'naver' || r.naver_place_id) && (
             <span className="px-1 py-0.5 bg-green-600/20 text-green-400 text-[9px] font-bold rounded border border-green-600/30">N</span>
-          ) : null}
-          {kakaoPlaceId ? (
+          )}
+          {kakaoPlaceId && (
             <span className="px-1 py-0.5 bg-yellow-500/20 text-yellow-400 text-[9px] font-bold rounded border border-yellow-500/30">K</span>
-          ) : null}
-          {/* 수집 데이터 배지 */}
-          {hasMenu    && <span className="px-1 py-0.5 bg-slate-500/20 text-slate-400 text-[9px] rounded border border-slate-500/20">메뉴</span>}
-          {hasKeyword && <span className="px-1 py-0.5 bg-slate-500/20 text-slate-400 text-[9px] rounded border border-slate-500/20">키워드</span>}
-          {/* AI 요약 배지 */}
-          {hasAi && <span className="px-1 py-0.5 bg-emerald-500/20 text-emerald-400 text-[9px] rounded border border-emerald-500/30">✨AI</span>}
-          {/* 상태 배지 */}
+          )}
           {r.is_new_open && (
             <span className="px-1.5 py-0.5 bg-green-500/15 text-green-400 text-[10px] rounded-full border border-green-500/25">NEW</span>
           )}
           {r.operating_status === 'suspected' && (
-            <span className="px-1.5 py-0.5 bg-amber-500/15 text-amber-400 text-[10px] rounded-full border border-amber-500/25">🟡 의심</span>
+            <span className="px-1.5 py-0.5 bg-amber-500/15 text-amber-400 text-[10px] rounded-full border border-amber-500/25">의심</span>
           )}
           {r.operating_status === 'inactive' && (
-            <span className="px-1.5 py-0.5 bg-red-500/15 text-red-400 text-[10px] rounded-full border border-red-500/25">🔴 폐업</span>
+            <span className="px-1.5 py-0.5 bg-red-500/15 text-red-400 text-[10px] rounded-full border border-red-500/25">폐업</span>
           )}
         </div>
-        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+
+        {/* ② 카테고리 + 주소 */}
+        <div className="flex items-center gap-2 flex-wrap">
           {(unniepickCat || r.category) && (
             <span className="text-[11px] px-1.5 py-0.5 bg-blue-500/10 text-blue-400 rounded-full border border-blue-500/20">
               {unniepickCat || r.category}
             </span>
           )}
           {r.address && (
-            <span className="text-[11px] text-muted truncate max-w-[240px]">
+            <span className="text-[11px] text-muted truncate max-w-[200px]">
               {r.address.replace(/^경남 창원시?\s?/, '').replace(/^창원시?\s?/, '')}
             </span>
           )}
         </div>
-        {r.ai_summary && (
-          <p className="text-[11px] text-emerald-400 mt-0.5 truncate">✨ {r.ai_summary}</p>
+
+        {/* ③ 수집 데이터 현황 */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {crawledDate && (
+            <span className="text-[10px] text-muted flex items-center gap-0.5">
+              <Clock className="w-2.5 h-2.5" />{crawledDate} 수집
+            </span>
+          )}
+          {menuCount > 0 && (
+            <span className="text-[10px] text-slate-400 flex items-center gap-0.5">
+              🍽 메뉴 {menuCount}개
+            </span>
+          )}
+          {keywordCount > 0 && (
+            <span className="text-[10px] text-slate-400 flex items-center gap-0.5">
+              🏷 키워드 {keywordCount}개
+            </span>
+          )}
+          {blogCount > 0 && (
+            <span className="text-[10px] text-slate-400 flex items-center gap-0.5">
+              📝 블로그 {blogCount}개
+            </span>
+          )}
+          {menuCount === 0 && keywordCount === 0 && blogCount === 0 && (
+            <span className="text-[10px] text-muted/50">수집 데이터 없음</span>
+          )}
+        </div>
+
+        {/* ④ AI 요약 */}
+        {hasAi ? (
+          <div className="flex items-start gap-1.5">
+            <span className="text-[10px] text-emerald-500/70 shrink-0 mt-0.5">✨ AI{aiDate ? ` · ${aiDate}` : ''}</span>
+            <p className="text-[11px] text-emerald-400 truncate leading-relaxed">{r.ai_summary}</p>
+          </div>
+        ) : (
+          <p className="text-[10px] text-muted/40">AI 요약 없음</p>
         )}
+
       </div>
 
       {/* 우측 액션 */}
-      <div className="shrink-0 flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-        {!r.ai_summary && (
-          <button
-            onClick={onAiSummary}
-            disabled={aiLoading}
-            className="px-2 py-1 text-[10px] font-semibold rounded-lg bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 disabled:opacity-50 transition"
-          >
-            {aiLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : '✨ AI'}
-          </button>
-        )}
-        {(r as any).kakao_place_url && (
-          <a
-            href={(r as any).kakao_place_url}
-            target="_blank" rel="noopener noreferrer"
-            className="text-muted hover:text-primary"
-          >
+      <div className="shrink-0 flex items-center gap-1.5 mt-0.5" onClick={(e) => e.stopPropagation()}>
+        <button
+          onClick={onAiSummary}
+          disabled={aiLoading || hasAi}
+          title={hasAi ? 'AI 요약 완료' : 'AI 요약 생성'}
+          className={`px-2 py-1 text-[10px] font-semibold rounded-lg transition ${
+            hasAi
+              ? 'bg-emerald-500/10 text-emerald-500/50 cursor-default'
+              : 'bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 disabled:opacity-50'
+          }`}
+        >
+          {aiLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : '✨'}
+        </button>
+        {kakaoUrl && (
+          <a href={kakaoUrl} target="_blank" rel="noopener noreferrer" className="text-yellow-500/60 hover:text-yellow-400" title="카카오맵">
             <ExternalLink className="w-3.5 h-3.5" />
           </a>
         )}
         {r.naver_place_url && (
-          <a
-            href={r.naver_place_url}
-            target="_blank" rel="noopener noreferrer"
-            className="text-muted hover:text-primary"
-          >
+          <a href={r.naver_place_url} target="_blank" rel="noopener noreferrer" className="text-green-500/60 hover:text-green-400" title="네이버 지도">
             <ExternalLink className="w-3.5 h-3.5" />
           </a>
         )}
