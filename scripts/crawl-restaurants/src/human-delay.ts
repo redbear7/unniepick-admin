@@ -66,7 +66,7 @@ export function createTimer(label = '크롤링'): CrawlTimer {
       process.stdout.write(`  [${fmtElapsed(start)}] ${msg}\n`);
     },
     step: (current: number, total: number, stepLabel: string) => {
-      const pct  = total > 0 ? Math.round((current / total) * 100) : 0;
+      const pct  = total > 0 ? Math.min(100, Math.round((current / total) * 100)) : 0;
       const bar  = '█'.repeat(Math.floor(pct / 5)) + '░'.repeat(20 - Math.floor(pct / 5));
       process.stdout.write(`\r  [${fmtElapsed(start)}] |${bar}| ${pct}% (${current}/${total}) ${stepLabel}     `);
     },
