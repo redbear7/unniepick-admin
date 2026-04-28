@@ -87,6 +87,13 @@ function parseLocation(
 ): { gu: string; dong: string } {
   const src = address || roadAddress || '';
   if (!src) return { gu: '', dong: '' };
+
+  // 김해 장유 특별 처리 (구 체계가 아닌 지역)
+  if (src.includes('김해') && /장유/.test(src)) {
+    const dongMatch = src.match(/[가-힣]+(?:동|읍|면)(?=\s|$)/);
+    return { gu: '김해 장유', dong: dongMatch?.[0] ?? '장유' };
+  }
+
   const guMatch   = src.match(/[가-힣]+구(?=\s|$)/);
   const dongMatch = src.match(/[가-힣]+(?:동|읍|면)(?=\s|$)/);
   return {
@@ -532,14 +539,15 @@ export default function RestaurantsPage() {
   }
 
   // ── 동/카테고리 롱프레스 → 키워드 자동 생성 ──────────────────────
-  function openKwModal(type: 'dong' | 'category', value: string) {
+  function openKwModal(type: 'dong' | 'category', value: string, gu?: string) {
     let keywords: string[];
     let label: string;
     if (type === 'dong') {
+      const city = gu === '김해 장유' ? '김해 장유' : '창원';
       keywords = [
-        `창원 ${value} 맛집`,
-        `창원 ${value} 카페`,
-        `창원 ${value} 술집`,
+        `${city} ${value} 맛집`,
+        `${city} ${value} 카페`,
+        `${city} ${value} 술집`,
       ];
       label = `${value} 키워드 수집`;
     } else {
@@ -601,11 +609,13 @@ export default function RestaurantsPage() {
   }
 
   // 구/동 옵션 + 카운트 추출
-  const { guList, guDongMap, guCounts, catCounts, guTotal } = (() => {
+  const { guList, guDongMap, guCounts, catCounts, guTotal, dongLastCrawl } = (() => {
     const guCountMap = new Map<string, number>();
     // 구 → 동 → 카운트
     const guDong = new Map<string, Map<string, number>>();
     const catCountMap = new Map<string, number>();
+    // 동 → 마지막 crawled_at (ms)
+    const dongCrawlMs = new Map<string, number>();
 
     for (const r of restaurants) {
       const { gu, dong } = parseLocation(r.address, (r as any).road_address);
@@ -615,18 +625,28 @@ export default function RestaurantsPage() {
           if (!guDong.has(gu)) guDong.set(gu, new Map());
           const dm = guDong.get(gu)!;
           dm.set(dong, (dm.get(dong) ?? 0) + 1);
+          const ms = r.crawled_at ? new Date(r.crawled_at).getTime() : 0;
+          if (ms > (dongCrawlMs.get(dong) ?? 0)) dongCrawlMs.set(dong, ms);
         }
       }
       const cat = (r as any).unniepick_category || r.category;
       if (cat) catCountMap.set(cat, (catCountMap.get(cat) ?? 0) + 1);
     }
 
+    // ms → 'MM/DD' 문자열
+    const dongLastCrawl = new Map<string, string>();
+    for (const [dong, ms] of dongCrawlMs) {
+      const d = new Date(ms);
+      dongLastCrawl.set(dong, `${d.getMonth() + 1}/${d.getDate()}`);
+    }
+
     return {
-      guList:    [...guCountMap.keys()].sort((a, b) => (guCountMap.get(b)! - guCountMap.get(a)!)),
-      guDongMap: guDong,
-      guCounts:  guCountMap,
-      catCounts: catCountMap,
-      guTotal:   [...guCountMap.values()].reduce((a, b) => a + b, 0),
+      guList:       [...guCountMap.keys()].sort((a, b) => (guCountMap.get(b)! - guCountMap.get(a)!)),
+      guDongMap:    guDong,
+      guCounts:     guCountMap,
+      catCounts:    catCountMap,
+      guTotal:      [...guCountMap.values()].reduce((a, b) => a + b, 0),
+      dongLastCrawl,
     };
   })();
 
@@ -924,11 +944,12 @@ export default function RestaurantsPage() {
                       label={dong}
                       count={cnt}
                       active={dongFilter === dong}
+                      lastCrawledAt={dongLastCrawl.get(dong)}
                       onClick={() => {
                         if (guFilter !== gu) { setGuFilter(gu); }
                         setDongFilter(dongFilter === dong ? '' : dong);
                       }}
-                      onLongPress={() => openKwModal('dong', dong)}
+                      onLongPress={() => openKwModal('dong', dong, gu)}
                     />
                   ))}
                 </div>
@@ -1456,9 +1477,10 @@ function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label:
 
 
 function LocationChip({
-  label, count, active, onClick, onLongPress,
+  label, count, active, onClick, onLongPress, lastCrawledAt,
 }: {
-  label: string; count: number; active: boolean; onClick: () => void; onLongPress?: () => void;
+  label: string; count: number; active: boolean; onClick: () => void;
+  onLongPress?: () => void; lastCrawledAt?: string;
 }) {
   const timerRef = useState<ReturnType<typeof setTimeout> | null>(null);
   const startPress = () => {
@@ -1473,17 +1495,24 @@ function LocationChip({
       onMouseDown={startPress} onMouseUp={endPress} onMouseLeave={endPress}
       onTouchStart={startPress} onTouchEnd={endPress}
       title={onLongPress ? '꾹 누르면 키워드 수집' : undefined}
-      className={`px-3 py-1.5 rounded-lg text-sm border transition flex items-center gap-1.5 select-none ${
+      className={`px-3 py-1.5 rounded-lg text-sm border transition flex flex-col items-start select-none ${
         active
           ? 'bg-[#FF6F0F] border-[#FF6F0F] text-white'
           : 'bg-card border-border-main text-secondary hover:border-[#FF6F0F]/50 hover:text-primary'
       } ${onLongPress ? 'cursor-pointer' : ''}`}
     >
-      <span>{label}</span>
-      <span className={`text-xs ${active ? 'text-white/80' : 'text-muted'}`}>
-        {count}
-      </span>
-      {onLongPress && <span className="text-[9px] opacity-40">⬇</span>}
+      <div className="flex items-center gap-1.5">
+        <span>{label}</span>
+        <span className={`text-xs ${active ? 'text-white/80' : 'text-muted'}`}>
+          {count}
+        </span>
+        {onLongPress && <span className="text-[9px] opacity-40">⬇</span>}
+      </div>
+      {lastCrawledAt && (
+        <span className={`text-[9px] leading-none mt-0.5 ${active ? 'text-white/60' : 'text-muted/60'}`}>
+          {lastCrawledAt}
+        </span>
+      )}
     </button>
   );
 }
