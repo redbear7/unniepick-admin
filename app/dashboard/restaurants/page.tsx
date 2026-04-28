@@ -77,7 +77,7 @@ function getRepresentativeTags(r: Restaurant): string[] {
   return [...new Set([...custom, ...reviewTop, ...menuTop].filter(Boolean))].slice(0, 3);
 }
 
-type SortField = 'name' | 'crawled_at' | 'opened_at' | 'category' | 'operating_status' | 'ai_summary';
+type SortField = 'name' | 'crawled_at' | 'opened_at' | 'category' | 'operating_status' | 'ai_summary' | 'visitor_review_count';
 
 /** 주소에서 구/동 추출 — 예: "창원 마산합포구 산호동 용마로 96" → { gu: "마산합포구", dong: "산호동" } */
 function parseLocation(address: string | null | undefined): { gu: string; dong: string } {
@@ -492,6 +492,7 @@ export default function RestaurantsPage() {
       return (new Date(oa).getTime() - new Date(ob).getTime()) * dir;
     }
     if (sortBy === 'category') return ((a.category ?? '') > (b.category ?? '') ? 1 : -1) * dir;
+    if (sortBy === 'visitor_review_count') return ((a.visitor_review_count ?? 0) - (b.visitor_review_count ?? 0)) * dir;
     if (sortBy === 'operating_status') return ((a.operating_status ?? '') > (b.operating_status ?? '') ? 1 : -1) * dir;
     if (sortBy === 'ai_summary') {
       const ha = !!a.ai_summary ? 1 : 0;
@@ -868,12 +869,13 @@ export default function RestaurantsPage() {
                       </button>
                     </th>
                     {([
-                      ['name',             '가게명',     'left',   'px-4'],
-                      ['category',         '카테고리',   'left',   'px-4'],
-                      ['opened_at',        '개업일',     'left',   'px-4'],
-                      ['crawled_at',       '수집일',     'left',   'px-4'],
-                      ['ai_summary',       '수집데이터', 'left',   'px-4'],
-                      ['operating_status', '상태',       'center', 'px-4'],
+                      ['name',                  '가게명',     'left',   'px-4'],
+                      ['category',              '카테고리',   'left',   'px-4'],
+                      ['opened_at',             '개업일',     'left',   'px-4'],
+                      ['visitor_review_count',  '리뷰 수',    'right',  'px-4'],
+                      ['crawled_at',            '수집일',     'left',   'px-4'],
+                      ['ai_summary',            '수집데이터', 'left',   'px-4'],
+                      ['operating_status',      '상태',       'center', 'px-4'],
                     ] as const).map(([col, label, align, px]) => (
                       <th key={col} className={`text-${align} ${px} py-3.5`}>
                         <button
@@ -1168,6 +1170,13 @@ function RestaurantListRow({
       <td className="px-4 py-3 text-xs">
         {openedDate
           ? <p className={isRecentOpen ? 'text-sky-400 font-semibold' : 'text-muted'}>{openedDate}</p>
+          : <span className="text-dim">—</span>}
+      </td>
+
+      {/* 리뷰 수 */}
+      <td className="px-4 py-3 text-right text-xs">
+        {r.visitor_review_count
+          ? <span className="text-secondary font-medium">{r.visitor_review_count.toLocaleString()}</span>
           : <span className="text-dim">—</span>}
       </td>
 
