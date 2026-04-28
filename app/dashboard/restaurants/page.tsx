@@ -77,7 +77,7 @@ function getRepresentativeTags(r: Restaurant): string[] {
   return [...new Set([...custom, ...reviewTop, ...menuTop].filter(Boolean))].slice(0, 3);
 }
 
-type SortField = 'crawled_at' | 'name';
+type SortField = 'name' | 'crawled_at' | 'opened_at' | 'category' | 'operating_status' | 'ai_summary';
 
 /** 주소에서 구/동 추출 — 예: "창원 마산합포구 산호동 용마로 96" → { gu: "마산합포구", dong: "산호동" } */
 function parseLocation(address: string | null | undefined): { gu: string; dong: string } {
@@ -105,7 +105,8 @@ export default function RestaurantsPage() {
   const [sourceFilter, setSourceFilter] = useState<'all' | 'naver' | 'kakao'>('all');
   const [aiFilter,     setAiFilter]     = useState<'all' | 'has' | 'none'>('all');
   const [openedFilter, setOpenedFilter] = useState<'all' | '1' | '3' | '6' | '12'>('all');
-  const [sortBy, setSortBy] = useState<SortField>('crawled_at');
+  const [sortBy,  setSortBy]  = useState<SortField>('crawled_at');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [categories, setCategories] = useState<string[]>([]);
   const [selected, setSelected] = useState<Restaurant | null>(null);
 
@@ -341,7 +342,7 @@ export default function RestaurantsPage() {
     let query = supabase
       .from('restaurants')
       .select('*')
-      .order(sortBy, { ascending: sortBy === 'name' });
+      .order('crawled_at', { ascending: false });
 
     if (categoryFilter) query = query.eq('category', categoryFilter);
 
@@ -461,6 +462,28 @@ export default function RestaurantsPage() {
   const lastCrawled = restaurants.length
     ? new Date(Math.max(...restaurants.map((r) => new Date(r.crawled_at).getTime())))
     : null;
+
+  const sorted = [...filtered].sort((a, b) => {
+    const dir = sortDir === 'asc' ? 1 : -1;
+    if (sortBy === 'name') return a.name.localeCompare(b.name, 'ko') * dir;
+    if (sortBy === 'crawled_at') return (new Date(a.crawled_at).getTime() - new Date(b.crawled_at).getTime()) * dir;
+    if (sortBy === 'opened_at') {
+      const oa = (a as any).opened_at as string | null;
+      const ob = (b as any).opened_at as string | null;
+      if (!oa && !ob) return 0;
+      if (!oa) return 1;
+      if (!ob) return -1;
+      return (new Date(oa).getTime() - new Date(ob).getTime()) * dir;
+    }
+    if (sortBy === 'category') return ((a.category ?? '') > (b.category ?? '') ? 1 : -1) * dir;
+    if (sortBy === 'operating_status') return ((a.operating_status ?? '') > (b.operating_status ?? '') ? 1 : -1) * dir;
+    if (sortBy === 'ai_summary') {
+      const ha = !!a.ai_summary ? 1 : 0;
+      const hb = !!b.ai_summary ? 1 : 0;
+      return (ha - hb) * dir;
+    }
+    return 0;
+  });
 
   // 통계
   const newOpenCount = restaurants.filter((r) => r.tags?.includes('창원시 새로오픈 맛집')).length;
@@ -795,23 +818,61 @@ export default function RestaurantsPage() {
           </div>
 
           {viewMode === 'list' ? (
-            <div className="flex flex-col divide-y divide-border-subtle border border-border-subtle rounded-xl overflow-hidden">
-              {filtered.slice(0, visibleCount).map((r) => (
-                <RestaurantListRow
-                  key={r.id}
-                  r={r}
-                  onClick={() => setSelected(r)}
-                  registered={registeredIds.has(r.naver_place_id)}
-                  selected={selectedIds.has(r.naver_place_id)}
-                  onSelect={() => toggleSelect(r.naver_place_id)}
-                  onAiSummary={() => generateAiSummary(r)}
-                  aiLoading={aiSummaryingId === r.id}
-                />
-              ))}
+            <div className="bg-card border border-border-main rounded-2xl overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border-main">
+                    {/* 체크박스 */}
+                    <th className="px-4 py-3.5 w-8">
+                      <button onClick={toggleSelectAll} className="flex items-center justify-center">
+                        {selectedIds.size > 0 && selectedIds.size === filtered.filter(r => !registeredIds.has(r.naver_place_id)).length
+                          ? <CheckSquare className="w-4 h-4 text-[#FF6F0F]" />
+                          : <Square className="w-4 h-4 text-muted" />}
+                      </button>
+                    </th>
+                    {([
+                      ['name',             '가게명',     'left',   'px-4'],
+                      ['category',         '카테고리',   'left',   'px-4'],
+                      ['opened_at',        '개업일',     'left',   'px-4'],
+                      ['crawled_at',       '수집일',     'left',   'px-4'],
+                      ['ai_summary',       '수집데이터', 'left',   'px-4'],
+                      ['operating_status', '상태',       'center', 'px-4'],
+                    ] as const).map(([col, label, align, px]) => (
+                      <th key={col} className={`text-${align} ${px} py-3.5`}>
+                        <button
+                          onClick={() => {
+                            if (sortBy === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+                            else { setSortBy(col); setSortDir('desc'); }
+                          }}
+                          className={`inline-flex items-center gap-1 text-xs font-semibold transition hover:text-primary ${sortBy === col ? 'text-[#FF6F0F]' : 'text-muted'}`}
+                        >
+                          {label}
+                          <span className="text-[10px]">{sortBy === col ? (sortDir === 'asc' ? '↑' : '↓') : '↕'}</span>
+                        </button>
+                      </th>
+                    ))}
+                    <th className="text-center px-4 py-3.5 text-xs font-semibold text-muted">관리</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sorted.slice(0, visibleCount).map((r) => (
+                    <RestaurantListRow
+                      key={r.id}
+                      r={r}
+                      onClick={() => setSelected(r)}
+                      registered={registeredIds.has(r.naver_place_id)}
+                      selected={selectedIds.has(r.naver_place_id)}
+                      onSelect={() => toggleSelect(r.naver_place_id)}
+                      onAiSummary={() => generateAiSummary(r)}
+                      aiLoading={aiSummaryingId === r.id}
+                    />
+                  ))}
+                </tbody>
+              </table>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {filtered.slice(0, visibleCount).map((r) => (
+              {sorted.slice(0, visibleCount).map((r) => (
                 <RestaurantCard
                   key={r.id}
                   r={r}
@@ -980,7 +1041,6 @@ function RestaurantListRow({
     : r.category?.includes('분식') ? '🍢'
     : r.category?.includes('술집') ? '🍺'
     : r.category?.includes('베이커리') ? '🥐'
-    : r.category?.includes('카페') ? '☕'
     : '🍜';
 
   const unniepickCat = (r as any).unniepick_category as string | null;
@@ -994,151 +1054,128 @@ function RestaurantListRow({
   const hasAi        = !!r.ai_summary;
 
   const crawledDate = r.crawled_at
-    ? new Date(r.crawled_at).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })
-    : null;
-  const aiDate = r.ai_summary_at
-    ? new Date(r.ai_summary_at).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })
+    ? new Date(r.crawled_at).toLocaleDateString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit' })
     : null;
 
-  const openedAt  = (r as any).opened_at as string | null;
+  const openedAt   = (r as any).opened_at as string | null;
   const openedDate = openedAt
     ? new Date(openedAt).toLocaleDateString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit' })
     : null;
-  // 6개월 이내면 NEW 강조
   const isRecentOpen = openedAt
     ? Date.now() - new Date(openedAt).getTime() <= 6 * 30 * 24 * 3600 * 1000
     : false;
 
+  const statusBadge = (() => {
+    const s = r.operating_status;
+    if (s === 'inactive')  return <span className="px-2 py-1 rounded-lg text-[10px] font-bold bg-red-500/15 text-red-400 border border-red-500/25">폐업</span>;
+    if (s === 'suspected') return <span className="px-2 py-1 rounded-lg text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/25">의심</span>;
+    if (s === 'unknown')   return <span className="px-2 py-1 rounded-lg text-[10px] font-bold bg-slate-500/15 text-slate-400 border border-slate-500/25">미확인</span>;
+    return <span className="px-2 py-1 rounded-lg text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">영업중</span>;
+  })();
+
   return (
-    <div
+    <tr
       onClick={onClick}
-      className={`flex items-start gap-3 px-4 py-3 bg-card cursor-pointer transition hover:bg-fill-subtle ${
-        selected ? 'bg-[#FF6F0F]/5' : ''
-      }`}
+      className={`border-b border-border-main hover:bg-fill-subtle transition cursor-pointer ${selected ? 'bg-[#FF6F0F]/5' : ''}`}
     >
       {/* 체크박스 */}
-      {!registered ? (
-        <button
-          onClick={(e) => { e.stopPropagation(); onSelect?.(); }}
-          className="shrink-0 w-5 h-5 flex items-center justify-center mt-0.5"
-        >
-          {selected
-            ? <CheckSquare className="w-4 h-4 text-[#FF6F0F]" />
-            : <Square className="w-4 h-4 text-muted" />
-          }
-        </button>
-      ) : (
-        <div className="shrink-0 w-5 h-5 flex items-center justify-center mt-0.5">
-          <Check className="w-4 h-4 text-green-500" />
-        </div>
-      )}
-
-      {/* 카테고리 이모지 */}
-      <div className="shrink-0 w-9 h-9 rounded-lg bg-fill-subtle flex items-center justify-center text-lg mt-0.5">
-        {catEmoji}
-      </div>
-
-      {/* 메인 정보 */}
-      <div className="flex-1 min-w-0 space-y-0.5">
-
-        {/* ① 상호명 + 출처/상태 배지 */}
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="font-semibold text-sm text-primary">{r.name}</span>
-          {(source === 'naver' || r.naver_place_id) && (
-            <span className="px-1 py-0.5 bg-green-600/20 text-green-400 text-[9px] font-bold rounded border border-green-600/30">N</span>
-          )}
-          {kakaoPlaceId && (
-            <span className="px-1 py-0.5 bg-yellow-500/20 text-yellow-400 text-[9px] font-bold rounded border border-yellow-500/30">K</span>
-          )}
-          {r.is_new_open && (
-            <span className="px-1.5 py-0.5 bg-green-500/15 text-green-400 text-[10px] rounded-full border border-green-500/25">NEW</span>
-          )}
-          {r.operating_status === 'suspected' && (
-            <span className="px-1.5 py-0.5 bg-amber-500/15 text-amber-400 text-[10px] rounded-full border border-amber-500/25">의심</span>
-          )}
-          {r.operating_status === 'inactive' && (
-            <span className="px-1.5 py-0.5 bg-red-500/15 text-red-400 text-[10px] rounded-full border border-red-500/25">폐업</span>
-          )}
-        </div>
-
-        {/* ② 카테고리 + 주소 */}
-        <div className="flex items-center gap-2 flex-wrap">
-          {(unniepickCat || r.category) && (
-            <span className="text-[11px] px-1.5 py-0.5 bg-blue-500/10 text-blue-400 rounded-full border border-blue-500/20">
-              {unniepickCat || r.category}
-            </span>
-          )}
-          {r.address && (
-            <span className="text-[11px] text-muted truncate max-w-[200px]">
-              {r.address.replace(/^경남 창원시?\s?/, '').replace(/^창원시?\s?/, '')}
-            </span>
-          )}
-        </div>
-
-        {/* ③ 수집 데이터 현황 */}
-        <div className="flex items-center gap-2 flex-wrap">
-          {openedDate && (
-            <span className={`text-[10px] flex items-center gap-0.5 font-semibold ${isRecentOpen ? 'text-sky-400' : 'text-muted'}`}>
-              🆕 {openedDate} 개업
-            </span>
-          )}
-          {crawledDate && (
-            <span className="text-[10px] text-muted flex items-center gap-0.5">
-              <Clock className="w-2.5 h-2.5" />{crawledDate} 수집
-            </span>
-          )}
-          {menuCount > 0 && (
-            <span className="text-[10px] text-slate-400">🍽 메뉴 {menuCount}개</span>
-          )}
-          {keywordCount > 0 && (
-            <span className="text-[10px] text-slate-400">🏷 키워드 {keywordCount}개</span>
-          )}
-          {blogCount > 0 && (
-            <span className="text-[10px] text-slate-400">📝 블로그 {blogCount}개</span>
-          )}
-          {menuCount === 0 && keywordCount === 0 && blogCount === 0 && !openedDate && (
-            <span className="text-[10px] text-muted/50">수집 데이터 없음</span>
-          )}
-        </div>
-
-        {/* ④ AI 요약 */}
-        {hasAi ? (
-          <div className="flex items-start gap-1.5">
-            <span className="text-[10px] text-emerald-500/70 shrink-0 mt-0.5">✨ AI{aiDate ? ` · ${aiDate}` : ''}</span>
-            <p className="text-[11px] text-emerald-400 truncate leading-relaxed">{r.ai_summary}</p>
-          </div>
+      <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+        {!registered ? (
+          <button onClick={() => onSelect?.()} className="flex items-center justify-center">
+            {selected ? <CheckSquare className="w-4 h-4 text-[#FF6F0F]" /> : <Square className="w-4 h-4 text-muted" />}
+          </button>
         ) : (
-          <p className="text-[10px] text-muted/40">AI 요약 없음</p>
+          <Check className="w-4 h-4 text-green-500" />
         )}
+      </td>
 
-      </div>
+      {/* 가게명 */}
+      <td className="px-4 py-3">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-fill-subtle flex items-center justify-center text-base shrink-0">{catEmoji}</div>
+          <div>
+            <div className="flex items-center gap-1 flex-wrap">
+              <p className="font-semibold text-sm text-primary">{r.name}</p>
+              {(source === 'naver' || r.naver_place_id) && (
+                <span className="px-1 py-0.5 bg-green-600/20 text-green-400 text-[9px] font-bold rounded border border-green-600/30">N</span>
+              )}
+              {kakaoPlaceId && (
+                <span className="px-1 py-0.5 bg-yellow-500/20 text-yellow-400 text-[9px] font-bold rounded border border-yellow-500/30">K</span>
+              )}
+              {r.is_new_open && (
+                <span className="px-1 py-0.5 bg-green-500/15 text-green-400 text-[9px] font-bold rounded-full border border-green-500/25">NEW</span>
+              )}
+            </div>
+            {r.address && (
+              <p className="text-[11px] text-muted mt-0.5 max-w-[180px] truncate">
+                {r.address.replace(/^경남 창원시?\s?/, '').replace(/^창원시?\s?/, '')}
+              </p>
+            )}
+          </div>
+        </div>
+      </td>
 
-      {/* 우측 액션 */}
-      <div className="shrink-0 flex items-center gap-1.5 mt-0.5" onClick={(e) => e.stopPropagation()}>
-        <button
-          onClick={onAiSummary}
-          disabled={aiLoading || hasAi}
-          title={hasAi ? 'AI 요약 완료' : 'AI 요약 생성'}
-          className={`px-2 py-1 text-[10px] font-semibold rounded-lg transition ${
-            hasAi
-              ? 'bg-emerald-500/10 text-emerald-500/50 cursor-default'
-              : 'bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 disabled:opacity-50'
-          }`}
-        >
-          {aiLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : '✨'}
-        </button>
-        {kakaoUrl && (
-          <a href={kakaoUrl} target="_blank" rel="noopener noreferrer" className="text-yellow-500/60 hover:text-yellow-400" title="카카오맵">
-            <ExternalLink className="w-3.5 h-3.5" />
-          </a>
-        )}
-        {r.naver_place_url && (
-          <a href={r.naver_place_url} target="_blank" rel="noopener noreferrer" className="text-green-500/60 hover:text-green-400" title="네이버 지도">
-            <ExternalLink className="w-3.5 h-3.5" />
-          </a>
-        )}
-      </div>
-    </div>
+      {/* 카테고리 */}
+      <td className="px-4 py-3">
+        <span className="px-2 py-1 bg-fill-subtle rounded-lg text-xs text-tertiary">
+          {unniepickCat || r.category || '미분류'}
+        </span>
+      </td>
+
+      {/* 개업일 */}
+      <td className="px-4 py-3 text-xs">
+        {openedDate
+          ? <p className={isRecentOpen ? 'text-sky-400 font-semibold' : 'text-muted'}>{openedDate}</p>
+          : <span className="text-dim">—</span>}
+      </td>
+
+      {/* 수집일 */}
+      <td className="px-4 py-3 text-xs">
+        {crawledDate ? <p className="text-muted">{crawledDate}</p> : <span className="text-dim">—</span>}
+      </td>
+
+      {/* 수집데이터 + AI */}
+      <td className="px-4 py-3">
+        <div className="flex flex-wrap gap-1 mb-1">
+          {menuCount    > 0 && <span className="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 text-[10px]">메뉴 {menuCount}</span>}
+          {keywordCount > 0 && <span className="px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 text-[10px]">키워드 {keywordCount}</span>}
+          {blogCount    > 0 && <span className="px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400 text-[10px]">블로그 {blogCount}</span>}
+          {menuCount === 0 && keywordCount === 0 && blogCount === 0 && <span className="text-[10px] text-dim">—</span>}
+        </div>
+        {hasAi
+          ? <p className="text-[11px] text-emerald-400 max-w-[160px] truncate">✨ {r.ai_summary}</p>
+          : <p className="text-[10px] text-dim">AI 없음</p>}
+      </td>
+
+      {/* 상태 */}
+      <td className="px-4 py-3 text-center">{statusBadge}</td>
+
+      {/* 관리 */}
+      <td className="px-4 py-3 text-center" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-center gap-1.5">
+          <button
+            onClick={onAiSummary}
+            disabled={aiLoading || hasAi}
+            title={hasAi ? 'AI 요약 완료' : 'AI 요약 생성'}
+            className={`px-2 py-1 text-[10px] font-semibold rounded-lg transition ${
+              hasAi ? 'bg-emerald-500/10 text-emerald-500/40 cursor-default' : 'bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 disabled:opacity-50'
+            }`}
+          >
+            {aiLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : '✨'}
+          </button>
+          {kakaoUrl && (
+            <a href={kakaoUrl} target="_blank" rel="noopener noreferrer" className="text-yellow-500/60 hover:text-yellow-400" title="카카오맵">
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          )}
+          {r.naver_place_url && (
+            <a href={r.naver_place_url} target="_blank" rel="noopener noreferrer" className="text-green-500/60 hover:text-green-400" title="네이버 지도">
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          )}
+        </div>
+      </td>
+    </tr>
   );
 }
 
