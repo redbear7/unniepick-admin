@@ -177,13 +177,21 @@ export default function RestaurantsPage() {
       .from('stores')
       .select('naver_place_id')
       .not('naver_place_id', 'is', null);
-    const naverIds = (storeData ?? []).map((s: any) => s.naver_place_id).filter(Boolean);
-    if (!naverIds.length) { setRegisteredIds(new Set()); return; }
-    const { data: rData } = await supabase
-      .from('restaurants')
-      .select('id')
-      .in('naver_place_id', naverIds);
-    setRegisteredIds(new Set((rData ?? []).map((r: any) => r.id)));
+
+    const allIds = (storeData ?? []).map((s: any) => s.naver_place_id).filter(Boolean) as string[];
+    if (!allIds.length) { setRegisteredIds(new Set()); return; }
+
+    // 네이버 ID vs 카카오 ID 분리 (카카오는 'kakao_' 접두어로 저장)
+    const naverIds = allIds.filter(id => !id.startsWith('kakao_'));
+    const kakaoIds = allIds.filter(id => id.startsWith('kakao_')).map(id => id.replace(/^kakao_/, ''));
+
+    const queries = [];
+    if (naverIds.length) queries.push(supabase.from('restaurants').select('id').in('naver_place_id', naverIds));
+    if (kakaoIds.length) queries.push(supabase.from('restaurants').select('id').in('kakao_place_id', kakaoIds));
+
+    const results = await Promise.all(queries);
+    const ids = results.flatMap(r => (r.data ?? []).map((x: any) => x.id));
+    setRegisteredIds(new Set(ids));
   }
 
   // 단일 업체 즉시 등록
