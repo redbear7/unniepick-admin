@@ -475,7 +475,7 @@ export default function RestaurantsPage() {
             전체 가게 관리
           </h1>
           <p className="text-sm text-muted mt-1">
-            네이버 플레이스 기반 · 총 {restaurants.length}개
+            네이버·카카오 통합 · 총 {restaurants.length}개
             {lastCrawled && <> · 마지막 크롤링: {lastCrawled.toLocaleString('ko-KR')}</>}
           </p>
         </div>
