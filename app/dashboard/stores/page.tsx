@@ -7,7 +7,7 @@ import {
   Search, ToggleLeft, ToggleRight, MapPin, Phone,
   Plus, Pencil, Trash2, X, ImageIcon,
   ExternalLink, User, FlaskConical, History, Calendar, Tag,
-  Camera, Loader2, Star,
+  Camera, Loader2, Star, Download,
 } from 'lucide-react';
 
 /* ================================================================== */
@@ -33,6 +33,32 @@ interface Store {
   latitude:                number | null;
   longitude:               number | null;
   category_detail:         string | null;   // 카카오 full path (음식점 > 한식 > 냉면)
+  naver_place_id:          string | null;
+  opened_at:               string | null;
+  closed_at:               string | null;
+}
+
+interface Prospect {
+  id: string;
+  name: string;
+  address: string | null;
+  phone: string | null;
+  category: string | null;
+  unniepick_category: string | null;
+  naver_place_id: string | null;
+  kakao_place_id: string | null;
+  kakao_place_url: string | null;
+  naver_place_url: string | null;
+  source: string | null;
+  operating_status: string | null;
+  opened_at: string | null;
+  closed_at: string | null;
+  ai_summary: string | null;
+  ai_features: { 분위기태그: string[]; 추천메뉴: string[]; 방문팁: string; 특징키워드: string[] } | null;
+  menu_items: Array<{ name: string; price?: string }>;
+  review_keywords: Array<{ keyword: string; count: number }>;
+  blog_reviews: Array<{ title: string }>;
+  crawled_at: string;
 }
 
 
@@ -121,6 +147,7 @@ const EMPTY_FORM: StoreForm = {
   representative_price: null, price_label: null, price_range: null,
   geo_discoverable: false,
   category_detail: null,
+  naver_place_id: null, opened_at: null, closed_at: null,
 };
 
 const EMPTY_COUPON: CouponForm = {
@@ -198,13 +225,22 @@ export default function StoresPage() {
   /* stores */
   const [stores,        setStores]        = useState<Store[]>([]);
   const [storeQ,        setStoreQ]        = useState('');
-  const [storeFilter,   setStoreFilter]   = useState<'all' | 'active' | 'inactive' | 'dummy'>('all');
+  const [storeFilter,   setStoreFilter]   = useState<'all' | 'active' | 'inactive' | 'dummy' | 'prospect'>('all');
   const [sortCol,       setSortCol]       = useState('created_at');
   const [sortDir,       setSortDir]       = useState<'asc' | 'desc'>('desc');
   const [toggling,      setToggling]      = useState<string | null>(null);
   const [loadingStores, setLoadingStores] = useState(true);
 
-  /* TTS */
+  /* prospects */
+  const [prospects,         setProspects]         = useState<Prospect[]>([]);
+  const [prospectQ,         setProspectQ]         = useState('');
+  const [prospectSrcFilter, setProspectSrcFilter] = useState<'all' | 'naver' | 'kakao'>('all');
+  const [prospectAiFilter,  setProspectAiFilter]  = useState<'all' | 'has' | 'none'>('all');
+  const [slideProspect,     setSlideProspect]     = useState<Prospect | null>(null);
+  const [convertTarget,     setConvertTarget]     = useState<Prospect | null>(null);
+  const [convertForm,       setConvertForm]       = useState({ name: '', address: '', phone: '', category: '' });
+  const [converting,        setConverting]        = useState(false);
+  const [backingUp,         setBackingUp]         = useState(false);
 
   /* history */
   const [historyStoreId, setHistoryStoreId] = useState<string | null>(null);
@@ -269,7 +305,7 @@ export default function StoresPage() {
   const loadStores = async () => {
     const { data, error } = await sb
       .from('stores')
-      .select('id, name, address, phone, category, category_detail, is_active, created_at, updated_at, owner_id, image_url, subscription_expires_at, representative_price, price_label, price_range, geo_discoverable, latitude, longitude')
+      .select('id, name, address, phone, category, category_detail, is_active, created_at, updated_at, owner_id, image_url, subscription_expires_at, representative_price, price_label, price_range, geo_discoverable, latitude, longitude, naver_place_id, opened_at, closed_at')
       .order('created_at', { ascending: false });
 
     let rows: Store[];
@@ -296,6 +332,16 @@ export default function StoresPage() {
     }
   };
 
+  const loadProspects = async () => {
+    const { data } = await sb
+      .from('restaurants')
+      .select('id, name, address, phone, category, unniepick_category, naver_place_id, kakao_place_id, kakao_place_url, naver_place_url, source, operating_status, opened_at, closed_at, ai_summary, ai_features, menu_items, review_keywords, blog_reviews, crawled_at')
+      .not('operating_status', 'in', '("inactive","relocated")')
+      .order('crawled_at', { ascending: false })
+      .limit(2000);
+    setProspects((data ?? []) as Prospect[]);
+  };
+
   const loadStoreCoupons = async (storeId: string) => {
     setCouponsLoading(true);
     setStoreCoupons([]);
@@ -309,6 +355,7 @@ export default function StoresPage() {
 
   useEffect(() => {
     loadStores();
+    loadProspects();
     loadCouponCounts();
     const ch = sb.channel('stores-rt')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'stores' }, loadStores)
@@ -400,6 +447,9 @@ export default function StoresPage() {
       price_label: store.price_label ?? null, price_range: store.price_range ?? null,
       geo_discoverable: store.geo_discoverable ?? false,
       category_detail:  store.category_detail ?? null,
+      naver_place_id: store.naver_place_id ?? null,
+      opened_at: store.opened_at ?? null,
+      closed_at: store.closed_at ?? null,
     });
     setNaverQ(''); setNaverResults([]); setNaverErr(''); setSaveError('');
     setMenuExtractErr('');
@@ -542,14 +592,90 @@ export default function StoresPage() {
   };
 
   /* ---------------------------------------------------------------- */
+  /* Backup & Convert                                                  */
+  /* ---------------------------------------------------------------- */
+
+  async function downloadBackup() {
+    setBackingUp(true);
+    try {
+      const [storesRes, prospectsRes] = await Promise.all([
+        sb.from('stores').select('*'),
+        sb.from('restaurants').select('id, name, address, phone, category, unniepick_category, naver_place_id, kakao_place_id, source, operating_status, opened_at, closed_at, ai_summary, crawled_at'),
+      ]);
+      const payload = {
+        exported_at: new Date().toISOString(),
+        stores:      storesRes.data ?? [],
+        restaurants: prospectsRes.data ?? [],
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = `unniepick-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setBackingUp(false);
+    }
+  }
+
+  async function convertToPartner() {
+    if (!convertTarget || !convertForm.name.trim()) return;
+    setConverting(true);
+    try {
+      const { error } = await sb.from('stores').insert({
+        name:            convertForm.name,
+        address:         convertForm.address || convertTarget.address,
+        phone:           convertForm.phone   || convertTarget.phone,
+        category:        convertForm.category || convertTarget.unniepick_category || convertTarget.category,
+        is_active:       true,
+        naver_place_id:  convertTarget.naver_place_id,
+        opened_at:       convertTarget.opened_at,
+        ai_summary:      convertTarget.ai_summary,
+        ai_features:     convertTarget.ai_features,
+      });
+      if (error) throw error;
+      setConvertTarget(null);
+      loadStores();
+      loadProspects();
+    } catch (e) {
+      alert(`전환 실패: ${(e as Error).message}`);
+    } finally {
+      setConverting(false);
+    }
+  }
+
+  /* ---------------------------------------------------------------- */
   /* Derived list                                                       */
   /* ---------------------------------------------------------------- */
+
+  const registeredNaverIds = new Set(stores.map(s => s.naver_place_id).filter(Boolean) as string[]);
+
+  const filteredProspects = (() => {
+    return prospects
+      .filter(p => !p.naver_place_id || !registeredNaverIds.has(p.naver_place_id))
+      .filter(p => {
+        const q = storeQ || prospectQ;
+        if (q) {
+          const match = p.name.includes(q) || (p.address ?? '').includes(q);
+          if (!match) return false;
+        }
+        if (prospectSrcFilter === 'naver'  && !p.naver_place_id)  return false;
+        if (prospectSrcFilter === 'kakao'  && !p.kakao_place_id)  return false;
+        if (prospectAiFilter  === 'has'    && !p.ai_summary)      return false;
+        if (prospectAiFilter  === 'none'   &&  p.ai_summary)      return false;
+        return true;
+      });
+  })();
 
   const filteredStores = (() => {
     const filtered = stores.filter(s => {
       const matchQ = !storeQ || s.name.includes(storeQ) || (s.address ?? '').includes(storeQ);
       const isDummy = s.owner_id ? (ownerMap[s.owner_id]?.isDummy ?? false) : false;
-      const matchF = storeFilter === 'all' ? true : storeFilter === 'active' ? s.is_active : storeFilter === 'inactive' ? !s.is_active : isDummy;
+      const matchF = (storeFilter === 'all' || storeFilter === 'prospect') ? true
+        : storeFilter === 'active' ? s.is_active
+        : storeFilter === 'inactive' ? !s.is_active
+        : isDummy;
       return matchQ && matchF;
     });
     return [...filtered].sort((a, b) => {
@@ -887,23 +1013,56 @@ export default function StoresPage() {
     <div className="p-8">
 
       {/* Header */}
-      <div className="mb-6 flex items-start justify-between">
+      <div className="mb-5 flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold text-primary">가게 관리</h1>
-          <p className="text-sm text-muted mt-1">
-            전체 {stores.length}개 · 활성 {stores.filter(s => s.is_active).length}개
-          </p>
         </div>
-        <button
-          onClick={openNew}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#FF6F0F] text-primary text-sm font-bold hover:bg-[#e66000] transition"
-        >
-          <Plus size={15} /> 새 가게 등록
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={downloadBackup}
+            disabled={backingUp}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-card border border-border-subtle text-tertiary text-sm font-semibold hover:text-primary transition disabled:opacity-50"
+          >
+            <Download size={14} /> {backingUp ? '내보내는 중...' : '데이터 백업'}
+          </button>
+          <button
+            onClick={openNew}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#FF6F0F] text-primary text-sm font-bold hover:bg-[#e66000] transition"
+          >
+            <Plus size={15} /> 새 가게 등록
+          </button>
+        </div>
       </div>
 
+      {/* 통계 카드 */}
+      {(() => {
+        const activeCount = stores.filter(s => s.is_active).length;
+        const prospectCount = filteredProspects.length;
+        const now = new Date();
+        const thisMonthConversions = stores.filter(s => {
+          const d = new Date(s.created_at);
+          return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+        }).length;
+        const conversionRate = (thisMonthConversions / Math.max(prospects.length, 1) * 100).toFixed(1) + '%';
+        return (
+          <div className="grid grid-cols-4 gap-3 mb-5">
+            {[
+              { label: '활성 파트너', value: activeCount, color: 'text-emerald-400' },
+              { label: '잠재업체', value: prospectCount, color: 'text-amber-400' },
+              { label: '이번달 전환', value: thisMonthConversions, color: 'text-sky-400' },
+              { label: '전환율', value: conversionRate, color: 'text-violet-400' },
+            ].map(({ label, value, color }) => (
+              <div key={label} className="bg-card border border-border-main rounded-xl p-4">
+                <p className="text-xs text-muted mb-1">{label}</p>
+                <p className={`text-2xl font-bold ${color}`}>{value}</p>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
+
       {/* 검색 + 필터 */}
-      <div className="flex gap-3 mb-5">
+      <div className="flex gap-3 mb-3">
         <div className="flex-1 relative">
           <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
           <input
@@ -913,179 +1072,350 @@ export default function StoresPage() {
             className="w-full bg-card border border-border-subtle rounded-xl pl-9 pr-4 py-2.5 text-sm text-primary placeholder-gray-600 focus:outline-none focus:border-[#FF6F0F] transition"
           />
         </div>
-        {(['all', 'active', 'inactive', 'dummy'] as const).map(f => (
+        {(['all', 'active', 'inactive', 'prospect', 'dummy'] as const).map(f => (
           <button key={f}
             onClick={() => setStoreFilter(f)}
             className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${
               storeFilter === f ? 'bg-[#FF6F0F] text-primary' : 'bg-card border border-border-subtle text-tertiary hover:text-primary'
             }`}
           >
-            {f === 'all' ? '전체' : f === 'active' ? '활성' : f === 'inactive' ? '비활성' : '🧪 더미'}
+            {f === 'all' ? '전체' : f === 'active' ? '활성' : f === 'inactive' ? '비활성' : f === 'prospect' ? '⭐ 잠재' : '🧪 더미'}
           </button>
         ))}
       </div>
+
+      {/* 잠재업체 서브필터 */}
+      {storeFilter === 'prospect' && (
+        <div className="flex gap-2 mb-3">
+          <span className="text-xs text-muted self-center mr-1">출처:</span>
+          {([['all', '전체'], ['naver', 'N 네이버'], ['kakao', 'K 카카오']] as const).map(([val, label]) => (
+            <button key={val}
+              onClick={() => setProspectSrcFilter(val)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition border ${
+                prospectSrcFilter === val
+                  ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
+                  : 'bg-card border-border-subtle text-muted hover:text-primary'
+              }`}
+            >{label}</button>
+          ))}
+          <span className="text-xs text-muted self-center ml-3 mr-1">AI:</span>
+          {([['all', '전체'], ['has', '✨완료'], ['none', '없음']] as const).map(([val, label]) => (
+            <button key={val}
+              onClick={() => setProspectAiFilter(val)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition border ${
+                prospectAiFilter === val
+                  ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
+                  : 'bg-card border-border-subtle text-muted hover:text-primary'
+              }`}
+            >{label}</button>
+          ))}
+        </div>
+      )}
 
       {/* 가게 목록 */}
       <div className="bg-card border border-border-main rounded-2xl overflow-hidden">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border-main">
-              {([
-                ['name',       '가게명',     'left',   'px-5'],
-                ['category',   '카테고리',   'left',   'px-4'],
-                ['phone',      '연락처',     'left',   'px-4'],
-                ['owner',      '사장님',     'left',   'px-4'],
-                ['created_at', '등록일',     'left',   'px-4'],
-                ['updated_at', '최근수정일', 'left',   'px-4'],
-                ['coupons',    '쿠폰',       'center', 'px-3'],
-                ['status',     '상태',       'center', 'px-4'],
-              ] as const).map(([col, label, align, px]) => (
-                <th key={col} className={`text-${align} ${px} py-3.5`}>
-                  <button
-                    onClick={() => { if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc'); else { setSortCol(col); setSortDir('asc'); } }}
-                    className={`inline-flex items-center gap-1 text-xs font-semibold transition hover:text-primary ${sortCol === col ? 'text-[#FF6F0F]' : 'text-muted'}`}
-                  >
-                    {label}
-                    <span className="text-[10px]">{sortCol === col ? (sortDir === 'asc' ? '↑' : '↓') : '↕'}</span>
-                  </button>
-                </th>
-              ))}
-              <th className="text-center px-4 py-3.5 text-xs font-semibold text-muted">관리</th>
+              {storeFilter !== 'prospect' ? (
+                <>
+                  {([
+                    ['name',       '가게명',     'left',   'px-5'],
+                    ['category',   '카테고리',   'left',   'px-4'],
+                    ['phone',      '연락처',     'left',   'px-4'],
+                    ['opened_at',  '개업일',     'left',   'px-4'],
+                    ['owner',      '사장님',     'left',   'px-4'],
+                    ['created_at', '등록일',     'left',   'px-4'],
+                    ['coupons',    '쿠폰',       'center', 'px-3'],
+                    ['status',     '상태',       'center', 'px-4'],
+                  ] as const).map(([col, label, align, px]) => (
+                    <th key={col} className={`text-${align} ${px} py-3.5`}>
+                      <button
+                        onClick={() => { if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc'); else { setSortCol(col); setSortDir('asc'); } }}
+                        className={`inline-flex items-center gap-1 text-xs font-semibold transition hover:text-primary ${sortCol === col ? 'text-[#FF6F0F]' : 'text-muted'}`}
+                      >
+                        {label}
+                        <span className="text-[10px]">{sortCol === col ? (sortDir === 'asc' ? '↑' : '↓') : '↕'}</span>
+                      </button>
+                    </th>
+                  ))}
+                  <th className="text-center px-4 py-3.5 text-xs font-semibold text-muted">관리</th>
+                </>
+              ) : (
+                <>
+                  <th className="text-left px-5 py-3.5 text-xs font-semibold text-muted">가게명</th>
+                  <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">카테고리</th>
+                  <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">연락처</th>
+                  <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">개업일</th>
+                  <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">수집데이터</th>
+                  <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">AI 요약</th>
+                  <th className="text-center px-4 py-3.5 text-xs font-semibold text-muted">상태</th>
+                  <th className="text-center px-4 py-3.5 text-xs font-semibold text-muted">관리</th>
+                </>
+              )}
             </tr>
           </thead>
           <tbody>
             {loadingStores ? (
               [...Array(5)].map((_, i) => (
                 <tr key={i} className="border-b border-border-main">
-                  {[...Array(10)].map((_, j) => (
+                  {[...Array(9)].map((_, j) => (
                     <td key={j} className="px-5 py-4"><div className="h-4 bg-fill-subtle rounded animate-pulse" /></td>
                   ))}
                 </tr>
               ))
-            ) : filteredStores.length === 0 ? (
-              <tr><td colSpan={10} className="text-center py-12 text-dim">가게가 없어요</td></tr>
-            ) : filteredStores.slice(0, visibleCount).map(store => {
-              const owner = store.owner_id ? ownerMap[store.owner_id] : null;
-              return (
-                <tr key={store.id} className="border-b border-border-main hover:bg-white/[0.02] transition">
-                  <td className="px-5 py-4">
+            ) : storeFilter === 'prospect' ? (
+              /* ===== 잠재 탭: prospect rows only ===== */
+              filteredProspects.length === 0 ? (
+                <tr><td colSpan={8} className="text-center py-12 text-dim">잠재 업체가 없어요</td></tr>
+              ) : filteredProspects.slice(0, visibleCount).map(prospect => (
+                <tr key={prospect.id}
+                  className="border-b border-border-main hover:bg-amber-500/5 transition cursor-pointer"
+                  style={{ borderLeft: '3px solid rgba(245,158,11,0.4)' }}
+                  onClick={() => setSlideProspect(prospect)}>
+                  <td className="px-5 py-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-[#FF6F0F]/20 flex items-center justify-center text-sm shrink-0">🏪</div>
+                      <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-sm shrink-0">🍽</div>
                       <div>
-                        <p className="font-semibold text-primary">{store.name}</p>
-                        {store.address && (
-                          <p className="text-xs text-muted flex items-center gap-1 mt-0.5">
-                            <MapPin size={10} />{store.address}
-                          </p>
-                        )}
+                        <div className="flex items-center gap-1.5">
+                          <p className="font-semibold text-secondary text-sm">{prospect.name}</p>
+                          {prospect.naver_place_id && <span className="px-1 py-0.5 text-[9px] font-bold rounded bg-green-600/20 text-green-400 border border-green-600/30">N</span>}
+                          {prospect.kakao_place_id && <span className="px-1 py-0.5 text-[9px] font-bold rounded bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">K</span>}
+                        </div>
+                        {prospect.address && <p className="text-xs text-muted mt-0.5">{prospect.address.replace(/^경남 창원시?\s?/, '').replace(/^창원시?\s?/, '')}</p>}
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-4">
-                    <span className="px-2.5 py-1 bg-fill-subtle rounded-lg text-xs text-tertiary">
-                      {store.category ?? '미분류'}
+                  <td className="px-4 py-3">
+                    <span className="px-2 py-1 bg-fill-subtle rounded-lg text-xs text-tertiary">
+                      {prospect.unniepick_category ?? prospect.category ?? '미분류'}
                     </span>
                   </td>
-                  <td className="px-4 py-4">
-                    {store.phone
-                      ? <p className="text-secondary flex items-center gap-1.5"><Phone size={12} className="text-muted" />{store.phone}</p>
-                      : <span className="text-dim">-</span>}
+                  <td className="px-4 py-3">
+                    {prospect.phone ? <p className="text-secondary text-xs flex items-center gap-1"><Phone size={11} className="text-muted" />{prospect.phone}</p> : <span className="text-dim text-xs">—</span>}
                   </td>
-                  <td className="px-4 py-4">
-                    {owner ? (
-                      <div className="flex items-center gap-2">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <p className="text-xs font-medium text-primary truncate">{owner.name}</p>
-                            {owner.isDummy && (
-                              <span className="shrink-0 inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded bg-yellow-500/15 text-yellow-400 border border-yellow-500/25">
-                                <FlaskConical size={8} /> 더미
-                              </span>
-                            )}
-                          </div>
-                          {owner.phone && <p className="text-[10px] text-muted mt-0.5">{owner.phone}</p>}
-                        </div>
-                        <button
-                          onClick={() => openOwnerDashboard(store.owner_id!)}
-                          disabled={previewingId === store.owner_id}
-                          className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-lg bg-[#FF6F0F]/10 text-[#FF6F0F] text-[10px] font-semibold hover:bg-[#FF6F0F]/25 transition disabled:opacity-40"
-                        >
-                          <ExternalLink size={10} /> 대시보드
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-1 text-xs text-dim"><User size={11} /> 미연결</div>
-                    )}
+                  <td className="px-4 py-3 text-xs">
+                    {prospect.opened_at
+                      ? <p className="text-sky-400">{new Date(prospect.opened_at).toLocaleDateString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit' })}</p>
+                      : <span className="text-dim">—</span>}
                   </td>
-                  {/* 등록일 */}
-                  <td className="px-4 py-4 text-xs">
-                    <p className="text-muted">{new Date(store.created_at).toLocaleDateString('ko-KR')}</p>
-                    <p className="text-dim text-[10px] mt-0.5">{new Date(store.created_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</p>
-                  </td>
-                  {/* 최근수정일 */}
-                  <td className="px-4 py-4 text-xs">
-                    {store.updated_at && store.updated_at !== store.created_at ? (
-                      <>
-                        <p className="text-secondary">{new Date(store.updated_at).toLocaleDateString('ko-KR')}</p>
-                        <p className="text-dim text-[10px] mt-0.5">{new Date(store.updated_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</p>
-                      </>
-                    ) : (
-                      <span className="text-dim">-</span>
-                    )}
-                  </td>
-                  {/* 발행 중 쿠폰 */}
-                  <td className="px-3 py-4 text-center">
-                    {(couponCountMap[store.id] ?? 0) > 0 ? (
-                      <button
-                        onClick={() => { openEdit(store); setTimeout(() => setActiveTab('coupons'), 50); }}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#FF6F0F]/15 text-[#FF6F0F] text-[11px] font-bold hover:bg-[#FF6F0F]/25 transition"
-                        title="쿠폰 관리 열기"
-                      >
-                        🎟 {couponCountMap[store.id]}
-                      </button>
-                    ) : (
-                      <span className="text-dim text-xs">-</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-4 text-center">
-                    <button
-                      onClick={() => toggleActive(store)}
-                      disabled={toggling === store.id}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition disabled:opacity-50"
-                      style={{ background: store.is_active ? 'rgba(34,197,94,0.15)' : 'rgba(248,113,113,0.1)', color: store.is_active ? '#22C55E' : '#F87171' }}
-                    >
-                      {store.is_active ? <><ToggleRight size={14} /> 활성</> : <><ToggleLeft size={14} /> 비활성</>}
-                    </button>
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="flex items-center justify-center gap-2">
-                      <button onClick={() => openEdit(store)}
-                        className="p-1.5 rounded-lg text-muted hover:text-primary hover:bg-fill-medium transition">
-                        <Pencil size={14} />
-                      </button>
-                      <button onClick={() => { setHistoryEntries(getStoreHistory(store.id)); setHistoryStoreId(store.id); }}
-                        className="p-1.5 rounded-lg text-muted hover:text-blue-400 hover:bg-blue-500/10 transition" title="수정 히스토리">
-                        <History size={14} />
-                      </button>
-                      <button onClick={() => setDeleteId(store.id)}
-                        className="p-1.5 rounded-lg text-muted hover:text-red-400 hover:bg-red-500/10 transition">
-                        <Trash2 size={14} />
-                      </button>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-wrap gap-1">
+                      {(prospect.menu_items?.length ?? 0) > 0 && <span className="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 text-[10px]">메뉴 {prospect.menu_items.length}개</span>}
+                      {(prospect.review_keywords?.length ?? 0) > 0 && <span className="px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 text-[10px]">키워드 {prospect.review_keywords.length}개</span>}
+                      {(prospect.blog_reviews?.length ?? 0) > 0 && <span className="px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400 text-[10px]">블로그 {prospect.blog_reviews.length}개</span>}
                     </div>
                   </td>
+                  <td className="px-4 py-3">
+                    {prospect.ai_summary
+                      ? <p className="text-xs text-emerald-400 max-w-[160px] truncate">✨ {prospect.ai_summary}</p>
+                      : <span className="text-xs text-dim">없음</span>}
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <span className="px-2 py-1 rounded-lg text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/25">⭐ 잠재</span>
+                  </td>
+                  <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                    <button
+                      onClick={() => { setConvertTarget(prospect); setConvertForm({ name: prospect.name, address: prospect.address ?? '', phone: prospect.phone ?? '', category: prospect.unniepick_category || prospect.category || '' }); }}
+                      className="px-3 py-1.5 rounded-lg text-xs font-bold bg-[#FF6F0F]/20 text-[#FF6F0F] border border-[#FF6F0F]/30 hover:bg-[#FF6F0F]/35 transition">
+                      파트너 전환 ▶
+                    </button>
+                  </td>
                 </tr>
-              );
-            })}
+              ))
+            ) : (
+              /* ===== 파트너 탭 (all / active / inactive / dummy) ===== */
+              <>
+                {filteredStores.length === 0 && (storeFilter !== 'all' || filteredProspects.length === 0) ? (
+                  <tr><td colSpan={9} className="text-center py-12 text-dim">가게가 없어요</td></tr>
+                ) : filteredStores.slice(0, visibleCount).map(store => {
+                  const owner = store.owner_id ? ownerMap[store.owner_id] : null;
+                  return (
+                    <tr key={store.id} className="border-b border-border-main hover:bg-white/[0.02] transition">
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-[#FF6F0F]/20 flex items-center justify-center text-sm shrink-0">🏪</div>
+                          <div>
+                            <p className="font-semibold text-primary">{store.name}</p>
+                            {store.address && (
+                              <p className="text-xs text-muted flex items-center gap-1 mt-0.5">
+                                <MapPin size={10} />{store.address}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <span className="px-2.5 py-1 bg-fill-subtle rounded-lg text-xs text-tertiary">
+                          {store.category ?? '미분류'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4">
+                        {store.phone
+                          ? <p className="text-secondary flex items-center gap-1.5"><Phone size={12} className="text-muted" />{store.phone}</p>
+                          : <span className="text-dim">-</span>}
+                      </td>
+                      {/* 개업일 */}
+                      <td className="px-4 py-4 text-xs">
+                        {store.opened_at
+                          ? <p className="text-sky-400">{new Date(store.opened_at).toLocaleDateString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit' })}</p>
+                          : <span className="text-dim">-</span>}
+                      </td>
+                      <td className="px-4 py-4">
+                        {owner ? (
+                          <div className="flex items-center gap-2">
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <p className="text-xs font-medium text-primary truncate">{owner.name}</p>
+                                {owner.isDummy && (
+                                  <span className="shrink-0 inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded bg-yellow-500/15 text-yellow-400 border border-yellow-500/25">
+                                    <FlaskConical size={8} /> 더미
+                                  </span>
+                                )}
+                              </div>
+                              {owner.phone && <p className="text-[10px] text-muted mt-0.5">{owner.phone}</p>}
+                            </div>
+                            <button
+                              onClick={() => openOwnerDashboard(store.owner_id!)}
+                              disabled={previewingId === store.owner_id}
+                              className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-lg bg-[#FF6F0F]/10 text-[#FF6F0F] text-[10px] font-semibold hover:bg-[#FF6F0F]/25 transition disabled:opacity-40"
+                            >
+                              <ExternalLink size={10} /> 대시보드
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 text-xs text-dim"><User size={11} /> 미연결</div>
+                        )}
+                      </td>
+                      {/* 등록일 */}
+                      <td className="px-4 py-4 text-xs">
+                        <p className="text-muted">{new Date(store.created_at).toLocaleDateString('ko-KR')}</p>
+                        <p className="text-dim text-[10px] mt-0.5">{new Date(store.created_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</p>
+                      </td>
+                      {/* 발행 중 쿠폰 */}
+                      <td className="px-3 py-4 text-center">
+                        {(couponCountMap[store.id] ?? 0) > 0 ? (
+                          <button
+                            onClick={() => { openEdit(store); setTimeout(() => setActiveTab('coupons'), 50); }}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#FF6F0F]/15 text-[#FF6F0F] text-[11px] font-bold hover:bg-[#FF6F0F]/25 transition"
+                            title="쿠폰 관리 열기"
+                          >
+                            🎟 {couponCountMap[store.id]}
+                          </button>
+                        ) : (
+                          <span className="text-dim text-xs">-</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-4 text-center">
+                        <button
+                          onClick={() => toggleActive(store)}
+                          disabled={toggling === store.id}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition disabled:opacity-50"
+                          style={{ background: store.is_active ? 'rgba(34,197,94,0.15)' : 'rgba(248,113,113,0.1)', color: store.is_active ? '#22C55E' : '#F87171' }}
+                        >
+                          {store.is_active ? <><ToggleRight size={14} /> 활성</> : <><ToggleLeft size={14} /> 비활성</>}
+                        </button>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="flex items-center justify-center gap-2">
+                          <button onClick={() => openEdit(store)}
+                            className="p-1.5 rounded-lg text-muted hover:text-primary hover:bg-fill-medium transition">
+                            <Pencil size={14} />
+                          </button>
+                          <button onClick={() => { setHistoryEntries(getStoreHistory(store.id)); setHistoryStoreId(store.id); }}
+                            className="p-1.5 rounded-lg text-muted hover:text-blue-400 hover:bg-blue-500/10 transition" title="수정 히스토리">
+                            <History size={14} />
+                          </button>
+                          <button onClick={() => setDeleteId(store.id)}
+                            className="p-1.5 rounded-lg text-muted hover:text-red-400 hover:bg-red-500/10 transition">
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+
+                {/* 잠재 업체 그룹 헤더 (전체 탭에서만) */}
+                {storeFilter === 'all' && filteredProspects.length > 0 && (
+                  <>
+                    <tr style={{ background: 'rgba(245,158,11,0.06)' }}>
+                      <td colSpan={9} className="px-5 py-2 text-xs font-semibold text-amber-400">
+                        ⭐ 잠재 업체 — {filteredProspects.length}개 (창원 맛집 수집 데이터)
+                      </td>
+                    </tr>
+                    {filteredProspects.slice(0, 20).map(prospect => (
+                      <tr key={prospect.id}
+                        className="border-b border-border-main hover:bg-amber-500/5 transition cursor-pointer"
+                        style={{ borderLeft: '3px solid rgba(245,158,11,0.4)' }}
+                        onClick={() => setSlideProspect(prospect)}>
+                        <td className="px-5 py-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-sm shrink-0">🍽</div>
+                            <div>
+                              <div className="flex items-center gap-1.5">
+                                <p className="font-semibold text-secondary text-sm">{prospect.name}</p>
+                                {prospect.naver_place_id && <span className="px-1 py-0.5 text-[9px] font-bold rounded bg-green-600/20 text-green-400 border border-green-600/30">N</span>}
+                                {prospect.kakao_place_id && <span className="px-1 py-0.5 text-[9px] font-bold rounded bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">K</span>}
+                              </div>
+                              {prospect.address && <p className="text-xs text-muted mt-0.5">{prospect.address.replace(/^경남 창원시?\s?/, '').replace(/^창원시?\s?/, '')}</p>}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="px-2 py-1 bg-fill-subtle rounded-lg text-xs text-tertiary">
+                            {prospect.unniepick_category ?? prospect.category ?? '미분류'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          {prospect.phone ? <p className="text-secondary text-xs flex items-center gap-1"><Phone size={11} className="text-muted" />{prospect.phone}</p> : <span className="text-dim text-xs">—</span>}
+                        </td>
+                        <td className="px-4 py-3 text-xs">
+                          {prospect.opened_at
+                            ? <p className="text-sky-400">{new Date(prospect.opened_at).toLocaleDateString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit' })}</p>
+                            : <span className="text-dim">—</span>}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex flex-wrap gap-1">
+                            {(prospect.menu_items?.length ?? 0) > 0 && <span className="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 text-[10px]">메뉴 {prospect.menu_items.length}개</span>}
+                            {(prospect.review_keywords?.length ?? 0) > 0 && <span className="px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 text-[10px]">키워드 {prospect.review_keywords.length}개</span>}
+                            {(prospect.blog_reviews?.length ?? 0) > 0 && <span className="px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400 text-[10px]">블로그 {prospect.blog_reviews.length}개</span>}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          {prospect.ai_summary
+                            ? <p className="text-xs text-emerald-400 max-w-[160px] truncate">✨ {prospect.ai_summary}</p>
+                            : <span className="text-xs text-dim">없음</span>}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <span className="px-2 py-1 rounded-lg text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/25">⭐ 잠재</span>
+                        </td>
+                        <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                          <button
+                            onClick={() => { setConvertTarget(prospect); setConvertForm({ name: prospect.name, address: prospect.address ?? '', phone: prospect.phone ?? '', category: prospect.unniepick_category || prospect.category || '' }); }}
+                            className="px-3 py-1.5 rounded-lg text-xs font-bold bg-[#FF6F0F]/20 text-[#FF6F0F] border border-[#FF6F0F]/30 hover:bg-[#FF6F0F]/35 transition">
+                            파트너 전환 ▶
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </>
+                )}
+              </>
+            )}
           </tbody>
         </table>
 
         {/* 무한 스크롤 sentinel */}
-        {visibleCount < filteredStores.length && (
-          <div ref={sentinelRef} className="flex items-center justify-center py-4 text-xs text-muted gap-2 border-t border-border-main">
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            {filteredStores.length - visibleCount}개 더 있음
-          </div>
-        )}
+        {(() => {
+          const totalVisible = storeFilter === 'prospect' ? filteredProspects.length : filteredStores.length;
+          return visibleCount < totalVisible ? (
+            <div ref={sentinelRef} className="flex items-center justify-center py-4 text-xs text-muted gap-2 border-t border-border-main">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              {totalVisible - visibleCount}개 더 있음
+            </div>
+          ) : null;
+        })()}
       </div>
 
       {/* ============================================================ */}
@@ -1594,6 +1924,201 @@ export default function StoresPage() {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 슬라이드 패널 딤 */}
+      {slideProspect && (
+        <div className="fixed inset-0 z-40 bg-black/40" onClick={() => setSlideProspect(null)} />
+      )}
+
+      {/* 슬라이드 패널 */}
+      <div className={`fixed right-0 top-0 bottom-0 w-96 bg-card border-l border-border-main z-50 overflow-y-auto transition-transform duration-300 ${slideProspect ? 'translate-x-0' : 'translate-x-full'}`}>
+        {slideProspect && (
+          <div className="p-6 space-y-4">
+            {/* 헤더 */}
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className="font-bold text-primary text-lg">{slideProspect.name}</h2>
+                <div className="flex gap-1 mt-1.5 flex-wrap">
+                  {slideProspect.naver_place_id && <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-green-600/20 text-green-400 border border-green-600/30">N 네이버</span>}
+                  {slideProspect.kakao_place_id && <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">K 카카오</span>}
+                  {(slideProspect.unniepick_category || slideProspect.category) && (
+                    <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                      {slideProspect.unniepick_category || slideProspect.category}
+                    </span>
+                  )}
+                  <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">⭐ 잠재</span>
+                </div>
+              </div>
+              <button onClick={() => setSlideProspect(null)} className="text-muted hover:text-primary p-1"><X size={18} /></button>
+            </div>
+
+            {/* 기본정보 */}
+            <div className="bg-fill-subtle rounded-xl p-4 space-y-2 text-xs">
+              <p className="font-semibold text-muted mb-2">기본 정보</p>
+              {slideProspect.address && (
+                <div className="flex justify-between gap-2">
+                  <span className="text-muted shrink-0">주소</span>
+                  <span className="text-secondary text-right">{slideProspect.address.replace(/^경남 창원시?\s?/, '')}</span>
+                </div>
+              )}
+              {slideProspect.phone && (
+                <div className="flex justify-between">
+                  <span className="text-muted">전화</span>
+                  <span className="text-secondary">{slideProspect.phone}</span>
+                </div>
+              )}
+              {slideProspect.opened_at && (
+                <div className="flex justify-between">
+                  <span className="text-muted">개업일</span>
+                  <span className="text-sky-400">{new Date(slideProspect.opened_at).toLocaleDateString('ko-KR')}</span>
+                </div>
+              )}
+              <div className="flex justify-between">
+                <span className="text-muted">수집일</span>
+                <span className="text-secondary">{new Date(slideProspect.crawled_at).toLocaleDateString('ko-KR')}</span>
+              </div>
+            </div>
+
+            {/* 수집 데이터 */}
+            {((slideProspect.menu_items?.length ?? 0) > 0 || (slideProspect.review_keywords?.length ?? 0) > 0) && (
+              <div className="bg-fill-subtle rounded-xl p-4 space-y-3 text-xs">
+                <p className="font-semibold text-muted">수집 데이터</p>
+                {(slideProspect.menu_items?.length ?? 0) > 0 && (
+                  <div>
+                    <p className="text-muted mb-1.5">메뉴 ({slideProspect.menu_items.length}개)</p>
+                    <div className="flex flex-wrap gap-1">
+                      {slideProspect.menu_items.slice(0, 8).map((m, i) => (
+                        <span key={i} className="px-2 py-0.5 bg-fill-medium text-secondary rounded-lg">{m.name}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {(slideProspect.review_keywords?.length ?? 0) > 0 && (
+                  <div>
+                    <p className="text-muted mb-1.5">키워드 ({slideProspect.review_keywords.length}개)</p>
+                    <div className="flex flex-wrap gap-1">
+                      {slideProspect.review_keywords.slice(0, 6).map((k, i) => (
+                        <span key={i} className="px-2 py-0.5 bg-fill-medium text-secondary rounded-lg">{k.keyword}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* AI 요약 */}
+            {slideProspect.ai_summary && (
+              <div className="rounded-xl p-4 space-y-2" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
+                <p className="text-xs font-semibold text-emerald-400">✨ AI 요약</p>
+                <p className="text-sm text-secondary leading-relaxed">{slideProspect.ai_summary}</p>
+                {(slideProspect.ai_features?.분위기태그?.length ?? 0) > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {slideProspect.ai_features!.분위기태그.map((t, i) => (
+                      <span key={i} className="px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ background: 'rgba(16,185,129,0.15)', color: '#34d399' }}>{t}</span>
+                    ))}
+                  </div>
+                )}
+                {slideProspect.ai_features?.방문팁 && (
+                  <p className="text-xs text-emerald-400/80">💡 {slideProspect.ai_features.방문팁}</p>
+                )}
+              </div>
+            )}
+
+            {/* 외부 링크 */}
+            <div className="flex gap-2">
+              {slideProspect.kakao_place_url && (
+                <a href={slideProspect.kakao_place_url} target="_blank" rel="noopener noreferrer"
+                  className="flex-1 py-2 text-center text-xs font-semibold rounded-xl bg-yellow-500/15 text-yellow-400 hover:bg-yellow-500/25 transition">
+                  카카오맵 ↗
+                </a>
+              )}
+              {slideProspect.naver_place_url && (
+                <a href={slideProspect.naver_place_url} target="_blank" rel="noopener noreferrer"
+                  className="flex-1 py-2 text-center text-xs font-semibold rounded-xl bg-green-500/15 text-green-400 hover:bg-green-500/25 transition">
+                  네이버 ↗
+                </a>
+              )}
+            </div>
+
+            {/* 파트너 전환 버튼 */}
+            <button
+              onClick={() => {
+                setConvertTarget(slideProspect);
+                setConvertForm({ name: slideProspect.name, address: slideProspect.address ?? '', phone: slideProspect.phone ?? '', category: slideProspect.unniepick_category || slideProspect.category || '' });
+              }}
+              className="w-full py-3 rounded-xl font-bold text-white text-sm transition"
+              style={{ background: '#FF6F0F' }}>
+              ▶ 파트너로 전환하기
+            </button>
+            <p className="text-xs text-muted text-center">전환 후 쿠폰 발행·사장님 계정 연결 가능</p>
+          </div>
+        )}
+      </div>
+
+      {/* Modal: 파트너 전환 */}
+      {convertTarget && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          onClick={e => { if (e.target === e.currentTarget) setConvertTarget(null); }}>
+          <div className="w-full max-w-md bg-card border border-border-subtle rounded-2xl shadow-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="font-bold text-primary text-lg">파트너 등록</h2>
+              <button onClick={() => setConvertTarget(null)} className="text-muted hover:text-primary"><X size={18} /></button>
+            </div>
+
+            {/* 자동입력 안내 */}
+            <div className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', color: '#34d399' }}>
+              ✅ 수집 데이터로 자동 입력됩니다. 필요 시 수정하세요.
+            </div>
+
+            {/* 폼 */}
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs text-muted block mb-1">가게명</label>
+                <input value={convertForm.name} onChange={e => setConvertForm(f => ({ ...f, name: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg text-sm bg-fill-subtle border border-border-main text-primary focus:outline-none focus:border-[#FF6F0F]" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-muted block mb-1">카테고리</label>
+                  <input value={convertForm.category} onChange={e => setConvertForm(f => ({ ...f, category: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg text-sm bg-fill-subtle border border-border-main text-primary focus:outline-none focus:border-[#FF6F0F]" />
+                </div>
+                <div>
+                  <label className="text-xs text-muted block mb-1">연락처</label>
+                  <input value={convertForm.phone} onChange={e => setConvertForm(f => ({ ...f, phone: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg text-sm bg-fill-subtle border border-border-main text-primary focus:outline-none focus:border-[#FF6F0F]" />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-muted block mb-1">주소</label>
+                <input value={convertForm.address} onChange={e => setConvertForm(f => ({ ...f, address: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg text-sm bg-fill-subtle border border-border-main text-primary focus:outline-none focus:border-[#FF6F0F]" />
+              </div>
+              {convertTarget.ai_summary && (
+                <div className="rounded-lg p-3 flex items-start gap-2" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
+                  <span style={{ color: '#34d399' }}>✨</span>
+                  <div>
+                    <p className="text-xs font-semibold" style={{ color: '#34d399' }}>AI 요약 자동 포함</p>
+                    <p className="text-xs text-muted mt-0.5">{convertTarget.ai_summary}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-2 pt-1">
+              <button onClick={() => setConvertTarget(null)}
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-muted border border-border-subtle hover:text-primary transition">
+                취소
+              </button>
+              <button onClick={convertToPartner} disabled={converting || !convertForm.name.trim()}
+                className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white transition disabled:opacity-50"
+                style={{ background: '#FF6F0F' }}>
+                {converting ? '등록 중...' : '▶ 파트너 등록'}
+              </button>
             </div>
           </div>
         </div>
