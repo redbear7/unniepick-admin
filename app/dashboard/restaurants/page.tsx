@@ -256,20 +256,21 @@ export default function RestaurantsPage() {
   }
 
   // AI 특징 일괄 생성
-  async function batchAiSummary() {
+  async function batchAiSummary(source: 'naver' | 'kakao' | 'all' = 'all') {
     setAiSummarizing(true);
     setAiMsg('');
     try {
       const res  = await fetch('/api/restaurants/batch-ai-summary', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ limit: 20 }),
+        body: JSON.stringify({ limit: 20, source }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? 'AI 요약 실패');
-      setAiMsg(`✨ ${data.processed}개 AI 특징 생성 완료${data.errors ? ` · ${data.errors}개 실패` : ''}`);
+      const label = source === 'naver' ? '네이버' : source === 'kakao' ? '카카오' : '전체';
+      setAiMsg(`✨ [${label}] ${data.processed}개 AI 요약 완료${data.errors ? ` · ${data.errors}개 실패` : ''}`);
       fetchRestaurants();
-      setTimeout(() => setAiMsg(''), 5000);
+      setTimeout(() => setAiMsg(''), 6000);
     } catch (e) {
       alert(`AI 요약 실패: ${(e as Error).message}`);
     } finally {
@@ -402,17 +403,33 @@ export default function RestaurantsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          {/* AI 특징 일괄 생성 */}
-          <button
-            onClick={batchAiSummary}
-            disabled={aiSummarizing}
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-sm font-semibold transition shadow-sm"
-          >
-            {aiSummarizing
-              ? <><Loader2 className="w-4 h-4 animate-spin" />AI 요약 중...</>
-              : <>✨ AI 특징 생성</>
-            }
-          </button>
+          {/* AI 요약 일괄 생성 — source별 분리 */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => batchAiSummary('naver')}
+              disabled={aiSummarizing}
+              title="네이버 크롤링 업체 AI 요약 (리뷰·메뉴 데이터 풍부)"
+              className="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-l-xl text-xs font-semibold transition shadow-sm"
+            >
+              {aiSummarizing
+                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                : <span>✨</span>
+              }
+              AI 요약 (N)
+            </button>
+            <button
+              onClick={() => batchAiSummary('kakao')}
+              disabled={aiSummarizing}
+              title="카카오 API 수집 업체 AI 요약"
+              className="flex items-center gap-1.5 px-3 py-2 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white rounded-r-xl text-xs font-semibold transition shadow-sm border-l border-emerald-500"
+            >
+              {aiSummarizing
+                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                : <span>✨</span>
+              }
+              AI 요약 (K)
+            </button>
+          </div>
           {/* 태그 일괄 추출 */}
           <button
             onClick={batchExtractTags}
