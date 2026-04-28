@@ -23,19 +23,25 @@ function adminSb() {
   );
 }
 
+function toArr<T>(v: unknown): T[] {
+  if (Array.isArray(v)) return v as T[];
+  if (typeof v === 'string') { try { const p = JSON.parse(v); return Array.isArray(p) ? p : []; } catch { return []; } }
+  return [];
+}
+
 function buildPrompt(r: Record<string, unknown>): string {
-  const menus = (r.menu_items as Array<{ name: string; price?: string }> ?? [])
+  const menus = toArr<{ name: string; price?: string }>(r.menu_items)
     .slice(0, 10)
     .map(m => m.price ? `${m.name}(${m.price})` : m.name)
     .join(', ');
 
-  const reviewKw = (r.review_keywords as Array<{ keyword: string; count: number }> ?? [])
+  const reviewKw = toArr<{ keyword: string; count: number }>(r.review_keywords)
     .sort((a, b) => b.count - a.count)
     .slice(0, 6)
     .map(k => k.keyword)
     .join(', ');
 
-  const blogTitles = (r.blog_reviews as Array<{ title: string }> ?? [])
+  const blogTitles = toArr<{ title: string }>(r.blog_reviews)
     .slice(0, 3)
     .map(b => b.title)
     .join(' / ');
