@@ -56,8 +56,14 @@ export async function POST(req: NextRequest) {
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify(bodyPayload),
       });
-      if (res.ok) processed++;
-      else {
+      if (res.ok) {
+        processed++;
+      } else if (res.status === 429) {
+        // 레이트 리밋 도달 시 배치 중단 (이미 ai-summary 내에서 재시도 소진)
+        console.warn('[batch-ai-summary] 429 rate limit — 배치 중단');
+        errors++;
+        break;
+      } else {
         const err = await res.json().catch(() => ({}));
         console.error('[batch-ai-summary] 오류:', err);
         errors++;
@@ -66,8 +72,8 @@ export async function POST(req: NextRequest) {
       console.error('[batch-ai-summary] fetch 오류:', e);
       errors++;
     }
-    // Gemini 무료 티어 15 RPM 대응 (4.5초 간격)
-    await new Promise(r => setTimeout(r, 4500));
+    // 무료 티어 15 RPM → 5초 간격 (12 RPM 안전마진)
+    await new Promise(r => setTimeout(r, 5000));
   }
 
   return NextResponse.json({ ok: true, processed, errors });

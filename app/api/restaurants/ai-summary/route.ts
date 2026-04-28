@@ -169,10 +169,11 @@ export async function POST(req: NextRequest) {
   let summary  = '';
   let features: AiFeatures = { 분위기태그: [], 추천메뉴: [], 방문팁: '', 특징키워드: [] };
 
-  const MAX_RETRIES = 3;
+  // 429 재시도: 15s → 35s → 60s (무료 티어 15 RPM 대응)
+  const RETRY_DELAYS = [15_000, 35_000, 60_000];
   let lastErr: unknown;
 
-  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+  for (let attempt = 0; attempt <= RETRY_DELAYS.length; attempt++) {
     try {
       const result = await ai.models.generateContent({
         model:    'gemini-2.0-flash',
@@ -194,9 +195,13 @@ export async function POST(req: NextRequest) {
       break;
     } catch (e) {
       lastErr = e;
-      if (String(e).includes('429') && attempt < MAX_RETRIES - 1) {
-        await new Promise(r => setTimeout(r, (attempt + 1) * 5000));
+      const is429 = String(e).includes('429') || String(e).includes('RESOURCE_EXHAUSTED');
+      if (is429 && attempt < RETRY_DELAYS.length) {
+        await new Promise(r => setTimeout(r, RETRY_DELAYS[attempt]));
         continue;
+      }
+      if (is429) {
+        return NextResponse.json({ error: 'rate_limit', message: 'Gemini 요청 한도 초과 (잠시 후 다시 시도)' }, { status: 429 });
       }
       return NextResponse.json({ error: `AI 오류: ${e}` }, { status: 500 });
     }

@@ -250,6 +250,7 @@ export default function RestaurantsPage() {
         body: JSON.stringify(payload),
       });
       const data = await res.json();
+      if (res.status === 429) throw new Error('Gemini 요청 한도 초과 — 1분 후 다시 시도해 주세요');
       if (!res.ok) throw new Error(data.error ?? 'AI 요약 실패');
       setRestaurants(prev => prev.map(p =>
         p.id === r.id
@@ -257,7 +258,7 @@ export default function RestaurantsPage() {
           : p,
       ));
     } catch (e) {
-      alert(`AI 요약 실패: ${(e as Error).message}`);
+      alert(`⚠️ ${(e as Error).message}`);
     } finally {
       setAiSummaryingId(null);
     }
