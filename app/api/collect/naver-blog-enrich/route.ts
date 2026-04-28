@@ -72,10 +72,6 @@ export async function POST(req: NextRequest) {
   const keywords: string[] = body.keywords ?? [];
   const limit = Math.min(body.limit ?? 30, 50);
 
-  if (!keywords.length) {
-    return new Response(JSON.stringify({ error: 'keywords 필요' }), { status: 400 });
-  }
-
   const clientId     = process.env.NAVER_CLIENT_ID;
   const clientSecret = process.env.NAVER_CLIENT_SECRET;
 
@@ -103,69 +99,70 @@ export async function POST(req: NextRequest) {
       let totalProcessed = 0;
       let totalErrors    = 0;
 
-      for (let i = 0; i < keywords.length; i++) {
-        const kw = keywords[i];
-        send({ type: 'keyword', keyword: kw, index: i, total: keywords.length });
+      // blog_reviews가 없는 업체를 최근 수집 순으로 조회
+      // (태그 방식 대신 — Kakao A안은 tags를 저장하지 않음)
+      const { data: rows, error } = await sb
+        .from('restaurants')
+        .select('id, name, address')
+        .or('blog_reviews.is.null,blog_reviews.eq.[]')
+        .order('crawled_at', { ascending: false })
+        .limit(limit);
 
-        // 이 키워드 태그를 가진 업체 조회
-        const { data: rows, error } = await sb
-          .from('restaurants')
-          .select('id, name, address')
-          .contains('tags', [kw])
-          .limit(limit);
-
-        if (error) {
-          send({ type: 'log', keyword: kw, line: `DB 오류: ${error.message}`, isErr: true });
-          send({ type: 'keyword_done', keyword: kw, code: 1 });
-          continue;
-        }
-
-        const restaurants = rows ?? [];
-        send({ type: 'log', keyword: kw, line: `${restaurants.length}개 업체 블로그/카페 검색 시작` });
-
-        for (let j = 0; j < restaurants.length; j++) {
-          if (closed) break;
-          const r = restaurants[j];
-          send({ type: 'log', keyword: kw, line: `[${j + 1}/${restaurants.length}] ${r.name}` });
-
-          try {
-            // 블로그 5건 + 카페 3건 병렬 조회
-            const [blogResults, cafeResults] = await Promise.all([
-              naverSearch('blog',        `${r.name} 창원`, 5, clientId, clientSecret),
-              naverSearch('cafearticle', `${r.name} 창원`, 3, clientId, clientSecret),
-            ]);
-
-            const combined: BlogReview[] = [...blogResults, ...cafeResults].slice(0, 8);
-
-            const { error: updateErr } = await sb
-              .from('restaurants')
-              .update({ blog_reviews: combined })
-              .eq('id', r.id);
-
-            if (updateErr) {
-              send({ type: 'log', keyword: kw, line: `  저장 오류: ${updateErr.message}`, isErr: true });
-              totalErrors++;
-            } else {
-              send({ type: 'log', keyword: kw, line: `  ✓ 블로그 ${blogResults.length}건 + 카페 ${cafeResults.length}건` });
-              totalProcessed++;
-            }
-          } catch (e) {
-            send({ type: 'log', keyword: kw, line: `  오류: ${(e as Error).message}`, isErr: true });
-            totalErrors++;
-          }
-
-          // 업체 간 딜레이 (API 부하 방지)
-          await new Promise(r => setTimeout(r, 250));
-        }
-
-        send({ type: 'keyword_done', keyword: kw, code: 0 });
-
-        if (i < keywords.length - 1) {
-          const delay = 500;
-          send({ type: 'delay', ms: delay });
-          await new Promise(r => setTimeout(r, delay));
-        }
+      if (error) {
+        send({ type: 'log', keyword: 'DB', line: `DB 오류: ${error.message}`, isErr: true });
+        send({ type: 'done', processed: 0, errors: 1 });
+        closed = true;
+        try { controller.close(); } catch {}
+        return;
       }
+
+      const restaurants = rows ?? [];
+      send({ type: 'keyword', keyword: keywords[0] ?? '', index: 0, total: 1 });
+      send({ type: 'log', keyword: keywords[0] ?? '', line: `블로그/카페 리뷰 없는 업체 ${restaurants.length}개 검색 시작` });
+
+      for (let j = 0; j < restaurants.length; j++) {
+        if (closed) break;
+        const r = restaurants[j];
+        send({ type: 'log', keyword: keywords[0] ?? '', line: `[${j + 1}/${restaurants.length}] ${r.name}` });
+
+        try {
+          // 지역 힌트: 주소에서 시/구 추출, 없으면 '창원'
+          const cityHint = (() => {
+            if (!r.address) return '창원';
+            const m = r.address.match(/창원[시]?\s?(\S+구|\S+면|\S+동)/);
+            return m ? `창원 ${m[1]}` : '창원';
+          })();
+
+          // 블로그 5건 + 카페 3건 병렬 조회
+          const [blogResults, cafeResults] = await Promise.all([
+            naverSearch('blog',        `${r.name} ${cityHint}`, 5, clientId, clientSecret),
+            naverSearch('cafearticle', `${r.name} ${cityHint}`, 3, clientId, clientSecret),
+          ]);
+
+          const combined: BlogReview[] = [...blogResults, ...cafeResults].slice(0, 8);
+
+          const { error: updateErr } = await sb
+            .from('restaurants')
+            .update({ blog_reviews: combined })
+            .eq('id', r.id);
+
+          if (updateErr) {
+            send({ type: 'log', keyword: keywords[0] ?? '', line: `  저장 오류: ${updateErr.message}`, isErr: true });
+            totalErrors++;
+          } else {
+            send({ type: 'log', keyword: keywords[0] ?? '', line: `  ✓ 블로그 ${blogResults.length}건 + 카페 ${cafeResults.length}건` });
+            totalProcessed++;
+          }
+        } catch (e) {
+          send({ type: 'log', keyword: keywords[0] ?? '', line: `  오류: ${(e as Error).message}`, isErr: true });
+          totalErrors++;
+        }
+
+        // 업체 간 딜레이 (API 부하 방지)
+        await new Promise(r => setTimeout(r, 250));
+      }
+
+      send({ type: 'keyword_done', keyword: keywords[0] ?? '', code: 0 });
 
       send({ type: 'done', processed: totalProcessed, errors: totalErrors });
       closed = true;
