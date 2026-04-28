@@ -1124,6 +1124,7 @@ export default function StoresPage() {
                     ['category',   '카테고리',   'left',   'px-4'],
                     ['phone',      '연락처',     'left',   'px-4'],
                     ['opened_at',  '개업일',     'left',   'px-4'],
+                    ['closed_at',  '폐업일',     'left',   'px-4'],
                     ['owner',      '사장님',     'left',   'px-4'],
                     ['created_at', '등록일',     'left',   'px-4'],
                     ['coupons',    '쿠폰',       'center', 'px-3'],
@@ -1147,6 +1148,7 @@ export default function StoresPage() {
                   <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">카테고리</th>
                   <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">연락처</th>
                   <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">개업일</th>
+                  <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">폐업일</th>
                   <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">수집데이터</th>
                   <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted">AI 요약</th>
                   <th className="text-center px-4 py-3.5 text-xs font-semibold text-muted">상태</th>
@@ -1197,6 +1199,11 @@ export default function StoresPage() {
                   <td className="px-4 py-3 text-xs">
                     {prospect.opened_at
                       ? <p className="text-sky-400">{new Date(prospect.opened_at).toLocaleDateString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit' })}</p>
+                      : <span className="text-dim">—</span>}
+                  </td>
+                  <td className="px-4 py-3 text-xs">
+                    {prospect.closed_at
+                      ? <p className="text-red-400">{new Date(prospect.closed_at).toLocaleDateString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit' })}</p>
                       : <span className="text-dim">—</span>}
                   </td>
                   <td className="px-4 py-3">
@@ -1259,6 +1266,12 @@ export default function StoresPage() {
                       <td className="px-4 py-4 text-xs">
                         {store.opened_at
                           ? <p className="text-sky-400">{new Date(store.opened_at).toLocaleDateString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit' })}</p>
+                          : <span className="text-dim">-</span>}
+                      </td>
+                      {/* 폐업일 */}
+                      <td className="px-4 py-4 text-xs">
+                        {store.closed_at
+                          ? <p className="text-red-400">{new Date(store.closed_at).toLocaleDateString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit' })}</p>
                           : <span className="text-dim">-</span>}
                       </td>
                       <td className="px-4 py-4">
@@ -1373,6 +1386,11 @@ export default function StoresPage() {
                         <td className="px-4 py-3 text-xs">
                           {prospect.opened_at
                             ? <p className="text-sky-400">{new Date(prospect.opened_at).toLocaleDateString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit' })}</p>
+                            : <span className="text-dim">—</span>}
+                        </td>
+                        <td className="px-4 py-3 text-xs">
+                          {prospect.closed_at
+                            ? <p className="text-red-400">{new Date(prospect.closed_at).toLocaleDateString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit' })}</p>
                             : <span className="text-dim">—</span>}
                         </td>
                         <td className="px-4 py-3">

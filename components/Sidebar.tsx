@@ -210,6 +210,11 @@ function SortableNavItem({
   onMove,
   moveOpenId,
   setMoveOpenId,
+  editingItemId,
+  editingItemLabel,
+  setEditingItemId,
+  setEditingItemLabel,
+  onRenameItem,
 }: {
   item: NavItem;
   isActive: boolean;
@@ -219,6 +224,11 @@ function SortableNavItem({
   onMove: (itemId: string, targetGroupId: string) => void;
   moveOpenId: string | null;
   setMoveOpenId: (id: string | null) => void;
+  editingItemId: string | null;
+  editingItemLabel: string;
+  setEditingItemId: (id: string | null) => void;
+  setEditingItemLabel: (label: string) => void;
+  onRenameItem: (itemId: string, newLabel: string) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: item.id });
@@ -231,7 +241,14 @@ function SortableNavItem({
     opacity: isDragging ? 0 : 1,
   };
 
-  const isMoveOpen = moveOpenId === item.id;
+  const isMoveOpen  = moveOpenId === item.id;
+  const isRenaming  = editingItemId === item.id;
+
+  const commitItemRename = () => {
+    const trimmed = editingItemLabel.trim();
+    if (trimmed) onRenameItem(item.id, trimmed);
+    setEditingItemId(null);
+  };
 
   return (
     <div
@@ -252,42 +269,74 @@ function SortableNavItem({
           <GripVertical size={13} />
         </button>
       )}
-      <Link
-        href={item.href}
-        className={`flex items-center gap-3 px-3 py-2.5 text-sm flex-1 min-w-0 ${
-          editMode ? 'pointer-events-none' : ''
-        } ${isActive ? 'text-[#FF6F0F] font-semibold' : 'font-medium text-tertiary hover:text-primary'}`}
-      >
-        {Icon && <Icon size={16} className="shrink-0" />}
-        <span className="flex-1 truncate">{item.label}</span>
-        {isActive && !editMode && <ChevronRight size={12} />}
-      </Link>
 
-      {/* 카테고리 이동 버튼 */}
-      {editMode && (
-        <div className="relative shrink-0 pr-1">
+      {/* 이름 편집 모드 */}
+      {editMode && isRenaming ? (
+        <div className="flex items-center gap-1 flex-1 px-2 py-1.5">
+          {Icon && <Icon size={14} className="shrink-0 text-muted" />}
+          <input
+            autoFocus
+            value={editingItemLabel}
+            onChange={e => setEditingItemLabel(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter')  commitItemRename();
+              if (e.key === 'Escape') setEditingItemId(null);
+            }}
+            className="flex-1 min-w-0 px-1.5 py-0.5 text-xs font-medium bg-card border border-[#FF6F0F] rounded outline-none text-primary"
+          />
+          <button onClick={commitItemRename}           className="text-green-500 hover:text-green-400 transition-colors shrink-0"><Check size={11} /></button>
+          <button onClick={() => setEditingItemId(null)} className="text-muted hover:text-primary transition-colors shrink-0"><X size={11} /></button>
+        </div>
+      ) : (
+        <Link
+          href={item.href}
+          className={`flex items-center gap-3 px-3 py-2.5 text-sm flex-1 min-w-0 ${
+            editMode ? 'pointer-events-none' : ''
+          } ${isActive ? 'text-[#FF6F0F] font-semibold' : 'font-medium text-tertiary hover:text-primary'}`}
+        >
+          {Icon && <Icon size={16} className="shrink-0" />}
+          <span className="flex-1 truncate">{item.label}</span>
+          {isActive && !editMode && <ChevronRight size={12} />}
+        </Link>
+      )}
+
+      {/* 편집 모드 버튼들 (연필 + 카테고리 이동) */}
+      {editMode && !isRenaming && (
+        <>
+          {/* 이름 수정 버튼 */}
           <button
-            onClick={() => setMoveOpenId(isMoveOpen ? null : item.id)}
-            title="카테고리 이동"
-            className={`p-1.5 rounded-md transition-colors ${
-              isMoveOpen
-                ? 'bg-[#FF6F0F]/20 text-[#FF6F0F]'
-                : 'text-muted hover:text-primary hover:bg-card'
-            }`}
+            onClick={() => { setEditingItemId(item.id); setEditingItemLabel(item.label); }}
+            title="메뉴 이름 수정"
+            className="shrink-0 p-1.5 rounded-md text-muted hover:text-[#FF6F0F] hover:bg-card transition-colors"
           >
-            <FolderInput size={12} />
+            <Pencil size={11} />
           </button>
 
-          {isMoveOpen && (
-            <MoveCategoryPopover
-              item={item}
-              groups={groups}
-              currentGroupId={currentGroupId}
-              onMove={(targetGroupId) => onMove(item.id, targetGroupId)}
-              onClose={() => setMoveOpenId(null)}
-            />
-          )}
-        </div>
+          {/* 카테고리 이동 버튼 */}
+          <div className="relative shrink-0 pr-1">
+            <button
+              onClick={() => setMoveOpenId(isMoveOpen ? null : item.id)}
+              title="카테고리 이동"
+              className={`p-1.5 rounded-md transition-colors ${
+                isMoveOpen
+                  ? 'bg-[#FF6F0F]/20 text-[#FF6F0F]'
+                  : 'text-muted hover:text-primary hover:bg-card'
+              }`}
+            >
+              <FolderInput size={12} />
+            </button>
+
+            {isMoveOpen && (
+              <MoveCategoryPopover
+                item={item}
+                groups={groups}
+                currentGroupId={currentGroupId}
+                onMove={(targetGroupId) => onMove(item.id, targetGroupId)}
+                onClose={() => setMoveOpenId(null)}
+              />
+            )}
+          </div>
+        </>
       )}
     </div>
   );
@@ -301,14 +350,16 @@ export default function Sidebar() {
   const pathname = usePathname();
   const router   = useRouter();
 
-  const [groups,         setGroups]         = useState<NavGroup[]>(DEFAULT_GROUPS);
-  const [editMode,       setEditMode]       = useState(false);
-  const [preEditSnap,    setPreEditSnap]    = useState<NavGroup[] | null>(null);
-  const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
-  const [editingLabel,   setEditingLabel]   = useState('');
-  const [activeId,       setActiveId]       = useState<string | null>(null);
-  const [moveOpenId,     setMoveOpenId]     = useState<string | null>(null);
-  const [userName,       setUserName]       = useState<string>('');
+  const [groups,          setGroups]          = useState<NavGroup[]>(DEFAULT_GROUPS);
+  const [editMode,        setEditMode]        = useState(false);
+  const [preEditSnap,     setPreEditSnap]     = useState<NavGroup[] | null>(null);
+  const [editingGroupId,  setEditingGroupId]  = useState<string | null>(null);
+  const [editingLabel,    setEditingLabel]    = useState('');
+  const [editingItemId,   setEditingItemId]   = useState<string | null>(null);
+  const [editingItemLabel,setEditingItemLabel]= useState('');
+  const [activeId,        setActiveId]        = useState<string | null>(null);
+  const [moveOpenId,      setMoveOpenId]      = useState<string | null>(null);
+  const [userName,        setUserName]        = useState<string>('');
 
   useEffect(() => { setGroups(loadGroups()); }, []);
 
@@ -325,9 +376,12 @@ export default function Sidebar() {
     });
   }, []);
 
-  // 편집 모드 종료 시 이동 팝오버 닫기
+  // 편집 모드 종료 시 이동 팝오버 + 아이템 편집 닫기
   useEffect(() => {
-    if (!editMode) setMoveOpenId(null);
+    if (!editMode) {
+      setMoveOpenId(null);
+      setEditingItemId(null);
+    }
   }, [editMode]);
 
   const saveGroups = (next: NavGroup[]) => {
@@ -419,6 +473,14 @@ export default function Sidebar() {
       saveGroups(groups.map(g => g.id === editingGroupId ? { ...g, label: trimmed } : g));
     }
     setEditingGroupId(null);
+  };
+
+  /* ---- Item rename ---- */
+  const handleRenameItem = (itemId: string, newLabel: string) => {
+    saveGroups(groups.map(g => ({
+      ...g,
+      items: g.items.map(i => i.id === itemId ? { ...i, label: newLabel } : i),
+    })));
   };
 
   const resetLayout = () => {
@@ -516,6 +578,11 @@ export default function Sidebar() {
                         onMove={handleMoveToCategory}
                         moveOpenId={moveOpenId}
                         setMoveOpenId={setMoveOpenId}
+                        editingItemId={editingItemId}
+                        editingItemLabel={editingItemLabel}
+                        setEditingItemId={setEditingItemId}
+                        setEditingItemLabel={setEditingItemLabel}
+                        onRenameItem={handleRenameItem}
                       />
                     );
                   })}
