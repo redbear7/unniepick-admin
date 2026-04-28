@@ -631,21 +631,23 @@ export default function RestaurantsPage() {
       )}
 
       {/* 카테고리 칩 */}
-      {categories.length > 0 && (
+      {catCounts.size > 0 && (
         <div>
           <p className="text-xs text-muted mb-2 flex items-center gap-1">
-            <Filter className="w-3 h-3" /> 카테고리 ({categories.length}개)
+            <Filter className="w-3 h-3" /> 업종 ({catCounts.size}개)
           </p>
           <div className="flex flex-wrap gap-2">
-            {categories.map((cat) => (
-              <LocationChip
-                key={cat}
-                label={cat}
-                count={catCounts.get(cat) ?? 0}
-                active={categoryFilter === cat}
-                onClick={() => setCategoryFilter(categoryFilter === cat ? '' : cat)}
-              />
-            ))}
+            {[...catCounts.entries()]
+              .sort((a, b) => b[1] - a[1])
+              .map(([cat, count]) => (
+                <LocationChip
+                  key={cat}
+                  label={cat}
+                  count={count}
+                  active={categoryFilter === cat}
+                  onClick={() => setCategoryFilter(categoryFilter === cat ? '' : cat)}
+                />
+              ))}
           </div>
         </div>
       )}
@@ -654,10 +656,10 @@ export default function RestaurantsPage() {
       <div className="space-y-2.5">
         {/* 검색 + 드롭다운 */}
         <div className="flex flex-wrap gap-2">
-          <div className="relative flex-1 min-w-[200px]">
+          <div className="relative w-52">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
             <input
-              type="text" placeholder="맛집 이름, 주소, 카테고리 검색..."
+              type="text" placeholder="이름·주소 검색..."
               value={search} onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-card border border-border-main rounded-lg text-sm text-primary placeholder:text-muted focus:outline-none focus:border-[#FF6F0F]"
             />
