@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase';
 import { loadKakaoSDK } from '@/lib/kakaoMap';
-import { X, ExternalLink, Pencil, Check, Loader2 } from 'lucide-react';
+import { X, Loader2 } from 'lucide-react';
 
 // ── 타입 ──────────────────────────────────────────────────────
 interface BlogReview {
@@ -101,13 +101,9 @@ function BlogPanel({
   onClose: () => void;
 }) {
   const sb = createClient();
-  const [reviews,     setReviews]     = useState<BlogReview[]>([]);
-  const [instaUrl,    setInstaUrl]    = useState('');
-  const [editing,     setEditing]     = useState(false);
-  const [editVal,     setEditVal]     = useState('');
-  const [saving,      setSaving]      = useState(false);
+  const [reviews,      setReviews]      = useState<BlogReview[]>([]);
   const [reviewSaving, setReviewSaving] = useState(false);
-  const [loadingBlog, setLoadingBlog] = useState(false);
+  const [loadingBlog,  setLoadingBlog]  = useState(false);
 
   // 대표 리뷰 상단 정렬
   const sortedReviews = [...reviews].sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
@@ -115,16 +111,14 @@ function BlogPanel({
   useEffect(() => {
     if (pin.type === 'restaurant') {
       setReviews(pin.blog_reviews ?? []);
-      setInstaUrl(pin.instagram_url ?? '');
     } else {
       // 파트너: naver_place_id로 restaurants에서 블로그 리뷰 fetch
-      setInstaUrl(pin.instagram_url ?? '');
       if (pin.naver_place_id) {
         setLoadingBlog(true);
         (async () => {
           try {
             const { data } = await sb.from('restaurants')
-              .select('blog_reviews, instagram_url')
+              .select('blog_reviews')
               .eq('naver_place_id', pin.naver_place_id)
               .maybeSingle();
             if (data?.blog_reviews) {
@@ -135,9 +129,6 @@ function BlogPanel({
                 setReviews(arr);
               } catch {}
             }
-            if (!pin.instagram_url && data?.instagram_url) {
-              setInstaUrl(data.instagram_url);
-            }
           } finally {
             setLoadingBlog(false);
           }
@@ -145,24 +136,6 @@ function BlogPanel({
       }
     }
   }, [pin]);
-
-  const startEdit = () => { setEditVal(instaUrl); setEditing(true); };
-
-  const saveUrl = async () => {
-    setSaving(true);
-    const url = editVal.trim();
-    if (pin.type === 'partner') {
-      await sb.from('stores').update({ instagram_url: url || null }).eq('id', pin.id);
-      if (pin.naver_place_id) {
-        await sb.from('restaurants').update({ instagram_url: url || null }).eq('naver_place_id', pin.naver_place_id);
-      }
-    } else {
-      await sb.from('restaurants').update({ instagram_url: url || null }).eq('id', pin.id);
-    }
-    setInstaUrl(url);
-    setEditing(false);
-    setSaving(false);
-  };
 
   const persistReviews = async (newReviews: BlogReview[]) => {
     setReviewSaving(true);
@@ -222,45 +195,6 @@ function BlogPanel({
           ? <p className="text-xs text-emerald-400 leading-relaxed">{pin.ai_summary}</p>
           : <p className="text-[11px] text-dim">AI 요약 없음</p>
         }
-      </div>
-
-      {/* 블로그/인스타 링크 */}
-      <div className="px-4 py-3 border-b border-border-main shrink-0">
-        <div className="flex items-center justify-between mb-1.5">
-          <span className="text-[11px] font-semibold text-muted">인스타그램 / 블로그 링크</span>
-          {!editing && (
-            <button onClick={startEdit} className="flex items-center gap-1 text-[10px] text-muted hover:text-primary transition">
-              <Pencil size={10} /> 수정
-            </button>
-          )}
-        </div>
-        {editing ? (
-          <div className="flex gap-2">
-            <input
-              autoFocus
-              value={editVal}
-              onChange={e => setEditVal(e.target.value)}
-              placeholder="https://www.instagram.com/..."
-              className="flex-1 px-2.5 py-1.5 rounded-lg bg-fill-subtle border border-border-main text-xs text-primary placeholder:text-dim focus:outline-none focus:border-[#FF6F0F]"
-            />
-            <button
-              onClick={saveUrl}
-              disabled={saving}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#FF6F0F] text-white text-xs font-bold transition disabled:opacity-50"
-            >
-              {saving ? <Loader2 size={11} className="animate-spin" /> : <Check size={11} />}
-            </button>
-            <button onClick={() => setEditing(false)} className="px-2 py-1.5 rounded-lg text-xs text-muted hover:text-primary transition">취소</button>
-          </div>
-        ) : instaUrl ? (
-          <a href={instaUrl} target="_blank" rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-xs text-sky-400 hover:text-sky-300 transition truncate">
-            <ExternalLink size={11} />
-            {instaUrl.replace('https://www.instagram.com/', '@').replace('https://', '').replace(/\/$/, '')}
-          </a>
-        ) : (
-          <p className="text-[11px] text-dim">링크 없음 — 수정 버튼으로 추가</p>
-        )}
       </div>
 
       {/* 블로그 리뷰 목록 */}
