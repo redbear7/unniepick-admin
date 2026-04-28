@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
+import { usePlayer } from '@/contexts/PlayerContext';
 import KakaoMapPicker from '@/components/KakaoMapPicker';
 import {
   Search, ToggleLeft, ToggleRight, MapPin, Phone,
@@ -314,6 +315,8 @@ export default function StoresPage() {
   const [ctrlOpen,    setCtrlOpen]    = useState(false);
   const [ctrlTab,     setCtrlTab]     = useState<'all' | 'stores' | 'coupons'>('all');
   const ctrlLogRef = useRef<HTMLDivElement>(null);
+  const { track: playerTrack } = usePlayer();
+  const playerH = playerTrack ? 72 : 0;
 
   // 로그 추가 헬퍼 (상태 + localStorage 동시 업데이트)
   const addLog = (entry: Omit<CtrlLogEntry, 'id' | 'ts'>) => {
@@ -2254,8 +2257,8 @@ export default function StoresPage() {
 
         return (
           <div
-            className={`fixed bottom-0 left-0 right-0 z-50 border-t border-border-main bg-[#0d0d0d] shadow-2xl transition-all duration-300 ${ctrlOpen ? 'h-72' : 'h-10'}`}
-            style={{ fontFamily: 'monospace' }}
+            className={`fixed left-0 right-0 z-50 border-t border-border-main bg-[#0d0d0d] shadow-2xl transition-all duration-300 ${ctrlOpen ? 'h-72' : 'h-10'}`}
+            style={{ fontFamily: 'monospace', bottom: `${playerH}px` }}
           >
             {/* 헤더 바 */}
             <div
@@ -2292,24 +2295,25 @@ export default function StoresPage() {
             {ctrlOpen && (
               <div className="flex flex-col h-[calc(100%-2.5rem)]">
                 {/* 탭 바 */}
-                <div className="flex items-center gap-0 px-4 border-b border-border-subtle/40 shrink-0" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center gap-1 px-3 py-1.5 border-b border-white/10 shrink-0 bg-[#111]" onClick={e => e.stopPropagation()}>
                   {TABS.map(tab => {
                     const count = tab.types
                       ? ctrlLogs.filter(l => tab.types!.includes(l.type)).length
                       : ctrlLogs.length;
+                    const active = ctrlTab === tab.key;
                     return (
                       <button
                         key={tab.key}
-                        onClick={() => setCtrlTab(tab.key)}
-                        className={`px-3 py-1.5 text-[10px] font-semibold border-b-2 transition -mb-px ${
-                          ctrlTab === tab.key
-                            ? 'border-[#FF6F0F] text-[#FF6F0F]'
-                            : 'border-transparent text-muted hover:text-secondary'
+                        onClick={(e) => { e.stopPropagation(); setCtrlTab(tab.key); }}
+                        className={`px-3 py-1 rounded-md text-[10px] font-semibold transition-all ${
+                          active
+                            ? 'bg-[#FF6F0F] text-white'
+                            : 'text-white/40 hover:text-white/70 hover:bg-white/5'
                         }`}
                       >
                         {tab.label}
                         {count > 0 && (
-                          <span className={`ml-1 px-1 rounded text-[9px] ${ctrlTab === tab.key ? 'bg-[#FF6F0F]/20 text-[#FF6F0F]' : 'bg-white/5 text-dim'}`}>
+                          <span className={`ml-1.5 px-1 rounded text-[9px] ${active ? 'bg-white/20 text-white' : 'bg-white/10 text-white/50'}`}>
                             {count}
                           </span>
                         )}
@@ -2344,7 +2348,7 @@ export default function StoresPage() {
       })()}
 
       {/* 관제탑 패널 높이만큼 하단 여백 */}
-      <div className={ctrlOpen ? 'h-72' : 'h-10'} />
+      <div style={{ height: ctrlOpen ? 288 : 40 }} />
     </div>
   );
 }

@@ -5,6 +5,7 @@ import {
   Terminal, X, Trash2, ChevronDown, ChevronUp,
   AlertTriangle, AlertCircle, Info, Bug, Copy, CopyCheck, Pin, PinOff,
 } from 'lucide-react';
+import { usePlayer } from '@/contexts/PlayerContext';
 
 /* ------------------------------------------------------------------ */
 /* Types                                                               */
@@ -83,6 +84,10 @@ export default function DevLogPanel({ onVisibilityChange }: {
   const [filter,   setFilter]   = useState<LogLevel | 'all'>('all');
   const [height,   setHeight]   = useState(260);
   const [copied,   setCopied]   = useState(false);
+
+  // 트랙 플레이어 높이 오프셋
+  const { track } = usePlayer();
+  const playerOffset = track ? 72 : 0;
 
   // pinned 이면 항상 열린 상태
   const isVisible = open || pinned;
@@ -199,7 +204,8 @@ export default function DevLogPanel({ onVisibilityChange }: {
       <button
         onClick={() => setOpen(v => !v)}
         title="개발자 로그 (Ctrl+`)"
-        className={`fixed bottom-[16px] right-4 z-[9998] flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono font-semibold shadow-lg border transition-all ${
+        style={{ bottom: `${16 + playerOffset}px` }}
+        className={`fixed right-4 z-[9998] flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono font-semibold shadow-lg border transition-all ${
           isVisible
             ? 'bg-[#1a1d24] border-[#FF6F0F]/60 text-[#FF6F0F]'
             : 'bg-[#1a1d24] border-white/10 text-[var(--text-muted)] hover:border-white/20 hover:text-[var(--text-primary)]'
@@ -219,8 +225,8 @@ export default function DevLogPanel({ onVisibilityChange }: {
       {/* ---- panel ---- */}
       {isVisible && (
         <div
-          style={{ height }}
-          className="fixed bottom-[16px] right-0 w-[520px] z-[9997] flex flex-col bg-[#0d1117] border border-white/10 border-b-0 rounded-tl-xl shadow-2xl font-mono text-xs overflow-hidden"
+          style={{ height, bottom: `${16 + playerOffset}px` }}
+          className="fixed right-0 w-[520px] z-[9997] flex flex-col bg-[#0d1117] border border-white/10 border-b-0 rounded-tl-xl shadow-2xl font-mono text-xs overflow-hidden"
         >
           {/* resize handle */}
           <div
