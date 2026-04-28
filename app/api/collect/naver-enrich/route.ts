@@ -29,8 +29,12 @@ export async function POST(req: NextRequest) {
 
   const stream = new ReadableStream({
     async start(controller) {
-      const send = (obj: object) =>
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`));
+      let closed = false;
+      const send = (obj: object) => {
+        if (closed) return;
+        try { controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`)); }
+        catch { closed = true; }
+      };
 
       send({ type: 'start', keywords, limit });
 
@@ -78,7 +82,8 @@ export async function POST(req: NextRequest) {
       }
 
       send({ type: 'done' });
-      controller.close();
+      closed = true;
+      try { controller.close(); } catch {}
     },
   });
 
