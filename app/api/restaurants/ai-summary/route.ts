@@ -2,14 +2,13 @@
  * POST /api/restaurants/ai-summary
  * body: { naver_place_id?: string, kakao_place_id?: string }
  *
- * 업체 정보를 Gemini에 넣어 AI 요약 생성 후 DB 저장
+ * 업체 정보를 DeepSeek V3 (via OpenRouter)에 넣어 AI 요약 생성 후 DB 저장
  * - 네이버 크롤링 데이터(별점·리뷰·키워드)는 AI 입력에만 사용, 외부 노출 금지
  * - 영업시간 제외 (자주 변경됨)
  * - 카카오 수집 업체도 지원 (naver 매칭 데이터 병합)
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { GoogleGenAI } from '@google/genai';
 
 interface AiFeatures {
   분위기태그: string[];
@@ -39,8 +38,6 @@ function buildPrompt(r: Record<string, unknown>): string {
     .map(m => m.price ? `${m.name}(${m.price})` : m.name)
     .join(', ');
 
-  // 네이버 리뷰 키워드 — AI 입력용, 결과물에 직접 노출 금지
-  // 부정/중립 키워드 필터링 후 긍정적인 것만 활용
   const NEGATIVE_WORDS = [
     '별로', '실망', '불친절', '느려', '느림', '비싸', '작아', '좁아', '시끄럽', '냄새',
     '불만', '최악', '그냥', '보통', '그저', '애매', '아쉽', '별점', '위생', '불결',
@@ -59,7 +56,6 @@ function buildPrompt(r: Record<string, unknown>): string {
     .map(k => k.menu)
     .join(', ');
 
-  // 블로그 제목만 (내용 X) — 분위기 파악용
   const blogHints = toArr<{ title: string }>(r.blog_reviews)
     .slice(0, 3)
     .map(b => b.title)
@@ -103,6 +99,44 @@ function buildPrompt(r: Record<string, unknown>): string {
 }`;
 }
 
+async function callOpenRouter(prompt: string, apiKey: string): Promise<string> {
+  const RETRY_DELAYS = [5_000, 15_000, 30_000];
+
+  for (let attempt = 0; attempt <= RETRY_DELAYS.length; attempt++) {
+    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://admin.unniepick.com',
+        'X-Title': 'Unniepick Admin',
+      },
+      body: JSON.stringify({
+        model: 'deepseek/deepseek-chat-v3-0324',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.7,
+        max_tokens: 512,
+      }),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      return data.choices?.[0]?.message?.content ?? '';
+    }
+
+    if (res.status === 429 && attempt < RETRY_DELAYS.length) {
+      await new Promise(r => setTimeout(r, RETRY_DELAYS[attempt]));
+      continue;
+    }
+
+    const errText = await res.text().catch(() => res.statusText);
+    if (res.status === 429) throw new Error(`rate_limit: ${errText}`);
+    throw new Error(`OpenRouter ${res.status}: ${errText}`);
+  }
+
+  throw new Error('최대 재시도 횟수 초과');
+}
+
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({})) as {
     naver_place_id?: string;
@@ -132,7 +166,7 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     if (!row)  return NextResponse.json({ error: '업체 없음' }, { status: 404 });
-    data = row as Record<string, unknown>;
+    data = row as unknown as Record<string, unknown>;
     matchKey = { field: 'naver_place_id', value: naver_place_id };
   } else {
     const { data: row, error } = await sb
@@ -146,10 +180,10 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     if (!row)  return NextResponse.json({ error: '업체 없음' }, { status: 404 });
-    data = row as Record<string, unknown>;
+    data = row as unknown as Record<string, unknown>;
     matchKey = { field: 'kakao_place_id', value: kakao_place_id! };
 
-    // 카카오 업체인 경우 — 전화번호로 네이버 매칭 데이터 병합
+    // 카카오 업체 — 이름으로 네이버 데이터 병합
     if (!data.naver_place_id) {
       const { data: naverRow } = await sb
         .from('restaurants')
@@ -158,7 +192,6 @@ export async function POST(req: NextRequest) {
         .eq('name', data.name as string)
         .maybeSingle();
       if (naverRow) {
-        // 네이버 데이터로 빈 필드 보강 (AI 입력용)
         data = {
           ...data,
           menu_items:      data.menu_items      || naverRow.menu_items,
@@ -170,54 +203,34 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // ── Gemini 호출 ────────────────────────────────────────────────
-  const apiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-  if (!apiKey) return NextResponse.json({ error: 'GEMINI_API_KEY 없음' }, { status: 500 });
+  // ── OpenRouter 호출 ────────────────────────────────────────────
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) return NextResponse.json({ error: 'OPENROUTER_API_KEY 없음' }, { status: 500 });
 
-  const ai     = new GoogleGenAI({ apiKey });
   const prompt = buildPrompt(data);
-
   let summary  = '';
   let features: AiFeatures = { 분위기태그: [], 추천메뉴: [], 방문팁: '', 특징키워드: [] };
 
-  // 429 재시도: 15s → 35s → 60s (무료 티어 15 RPM 대응)
-  const RETRY_DELAYS = [15_000, 35_000, 60_000];
-  let lastErr: unknown;
-
-  for (let attempt = 0; attempt <= RETRY_DELAYS.length; attempt++) {
-    try {
-      const result = await ai.models.generateContent({
-        model:    'gemini-2.5-flash',
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      });
-      const text      = result.text ?? '';
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
-        summary  = parsed.한줄요약 ?? '';
-        features = {
-          분위기태그: parsed.분위기태그 ?? [],
-          추천메뉴:   parsed.추천메뉴   ?? [],
-          방문팁:     parsed.방문팁     ?? '',
-          특징키워드: parsed.특징키워드 ?? [],
-        };
-      }
-      lastErr = null;
-      break;
-    } catch (e) {
-      lastErr = e;
-      const is429 = String(e).includes('429') || String(e).includes('RESOURCE_EXHAUSTED');
-      if (is429 && attempt < RETRY_DELAYS.length) {
-        await new Promise(r => setTimeout(r, RETRY_DELAYS[attempt]));
-        continue;
-      }
-      if (is429) {
-        return NextResponse.json({ error: 'rate_limit', message: 'Gemini 요청 한도 초과 (잠시 후 다시 시도)' }, { status: 429 });
-      }
-      return NextResponse.json({ error: `AI 오류: ${e}` }, { status: 500 });
+  try {
+    const text      = await callOpenRouter(prompt, apiKey);
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      summary  = parsed.한줄요약 ?? '';
+      features = {
+        분위기태그: parsed.분위기태그 ?? [],
+        추천메뉴:   parsed.추천메뉴   ?? [],
+        방문팁:     parsed.방문팁     ?? '',
+        특징키워드: parsed.특징키워드 ?? [],
+      };
     }
+  } catch (e) {
+    const msg = String(e);
+    if (msg.startsWith('rate_limit')) {
+      return NextResponse.json({ error: 'rate_limit', message: '요청 한도 초과 (잠시 후 다시 시도)' }, { status: 429 });
+    }
+    return NextResponse.json({ error: `AI 오류: ${msg}` }, { status: 500 });
   }
-  if (lastErr) return NextResponse.json({ error: `AI 오류: ${lastErr}` }, { status: 500 });
 
   // ── DB 저장 ────────────────────────────────────────────────────
   const now = new Date().toISOString();
@@ -228,7 +241,7 @@ export async function POST(req: NextRequest) {
 
   if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 500 });
 
-  // stores 동기화 (naver_place_id 있는 경우만)
+  // stores 동기화
   if (data.naver_place_id) {
     await sb
       .from('stores')
