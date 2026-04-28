@@ -710,6 +710,11 @@ export default function StoresPage() {
     });
   })();
 
+  // 파트너 행에서 restaurants 데이터 조회용
+  const prospectByNaverId = new Map<string, Prospect>(
+    prospects.flatMap(p => p.naver_place_id ? [[p.naver_place_id, p] as [string, Prospect]] : [])
+  );
+
   /* ---------------------------------------------------------------- */
   /* Coupon form render                                                */
   /* ---------------------------------------------------------------- */
@@ -1136,15 +1141,15 @@ export default function StoresPage() {
               {storeFilter !== 'prospect' ? (
                 <>
                   {([
-                    ['name',       '가게명',     'left',   'px-5'],
-                    ['category',   '카테고리',   'left',   'px-4'],
-                    ['phone',      '연락처',     'left',   'px-4'],
-                    ['opened_at',  '개업일',     'left',   'px-4'],
-                    ['closed_at',  '폐업일',     'left',   'px-4'],
-                    ['owner',      '사장님',     'left',   'px-4'],
-                    ['created_at', '등록일',     'left',   'px-4'],
-                    ['coupons',    '쿠폰',       'center', 'px-3'],
-                    ['status',     '상태',       'center', 'px-4'],
+                    ['name',        '가게명',     'left',   'px-5'],
+                    ['category',    '카테고리',   'left',   'px-4'],
+                    ['phone',       '연락처',     'left',   'px-4'],
+                    ['collect',     '수집 데이터','left',   'px-4'],
+                    ['ai_summary',  'AI 요약',    'left',   'px-4'],
+                    ['opened_at',   '개업일',     'left',   'px-4'],
+                    ['owner',       '사장님',     'left',   'px-4'],
+                    ['coupons',     '쿠폰',       'center', 'px-3'],
+                    ['status',      '상태',       'center', 'px-4'],
                   ] as const).map(([col, label, align, px]) => (
                     <th key={col} className={`text-${align} ${px} py-3.5`}>
                       <button
@@ -1278,16 +1283,37 @@ export default function StoresPage() {
                           ? <p className="text-secondary flex items-center gap-1.5"><Phone size={12} className="text-muted" />{store.phone}</p>
                           : <span className="text-dim">-</span>}
                       </td>
+                      {/* 수집 데이터 */}
+                      {(() => {
+                        const r = store.naver_place_id ? prospectByNaverId.get(store.naver_place_id) : undefined;
+                        return (
+                          <td className="px-4 py-4">
+                            {r ? (
+                              <div className="flex flex-wrap gap-1">
+                                {(r.menu_items?.length ?? 0) > 0 && <span className="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 text-[10px]">메뉴 {r.menu_items.length}개</span>}
+                                {(r.review_keywords?.length ?? 0) > 0 && <span className="px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 text-[10px]">키워드 {r.review_keywords.length}개</span>}
+                                {(r.blog_reviews?.length ?? 0) > 0 && <span className="px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400 text-[10px]">블로그 {r.blog_reviews.length}개</span>}
+                                {(r.menu_items?.length ?? 0) === 0 && (r.review_keywords?.length ?? 0) === 0 && (r.blog_reviews?.length ?? 0) === 0 && <span className="text-dim text-xs">—</span>}
+                              </div>
+                            ) : <span className="text-dim text-xs">—</span>}
+                          </td>
+                        );
+                      })()}
+                      {/* AI 요약 */}
+                      {(() => {
+                        const r = store.naver_place_id ? prospectByNaverId.get(store.naver_place_id) : undefined;
+                        return (
+                          <td className="px-4 py-4">
+                            {r?.ai_summary
+                              ? <p className="text-xs text-emerald-400 max-w-[160px] truncate">✨ {r.ai_summary}</p>
+                              : <span className="text-xs text-dim">—</span>}
+                          </td>
+                        );
+                      })()}
                       {/* 개업일 */}
                       <td className="px-4 py-4 text-xs">
                         {store.opened_at
                           ? <p className="text-sky-400">{new Date(store.opened_at).toLocaleDateString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit' })}</p>
-                          : <span className="text-dim">-</span>}
-                      </td>
-                      {/* 폐업일 */}
-                      <td className="px-4 py-4 text-xs">
-                        {store.closed_at
-                          ? <p className="text-red-400">{new Date(store.closed_at).toLocaleDateString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit' })}</p>
                           : <span className="text-dim">-</span>}
                       </td>
                       <td className="px-4 py-4">
@@ -1315,11 +1341,6 @@ export default function StoresPage() {
                         ) : (
                           <div className="flex items-center gap-1 text-xs text-dim"><User size={11} /> 미연결</div>
                         )}
-                      </td>
-                      {/* 등록일 */}
-                      <td className="px-4 py-4 text-xs">
-                        <p className="text-muted">{new Date(store.created_at).toLocaleDateString('ko-KR')}</p>
-                        <p className="text-dim text-[10px] mt-0.5">{new Date(store.created_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</p>
                       </td>
                       {/* 발행 중 쿠폰 */}
                       <td className="px-3 py-4 text-center">
