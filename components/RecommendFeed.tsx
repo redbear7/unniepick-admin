@@ -611,9 +611,6 @@ export default function RecommendFeed({ compact = false }: { compact?: boolean }
   const [total,    setTotal]    = useState(0);
   const [showAdd,  setShowAdd]  = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
-  const [phone,    setPhone]    = useState('');
-  const [otp,      setOtp]      = useState('');
-  const [authStep, setAuthStep] = useState<'phone' | 'otp'>('phone');
   const [authLoad, setAuthLoad] = useState(false);
   const [sort,     setSort]     = useState<'recent' | 'likes' | 'distance'>('recent');
   const [userPos,  setUserPos]  = useState<{ lat: number; lng: number } | null>(null);
@@ -675,23 +672,24 @@ export default function RecommendFeed({ compact = false }: { compact?: boolean }
 
   const onAdded = (rec: Rec) => setRecs(p => [rec, ...p]);
 
-  // 전화번호 로그인 (OTP)
-  const toE164 = (p: string) => '+82' + p.replace(/\D/g,'').slice(1);
-
-  const sendOtp = async () => {
+  const signInWithKakao = async () => {
     setAuthLoad(true);
     const sb = createClient();
-    const { error } = await sb.auth.signInWithOtp({ phone: toE164(phone) });
-    if (error) { alert(error.message); } else { setAuthStep('otp'); }
-    setAuthLoad(false);
+    const { error } = await sb.auth.signInWithOAuth({
+      provider: 'kakao',
+      options: { redirectTo: window.location.origin },
+    });
+    if (error) { alert(error.message); setAuthLoad(false); }
   };
 
-  const verifyOtp = async () => {
+  const signInWithNaver = async () => {
     setAuthLoad(true);
     const sb = createClient();
-    const { error } = await sb.auth.verifyOtp({ phone: toE164(phone), token: otp, type: 'sms' });
-    if (error) { alert(error.message); } else { setAuthOpen(false); setAuthStep('phone'); setPhone(''); setOtp(''); }
-    setAuthLoad(false);
+    const { error } = await (sb.auth as any).signInWithOAuth({
+      provider: 'naver',
+      options: { redirectTo: window.location.origin },
+    });
+    if (error) { alert(error.message); setAuthLoad(false); }
   };
 
   const wrapStyle: React.CSSProperties = compact
@@ -769,32 +767,51 @@ export default function RecommendFeed({ compact = false }: { compact?: boolean }
       {/* 로그인 모달 */}
       {authOpen && (
         <div style={overlay} onClick={e => e.target === e.currentTarget && setAuthOpen(false)}>
-          <div style={{ ...modal, maxWidth: 360 }}>
-            <div style={modalHead}>
-              <span style={{ fontWeight: 800 }}>📱 로그인</span>
-              <button onClick={() => setAuthOpen(false)} style={btnClose}>✕</button>
+          <div style={{ ...modal, maxWidth: 360, position: 'relative' }}>
+            <button onClick={() => setAuthOpen(false)}
+              style={{ position: 'absolute', top: 16, right: 16, width: 30, height: 30,
+                borderRadius: '50%', background: '#F3F4F6', border: 'none',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 13, cursor: 'pointer', color: '#374151' }}>✕</button>
+
+            {/* 헤더 */}
+            <div style={{ textAlign: 'center', marginBottom: 28 }}>
+              <div style={{ fontSize: 36, marginBottom: 10 }}>🩷</div>
+              <div style={{ fontSize: 18, fontWeight: 900, color: '#111827', marginBottom: 6 }}>
+                언니픽에 오신 걸 환영해요
+              </div>
+              <div style={{ fontSize: 13, color: '#9CA3AF' }}>
+                추천 등록 · 좋아요 · 댓글은 로그인 후 이용 가능해요
+              </div>
             </div>
-            <p style={{ fontSize: 13, color: '#666', marginBottom: 16 }}>
-              추천 등록 · 좋아요 · 댓글을 이용하려면 전화번호 인증이 필요해요.
+
+            {/* 카카오 로그인 */}
+            <button onClick={signInWithKakao} disabled={authLoad}
+              style={{ width: '100%', height: 52, borderRadius: 14, border: 'none',
+                background: '#FEE500', color: '#191919', fontSize: 15, fontWeight: 800,
+                cursor: authLoad ? 'wait' : 'pointer', fontFamily: 'inherit',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                marginBottom: 10, boxShadow: '0 2px 8px rgba(254,229,0,.4)' }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="#191919">
+                <path d="M12 3C6.48 3 2 6.69 2 11.25c0 2.9 1.85 5.45 4.65 6.95l-.95 3.5 4.1-2.7c.7.1 1.45.15 2.2.15 5.52 0 10-3.69 10-8.25S17.52 3 12 3z"/>
+              </svg>
+              카카오로 계속하기
+            </button>
+
+            {/* 네이버 로그인 */}
+            <button onClick={signInWithNaver} disabled={authLoad}
+              style={{ width: '100%', height: 52, borderRadius: 14, border: 'none',
+                background: '#03C75A', color: '#fff', fontSize: 15, fontWeight: 800,
+                cursor: authLoad ? 'wait' : 'pointer', fontFamily: 'inherit',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                boxShadow: '0 2px 8px rgba(3,199,90,.3)' }}>
+              <span style={{ fontSize: 18, fontWeight: 900, lineHeight: 1 }}>N</span>
+              네이버로 계속하기
+            </button>
+
+            <p style={{ fontSize: 11, color: '#C4C9D4', textAlign: 'center', marginTop: 20, lineHeight: 1.7 }}>
+              처음 오셨다면 자동으로 가입됩니다.
             </p>
-            {authStep === 'phone' ? (
-              <>
-                <input value={phone} onChange={e => setPhone(e.target.value)}
-                  placeholder="010-0000-0000" style={inputFull} type="tel" />
-                <button onClick={sendOtp} disabled={authLoad} style={{ ...btnPrimary, marginTop: 12 }}>
-                  {authLoad ? '전송 중...' : '인증번호 받기'}
-                </button>
-              </>
-            ) : (
-              <>
-                <p style={{ fontSize: 12, color: '#888', marginBottom: 8 }}>{phone}으로 전송된 6자리 인증번호를 입력하세요.</p>
-                <input value={otp} onChange={e => setOtp(e.target.value)}
-                  placeholder="인증번호 6자리" style={inputFull} maxLength={6} />
-                <button onClick={verifyOtp} disabled={authLoad} style={{ ...btnPrimary, marginTop: 12 }}>
-                  {authLoad ? '확인 중...' : '확인'}
-                </button>
-              </>
-            )}
           </div>
         </div>
       )}

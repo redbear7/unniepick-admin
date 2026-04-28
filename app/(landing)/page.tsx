@@ -385,11 +385,40 @@ export default function HomePage() {
   const toE164 = (p: string) => '+82' + p.replace(/\D/g, '').slice(1);
 
   const openAuthModal = useCallback(() => {
-    setAuthStep('phone');
-    setAuthPhone('');
-    setAuthOtp('');
     setAuthError('');
     setAuthModalOpen(true);
+  }, []);
+
+  const signInWithKakao = useCallback(async () => {
+    setAuthLoading(true);
+    setAuthError('');
+    try {
+      const sb = createClient();
+      const { error } = await sb.auth.signInWithOAuth({
+        provider: 'kakao',
+        options: { redirectTo: window.location.origin },
+      });
+      if (error) throw error;
+    } catch (e: any) {
+      setAuthError(e?.message ?? '카카오 로그인에 실패했어요');
+      setAuthLoading(false);
+    }
+  }, []);
+
+  const signInWithNaver = useCallback(async () => {
+    setAuthLoading(true);
+    setAuthError('');
+    try {
+      const sb = createClient();
+      const { error } = await sb.auth.signInWithOAuth({
+        provider: 'naver' as any,
+        options: { redirectTo: window.location.origin },
+      });
+      if (error) throw error;
+    } catch (e: any) {
+      setAuthError(e?.message ?? '네이버 로그인에 실패했어요');
+      setAuthLoading(false);
+    }
   }, []);
 
   const sendPhoneOtp = useCallback(async () => {
@@ -889,123 +918,59 @@ export default function HomePage() {
               ✕
             </button>
 
-            <div style={{ display:'flex', flexDirection:'column', alignItems:'center', marginBottom:24 }}>
-              <div style={{ width:52, height:52, background:OR, borderRadius:15,
+            {/* 로고 */}
+            <div style={{ display:'flex', flexDirection:'column', alignItems:'center', marginBottom:28 }}>
+              <div style={{ width:56, height:56, background:OR, borderRadius:16,
                 display:'flex', alignItems:'center', justifyContent:'center',
-                fontSize:26, color:'#fff', marginBottom:10 }}>
+                fontSize:28, color:'#fff', marginBottom:12 }}>
                 🩷
               </div>
-              <div style={{ fontSize:20, fontWeight:900, color:OR }}>언니픽</div>
-              <div style={{ fontSize:13, color:'#9CA3AF', marginTop:4 }}>
-                {authStep === 'phone' ? '휴대폰 번호로 로그인' : '인증번호를 입력해주세요'}
+              <div style={{ fontSize:22, fontWeight:900, color:'#111827' }}>언니픽에 오신 걸 환영해요</div>
+              <div style={{ fontSize:13, color:'#9CA3AF', marginTop:6 }}>
+                소셜 계정으로 간편하게 시작하세요
               </div>
             </div>
 
-            {authStep === 'phone' && (
-              <>
-                <label style={{ fontSize:12, fontWeight:700, color:'#374151', display:'block', marginBottom:6 }}>
-                  휴대폰 번호
-                </label>
-                <input
-                  type="tel"
-                  value={authPhone}
-                  onChange={e => {
-                    const d = e.target.value.replace(/\D/g,'').slice(0,11);
-                    let fmt = d;
-                    if (d.length > 3 && d.length <= 7) fmt = d.slice(0,3)+'-'+d.slice(3);
-                    else if (d.length > 7) fmt = d.slice(0,3)+'-'+d.slice(3,7)+'-'+d.slice(7);
-                    setAuthPhone(fmt);
-                    setAuthError('');
-                  }}
-                  onKeyDown={e => { if (e.key === 'Enter') sendPhoneOtp(); }}
-                  placeholder="010-0000-0000"
-                  maxLength={13}
-                  autoFocus
-                  style={{ width:'100%', height:50, padding:'0 16px', borderRadius:12,
-                    border:`1.5px solid ${authError ? '#EF4444' : '#D1D5DB'}`,
-                    fontSize:17, fontFamily:'inherit', outline:'none',
-                    boxSizing:'border-box', letterSpacing:1 }}
-                  onFocus={e => (e.target.style.borderColor=OR)}
-                  onBlur={e  => (e.target.style.borderColor=authError?'#EF4444':'#D1D5DB')}
-                />
-                {authError && <div style={{ fontSize:11, color:'#EF4444', marginTop:5 }}>{authError}</div>}
-                <button onClick={sendPhoneOtp} disabled={authLoading}
-                  style={{ width:'100%', height:50, marginTop:12, borderRadius:12, border:'none',
-                    background: authLoading ? '#FFD9B8' : OR,
-                    color:'#fff', fontSize:15, fontWeight:800,
-                    cursor: authLoading ? 'wait' : 'pointer', fontFamily:'inherit' }}>
-                  {authLoading ? '발송 중...' : '인증번호 받기'}
-                </button>
-                <p style={{ fontSize:11, color:'#9CA3AF', textAlign:'center', marginTop:14, lineHeight:1.7, margin:'14px 0 0' }}>
-                  처음 오셨다면 자동으로 가입됩니다.
-                </p>
-              </>
+            {/* 카카오 로그인 */}
+            <button
+              onClick={signInWithKakao}
+              disabled={authLoading}
+              style={{ width:'100%', height:52, borderRadius:14, border:'none',
+                background:'#FEE500', color:'#191919', fontSize:15, fontWeight:800,
+                cursor: authLoading ? 'wait' : 'pointer', fontFamily:'inherit',
+                display:'flex', alignItems:'center', justifyContent:'center', gap:10,
+                marginBottom:10, boxShadow:'0 2px 8px rgba(254,229,0,.4)' }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="#191919">
+                <path d="M12 3C6.48 3 2 6.69 2 11.25c0 2.9 1.85 5.45 4.65 6.95l-.95 3.5 4.1-2.7c.7.1 1.45.15 2.2.15 5.52 0 10-3.69 10-8.25S17.52 3 12 3z"/>
+              </svg>
+              카카오로 계속하기
+            </button>
+
+            {/* 네이버 로그인 */}
+            <button
+              onClick={signInWithNaver}
+              disabled={authLoading}
+              style={{ width:'100%', height:52, borderRadius:14, border:'none',
+                background:'#03C75A', color:'#fff', fontSize:15, fontWeight:800,
+                cursor: authLoading ? 'wait' : 'pointer', fontFamily:'inherit',
+                display:'flex', alignItems:'center', justifyContent:'center', gap:10,
+                boxShadow:'0 2px 8px rgba(3,199,90,.3)' }}
+            >
+              <span style={{ fontSize:18, fontWeight:900, lineHeight:1 }}>N</span>
+              네이버로 계속하기
+            </button>
+
+            {authError && (
+              <div style={{ fontSize:12, color:'#EF4444', textAlign:'center', marginTop:14 }}>
+                {authError}
+              </div>
             )}
 
-            {authStep === 'otp' && (
-              <>
-                <p style={{ fontSize:13, color:'#6B7280', marginBottom:18, textAlign:'center', lineHeight:1.7 }}>
-                  <strong style={{ color:'#111827' }}>{authPhone}</strong>으로<br />6자리 인증번호를 전송했어요
-                </p>
-                <div style={{ display:'flex', gap:8, justifyContent:'center', marginBottom:16 }}>
-                  {[0,1,2,3,4,5].map(i => (
-                    <input key={i}
-                      id={`otp-digit-${i}`}
-                      type="text"
-                      inputMode="numeric"
-                      maxLength={1}
-                      value={authOtp[i] ?? ''}
-                      autoFocus={i === 0}
-                      onChange={e => {
-                        const v = e.target.value.replace(/\D/g,'');
-                        const arr = authOtp.padEnd(6,' ').split('');
-                        arr[i] = v.slice(-1);
-                        const next = arr.join('').trimEnd();
-                        setAuthOtp(next);
-                        setAuthError('');
-                        if (v && i < 5) {
-                          (document.getElementById(`otp-digit-${i+1}`) as HTMLInputElement)?.focus();
-                        }
-                        const filled = arr.join('').replace(/ /g,'');
-                        if (filled.length === 6) setTimeout(() => verifyPhoneOtp(filled), 80);
-                      }}
-                      onKeyDown={e => {
-                        if (e.key === 'Backspace' && !authOtp[i] && i > 0) {
-                          (document.getElementById(`otp-digit-${i-1}`) as HTMLInputElement)?.focus();
-                        }
-                      }}
-                      onPaste={i === 0 ? (e) => {
-                        e.preventDefault();
-                        const p = e.clipboardData.getData('text').replace(/\D/g,'').slice(0,6);
-                        setAuthOtp(p);
-                        if (p.length === 6) setTimeout(() => verifyPhoneOtp(p), 80);
-                      } : undefined}
-                      style={{ width:44, height:54, textAlign:'center', fontSize:22, fontWeight:800,
-                        border:`1.5px solid ${authError ? '#EF4444' : authOtp[i] && authOtp[i]!==' ' ? OR : '#D1D5DB'}`,
-                        borderRadius:12, outline:'none', fontFamily:'inherit',
-                        background:'#fff', boxSizing:'border-box' }}
-                    />
-                  ))}
-                </div>
-                {authError && <div style={{ fontSize:11, color:'#EF4444', textAlign:'center', marginBottom:8 }}>{authError}</div>}
-                <button onClick={() => verifyPhoneOtp()}
-                  disabled={authLoading || authOtp.replace(/\s/g,'').length < 6}
-                  style={{ width:'100%', height:50, borderRadius:12, border:'none',
-                    background: (authLoading || authOtp.replace(/\s/g,'').length < 6) ? '#FFD9B8' : OR,
-                    color:'#fff', fontSize:15, fontWeight:800, fontFamily:'inherit',
-                    cursor: (authLoading || authOtp.replace(/\s/g,'').length < 6) ? 'default' : 'pointer' }}>
-                  {authLoading ? '확인 중...' : '확인'}
-                </button>
-                <div style={{ display:'flex', justifyContent:'center', alignItems:'center', gap:6, marginTop:14 }}>
-                  <span style={{ fontSize:12, color:'#9CA3AF' }}>번호가 오지 않나요?</span>
-                  <button onClick={() => { setAuthStep('phone'); setAuthOtp(''); setAuthError(''); }}
-                    style={{ fontSize:12, color:OR, fontWeight:700, background:'none', border:'none',
-                      cursor:'pointer', fontFamily:'inherit', padding:0 }}>
-                    다시 받기
-                  </button>
-                </div>
-              </>
-            )}
+            <p style={{ fontSize:11, color:'#C4C9D4', textAlign:'center', marginTop:20, lineHeight:1.7 }}>
+              처음 오셨다면 자동으로 가입됩니다.<br />
+              로그인 시 <span style={{ textDecoration:'underline' }}>이용약관</span> 및 <span style={{ textDecoration:'underline' }}>개인정보처리방침</span>에 동의하게 됩니다.
+            </p>
           </div>
         </div>
       )}
