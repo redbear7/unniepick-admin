@@ -280,36 +280,50 @@ function BlogPanel({
             {sortedReviews.map((r, i) => (
               <div
                 key={i}
-                onClick={() => toggleFeatured(r)}
-                className={`group relative rounded-lg px-3 py-2.5 cursor-pointer transition-all border ${
+                className={`relative rounded-lg px-3 py-2.5 transition-all border ${
                   r.featured
                     ? 'bg-amber-500/10 border-amber-500/40'
-                    : 'bg-transparent border-transparent hover:bg-fill-subtle hover:border-border-subtle'
+                    : 'bg-fill-subtle border-border-subtle'
                 }`}
               >
-                {/* X 삭제 버튼 */}
-                <button
-                  onClick={e => { e.stopPropagation(); deleteReview(r); }}
-                  className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded text-dim hover:text-red-400 hover:bg-red-400/10"
-                  title="리뷰 삭제"
-                >
-                  <X size={10} />
-                </button>
-
-                <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                  {r.featured && (
-                    <span className="text-[9px] px-1.5 py-0.5 rounded font-bold bg-amber-500/20 text-amber-400">
-                      ⭐ 대표
+                {/* 헤더 행: 배지들 + 우측 액션 버튼 */}
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {r.featured && (
+                      <span className="text-[9px] px-1.5 py-0.5 rounded font-bold bg-amber-500/20 text-amber-400">
+                        ⭐ 대표
+                      </span>
+                    )}
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${
+                      r.source === 'cafe'
+                        ? 'bg-orange-500/15 text-orange-400'
+                        : 'bg-green-500/15 text-green-400'
+                    }`}>
+                      {r.source === 'cafe' ? '카페' : '블로그'}
                     </span>
-                  )}
-                  <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${
-                    r.source === 'cafe'
-                      ? 'bg-orange-500/15 text-orange-400'
-                      : 'bg-green-500/15 text-green-400'
-                  }`}>
-                    {r.source === 'cafe' ? '카페' : '블로그'}
-                  </span>
-                  {r.date && <span className="text-[9px] text-dim">{r.date.slice(0, 4)}.{r.date.slice(4, 6)}.{r.date.slice(6, 8)}</span>}
+                    {r.date && <span className="text-[9px] text-dim">{r.date.slice(0, 4)}.{r.date.slice(4, 6)}.{r.date.slice(6, 8)}</span>}
+                  </div>
+                  {/* 액션 버튼 항상 표시 */}
+                  <div className="flex items-center gap-1 shrink-0 ml-1">
+                    <button
+                      onClick={() => toggleFeatured(r)}
+                      title={r.featured ? '대표 해제' : '대표 리뷰로 지정'}
+                      className={`p-1 rounded text-[10px] transition-colors ${
+                        r.featured
+                          ? 'text-amber-400 bg-amber-500/20'
+                          : 'text-dim hover:text-amber-400 hover:bg-amber-500/10'
+                      }`}
+                    >
+                      ⭐
+                    </button>
+                    <button
+                      onClick={() => deleteReview(r)}
+                      title="리뷰 삭제"
+                      className="p-1 rounded text-dim hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                    >
+                      <X size={10} />
+                    </button>
+                  </div>
                 </div>
                 <p className={`text-xs font-medium leading-relaxed ${r.featured ? 'text-amber-300' : 'text-primary'}`}>
                   {r.title}
@@ -319,7 +333,6 @@ function BlogPanel({
                 )}
               </div>
             ))}
-            <p className="text-[10px] text-dim text-center pt-1">리뷰를 클릭하면 대표 리뷰로 지정됩니다</p>
           </div>
         )}
       </div>
