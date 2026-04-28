@@ -103,9 +103,8 @@ export async function POST(req: NextRequest) {
     const result = await ai.models.generateContent({
       model: 'gemini-2.0-flash',
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      config: { temperature: 0.7, maxOutputTokens: 400 },
     });
-    const text = result.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+    const text = result.text ?? '';
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       const parsed = JSON.parse(jsonMatch[0]);
