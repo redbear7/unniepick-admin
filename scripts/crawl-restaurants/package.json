@@ -8,6 +8,8 @@
     "crawl": "tsx src/main.ts --once",
     "crawl:kakao": "tsx src/kakao-main.ts --once",
     "crawl:kakao:start": "tsx src/kakao-main.ts",
+    "api:kakao": "tsx src/kakao-api-collect.ts",
+    "api:kakao:dry": "tsx src/kakao-api-collect.ts --dry-run",
     "verify": "tsx src/verify.ts",
     "verify:test": "tsx src/verify-test.ts",
     "naver:login": "tsx src/naver-login-setup.ts",
