@@ -49,15 +49,18 @@ export async function POST(req: NextRequest) {
           );
 
           proc.stdout.on('data', (chunk: Buffer) => {
-            const lines = chunk.toString().split('\n').filter(Boolean);
+            const lines = chunk.toString().split('\n').filter(l => l.trim());
             for (const line of lines) {
-              send({ type: 'log', keyword: kw, line: line.replace(/\x1b\[[0-9;]*m/g, '') });
+              send({ type: 'log', keyword: kw, line: line.replace(/\x1b\[[0-9;]*m/g, '').trim() });
             }
           });
 
           proc.stderr.on('data', (chunk: Buffer) => {
-            const line = chunk.toString().trim().replace(/\x1b\[[0-9;]*m/g, '');
-            if (line) send({ type: 'err', keyword: kw, line });
+            const lines = chunk.toString().split('\n').filter(l => l.trim());
+            for (const line of lines) {
+              const clean = line.replace(/\x1b\[[0-9;]*m/g, '').trim();
+              if (clean) send({ type: 'log', keyword: kw, line: clean, isErr: true });
+            }
           });
 
           proc.on('close', (code) => {

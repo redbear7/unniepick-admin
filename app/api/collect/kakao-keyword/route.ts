@@ -64,20 +64,29 @@ async function searchKeyword(query: string, page: number): Promise<{ documents: 
   return res.json();
 }
 
-async function collectKeyword(keyword: string, maxPages = 5): Promise<KakaoPlace[]> {
+async function collectKeyword(
+  keyword: string,
+  maxPages = 5,
+  onPage?: (page: number, found: number, total: number, isEnd: boolean) => void,
+): Promise<KakaoPlace[]> {
   const results: KakaoPlace[] = [];
   const seen = new Set<string>();
   for (let page = 1; page <= maxPages; page++) {
     await new Promise(r => setTimeout(r, 300 + Math.random() * 200));
     try {
       const data = await searchKeyword(keyword, page);
+      let pageNew = 0;
       for (const doc of data.documents) {
         const addr = doc.address_name || doc.road_address_name || '';
-        if (!addr.includes('창원')) continue; // 창원 외 제외
-        if (!seen.has(doc.id)) { seen.add(doc.id); results.push(doc); }
+        if (!addr.includes('창원')) continue;
+        if (!seen.has(doc.id)) { seen.add(doc.id); results.push(doc); pageNew++; }
       }
+      onPage?.(page, pageNew, results.length, data.meta.is_end);
       if (data.meta.is_end) break;
-    } catch { break; }
+    } catch (e) {
+      onPage?.(page, 0, results.length, true);
+      break;
+    }
   }
   return results;
 }
@@ -142,14 +151,24 @@ export async function POST(req: NextRequest) {
         const kw = keywords[i];
         send({ type: 'keyword', keyword: kw, index: i, total: keywords.length });
 
-        const places = await collectKeyword(kw, maxPages);
+        const places = await collectKeyword(kw, maxPages, (page, pageNew, cumTotal, isEnd) => {
+          send({ type: 'page', keyword: kw, page, pageNew, cumTotal, isEnd });
+        });
         for (const p of places) allPlaces.set(p.id, p);
 
-        send({ type: 'keyword_done', keyword: kw, found: places.length, total_unique: allPlaces.size });
+        // 카테고리별 집계
+        const kwCats: Record<string, number> = {};
+        for (const p of places) {
+          const c = mapCategory(p.category_name);
+          kwCats[c] = (kwCats[c] ?? 0) + 1;
+        }
+        send({ type: 'keyword_done', keyword: kw, found: places.length, total_unique: allPlaces.size, cats: kwCats });
 
         // 키워드 간 인간적 딜레이 (2~5초)
         if (i < keywords.length - 1) {
-          await new Promise(r => setTimeout(r, 2000 + Math.random() * 3000));
+          const delay = 2000 + Math.random() * 3000;
+          send({ type: 'delay', ms: Math.round(delay) });
+          await new Promise(r => setTimeout(r, delay));
         }
       }
 

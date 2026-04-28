@@ -503,9 +503,27 @@ export default function RestaurantsPage() {
           if (!line.startsWith('data: ')) continue;
           try {
             const evt = JSON.parse(line.slice(6));
-            if (evt.type === 'keyword')      setKwLogs(p => [...p, `🔍 "${evt.keyword}" 수집 중...`]);
-            if (evt.type === 'keyword_done') setKwLogs(p => [...p, `  └ ${evt.found}개 발견 (누적 ${evt.total_unique}개)`]);
-            if (evt.type === 'done') { setKwLogs(p => [...p, `✅ 완료 — 총 ${evt.total}개 수집, ${evt.saved}개 저장`]); success = true; }
+            if (evt.type === 'keyword') {
+              setKwLogs(p => [...p, ``, `📌 [${evt.index + 1}/${evt.total}] "${evt.keyword}"`]);
+            }
+            if (evt.type === 'page') {
+              const status = evt.isEnd ? '마지막' : `${evt.page}p`;
+              setKwLogs(p => [...p, `   ${status} → +${evt.pageNew}개 (누적 ${evt.cumTotal}개)`]);
+            }
+            if (evt.type === 'keyword_done') {
+              const cats = Object.entries(evt.cats ?? {}).sort((a,b) => (b[1] as number) - (a[1] as number))
+                .map(([k,v]) => `${k} ${v}`).join(' · ');
+              setKwLogs(p => [...p, `   ✓ 총 ${evt.found}개 | 전체누적 ${evt.total_unique}개${cats ? ` | ${cats}` : ''}`]);
+            }
+            if (evt.type === 'delay') {
+              setKwLogs(p => [...p, `⏳ ${(evt.ms / 1000).toFixed(0)}초 대기 후 다음 키워드...`]);
+            }
+            if (evt.type === 'done') {
+              const cats = Object.entries(evt.categories ?? {}).sort((a,b) => (b[1] as number) - (a[1] as number))
+                .slice(0, 5).map(([k,v]) => `${k} ${v}`).join(' · ');
+              setKwLogs(p => [...p, ``, `✅ 완료 — 수집 ${evt.total}개 · 저장 ${evt.saved}개${cats ? `\n   ${cats}` : ''}`]);
+              success = true;
+            }
           } catch {}
         }
       }
@@ -541,11 +559,25 @@ export default function RestaurantsPage() {
           if (!line.startsWith('data: ')) continue;
           try {
             const evt = JSON.parse(line.slice(6));
-            if (evt.type === 'keyword')      setKwLogs(p => [...p, `🔍 "${evt.keyword}" 네이버 크롤링 중...`]);
-            if (evt.type === 'log')          setKwLogs(p => { const next = [...p]; next[next.length - 1] = `  ${evt.line}`; return next; });
-            if (evt.type === 'keyword_done') setKwLogs(p => [...p, `  └ 완료 (exit ${evt.code})`]);
-            if (evt.type === 'delay')        setKwLogs(p => [...p, `⏳ 다음 키워드까지 ${(evt.ms/1000).toFixed(0)}초 대기...`]);
-            if (evt.type === 'done') { setKwLogs(p => [...p, '✅ 네이버 보강 완료']); success = true; }
+            if (evt.type === 'keyword') {
+              setKwLogs(p => [...p, ``, `🌐 [${evt.index + 1}/${evt.total}] "${evt.keyword}" 네이버 크롤링`]);
+            }
+            if (evt.type === 'log') {
+              const raw = String(evt.line ?? '').trim();
+              if (!raw) continue;
+              // Playwright INFO/DEBUG 잡음 제거
+              if (/^(INFO|DEBUG|WARN|pw:api|Crawlee|PlaywrightCrawler)/i.test(raw)) continue;
+              const prefix = evt.isErr ? '   ⚠ ' : '   ';
+              setKwLogs(p => [...p, `${prefix}${raw}`]);
+            }
+            if (evt.type === 'keyword_done') {
+              const icon = evt.code === 0 ? '✓' : '✗';
+              setKwLogs(p => [...p, `   ${icon} 완료 (exit ${evt.code})`]);
+            }
+            if (evt.type === 'delay') {
+              setKwLogs(p => [...p, `⏳ ${(evt.ms / 1000).toFixed(0)}초 대기 후 다음 키워드...`]);
+            }
+            if (evt.type === 'done') { setKwLogs(p => [...p, ``, `✅ 네이버 보강 완료`]); success = true; }
           } catch {}
         }
       }
@@ -1377,10 +1409,23 @@ export default function RestaurantsPage() {
 
             {/* 로그 */}
             {kwLogs.length > 0 && (
-              <div className="bg-black/30 rounded-lg p-3 mb-4 max-h-40 overflow-y-auto space-y-1">
-                {kwLogs.map((log, i) => (
-                  <p key={i} className="text-xs text-muted font-mono">{log}</p>
-                ))}
+              <div className="bg-black/40 rounded-lg p-3 mb-4 max-h-52 overflow-y-auto">
+                {kwLogs.map((log, i) => {
+                  if (!log.trim()) return <div key={i} className="h-1.5" />;
+                  const isHeader = log.startsWith('📌') || log.startsWith('🌐');
+                  const isOk     = log.startsWith('✅');
+                  const isWarn   = log.includes('⚠') || log.startsWith('   ✗');
+                  const isDelay  = log.startsWith('⏳');
+                  return (
+                    <p key={i} className={`text-xs font-mono leading-relaxed ${
+                      isHeader ? 'text-primary font-semibold' :
+                      isOk     ? 'text-emerald-400 font-semibold' :
+                      isWarn   ? 'text-amber-400' :
+                      isDelay  ? 'text-blue-400/70' :
+                      'text-muted'
+                    }`}>{log}</p>
+                  );
+                })}
               </div>
             )}
 
