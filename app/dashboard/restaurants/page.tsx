@@ -146,6 +146,12 @@ export default function RestaurantsPage() {
   const [naverMsg,         setNaverMsg]         = useState('');
   const [collectGuFilter,  setCollectGuFilter]  = useState('');
 
+  // ── 키워드 수집 모달 state ────────────────────────────────────────
+  const [kwModal,       setKwModal]       = useState<{ label: string; keywords: string[] } | null>(null);
+  const [kwCollecting,  setKwCollecting]  = useState(false);
+  const [kwLogs,        setKwLogs]        = useState<string[]>([]);
+  const [kwEnriching,   setKwEnriching]   = useState(false);
+
   // ── 뷰 모드 ───────────────────────────────────────────────────
   const [viewMode, setViewMode] = useState<'list' | 'thumbnail'>('list');
 
@@ -437,6 +443,114 @@ export default function RestaurantsPage() {
     } finally {
       setTagging(false);
     }
+  }
+
+  // ── 롱프레스 훅 ──────────────────────────────────────────────────
+  function useLongPress(onLongPress: () => void, delay = 600) {
+    const timer = useState<ReturnType<typeof setTimeout> | null>(null);
+    return {
+      onMouseDown: () => { timer[1](setTimeout(onLongPress, delay)); },
+      onMouseUp:   () => { if (timer[0]) { clearTimeout(timer[0]); timer[1](null); } },
+      onMouseLeave:() => { if (timer[0]) { clearTimeout(timer[0]); timer[1](null); } },
+      onTouchStart:() => { timer[1](setTimeout(onLongPress, delay)); },
+      onTouchEnd:  () => { if (timer[0]) { clearTimeout(timer[0]); timer[1](null); } },
+    };
+  }
+
+  // ── 키워드 수집 (A안: 카카오 키워드 API) ─────────────────────────
+  async function collectByKeywords(keywords: string[]) {
+    setKwCollecting(true);
+    setKwLogs([]);
+    try {
+      const res = await fetch('/api/collect/kakao-keyword', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ keywords, maxPages: 5 }),
+      });
+      if (!res.body) return;
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split('\n');
+        buf = lines.pop() ?? '';
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          try {
+            const evt = JSON.parse(line.slice(6));
+            if (evt.type === 'keyword')      setKwLogs(p => [...p, `🔍 "${evt.keyword}" 수집 중...`]);
+            if (evt.type === 'keyword_done') setKwLogs(p => [...p, `  └ ${evt.found}개 발견 (누적 ${evt.total_unique}개)`]);
+            if (evt.type === 'done')         setKwLogs(p => [...p, `✅ 완료 — 총 ${evt.total}개 수집, ${evt.saved}개 저장`]);
+          } catch {}
+        }
+      }
+      fetchRestaurants();
+    } finally {
+      setKwCollecting(false);
+    }
+  }
+
+  // ── 상세 보강 (B안: 네이버 Playwright) ───────────────────────────
+  async function enrichByKeywords(keywords: string[]) {
+    setKwEnriching(true);
+    setKwLogs([]);
+    try {
+      const res = await fetch('/api/collect/naver-enrich', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ keywords, limit: 30 }),
+      });
+      if (!res.body) return;
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split('\n');
+        buf = lines.pop() ?? '';
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          try {
+            const evt = JSON.parse(line.slice(6));
+            if (evt.type === 'keyword')      setKwLogs(p => [...p, `🔍 "${evt.keyword}" 네이버 크롤링 중...`]);
+            if (evt.type === 'log')          setKwLogs(p => { const next = [...p]; next[next.length - 1] = `  ${evt.line}`; return next; });
+            if (evt.type === 'keyword_done') setKwLogs(p => [...p, `  └ 완료 (exit ${evt.code})`]);
+            if (evt.type === 'delay')        setKwLogs(p => [...p, `⏳ 다음 키워드까지 ${(evt.ms/1000).toFixed(0)}초 대기...`]);
+            if (evt.type === 'done')         setKwLogs(p => [...p, '✅ 네이버 보강 완료']);
+          } catch {}
+        }
+      }
+      fetchRestaurants();
+    } finally {
+      setKwEnriching(false);
+    }
+  }
+
+  // ── 동/카테고리 롱프레스 → 키워드 자동 생성 ──────────────────────
+  function openKwModal(type: 'dong' | 'category', value: string) {
+    let keywords: string[];
+    let label: string;
+    if (type === 'dong') {
+      keywords = [
+        `창원 ${value} 맛집`,
+        `창원 ${value} 카페`,
+        `창원 ${value} 술집`,
+      ];
+      label = `${value} 키워드 수집`;
+    } else {
+      keywords = [
+        `창원 ${value} 맛집`,
+        `창원시 ${value}`,
+      ];
+      label = `${value} 키워드 수집`;
+    }
+    setKwModal({ label, keywords });
+    setKwLogs([]);
   }
 
   async function fetchRestaurants() {
@@ -814,6 +928,7 @@ export default function RestaurantsPage() {
                         if (guFilter !== gu) { setGuFilter(gu); }
                         setDongFilter(dongFilter === dong ? '' : dong);
                       }}
+                      onLongPress={() => openKwModal('dong', dong)}
                     />
                   ))}
                 </div>
@@ -839,6 +954,7 @@ export default function RestaurantsPage() {
                   count={count}
                   active={categoryFilter === cat}
                   onClick={() => setCategoryFilter(categoryFilter === cat ? '' : cat)}
+                  onLongPress={() => openKwModal('category', cat)}
                 />
               ))}
           </div>
@@ -1195,6 +1311,69 @@ export default function RestaurantsPage() {
         </>
       )}
 
+      {/* 키워드 수집 모달 */}
+      {kwModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-sidebar border border-border-main rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-primary text-base">{kwModal.label}</h3>
+              {!kwCollecting && !kwEnriching && (
+                <button onClick={() => setKwModal(null)} className="text-muted hover:text-primary transition">
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            {/* 키워드 목록 */}
+            <div className="space-y-1.5 mb-4">
+              {kwModal.keywords.map(kw => (
+                <div key={kw} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-fill-subtle text-sm text-secondary">
+                  <Search className="w-3.5 h-3.5 text-muted shrink-0" />
+                  {kw}
+                </div>
+              ))}
+            </div>
+
+            {/* 로그 */}
+            {kwLogs.length > 0 && (
+              <div className="bg-black/30 rounded-lg p-3 mb-4 max-h-40 overflow-y-auto space-y-1">
+                {kwLogs.map((log, i) => (
+                  <p key={i} className="text-xs text-muted font-mono">{log}</p>
+                ))}
+              </div>
+            )}
+
+            {/* 버튼 */}
+            {!kwCollecting && !kwEnriching ? (
+              <div className="space-y-2">
+                <button
+                  onClick={() => collectByKeywords(kwModal.keywords)}
+                  className="w-full py-2.5 rounded-xl bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/40 text-yellow-400 font-semibold text-sm transition"
+                >
+                  🗺 A안 — 카카오 키워드 수집 (빠름)
+                </button>
+                <button
+                  onClick={() => enrichByKeywords(kwModal.keywords)}
+                  className="w-full py-2.5 rounded-xl bg-green-500/20 hover:bg-green-500/30 border border-green-500/40 text-green-400 font-semibold text-sm transition"
+                >
+                  🔎 B안 — 네이버 상세 보강 (리뷰·메뉴)
+                </button>
+                {kwLogs.length > 0 && (
+                  <button onClick={() => setKwModal(null)} className="w-full py-2 text-xs text-muted hover:text-primary transition">
+                    닫기
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center gap-2 py-3 text-sm text-muted">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                {kwCollecting ? 'A안 카카오 수집 중...' : 'B안 네이버 보강 중...'}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* 상세 모달 */}
       {selected && (
         <DetailModal
@@ -1277,23 +1456,34 @@ function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label:
 
 
 function LocationChip({
-  label, count, active, onClick,
+  label, count, active, onClick, onLongPress,
 }: {
-  label: string; count: number; active: boolean; onClick: () => void;
+  label: string; count: number; active: boolean; onClick: () => void; onLongPress?: () => void;
 }) {
+  const timerRef = useState<ReturnType<typeof setTimeout> | null>(null);
+  const startPress = () => {
+    if (!onLongPress) return;
+    timerRef[1](setTimeout(() => { onLongPress(); timerRef[1](null); }, 600));
+  };
+  const endPress = () => { if (timerRef[0]) { clearTimeout(timerRef[0]); timerRef[1](null); } };
+
   return (
     <button
       onClick={onClick}
-      className={`px-3 py-1.5 rounded-lg text-sm border transition flex items-center gap-1.5 ${
+      onMouseDown={startPress} onMouseUp={endPress} onMouseLeave={endPress}
+      onTouchStart={startPress} onTouchEnd={endPress}
+      title={onLongPress ? '꾹 누르면 키워드 수집' : undefined}
+      className={`px-3 py-1.5 rounded-lg text-sm border transition flex items-center gap-1.5 select-none ${
         active
           ? 'bg-[#FF6F0F] border-[#FF6F0F] text-white'
           : 'bg-card border-border-main text-secondary hover:border-[#FF6F0F]/50 hover:text-primary'
-      }`}
+      } ${onLongPress ? 'cursor-pointer' : ''}`}
     >
       <span>{label}</span>
       <span className={`text-xs ${active ? 'text-white/80' : 'text-muted'}`}>
         {count}
       </span>
+      {onLongPress && <span className="text-[9px] opacity-40">⬇</span>}
     </button>
   );
 }
