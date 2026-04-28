@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase';
 import {
   Search, MapPin, ExternalLink, Clock, X,
@@ -144,11 +144,9 @@ export default function RestaurantsPage() {
   // ── 뷰 모드 ───────────────────────────────────────────────────
   const [viewMode, setViewMode] = useState<'list' | 'thumbnail'>('list');
 
-  // ── 무한 스크롤 ───────────────────────────────────────────────
-  const COLS        = viewMode === 'list' ? 1 : 3;
-  const INITIAL     = viewMode === 'list' ? 40 : 24;
-  const [visibleCount, setVisibleCount] = useState(INITIAL);
-  const sentinelRef = useRef<HTMLDivElement>(null);
+  // ── 페이지네이션 ──────────────────────────────────────────────
+  const PAGE_SIZE = 50;
+  const [currentPage, setCurrentPage] = useState(1);
 
   const supabase = createClient();
 
@@ -157,26 +155,10 @@ export default function RestaurantsPage() {
     fetchRegisteredIds();
   }, [sortBy]);
 
-  // 필터/검색/뷰 모드 변경 시 visibleCount 리셋
+  // 필터/검색/뷰 모드 변경 시 페이지 리셋
   useEffect(() => {
-    setVisibleCount(viewMode === 'list' ? 40 : 24);
+    setCurrentPage(1);
   }, [search, categoryFilter, guFilter, dongFilter, statusFilter, sourceFilter, aiFilter, openedFilter, sortBy, viewMode]);
-
-  // IntersectionObserver — sentinel 보이면 1줄(3개) 추가
-  useEffect(() => {
-    const el = sentinelRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          setVisibleCount(prev => prev + COLS);
-        }
-      },
-      { rootMargin: '200px' },
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
 
   // 이미 stores에 등록된 restaurant UUID 세트 조회
   async function fetchRegisteredIds() {
@@ -610,6 +592,11 @@ export default function RestaurantsPage() {
     }
     return 0;
   });
+
+  // 페이지네이션
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const safePage   = Math.min(currentPage, Math.max(1, totalPages));
+  const pagedList  = sorted.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   // 통계
   const newOpenCount = restaurants.filter((r) => r.tags?.includes('창원시 새로오픈 맛집')).length;
@@ -1080,7 +1067,7 @@ export default function RestaurantsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {sorted.slice(0, visibleCount).map((r) => (
+                  {pagedList.map((r) => (
                     <RestaurantListRow
                       key={r.id}
                       r={r}
@@ -1099,7 +1086,7 @@ export default function RestaurantsPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {sorted.slice(0, visibleCount).map((r) => (
+              {pagedList.map((r) => (
                 <RestaurantCard
                   key={r.id}
                   r={r}
@@ -1116,11 +1103,55 @@ export default function RestaurantsPage() {
             </div>
           )}
 
-          {/* 무한 스크롤 sentinel */}
-          {visibleCount < filtered.length && (
-            <div ref={sentinelRef} className="flex items-center justify-center py-4 text-xs text-muted gap-2">
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              {filtered.length - visibleCount}개 더 있음
+          {/* 페이지네이션 */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-1 pt-4 pb-2">
+              <button
+                onClick={() => setCurrentPage(1)}
+                disabled={safePage === 1}
+                className="px-2 py-1 rounded text-xs text-muted hover:text-primary disabled:opacity-30 transition"
+              >«</button>
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={safePage === 1}
+                className="px-2 py-1 rounded text-xs text-muted hover:text-primary disabled:opacity-30 transition"
+              >‹</button>
+
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter(p => p === 1 || p === totalPages || Math.abs(p - safePage) <= 2)
+                .reduce<(number | '…')[]>((acc, p, idx, arr) => {
+                  if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push('…');
+                  acc.push(p);
+                  return acc;
+                }, [])
+                .map((p, idx) =>
+                  p === '…'
+                    ? <span key={`e${idx}`} className="px-1 text-xs text-dim">…</span>
+                    : <button
+                        key={p}
+                        onClick={() => setCurrentPage(p as number)}
+                        className={`min-w-[28px] px-2 py-1 rounded text-xs transition ${
+                          p === safePage
+                            ? 'bg-accent text-white font-semibold'
+                            : 'text-muted hover:text-primary'
+                        }`}
+                      >{p}</button>
+                )}
+
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={safePage === totalPages}
+                className="px-2 py-1 rounded text-xs text-muted hover:text-primary disabled:opacity-30 transition"
+              >›</button>
+              <button
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={safePage === totalPages}
+                className="px-2 py-1 rounded text-xs text-muted hover:text-primary disabled:opacity-30 transition"
+              >»</button>
+
+              <span className="ml-3 text-xs text-dim">
+                {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, filtered.length)} / {filtered.length}개
+              </span>
             </div>
           )}
         </>
