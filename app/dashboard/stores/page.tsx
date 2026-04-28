@@ -312,6 +312,7 @@ export default function StoresPage() {
   /* 관제탑 로그 */
   const [ctrlLogs,    setCtrlLogs]    = useState<CtrlLogEntry[]>([]);
   const [ctrlOpen,    setCtrlOpen]    = useState(false);
+  const [ctrlTab,     setCtrlTab]     = useState<'all' | 'stores' | 'coupons'>('all');
   const ctrlLogRef = useRef<HTMLDivElement>(null);
 
   // 로그 추가 헬퍼 (상태 + localStorage 동시 업데이트)
@@ -2242,63 +2243,105 @@ export default function StoresPage() {
       )}
 
       {/* ── 관제탑 로그 패널 (고정 하단) ── */}
-      <div
-        className={`fixed bottom-0 left-0 right-0 z-50 border-t border-border-main bg-[#0d0d0d] shadow-2xl transition-all duration-300 ${ctrlOpen ? 'h-72' : 'h-10'}`}
-        style={{ fontFamily: 'monospace' }}
-      >
-        {/* 헤더 바 */}
-        <div
-          className="flex items-center justify-between px-4 h-10 cursor-pointer select-none"
-          onClick={() => setCtrlOpen(v => !v)}
-        >
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold text-[#FF6F0F] tracking-widest">● 관제탑</span>
-            {ctrlLogs.length > 0 && (
-              <span className="px-1.5 py-0.5 rounded bg-[#FF6F0F]/20 text-[#FF6F0F] text-[9px] font-bold">{ctrlLogs.length}</span>
-            )}
-            {ctrlLogs[0] && (
-              <span className="text-[10px] text-muted truncate max-w-[320px]">
-                {ctrlLogs[0].icon} {ctrlLogs[0].message}
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-3" onClick={e => e.stopPropagation()}>
-            {ctrlLogs.length > 0 && (
-              <button
-                onClick={() => { clearCtrlLog(); setCtrlLogs([]); }}
-                className="text-[10px] text-muted hover:text-red-400 transition px-2 py-0.5 rounded hover:bg-red-500/10"
-              >
-                전체 지우기
-              </button>
-            )}
-            <button onClick={() => setCtrlOpen(v => !v)} className="text-muted hover:text-primary transition text-xs">
-              {ctrlOpen ? '▼' : '▲'}
-            </button>
-          </div>
-        </div>
+      {(() => {
+        const TABS: { key: typeof ctrlTab; label: string; types: string[] | null }[] = [
+          { key: 'all',    label: '전체',      types: null },
+          { key: 'stores', label: '가게 관리', types: ['store_add', 'store_edit', 'store_delete', 'store_toggle', 'store_convert', 'backup'] },
+          { key: 'coupons',label: '쿠폰',      types: ['coupon_add', 'coupon_edit', 'coupon_delete', 'coupon_toggle'] },
+        ];
+        const activeTypes = TABS.find(t => t.key === ctrlTab)?.types ?? null;
+        const visibleLogs = activeTypes ? ctrlLogs.filter(l => activeTypes.includes(l.type)) : ctrlLogs;
 
-        {/* 로그 목록 */}
-        {ctrlOpen && (
-          <div ref={ctrlLogRef} className="overflow-y-auto h-[calc(100%-2.5rem)] px-4 py-2 space-y-1">
-            {ctrlLogs.length === 0 ? (
-              <p className="text-[11px] text-dim py-4 text-center">활동 기록이 없습니다.</p>
-            ) : (
-              ctrlLogs.map(log => {
-                const t = new Date(log.ts);
-                const timeStr = `${String(t.getMonth() + 1).padStart(2, '0')}/${String(t.getDate()).padStart(2, '0')} ${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`;
-                return (
-                  <div key={log.id} className="flex items-start gap-2 text-[11px] leading-5 border-b border-border-subtle/30 pb-1">
-                    <span className="text-dim shrink-0 w-[88px]">{timeStr}</span>
-                    <span className="shrink-0">{log.icon}</span>
-                    <span className="text-secondary">{log.message}</span>
-                    {log.detail && <span className="text-dim">— {log.detail}</span>}
-                  </div>
-                );
-              })
+        return (
+          <div
+            className={`fixed bottom-0 left-0 right-0 z-50 border-t border-border-main bg-[#0d0d0d] shadow-2xl transition-all duration-300 ${ctrlOpen ? 'h-72' : 'h-10'}`}
+            style={{ fontFamily: 'monospace' }}
+          >
+            {/* 헤더 바 */}
+            <div
+              className="flex items-center justify-between px-4 h-10 cursor-pointer select-none"
+              onClick={() => setCtrlOpen(v => !v)}
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-[#FF6F0F] tracking-widest">● 관제탑</span>
+                {ctrlLogs.length > 0 && (
+                  <span className="px-1.5 py-0.5 rounded bg-[#FF6F0F]/20 text-[#FF6F0F] text-[9px] font-bold">{ctrlLogs.length}</span>
+                )}
+                {!ctrlOpen && ctrlLogs[0] && (
+                  <span className="text-[10px] text-muted truncate max-w-[320px]">
+                    {ctrlLogs[0].icon} {ctrlLogs[0].message}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-3" onClick={e => e.stopPropagation()}>
+                {ctrlOpen && ctrlLogs.length > 0 && (
+                  <button
+                    onClick={() => { clearCtrlLog(); setCtrlLogs([]); }}
+                    className="text-[10px] text-muted hover:text-red-400 transition px-2 py-0.5 rounded hover:bg-red-500/10"
+                  >
+                    전체 지우기
+                  </button>
+                )}
+                <button onClick={() => setCtrlOpen(v => !v)} className="text-muted hover:text-primary transition text-xs">
+                  {ctrlOpen ? '▼' : '▲'}
+                </button>
+              </div>
+            </div>
+
+            {/* 탭 + 로그 목록 */}
+            {ctrlOpen && (
+              <div className="flex flex-col h-[calc(100%-2.5rem)]">
+                {/* 탭 바 */}
+                <div className="flex items-center gap-0 px-4 border-b border-border-subtle/40 shrink-0" onClick={e => e.stopPropagation()}>
+                  {TABS.map(tab => {
+                    const count = tab.types
+                      ? ctrlLogs.filter(l => tab.types!.includes(l.type)).length
+                      : ctrlLogs.length;
+                    return (
+                      <button
+                        key={tab.key}
+                        onClick={() => setCtrlTab(tab.key)}
+                        className={`px-3 py-1.5 text-[10px] font-semibold border-b-2 transition -mb-px ${
+                          ctrlTab === tab.key
+                            ? 'border-[#FF6F0F] text-[#FF6F0F]'
+                            : 'border-transparent text-muted hover:text-secondary'
+                        }`}
+                      >
+                        {tab.label}
+                        {count > 0 && (
+                          <span className={`ml-1 px-1 rounded text-[9px] ${ctrlTab === tab.key ? 'bg-[#FF6F0F]/20 text-[#FF6F0F]' : 'bg-white/5 text-dim'}`}>
+                            {count}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* 로그 목록 */}
+                <div ref={ctrlLogRef} className="overflow-y-auto flex-1 px-4 py-2 space-y-1">
+                  {visibleLogs.length === 0 ? (
+                    <p className="text-[11px] text-dim py-4 text-center">기록이 없습니다.</p>
+                  ) : (
+                    visibleLogs.map(log => {
+                      const t = new Date(log.ts);
+                      const timeStr = `${String(t.getMonth() + 1).padStart(2, '0')}/${String(t.getDate()).padStart(2, '0')} ${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`;
+                      return (
+                        <div key={log.id} className="flex items-start gap-2 text-[11px] leading-5 border-b border-border-subtle/30 pb-1">
+                          <span className="text-dim shrink-0 w-[88px]">{timeStr}</span>
+                          <span className="shrink-0">{log.icon}</span>
+                          <span className="text-secondary">{log.message}</span>
+                          {log.detail && <span className="text-dim">— {log.detail}</span>}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
             )}
           </div>
-        )}
-      </div>
+        );
+      })()}
 
       {/* 관제탑 패널 높이만큼 하단 여백 */}
       <div className={ctrlOpen ? 'h-72' : 'h-10'} />
