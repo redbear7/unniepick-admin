@@ -65,6 +65,16 @@ const CATEGORY_MAP: Record<string, string> = {
   '냉면':       '한식',
   '보쌈':       '한식',
   '족발':       '한식',
+  '기사식당':   '한식',
+  '구내식당':   '한식',
+  '떡':         '간식',
+  '한과':       '간식',
+  '간식':       '간식',
+  '토스트':     '간식',
+  '도넛':       '간식',
+  '닭강정':     '간식',
+  '도시락':     '도시락',
+  '샐러드':     '샐러드',
 };
 
 function mapCategory(kakaoCategory: string): string {
@@ -77,6 +87,8 @@ function mapCategory(kakaoCategory: string): string {
   }
   // CE7 그룹이면 카페로
   if (kakaoCategory.includes('카페')) return '카페';
+  // depth 1만 있고 "음식점"인 경우
+  if (kakaoCategory.trim() === '음식점') return '한식';
   return '기타';
 }
 
