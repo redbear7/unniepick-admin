@@ -88,11 +88,10 @@ function parseLocation(
   const src = address || roadAddress || '';
   if (!src) return { gu: '', dong: '' };
 
-  // 김해시 특별 처리 (구 체계가 아닌 지역)
-  if (src.includes('김해')) {
+  // 김해 장유 특별 처리
+  if (src.includes('김해') && /장유/.test(src)) {
     const dongMatch = src.match(/[가-힣]+(?:동|읍|면)(?=\s|$)/);
-    const gu = /장유/.test(src) ? '김해 장유' : '김해시';
-    return { gu, dong: dongMatch?.[0] ?? '' };
+    return { gu: '김해 장유', dong: dongMatch?.[0] ?? '' };
   }
 
   const guMatch   = src.match(/[가-힣]+구(?=\s|$)/);
@@ -600,7 +599,7 @@ export default function RestaurantsPage() {
     let keywords: string[];
     let label: string;
     if (type === 'dong') {
-      const city = gu === '김해 장유' ? '김해 장유' : gu === '김해시' ? '김해' : '창원';
+      const city = gu === '김해 장유' ? '김해 장유' : '창원';
       keywords = [
         `${city} ${value} 맛집`,
         `${city} ${value} 카페`,
