@@ -1247,19 +1247,17 @@ function RestaurantListRow({
       <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-center gap-1.5 flex-wrap">
           {/* 가게 등록 / 등록됨 */}
-          {registered ? (
-            <span className="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-green-500/15 text-green-400 border border-green-500/30 whitespace-nowrap">
-              등록됨
-            </span>
-          ) : (
-            <button
-              onClick={onRegister}
-              disabled={registering}
-              className="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-blue-500/15 text-blue-400 border border-blue-500/30 hover:bg-blue-500/25 transition disabled:opacity-50 whitespace-nowrap"
-            >
-              {registering ? <Loader2 className="w-3 h-3 animate-spin inline" /> : '가게 등록'}
-            </button>
-          )}
+          <button
+            onClick={registered ? undefined : onRegister}
+            disabled={registered || registering}
+            className={`px-2.5 py-1 text-[10px] font-bold rounded-lg border transition whitespace-nowrap ${
+              registered
+                ? 'bg-green-500/10 text-green-400/50 border-green-500/20 cursor-not-allowed'
+                : 'bg-blue-500/15 text-blue-400 border-blue-500/30 hover:bg-blue-500/25 disabled:opacity-50'
+            }`}
+          >
+            {registering ? <Loader2 className="w-3 h-3 animate-spin inline" /> : registered ? '등록됨' : '가게 등록'}
+          </button>
           {/* AI 요약 */}
           <button
             onClick={onAiSummary}
@@ -1506,20 +1504,22 @@ function RestaurantCard({
 
         {/* 가게 등록 / 등록됨 버튼 */}
         <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-          {registered ? (
-            <div className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-green-500/10 border border-green-500/30 rounded-lg text-xs font-semibold text-green-400">
-              <Check className="w-3.5 h-3.5" />
-              가게 등록됨
-            </div>
-          ) : (
-            <button
-              onClick={onRegister}
-              disabled={registering}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#FF6F0F] hover:bg-[#e85e00] text-white rounded-lg text-xs font-bold transition disabled:opacity-50"
-            >
-              {registering ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><PlusCircle className="w-3.5 h-3.5" />가게 등록</>}
-            </button>
-          )}
+          <button
+            onClick={registered ? undefined : onRegister}
+            disabled={registered || registering}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition ${
+              registered
+                ? 'bg-green-500/10 border border-green-500/30 text-green-400/50 cursor-not-allowed'
+                : 'bg-[#FF6F0F] hover:bg-[#e85e00] text-white disabled:opacity-50'
+            }`}
+          >
+            {registering
+              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              : registered
+                ? <><Check className="w-3.5 h-3.5" />등록됨</>
+                : <><PlusCircle className="w-3.5 h-3.5" />가게 등록</>
+            }
+          </button>
         </div>
 
         {/* 네이버 지도 이동 버튼 */}
