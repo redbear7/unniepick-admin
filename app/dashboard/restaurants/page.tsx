@@ -355,9 +355,9 @@ export default function RestaurantsPage() {
   })();
 
   const filtered = restaurants.filter((r) => {
-    // 영업 상태 필터 (기본: active + null만 노출, null은 구버전 데이터)
-    const status = r.operating_status ?? 'active';
-    if (statusFilter === 'active' && status !== 'active') return false;
+    // 영업 상태 필터 (unknown은 카카오 수집 업체 — active 탭에서도 포함)
+    const status = r.operating_status ?? 'unknown';
+    if (statusFilter === 'active' && status !== 'active' && status !== 'unknown') return false;
     if (statusFilter === 'suspected' && status !== 'suspected') return false;
     if (statusFilter === 'inactive' && status !== 'inactive') return false;
 
