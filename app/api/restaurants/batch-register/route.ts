@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
       const storeNaverId = r.naver_place_id ?? (r.kakao_place_id ? `kakao_${r.kakao_place_id}` : null);
       return {
         name:            r.name,
-        category:        r.category          || null,
+        category:        r.category          || '기타',
         address:         r.address           || null,
         phone:           r.phone             || null,
         naver_place_id:  storeNaverId,
