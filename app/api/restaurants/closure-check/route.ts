@@ -2,26 +2,29 @@
  * POST /api/restaurants/closure-check
  * body: { limit?: number, force?: boolean }
  *
- * 행정안전부 지방행정인허가 OpenAPI로 폐업 여부 + 개업일 자동 수집
+ * 공공데이터포털(data.go.kr) 지방행정인허가 OpenAPI로 폐업 여부 + 개업일 자동 수집
+ * - localdata.go.kr 2026-04-16 폐쇄 → data.go.kr로 이전
  * - 창원시 일반음식점·휴게음식점·제과점 인허가 데이터와 상호명+구 매칭
  * - 폐업 확인 → operating_status = 'inactive', closed_at 기록
  * - 영업 확인 → last_verified_at 갱신, apvPermYmd → opened_at 저장
  * - 미발견  → suspicion_count +1 (임계값 3 이상 시 suspected)
  *
- * 사전 준비: .env에 LOCALDATA_AUTH_KEY 추가 (localdata.go.kr 회원가입 후 발급)
+ * 사전 준비: .env에 LOCALDATA_AUTH_KEY 추가
+ * data.go.kr 로그인 → '지방행정인허가데이터' 검색 → 활용신청 → 마이페이지에서 키 확인
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 const CHANGWON_CODE = '3620000';
 
-const SVC_IDS = [
-  '07_24_04_P', // 일반음식점
-  '07_24_03_P', // 휴게음식점 (카페·분식 포함)
-  '07_24_05_P', // 제과점영업 (베이커리)
+// data.go.kr 서비스명 (일반음식점·휴게음식점·제과점)
+const SVC_NAMES = [
+  'tn_pubr_public_cltur_food_service',        // 일반음식점
+  'tn_pubr_public_cltur_coffeeshop_service',  // 휴게음식점 (카페·분식)
+  'tn_pubr_public_cltur_bakery_service',      // 제과점영업
 ];
 
-const LOCALDATA_URL = 'https://www.localdata.go.kr/platform/rest/TO0/openDataApi';
+const DATA_GO_KR_URL = 'https://api.data.go.kr/openapi';
 
 interface LocalDataRow {
   bizNm:       string; // 상호명
@@ -77,32 +80,34 @@ function ymdToIso(ymd: string | null | undefined): string | null {
 async function checkLocaldata(
   name: string,
   address: string | null,
-  authKey: string,
+  serviceKey: string,
 ): Promise<MatchResult> {
   const gu = extractGu(address);
 
-  for (const svcId of SVC_IDS) {
+  for (const svcName of SVC_NAMES) {
     const params = new URLSearchParams({
-      authKey,
-      pageIndex:    '1',
-      pageSize:     '10',
-      opnSvcId:     svcId,
+      serviceKey,
+      pageNo:        '1',
+      numOfRows:     '10',
       opnSfTeamCode: CHANGWON_CODE,
-      bizNm:        name,
+      bizNm:         name,
+      resultType:    'json',
     });
 
     try {
-      const res = await fetch(`${LOCALDATA_URL}?${params}`, {
+      const res = await fetch(`${DATA_GO_KR_URL}/${svcName}?${params}`, {
         headers: { Accept: 'application/json' },
         signal:  AbortSignal.timeout(8000),
       });
       if (!res.ok) continue;
 
       const json = await res.json();
-      const rows: LocalDataRow[] = json?.body?.items?.item ?? [];
+      // data.go.kr 응답 구조: response.body.items.item (배열 or 단건 객체)
+      const raw  = json?.response?.body?.items?.item ?? json?.body?.items?.item ?? [];
+      const rows: LocalDataRow[] = Array.isArray(raw) ? raw : [raw];
 
       for (const row of rows) {
-        if (!isNameSimilar(name, row.bizNm)) continue;
+        if (!row?.bizNm || !isNameSimilar(name, row.bizNm)) continue;
 
         if (gu) {
           const rowGu = extractGu(row.rdnWhlAddr || row.lnWhlAddr);
