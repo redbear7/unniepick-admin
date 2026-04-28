@@ -949,11 +949,30 @@ export default function RestaurantsPage() {
       </div>
 
       {/* 영업 상태 필터 탭 */}
-      <div className="flex gap-2 flex-wrap">
+      <div className="flex gap-2 flex-wrap items-center">
         <StatusTab label="영업중" value="active" count={statusCounts.active} current={statusFilter} onClick={setStatusFilter} color="green" />
         <StatusTab label="의심" value="suspected" count={statusCounts.suspected} current={statusFilter} onClick={setStatusFilter} color="amber" />
         <StatusTab label="폐업" value="inactive" count={statusCounts.inactive} current={statusFilter} onClick={setStatusFilter} color="red" />
         <StatusTab label="전체" value="all" count={statusCounts.all} current={statusFilter} onClick={setStatusFilter} color="gray" />
+        <div className="w-px h-5 bg-border-subtle mx-1" />
+        {(['1','3','6','12'] as const).map((v) => (
+          <button key={v}
+            onClick={() => setOpenedFilter(openedFilter === v ? 'all' : v)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
+              openedFilter === v
+                ? 'bg-sky-600 border-sky-500 text-white'
+                : 'bg-card border-border-main text-muted hover:text-primary hover:border-sky-600/40'
+            }`}
+          >
+            🆕 새로오픈
+            <span className="opacity-70">
+              {v === '1' ? '1개월' : v === '3' ? '3개월' : v === '6' ? '6개월' : '1년'}
+            </span>
+            <span className={openedFilter === v ? 'text-white/80' : 'text-muted'}>
+              {openedCounts[v]}
+            </span>
+          </button>
+        ))}
       </div>
 
       {/* 구별 카드 */}
