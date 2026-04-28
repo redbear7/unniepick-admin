@@ -124,6 +124,10 @@ export default function RestaurantsPage() {
   const [aiSummaryingId,  setAiSummaryingId]  = useState<string | null>(null);
   const [aiMsg,           setAiMsg]           = useState('');
 
+  // ── 폐업 검수 관련 state ──────────────────────────────────────────
+  const [closureChecking, setClosureChecking] = useState(false);
+  const [closureMsg,      setClosureMsg]      = useState('');
+
   // ── 뷰 모드 ───────────────────────────────────────────────────
   const [viewMode, setViewMode] = useState<'list' | 'thumbnail'>('list');
 
@@ -286,6 +290,30 @@ export default function RestaurantsPage() {
       alert(`AI 요약 실패: ${(e as Error).message}`);
     } finally {
       setAiSummarizing(false);
+    }
+  }
+
+  // 폐업 검수
+  async function runClosureCheck(limit = 30) {
+    setClosureChecking(true);
+    setClosureMsg('');
+    try {
+      const res  = await fetch('/api/restaurants/closure-check', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ limit }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? '폐업 검수 실패');
+      setClosureMsg(
+        `🔍 ${data.checked}개 검수 완료 · 폐업 ${data.closed}개 확인 · 의심 ${data.suspected}개 · 영업확인 ${data.confirmed}개`,
+      );
+      fetchRestaurants();
+      setTimeout(() => setClosureMsg(''), 8000);
+    } catch (e) {
+      alert(`폐업 검수 실패: ${(e as Error).message}`);
+    } finally {
+      setClosureChecking(false);
     }
   }
 
@@ -460,6 +488,18 @@ export default function RestaurantsPage() {
               AI 요약 (K)
             </button>
           </div>
+          {/* 폐업 검수 */}
+          <button
+            onClick={() => runClosureCheck(30)}
+            disabled={closureChecking}
+            title="행정안전부 인허가 데이터로 폐업 여부 자동 검수 (30개)"
+            className="flex items-center gap-2 px-4 py-2 bg-red-700 hover:bg-red-800 disabled:opacity-50 text-white rounded-xl text-sm font-semibold transition shadow-sm"
+          >
+            {closureChecking
+              ? <><Loader2 className="w-4 h-4 animate-spin" />검수 중...</>
+              : <>🔍 폐업 검수</>
+            }
+          </button>
           {/* 태그 일괄 추출 */}
           <button
             onClick={batchExtractTags}
@@ -657,6 +697,13 @@ export default function RestaurantsPage() {
           </button>
         </div>
       </div>
+
+      {/* 폐업 검수 결과 메시지 */}
+      {closureMsg && (
+        <div className="px-4 py-2.5 bg-red-500/10 border border-red-500/25 rounded-xl text-sm text-red-400 font-semibold">
+          {closureMsg}
+        </div>
+      )}
 
       {/* AI 요약 완료 메시지 */}
       {aiMsg && (
