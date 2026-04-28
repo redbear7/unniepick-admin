@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>가게 관리 — 디자인 목업</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        brand: '#FF6F0F',
+      }
+    }
+  }
+}
+</script>
+<style>
+  body { background: #0f1117; color: #e8eaf0; font-family: 'Pretendard', 'Apple SD Gothic Neo', sans-serif; }
+  .card  { background: #181b23; border: 1px solid #2a2d38; }
+  .muted { color: #6b7280; }
+  .dim   { color: #374151; }
+  .prospect-row { background: rgba(255,255,255,0.015); }
+  .prospect-row:hover { background: rgba(255,255,255,0.03); }
+  .partner-row:hover  { background: rgba(255,255,255,0.03); }
+  .badge { display:inline-flex; align-items:center; gap:3px; padding:2px 7px; border-radius:999px; font-size:11px; font-weight:600; }
+  .tag   { display:inline-block; padding:2px 6px; border-radius:6px; font-size:10px; font-weight:700; }
+  .modal-bg { position:fixed; inset:0; background:rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center; z-index:50; }
+  .modal     { background:#1a1d27; border:1px solid #2a2d38; border-radius:16px; width:480px; padding:28px; }
+  .slide-panel { position:fixed; right:0; top:0; bottom:0; width:420px; background:#181b23; border-left:1px solid #2a2d38; z-index:40; overflow-y:auto; padding:24px; transform:translateX(0); transition:.25s; }
+</style>
+</head>
+<body class="min-h-screen">
+
+<!-- ═══════════════════ MAIN LAYOUT ═══════════════════ -->
+<div class="flex h-screen overflow-hidden">
+
+  <!-- Sidebar stub -->
+  <div class="w-14 bg-[#13151d] border-r border-[#1f2230] flex flex-col items-center py-4 gap-4 shrink-0">
+    <div class="w-8 h-8 rounded-lg bg-brand flex items-center justify-center text-white text-sm font-bold">U</div>
+    <div class="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-sm">🏪</div>
+    <div class="w-8 h-8 rounded-lg flex items-center justify-center text-sm muted">🍜</div>
+    <div class="w-8 h-8 rounded-lg flex items-center justify-center text-sm muted">🗺</div>
+  </div>
+
+  <!-- Main content -->
+  <div class="flex-1 overflow-y-auto p-7" id="mainContent">
+
+    <!-- ── Header ── -->
+    <div class="flex items-start justify-between mb-6">
+      <div>
+        <h1 class="text-2xl font-bold text-white flex items-center gap-2">🏪 가게 관리</h1>
+        <p class="text-sm muted mt-1">
+          활성 파트너 <span class="text-green-400 font-semibold">12개</span>
+          · 잠재업체 <span class="text-amber-400 font-semibold">1,950개</span>
+          · 비활성 <span style="color:#6b7280">3개</span>
+        </p>
+      </div>
+      <button class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-bold transition" style="background:#FF6F0F">
+        + 새 가게 등록
+      </button>
+    </div>
+
+    <!-- ── 통계 카드 ── -->
+    <div class="grid grid-cols-4 gap-3 mb-5">
+      <div class="card rounded-xl p-4">
+        <p class="text-xs muted mb-1">활성 파트너</p>
+        <p class="text-2xl font-bold text-green-400">12</p>
+        <p class="text-xs muted mt-0.5">쿠폰 활성 8개</p>
+      </div>
+      <div class="card rounded-xl p-4">
+        <p class="text-xs muted mb-1">잠재 업체</p>
+        <p class="text-2xl font-bold text-amber-400">1,950</p>
+        <p class="text-xs muted mt-0.5">AI 요약 완료 42개</p>
+      </div>
+      <div class="card rounded-xl p-4">
+        <p class="text-xs muted mb-1">이번 달 전환</p>
+        <p class="text-2xl font-bold" style="color:#e8eaf0">3</p>
+        <p class="text-xs muted mt-0.5">잠재 → 파트너</p>
+      </div>
+      <div class="card rounded-xl p-4">
+        <p class="text-xs muted mb-1">전환율</p>
+        <p class="text-2xl font-bold" style="color:#a78bfa">0.6%</p>
+        <p class="text-xs muted mt-0.5">잠재 대비</p>
+      </div>
+    </div>
+
+    <!-- ── 검색 + 필터 ── -->
+    <div class="flex gap-2 mb-3">
+      <div class="flex-1 relative">
+        <span class="absolute left-3.5 top-1/2 -translate-y-1/2 muted text-sm">🔍</span>
+        <input placeholder="가게명, 주소, 카테고리 검색…"
+          class="w-full pl-9 pr-4 py-2.5 text-sm rounded-xl border focus:outline-none focus:border-brand"
+          style="background:#181b23; border-color:#2a2d38; color:#e8eaf0" />
+      </div>
+      <!-- 탭 필터 버튼 -->
+      <button class="px-4 py-2 rounded-xl text-sm font-semibold" style="background:#FF6F0F;color:#fff">전체 1,965</button>
+      <button class="px-4 py-2 rounded-xl text-sm font-semibold" style="background:#181b23;border:1px solid #2a2d38;color:#6b7280">활성 12</button>
+      <button class="px-4 py-2 rounded-xl text-sm font-semibold" style="background:#181b23;border:1px solid #2a2d38;color:#6b7280">비활성 3</button>
+      <button class="px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-1.5" style="background:#181b23;border:1px solid #f59e0b44;color:#f59e0b">
+        ⭐ 잠재 1,950
+      </button>
+      <button class="px-4 py-2 rounded-xl text-sm font-semibold" style="background:#181b23;border:1px solid #2a2d38;color:#6b7280">🧪 더미</button>
+    </div>
+
+    <!-- 잠재 업체 서브 필터 (잠재 탭 선택 시) -->
+    <div class="flex items-center gap-2 mb-4 pl-1">
+      <span class="text-xs muted">출처</span>
+      <button class="px-2.5 py-1 rounded-lg text-xs font-bold" style="background:#16a34a22;color:#4ade80;border:1px solid #16a34a44">N 네이버 386</button>
+      <button class="px-2.5 py-1 rounded-lg text-xs font-bold" style="background:#eab30822;color:#fbbf24;border:1px solid #eab30844">K 카카오 1,564</button>
+      <div class="w-px h-4 mx-1" style="background:#2a2d38"></div>
+      <span class="text-xs muted">AI 요약</span>
+      <button class="px-2.5 py-1 rounded-lg text-xs font-semibold" style="background:#10b98122;color:#34d399;border:1px solid #10b98144">✨ 완료 42</button>
+      <button class="px-2.5 py-1 rounded-lg text-xs font-semibold" style="background:#181b23;border:1px solid #2a2d38;color:#6b7280">없음 1,908</button>
+      <div class="w-px h-4 mx-1" style="background:#2a2d38"></div>
+      <select class="text-xs px-2 py-1 rounded-lg" style="background:#181b23;border:1px solid #2a2d38;color:#9ca3af">
+        <option>전체 카테고리</option>
+        <option>한식</option><option>카페</option><option>치킨</option>
+      </select>
+    </div>
+
+    <!-- ── 테이블 ── -->
+    <div class="card rounded-2xl overflow-hidden">
+      <table class="w-full text-sm">
+        <thead>
+          <tr style="border-bottom:1px solid #2a2d38">
+            <th class="px-5 py-3.5 text-left text-xs font-semibold muted">가게명</th>
+            <th class="px-4 py-3.5 text-left text-xs font-semibold muted">카테고리</th>
+            <th class="px-4 py-3.5 text-left text-xs font-semibold muted">연락처</th>
+            <th class="px-4 py-3.5 text-left text-xs font-semibold muted">수집 데이터</th>
+            <th class="px-4 py-3.5 text-left text-xs font-semibold muted">AI 요약</th>
+            <th class="px-4 py-3.5 text-left text-xs font-semibold muted">사장님</th>
+            <th class="px-3 py-3.5 text-center text-xs font-semibold muted">쿠폰</th>
+            <th class="px-4 py-3.5 text-center text-xs font-semibold muted">상태</th>
+            <th class="px-4 py-3.5 text-center text-xs font-semibold muted">관리</th>
+          </tr>
+        </thead>
+        <tbody>
+
+          <!-- ══ 활성 파트너 행 ══ -->
+          <tr class="partner-row" style="border-bottom:1px solid #1f2230; cursor:pointer">
+            <td class="px-5 py-4">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center text-base shrink-0" style="background:#FF6F0F22">🏪</div>
+                <div>
+                  <div class="font-semibold text-white text-sm">카페 온도</div>
+                  <div class="text-xs muted">의창구 팔용동</div>
+                </div>
+              </div>
+            </td>
+            <td class="px-4 py-4">
+              <span class="badge" style="background:#3b82f622;color:#60a5fa;border:1px solid #3b82f644">☕ 카페</span>
+            </td>
+            <td class="px-4 py-4 text-xs" style="color:#9ca3af">055-282-1234</td>
+            <td class="px-4 py-4">
+              <div class="flex gap-1 flex-wrap">
+                <span class="tag" style="background:#1e293b;color:#94a3b8">메뉴 12개</span>
+                <span class="tag" style="background:#1e293b;color:#94a3b8">키워드 6개</span>
+              </div>
+            </td>
+            <td class="px-4 py-4">
+              <p class="text-xs" style="color:#34d399;max-width:180px;line-height:1.5">✨ 아늑한 분위기의 핸드드립 카페</p>
+            </td>
+            <td class="px-4 py-4 text-xs" style="color:#9ca3af">홍길동</td>
+            <td class="px-3 py-4 text-center">
+              <span class="badge" style="background:#FF6F0F22;color:#FF6F0F;border:1px solid #FF6F0F44">3개</span>
+            </td>
+            <td class="px-4 py-4 text-center">
+              <span class="badge" style="background:#22c55e22;color:#22c55e;border:1px solid #22c55e44">✅ 활성</span>
+            </td>
+            <td class="px-4 py-4 text-center">
+              <button class="px-3 py-1.5 rounded-lg text-xs font-semibold" style="background:#2a2d38;color:#9ca3af">수정</button>
+            </td>
+          </tr>
+
+          <tr class="partner-row" style="border-bottom:1px solid #1f2230; cursor:pointer">
+            <td class="px-5 py-4">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center text-base shrink-0" style="background:#FF6F0F22">🏪</div>
+                <div>
+                  <div class="font-semibold text-white text-sm">돈까스 명장</div>
+                  <div class="text-xs muted">성산구 중앙동</div>
+                </div>
+              </div>
+            </td>
+            <td class="px-4 py-4">
+              <span class="badge" style="background:#f59e0b22;color:#fbbf24;border:1px solid #f59e0b44">🍱 일식</span>
+            </td>
+            <td class="px-4 py-4 text-xs" style="color:#9ca3af">055-291-5678</td>
+            <td class="px-4 py-4">
+              <div class="flex gap-1 flex-wrap">
+                <span class="tag" style="background:#1e293b;color:#94a3b8">메뉴 8개</span>
+                <span class="tag" style="background:#1e293b;color:#94a3b8">블로그 5개</span>
+              </div>
+            </td>
+            <td class="px-4 py-4">
+              <p class="text-xs muted">—</p>
+            </td>
+            <td class="px-4 py-4 text-xs" style="color:#9ca3af">김철수</td>
+            <td class="px-3 py-4 text-center">
+              <span class="badge" style="background:#FF6F0F22;color:#FF6F0F;border:1px solid #FF6F0F44">1개</span>
+            </td>
+            <td class="px-4 py-4 text-center">
+              <span class="badge" style="background:#22c55e22;color:#22c55e;border:1px solid #22c55e44">✅ 활성</span>
+            </td>
+            <td class="px-4 py-4 text-center">
+              <button class="px-3 py-1.5 rounded-lg text-xs font-semibold" style="background:#2a2d38;color:#9ca3af">수정</button>
+            </td>
+          </tr>
+
+          <!-- 구분선 라벨 -->
+          <tr style="background:#12151e">
+            <td colspan="9" class="px-5 py-2">
+              <span class="text-xs font-semibold" style="color:#f59e0b">⭐ 잠재 업체 (창원 맛집 수집 데이터) — 1,950개</span>
+            </td>
+          </tr>
+
+          <!-- ══ 잠재 업체 행 A — AI 요약 있음 ══ -->
+          <tr class="prospect-row" style="border-bottom:1px solid #1a1d26; cursor:pointer" onclick="document.getElementById('slidePanel').style.transform='translateX(0)'">
+            <td class="px-5 py-4">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center text-base shrink-0" style="background:#f59e0b11">🍜</div>
+                <div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="font-semibold text-sm" style="color:#d1d5db">달토끼떡집&떡카페</span>
+                    <span class="tag" style="background:#16a34a22;color:#4ade80;border:1px solid #16a34a33">N</span>
+                    <span class="tag" style="background:#eab30822;color:#fbbf24;border:1px solid #eab30833">K</span>
+                  </div>
+                  <div class="text-xs muted mt-0.5">마산합포구 신안계곡길 4</div>
+                </div>
+              </div>
+            </td>
+            <td class="px-4 py-4">
+              <span class="badge" style="background:#8b5cf622;color:#a78bfa;border:1px solid #8b5cf644">🍡 간식</span>
+            </td>
+            <td class="px-4 py-4 text-xs" style="color:#6b7280">055-247-8800</td>
+            <td class="px-4 py-4">
+              <div class="flex gap-1 flex-wrap">
+                <span class="tag" style="background:#1e293b;color:#64748b">메뉴 5개</span>
+                <span class="tag" style="background:#1e293b;color:#64748b">키워드 8개</span>
+                <span class="tag" style="background:#1e293b;color:#64748b">블로그 3개</span>
+              </div>
+            </td>
+            <td class="px-4 py-4">
+              <p class="text-xs" style="color:#34d399;max-width:180px;line-height:1.5">✨ 직접 만든 쫄깃한 떡과 음료 인기</p>
+            </td>
+            <td class="px-4 py-4 text-xs dim">—</td>
+            <td class="px-3 py-4 text-center text-xs dim">—</td>
+            <td class="px-4 py-4 text-center">
+              <span class="badge" style="background:#f59e0b11;color:#f59e0b;border:1px solid #f59e0b33">⭐ 잠재</span>
+            </td>
+            <td class="px-4 py-4 text-center">
+              <button onclick="event.stopPropagation(); document.getElementById('convertModal').style.display='flex'"
+                class="px-3 py-1.5 rounded-lg text-xs font-bold transition"
+                style="background:#FF6F0F22;color:#FF6F0F;border:1px solid #FF6F0F44">
+                파트너 전환 ▶
+              </button>
+            </td>
+          </tr>
+
+          <!-- ══ 잠재 업체 행 B — AI 없음 ══ -->
+          <tr class="prospect-row" style="border-bottom:1px solid #1a1d26; cursor:pointer">
+            <td class="px-5 py-4">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center text-base shrink-0" style="background:#f59e0b11">☕</div>
+                <div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="font-semibold text-sm" style="color:#d1d5db">일루소</span>
+                    <span class="tag" style="background:#eab30822;color:#fbbf24;border:1px solid #eab30833">K</span>
+                  </div>
+                  <div class="text-xs muted mt-0.5">마산합포구 대정계곡길 195-108</div>
+                </div>
+              </div>
+            </td>
+            <td class="px-4 py-4">
+              <span class="badge" style="background:#3b82f622;color:#60a5fa;border:1px solid #3b82f644">☕ 카페</span>
+            </td>
+            <td class="px-4 py-4 text-xs" style="color:#6b7280">—</td>
+            <td class="px-4 py-4">
+              <span class="text-xs dim">수집 데이터 없음</span>
+            </td>
+            <td class="px-4 py-4">
+              <span class="text-xs dim">AI 없음</span>
+            </td>
+            <td class="px-4 py-4 text-xs dim">—</td>
+            <td class="px-3 py-4 text-center text-xs dim">—</td>
+            <td class="px-4 py-4 text-center">
+              <span class="badge" style="background:#f59e0b11;color:#f59e0b;border:1px solid #f59e0b33">⭐ 잠재</span>
+            </td>
+            <td class="px-4 py-4 text-center">
+              <button class="px-3 py-1.5 rounded-lg text-xs font-bold transition"
+                style="background:#FF6F0F22;color:#FF6F0F;border:1px solid #FF6F0F44">
+                파트너 전환 ▶
+              </button>
+            </td>
+          </tr>
+
+          <!-- ══ 잠재 업체 행 C — 더 ══ -->
+          <tr class="prospect-row" style="border-bottom:1px solid #1a1d26; cursor:pointer">
+            <td class="px-5 py-4">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center text-base shrink-0" style="background:#f59e0b11">🍜</div>
+                <div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="font-semibold text-sm" style="color:#d1d5db">초야코다리</span>
+                    <span class="tag" style="background:#16a34a22;color:#4ade80;border:1px solid #16a34a33">N</span>
+                    <span class="tag" style="background:#eab30822;color:#fbbf24;border:1px solid #eab30833">K</span>
+                  </div>
+                  <div class="text-xs muted mt-0.5">마산합포구 대정계곡길 24</div>
+                </div>
+              </div>
+            </td>
+            <td class="px-4 py-4">
+              <span class="badge" style="background:#ef444422;color:#f87171;border:1px solid #ef444444">🍜 한식</span>
+            </td>
+            <td class="px-4 py-4 text-xs" style="color:#6b7280">055-244-0077</td>
+            <td class="px-4 py-4">
+              <div class="flex gap-1 flex-wrap">
+                <span class="tag" style="background:#1e293b;color:#64748b">메뉴 9개</span>
+                <span class="tag" style="background:#1e293b;color:#64748b">키워드 12개</span>
+              </div>
+            </td>
+            <td class="px-4 py-4">
+              <p class="text-xs" style="color:#34d399;max-width:180px;line-height:1.5">✨ 창원 대표 코다리조림 맛집</p>
+            </td>
+            <td class="px-4 py-4 text-xs dim">—</td>
+            <td class="px-3 py-4 text-center text-xs dim">—</td>
+            <td class="px-4 py-4 text-center">
+              <span class="badge" style="background:#f59e0b11;color:#f59e0b;border:1px solid #f59e0b33">⭐ 잠재</span>
+            </td>
+            <td class="px-4 py-4 text-center">
+              <button class="px-3 py-1.5 rounded-lg text-xs font-bold transition"
+                style="background:#FF6F0F22;color:#FF6F0F;border:1px solid #FF6F0F44">
+                파트너 전환 ▶
+              </button>
+            </td>
+          </tr>
+
+        </tbody>
+      </table>
+    </div>
+    <!-- 더 있음 -->
+    <div class="flex justify-center py-4 text-xs muted gap-2 mt-2">
+      <span>⏳</span> 1,947개 더 있음 (스크롤)
+    </div>
+
+  </div><!-- /main content -->
+</div>
+
+<!-- ═══════════════════ 슬라이드 패널 (업체 상세) ═══════════════════ -->
+<div id="slidePanel" class="slide-panel" style="transform:translateX(105%)">
+  <div class="flex items-center justify-between mb-5">
+    <h2 class="font-bold text-white text-lg">달토끼떡집&떡카페</h2>
+    <button onclick="document.getElementById('slidePanel').style.transform='translateX(105%)'"
+      class="text-xl muted hover:text-white">✕</button>
+  </div>
+
+  <!-- 배지 -->
+  <div class="flex gap-1.5 mb-4 flex-wrap">
+    <span class="tag" style="background:#16a34a22;color:#4ade80;border:1px solid #16a34a33">N 네이버</span>
+    <span class="tag" style="background:#eab30822;color:#fbbf24;border:1px solid #eab30833">K 카카오</span>
+    <span class="badge" style="background:#8b5cf622;color:#a78bfa;border:1px solid #8b5cf644">🍡 간식</span>
+    <span class="badge" style="background:#f59e0b11;color:#f59e0b;border:1px solid #f59e0b33">⭐ 잠재</span>
+  </div>
+
+  <!-- 기본 정보 -->
+  <div class="card rounded-xl p-4 mb-4 space-y-2">
+    <div class="text-xs font-semibold muted mb-2">기본 정보</div>
+    <div class="flex justify-between text-xs">
+      <span class="muted">주소</span>
+      <span style="color:#d1d5db">마산합포구 신안계곡길 4</span>
+    </div>
+    <div class="flex justify-between text-xs">
+      <span class="muted">전화</span>
+      <span style="color:#d1d5db">055-247-8800</span>
+    </div>
+    <div class="flex justify-between text-xs">
+      <span class="muted">수집일</span>
+      <span style="color:#d1d5db">2026.04.28</span>
+    </div>
+  </div>
+
+  <!-- 수집 데이터 -->
+  <div class="card rounded-xl p-4 mb-4">
+    <div class="text-xs font-semibold muted mb-3">수집 데이터</div>
+    <div class="space-y-2">
+      <div>
+        <div class="text-xs muted mb-1">메뉴 (5개)</div>
+        <div class="flex flex-wrap gap-1">
+          <span class="tag" style="background:#1e293b;color:#94a3b8">떡케이크</span>
+          <span class="tag" style="background:#1e293b;color:#94a3b8">딸기떡</span>
+          <span class="tag" style="background:#1e293b;color:#94a3b8">흑임자떡</span>
+          <span class="tag" style="background:#1e293b;color:#94a3b8">아메리카노</span>
+          <span class="tag" style="background:#1e293b;color:#94a3b8">라떼</span>
+        </div>
+      </div>
+      <div>
+        <div class="text-xs muted mb-1">키워드 (8개)</div>
+        <div class="flex flex-wrap gap-1">
+          <span class="tag" style="background:#1e293b;color:#94a3b8">쫄깃해요</span>
+          <span class="tag" style="background:#1e293b;color:#94a3b8">예쁘게 포장</span>
+          <span class="tag" style="background:#1e293b;color:#94a3b8">선물용</span>
+          <span class="tag" style="background:#1e293b;color:#94a3b8">친절해요</span>
+        </div>
+      </div>
+      <div>
+        <div class="text-xs muted mb-1">블로그 (3개)</div>
+        <div class="space-y-1">
+          <p class="text-xs" style="color:#6b7280">· 창원 떡카페 분위기 좋은 곳 발견!</p>
+          <p class="text-xs" style="color:#6b7280">· 마산합포구 디저트 맛집 추천</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI 요약 -->
+  <div class="rounded-xl p-4 mb-5" style="background:#10b98115;border:1px solid #10b98133">
+    <div class="text-xs font-semibold mb-2" style="color:#34d399">✨ AI 요약 <span class="muted font-normal">· 2026.04.28</span></div>
+    <p class="text-sm" style="color:#d1d5db;line-height:1.7">직접 만든 쫄깃한 떡과 음료 인기</p>
+    <div class="flex flex-wrap gap-1 mt-2">
+      <span class="tag" style="background:#10b98122;color:#34d399">아늑한</span>
+      <span class="tag" style="background:#10b98122;color:#34d399">선물용</span>
+      <span class="tag" style="background:#10b98122;color:#34d399">포장가능</span>
+    </div>
+    <p class="text-xs mt-2" style="color:#34d399">💡 선물용 떡 구매 시 미리 예약 추천</p>
+  </div>
+
+  <!-- 파트너 전환 버튼 -->
+  <button onclick="document.getElementById('convertModal').style.display='flex'"
+    class="w-full py-3 rounded-xl font-bold text-white text-sm transition"
+    style="background:#FF6F0F">
+    ▶ 파트너로 전환하기
+  </button>
+  <p class="text-xs muted text-center mt-2">전환 후 쿠폰 발행·사장님 계정 연결 가능</p>
+</div>
+
+<!-- 슬라이드 패널 열릴 때 딤 -->
+<div id="panelDim" onclick="document.getElementById('slidePanel').style.transform='translateX(105%)'"
+  style="position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:39;display:none"></div>
+
+<!-- ═══════════════════ 파트너 전환 모달 ═══════════════════ -->
+<div id="convertModal" class="modal-bg" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal">
+    <div class="flex items-center justify-between mb-5">
+      <h2 class="font-bold text-white text-lg">파트너 등록</h2>
+      <button onclick="document.getElementById('convertModal').style.display='none'" class="muted text-xl">✕</button>
+    </div>
+
+    <!-- 수집 데이터 자동 채움 안내 -->
+    <div class="rounded-xl p-3 mb-5 flex items-center gap-2" style="background:#10b98115;border:1px solid #10b98133">
+      <span style="color:#34d399">✅</span>
+      <p class="text-xs" style="color:#34d399">수집 데이터로 자동 입력됩니다. 필요 시 수정하세요.</p>
+    </div>
+
+    <!-- 폼 -->
+    <div class="space-y-3 mb-5">
+      <div>
+        <label class="text-xs muted block mb-1">가게명</label>
+        <input value="달토끼떡집&떡카페" class="w-full px-3 py-2 rounded-lg text-sm" style="background:#13151d;border:1px solid #2a2d38;color:#e8eaf0" />
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs muted block mb-1">카테고리</label>
+          <input value="간식" class="w-full px-3 py-2 rounded-lg text-sm" style="background:#13151d;border:1px solid #2a2d38;color:#e8eaf0" />
+        </div>
+        <div>
+          <label class="text-xs muted block mb-1">연락처</label>
+          <input value="055-247-8800" class="w-full px-3 py-2 rounded-lg text-sm" style="background:#13151d;border:1px solid #2a2d38;color:#e8eaf0" />
+        </div>
+      </div>
+      <div>
+        <label class="text-xs muted block mb-1">주소</label>
+        <input value="마산합포구 신안계곡길 4" class="w-full px-3 py-2 rounded-lg text-sm" style="background:#13151d;border:1px solid #2a2d38;color:#e8eaf0" />
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs muted block mb-1">사장님 이메일 <span class="dim">(선택)</span></label>
+          <input placeholder="나중에 연결 가능" class="w-full px-3 py-2 rounded-lg text-sm" style="background:#13151d;border:1px solid #2a2d38;color:#e8eaf0" />
+        </div>
+        <div>
+          <label class="text-xs muted block mb-1">구독 만료일 <span class="dim">(선택)</span></label>
+          <input type="date" class="w-full px-3 py-2 rounded-lg text-sm" style="background:#13151d;border:1px solid #2a2d38;color:#6b7280" />
+        </div>
+      </div>
+      <!-- AI 요약 자동 포함 표시 -->
+      <div class="rounded-lg p-3 flex items-center gap-2" style="background:#181b23;border:1px solid #2a2d38">
+        <span style="color:#34d399">✨</span>
+        <div>
+          <p class="text-xs font-semibold" style="color:#34d399">AI 요약 자동 포함</p>
+          <p class="text-xs muted">직접 만든 쫄깃한 떡과 음료 인기</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 버튼 -->
+    <div class="flex gap-2">
+      <button onclick="document.getElementById('convertModal').style.display='none'"
+        class="flex-1 py-2.5 rounded-xl text-sm font-semibold muted" style="background:#1f2230;border:1px solid #2a2d38">
+        취소
+      </button>
+      <button class="flex-1 py-2.5 rounded-xl text-sm font-bold text-white transition" style="background:#FF6F0F">
+        ▶ 파트너 등록
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- 슬라이드 패널 연동 -->
+<script>
+  const panel = document.getElementById('slidePanel');
+  const dim   = document.getElementById('panelDim');
+  const obs   = new MutationObserver(() => {
+    dim.style.display = panel.style.transform === 'translateX(0)' ? 'block' : 'none';
+  });
+  obs.observe(panel, { attributes: true, attributeFilter: ['style'] });
+</script>
+
+</body>
+</html>
