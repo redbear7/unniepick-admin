@@ -604,7 +604,7 @@ export default function RestaurantsPage() {
         `${city} ${value} 맛집`,
         `${city} ${value} 카페`,
         `${city} ${value} 술집`,
-        `${city} ${value} 맛집 신규오픈`,
+        `${city} ${value} 맛집 새로오픈`,
       ];
       label = `${value} 키워드 수집`;
       setKwModal({ label, keywords, dong: value });
