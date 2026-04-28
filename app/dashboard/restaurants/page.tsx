@@ -102,6 +102,8 @@ export default function RestaurantsPage() {
   const [guFilter, setGuFilter] = useState('');
   const [dongFilter, setDongFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'suspected' | 'inactive'>('active');
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'naver' | 'kakao'>('all');
+  const [aiFilter,     setAiFilter]     = useState<'all' | 'has' | 'none'>('all');
   const [sortBy, setSortBy] = useState<SortField>('crawled_at');
   const [categories, setCategories] = useState<string[]>([]);
   const [selected, setSelected] = useState<Restaurant | null>(null);
@@ -141,7 +143,7 @@ export default function RestaurantsPage() {
   // 필터/검색/뷰 모드 변경 시 visibleCount 리셋
   useEffect(() => {
     setVisibleCount(viewMode === 'list' ? 40 : 24);
-  }, [search, categoryFilter, guFilter, dongFilter, statusFilter, sortBy, viewMode]);
+  }, [search, categoryFilter, guFilter, dongFilter, statusFilter, sourceFilter, aiFilter, sortBy, viewMode]);
 
   // IntersectionObserver — sentinel 보이면 1줄(3개) 추가
   useEffect(() => {
@@ -367,12 +369,23 @@ export default function RestaurantsPage() {
   const filtered = restaurants.filter((r) => {
     // 영업 상태 필터 (unknown은 카카오 수집 업체 — active 탭에서도 포함)
     const status = r.operating_status ?? 'unknown';
-    if (statusFilter === 'active' && status !== 'active' && status !== 'unknown') return false;
+    if (statusFilter === 'active'    && status !== 'active' && status !== 'unknown') return false;
     if (statusFilter === 'suspected' && status !== 'suspected') return false;
-    if (statusFilter === 'inactive' && status !== 'inactive') return false;
+    if (statusFilter === 'inactive'  && status !== 'inactive')  return false;
+
+    // 출처 필터
+    const src     = (r as any).source as string | null;
+    const naverOk = !!(r.naver_place_id || src === 'naver');
+    const kakaoOk = !!((r as any).kakao_place_id);
+    if (sourceFilter === 'naver' && !naverOk) return false;
+    if (sourceFilter === 'kakao' && !kakaoOk) return false;
+
+    // AI 요약 필터
+    if (aiFilter === 'has'  && !r.ai_summary) return false;
+    if (aiFilter === 'none' &&  r.ai_summary) return false;
 
     const { gu, dong } = parseLocation(r.address);
-    if (guFilter && gu !== guFilter) return false;
+    if (guFilter   && gu   !== guFilter)   return false;
     if (dongFilter && dong !== dongFilter) return false;
     if (!search) return true;
     const q = search.toLowerCase();
@@ -382,10 +395,20 @@ export default function RestaurantsPage() {
 
   // 상태별 카운트
   const statusCounts = {
-    all: restaurants.length,
-    active: restaurants.filter((r) => (r.operating_status ?? 'active') === 'active').length,
+    all:       restaurants.length,
+    active:    restaurants.filter((r) => { const s = r.operating_status ?? 'unknown'; return s === 'active' || s === 'unknown'; }).length,
     suspected: restaurants.filter((r) => r.operating_status === 'suspected').length,
-    inactive: restaurants.filter((r) => r.operating_status === 'inactive').length,
+    inactive:  restaurants.filter((r) => r.operating_status === 'inactive').length,
+  };
+  const sourceCounts = {
+    all:   restaurants.length,
+    naver: restaurants.filter((r) => !!(r.naver_place_id || (r as any).source === 'naver')).length,
+    kakao: restaurants.filter((r) => !!(r as any).kakao_place_id).length,
+  };
+  const aiCounts = {
+    all:  restaurants.length,
+    has:  restaurants.filter((r) =>  r.ai_summary).length,
+    none: restaurants.filter((r) => !r.ai_summary).length,
   };
 
   const lastCrawled = restaurants.length
@@ -517,46 +540,95 @@ export default function RestaurantsPage() {
       )}
 
       {/* 필터 바 */}
-      <div className="flex flex-wrap gap-3">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
-          <input
-            type="text" placeholder="맛집 이름, 주소, 카테고리 검색..."
-            value={search} onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-card border border-border-main rounded-lg text-sm text-primary placeholder:text-muted focus:outline-none focus:border-[#FF6F0F]"
+      <div className="space-y-2.5">
+        {/* 검색 + 드롭다운 */}
+        <div className="flex flex-wrap gap-2">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+            <input
+              type="text" placeholder="맛집 이름, 주소, 카테고리 검색..."
+              value={search} onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-card border border-border-main rounded-lg text-sm text-primary placeholder:text-muted focus:outline-none focus:border-[#FF6F0F]"
+            />
+          </div>
+          <SelectFilter
+            value={guFilter}
+            onChange={(v) => { setGuFilter(v); setDongFilter(''); }}
+            options={guList}
+            placeholder="전체 구"
+            icon={<MapPin className="w-4 h-4" />}
+          />
+          <SelectFilter
+            value={dongFilter}
+            onChange={setDongFilter}
+            options={dongList}
+            placeholder="전체 동"
+            icon={<MapPin className="w-4 h-4" />}
+          />
+          <SelectFilter value={categoryFilter} onChange={setCategoryFilter} options={categories} placeholder="전체 카테고리" icon={<Filter className="w-4 h-4" />} />
+          <SelectFilter
+            value={sortBy} onChange={(v) => setSortBy(v as SortField)}
+            options={[
+              { value: 'crawled_at', label: '최근순' },
+              { value: 'name', label: '이름순' },
+            ]}
+            placeholder="" icon={null}
           />
         </div>
-        <SelectFilter
-          value={guFilter}
-          onChange={(v) => { setGuFilter(v); setDongFilter(''); }}
-          options={guList}
-          placeholder="전체 구"
-          icon={<MapPin className="w-4 h-4" />}
-        />
-        <SelectFilter
-          value={dongFilter}
-          onChange={setDongFilter}
-          options={dongList}
-          placeholder="전체 동"
-          icon={<MapPin className="w-4 h-4" />}
-        />
-        <SelectFilter value={categoryFilter} onChange={setCategoryFilter} options={categories} placeholder="전체 카테고리" icon={<Filter className="w-4 h-4" />} />
-        <SelectFilter
-          value={sortBy} onChange={(v) => setSortBy(v as SortField)}
-          options={[
-            { value: 'crawled_at', label: '최근순' },
-            { value: 'name', label: '이름순' },
-          ]}
-          placeholder="" icon={null}
-        />
-        {(guFilter || dongFilter || categoryFilter || search) && (
-          <button
-            onClick={() => { setGuFilter(''); setDongFilter(''); setCategoryFilter(''); setSearch(''); }}
-            className="px-3 py-2 text-xs text-muted hover:text-primary hover:bg-fill-subtle rounded-lg"
-          >
-            초기화
-          </button>
-        )}
+
+        {/* 버튼형 필터 줄 */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          {/* 출처 필터 */}
+          <div className="flex items-center gap-1">
+            {([
+              { v: 'all',   label: '전체',       count: sourceCounts.all   },
+              { v: 'naver', label: 'N 네이버',   count: sourceCounts.naver },
+              { v: 'kakao', label: 'K 카카오',   count: sourceCounts.kakao },
+            ] as const).map(({ v, label, count }) => (
+              <button key={v}
+                onClick={() => setSourceFilter(v)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                  sourceFilter === v
+                    ? 'bg-[#FF6F0F] text-white'
+                    : 'bg-card border border-border-subtle text-muted hover:text-primary'
+                }`}
+              >
+                {label} <span className="opacity-70">{count}</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="w-px h-4 bg-border-subtle" />
+
+          {/* AI 요약 필터 */}
+          <div className="flex items-center gap-1">
+            {([
+              { v: 'all',  label: 'AI 전체', count: aiCounts.all  },
+              { v: 'has',  label: '✨ 완료',  count: aiCounts.has  },
+              { v: 'none', label: 'AI 없음',  count: aiCounts.none },
+            ] as const).map(({ v, label, count }) => (
+              <button key={v}
+                onClick={() => setAiFilter(v)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                  aiFilter === v
+                    ? v === 'has' ? 'bg-emerald-600 text-white' : 'bg-[#FF6F0F] text-white'
+                    : 'bg-card border border-border-subtle text-muted hover:text-primary'
+                }`}
+              >
+                {label} <span className="opacity-70">{count}</span>
+              </button>
+            ))}
+          </div>
+
+          {(guFilter || dongFilter || categoryFilter || search || sourceFilter !== 'all' || aiFilter !== 'all') && (
+            <button
+              onClick={() => { setGuFilter(''); setDongFilter(''); setCategoryFilter(''); setSearch(''); setSourceFilter('all'); setAiFilter('all'); }}
+              className="ml-auto px-3 py-1.5 text-xs text-muted hover:text-primary hover:bg-fill-subtle rounded-lg transition"
+            >
+              전체 초기화
+            </button>
+          )}
+        </div>
       </div>
 
       {/* 필터 결과 요약 + 뷰 토글 */}
