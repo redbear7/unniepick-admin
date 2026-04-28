@@ -173,7 +173,7 @@ const MIN_PEOPLE_PRESETS  = [1, 2, 3, 4];
 const MIN_AMOUNT_PRESETS  = [0, 15000, 30000, 50000, 100000];
 
 
-/* ---- LocalStorage history ---- */
+/* ---- LocalStorage history (per-store) ---- */
 interface StoreHistoryEntry {
   changed_at: string;
   label:      string;
@@ -188,6 +188,38 @@ function pushStoreHistory(id: string, entry: StoreHistoryEntry) {
     list.unshift(entry);
     localStorage.setItem(`sh_${id}`, JSON.stringify(list.slice(0, 30)));
   } catch {}
+}
+
+/* ---- 관제탑 전역 활동 로그 ---- */
+export interface CtrlLogEntry {
+  id:      string;
+  ts:      string;
+  icon:    string;
+  type:    string;
+  message: string;
+  detail?: string;
+}
+const CTRL_LOG_KEY = 'stores_ctrl_log';
+const CTRL_LOG_MAX = 200;
+
+function getCtrlLog(): CtrlLogEntry[] {
+  try { return JSON.parse(localStorage.getItem(CTRL_LOG_KEY) ?? '[]'); } catch { return []; }
+}
+function pushCtrlLog(entry: Omit<CtrlLogEntry, 'id' | 'ts'>): CtrlLogEntry {
+  const full: CtrlLogEntry = {
+    id:  `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    ts:  new Date().toISOString(),
+    ...entry,
+  };
+  try {
+    const list = getCtrlLog();
+    list.unshift(full);
+    localStorage.setItem(CTRL_LOG_KEY, JSON.stringify(list.slice(0, CTRL_LOG_MAX)));
+  } catch {}
+  return full;
+}
+function clearCtrlLog() {
+  try { localStorage.removeItem(CTRL_LOG_KEY); } catch {}
 }
 
 /* ---- Coupon helpers ---- */
@@ -276,6 +308,20 @@ export default function StoresPage() {
   const LOAD_MORE       = 10;
   const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE);
   const sentinelRef = useRef<HTMLDivElement>(null);
+
+  /* 관제탑 로그 */
+  const [ctrlLogs,    setCtrlLogs]    = useState<CtrlLogEntry[]>([]);
+  const [ctrlOpen,    setCtrlOpen]    = useState(false);
+  const ctrlLogRef = useRef<HTMLDivElement>(null);
+
+  // 로그 추가 헬퍼 (상태 + localStorage 동시 업데이트)
+  const addLog = (entry: Omit<CtrlLogEntry, 'id' | 'ts'>) => {
+    const full = pushCtrlLog(entry);
+    setCtrlLogs(p => [full, ...p].slice(0, CTRL_LOG_MAX));
+  };
+
+  // 초기 로드
+  useEffect(() => { setCtrlLogs(getCtrlLog()); }, []);
 
   /* coupon counts (list) */
   const [couponCountMap, setCouponCountMap] = useState<Record<string, number>>({});
@@ -415,6 +461,7 @@ export default function StoresPage() {
     await fetch('/api/admin/stores', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: store.id, is_active: !store.is_active }) });
     setStores(p => p.map(s => s.id === store.id ? { ...s, is_active: !s.is_active } : s));
     setToggling(null);
+    addLog({ icon: store.is_active ? '🔴' : '🟢', type: 'store_toggle', message: `"${store.name}" ${store.is_active ? '비활성화' : '활성화'}` });
   };
 
   const searchNaver = async () => {
@@ -530,16 +577,21 @@ export default function StoresPage() {
     }
     if (editModal !== 'new' && editModal) {
       pushStoreHistory((editModal as Store).id, { changed_at: new Date().toISOString(), label: '정보 수정', snapshot: { ...form } as Record<string, unknown> });
+      addLog({ icon: '✏️', type: 'store_edit', message: `"${form.name}" 정보 수정`, detail: form.category ?? undefined });
+    } else {
+      addLog({ icon: '➕', type: 'store_add', message: `"${form.name}" 신규 가게 등록`, detail: form.category ?? undefined });
     }
     await loadStores();
     setEditModal(null); setSaving(false);
   };
 
   const deleteStore = async (id: string) => {
+    const target = stores.find(s => s.id === id);
     const r = await fetch('/api/admin/stores', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
     if (!r.ok) { const d = await r.json().catch(() => ({})); alert(`삭제 실패: ${d.error ?? '알 수 없는 오류'}`); return; }
     setStores(p => p.filter(s => s.id !== id));
     setDeleteId(null);
+    addLog({ icon: '🗑️', type: 'store_delete', message: `"${target?.name ?? id}" 가게 삭제` });
   };
 
   /* ---------------------------------------------------------------- */
@@ -551,17 +603,20 @@ export default function StoresPage() {
     if (!couponForm.title.trim() || (_needsValue && !couponForm.discount_value) || editModal === 'new' || !editModal) return;
     setSavingCoupon(true); setCouponError('');
     try {
+      const storeName = (editModal as Store).name;
       if (editCouponId) {
         const r = await fetch('/api/admin/coupons', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: editCouponId, ...couponForm }) });
         if (!r.ok) { const d = await r.json().catch(() => ({})); setCouponError(d.error ?? '수정 실패'); return; }
         setStoreCoupons(p => p.map(c => c.id === editCouponId ? { ...c, ...couponForm } : c));
         setEditCouponId(null);
+        addLog({ icon: '🎟️', type: 'coupon_edit', message: `"${storeName}" 쿠폰 수정 — ${couponForm.title}`, detail: discountLabel(couponForm.discount_type, couponForm.discount_value, couponForm.free_item_name) });
       } else {
         const r = await fetch('/api/admin/coupons', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ store_id: (editModal as Store).id, ...couponForm }) });
         if (!r.ok) { const d = await r.json().catch(() => ({})); setCouponError(d.error ?? '등록 실패'); return; }
         const { data: newC } = await r.json();
         if (newC) setStoreCoupons(p => [newC, ...p]);
         else await loadStoreCoupons((editModal as Store).id);
+        addLog({ icon: '🎟️', type: 'coupon_add', message: `"${storeName}" 쿠폰 등록 — ${couponForm.title}`, detail: discountLabel(couponForm.discount_type, couponForm.discount_value, couponForm.free_item_name) });
       }
       setShowCouponAdd(false); setCouponForm(EMPTY_COUPON);
       loadCouponCounts();
@@ -574,13 +629,18 @@ export default function StoresPage() {
     setStoreCoupons(p => p.map(c => c.id === coupon.id ? { ...c, is_active: !c.is_active } : c));
     setTogglingCoupon(null);
     loadCouponCounts();
+    addLog({ icon: coupon.is_active ? '⏸️' : '▶️', type: 'coupon_toggle', message: `쿠폰 ${coupon.is_active ? '비활성화' : '활성화'} — ${coupon.title}` });
   };
 
   const handleDeleteCoupon = async (id: string) => {
+    const target = storeCoupons.find(c => c.id === id);
     if (!confirm('쿠폰을 삭제할까요? 이미 발급된 쿠폰도 함께 삭제됩니다.')) return;
     setDeletingCoupon(id);
     const r = await fetch('/api/admin/coupons', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
-    if (r.ok) { setStoreCoupons(p => p.filter(c => c.id !== id)); loadCouponCounts(); }
+    if (r.ok) {
+      setStoreCoupons(p => p.filter(c => c.id !== id)); loadCouponCounts();
+      addLog({ icon: '🗑️', type: 'coupon_delete', message: `쿠폰 삭제 — ${target?.title ?? id}` });
+    }
     setDeletingCoupon(null);
   };
 
@@ -630,6 +690,7 @@ export default function StoresPage() {
       a.download = `unniepick-backup-${new Date().toISOString().slice(0, 10)}.json`;
       a.click();
       URL.revokeObjectURL(url);
+      addLog({ icon: '💾', type: 'backup', message: `데이터 백업 다운로드 — stores ${storesRes.data?.length ?? 0}개 / restaurants ${prospectsRes.data?.length ?? 0}개` });
     } finally {
       setBackingUp(false);
     }
@@ -651,6 +712,7 @@ export default function StoresPage() {
         ai_features:     convertTarget.ai_features,
       });
       if (error) throw error;
+      addLog({ icon: '🏪', type: 'store_convert', message: `"${convertForm.name}" 파트너 가게로 전환`, detail: convertForm.category || convertTarget.unniepick_category || convertTarget.category || undefined });
       setConvertTarget(null);
       loadStores();
       loadProspects();
@@ -2178,6 +2240,68 @@ export default function StoresPage() {
           </div>
         </div>
       )}
+
+      {/* ── 관제탑 로그 패널 (고정 하단) ── */}
+      <div
+        className={`fixed bottom-0 left-0 right-0 z-50 border-t border-border-main bg-[#0d0d0d] shadow-2xl transition-all duration-300 ${ctrlOpen ? 'h-72' : 'h-10'}`}
+        style={{ fontFamily: 'monospace' }}
+      >
+        {/* 헤더 바 */}
+        <div
+          className="flex items-center justify-between px-4 h-10 cursor-pointer select-none"
+          onClick={() => setCtrlOpen(v => !v)}
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold text-[#FF6F0F] tracking-widest">● 관제탑</span>
+            {ctrlLogs.length > 0 && (
+              <span className="px-1.5 py-0.5 rounded bg-[#FF6F0F]/20 text-[#FF6F0F] text-[9px] font-bold">{ctrlLogs.length}</span>
+            )}
+            {ctrlLogs[0] && (
+              <span className="text-[10px] text-muted truncate max-w-[320px]">
+                {ctrlLogs[0].icon} {ctrlLogs[0].message}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-3" onClick={e => e.stopPropagation()}>
+            {ctrlLogs.length > 0 && (
+              <button
+                onClick={() => { clearCtrlLog(); setCtrlLogs([]); }}
+                className="text-[10px] text-muted hover:text-red-400 transition px-2 py-0.5 rounded hover:bg-red-500/10"
+              >
+                전체 지우기
+              </button>
+            )}
+            <button onClick={() => setCtrlOpen(v => !v)} className="text-muted hover:text-primary transition text-xs">
+              {ctrlOpen ? '▼' : '▲'}
+            </button>
+          </div>
+        </div>
+
+        {/* 로그 목록 */}
+        {ctrlOpen && (
+          <div ref={ctrlLogRef} className="overflow-y-auto h-[calc(100%-2.5rem)] px-4 py-2 space-y-1">
+            {ctrlLogs.length === 0 ? (
+              <p className="text-[11px] text-dim py-4 text-center">활동 기록이 없습니다.</p>
+            ) : (
+              ctrlLogs.map(log => {
+                const t = new Date(log.ts);
+                const timeStr = `${String(t.getMonth() + 1).padStart(2, '0')}/${String(t.getDate()).padStart(2, '0')} ${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`;
+                return (
+                  <div key={log.id} className="flex items-start gap-2 text-[11px] leading-5 border-b border-border-subtle/30 pb-1">
+                    <span className="text-dim shrink-0 w-[88px]">{timeStr}</span>
+                    <span className="shrink-0">{log.icon}</span>
+                    <span className="text-secondary">{log.message}</span>
+                    {log.detail && <span className="text-dim">— {log.detail}</span>}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* 관제탑 패널 높이만큼 하단 여백 */}
+      <div className={ctrlOpen ? 'h-72' : 'h-10'} />
     </div>
   );
 }
