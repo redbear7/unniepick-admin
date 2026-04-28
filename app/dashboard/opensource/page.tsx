@@ -23,15 +23,15 @@ type PkgBase = Omit<Pkg, 'platform'>;
 
 /* ── 어드민 웹 (Next.js 앱) ── */
 const ADMIN_PKGS: PkgBase[] = [
-  { name: 'next',                       installed: '16.2.2',  latest: '16.2.4',  license: 'MIT',        category: '프레임워크',   url: 'https://github.com/vercel/next.js',                             desc: 'React 풀스택 웹 프레임워크' },
-  { name: 'react',                      installed: '19.2.4',  latest: '19.2.5',  license: 'MIT',        category: '프레임워크',   url: 'https://github.com/facebook/react',                             desc: 'UI 라이브러리' },
-  { name: 'react-dom',                  installed: '19.2.4',  latest: '19.2.5',  license: 'MIT',        category: '프레임워크',   url: 'https://github.com/facebook/react',                             desc: 'React DOM 렌더러' },
+  { name: 'next',                       installed: '16.2.4',  latest: '16.2.4',  license: 'MIT',        category: '프레임워크',   url: 'https://github.com/vercel/next.js',                             desc: 'React 풀스택 웹 프레임워크' },
+  { name: 'react',                      installed: '19.2.5',  latest: '19.2.5',  license: 'MIT',        category: '프레임워크',   url: 'https://github.com/facebook/react',                             desc: 'UI 라이브러리' },
+  { name: 'react-dom',                  installed: '19.2.5',  latest: '19.2.5',  license: 'MIT',        category: '프레임워크',   url: 'https://github.com/facebook/react',                             desc: 'React DOM 렌더러' },
   { name: '@supabase/supabase-js',      installed: '2.105.1', latest: '2.105.1', license: 'MIT',        category: '데이터베이스', url: 'https://github.com/supabase/supabase-js',                       desc: 'Supabase JS 클라이언트' },
   { name: '@supabase/ssr',              installed: '0.10.2',  latest: '0.10.2',  license: 'MIT',        category: '데이터베이스', url: 'https://github.com/supabase/supabase-js',                       desc: 'Supabase SSR 클라이언트' },
   { name: 'tailwindcss',                installed: '4.2.4',   latest: '4.2.4',   license: 'MIT',        category: 'UI/스타일',   url: 'https://github.com/tailwindlabs/tailwindcss',                   desc: 'Utility-first CSS 프레임워크' },
   { name: 'lucide-react',               installed: '1.11.0',  latest: '1.11.0',  license: 'ISC',        category: 'UI/스타일',   url: 'https://github.com/lucide-icons/lucide',                        desc: '아이콘 라이브러리' },
   { name: 'typescript',                 installed: '5.9.3',   latest: '6.0.3',   license: 'Apache-2.0', category: '언어/타입',   url: 'https://github.com/microsoft/TypeScript',                       desc: '정적 타입 언어', breaking: true, note: 'v6 Breaking change 검토 후 적용 권장' },
-  { name: '@anthropic-ai/sdk',          installed: '0.88.0',  latest: '0.91.1',  license: 'MIT',        category: 'AI/ML',       url: 'https://github.com/anthropic-ai/anthropic-sdk-python',          desc: 'Anthropic Claude API 클라이언트' },
+  { name: '@anthropic-ai/sdk',          installed: '0.91.1',  latest: '0.91.1',  license: 'MIT',        category: 'AI/ML',       url: 'https://github.com/anthropic-ai/anthropic-sdk-python',          desc: 'Anthropic Claude API 클라이언트' },
   { name: '@google/genai',              installed: '1.50.1',  latest: '1.50.1',  license: 'Apache-2.0', category: 'AI/ML',       url: 'https://github.com/google/generative-ai-js',                    desc: 'Google Gemini API 클라이언트' },
   { name: '@fal-ai/client',             installed: '1.10.0',  latest: '1.10.0',  license: 'MIT',        category: 'AI/ML',       url: 'https://github.com/fal-ai/fal',                                 desc: 'fal.ai 이미지 생성 클라이언트' },
   { name: 'remotion',                   installed: '4.0.453', latest: '4.0.453', license: 'MIT',        category: '미디어',      url: 'https://github.com/remotion-dev/remotion',                      desc: '코드 기반 영상 제작 프레임워크' },
