@@ -487,7 +487,7 @@ export default function RestaurantsPage() {
   }
 
   // 구/동 옵션 + 카운트 추출
-  const { guList, guDongMap, guCounts, catCounts } = (() => {
+  const { guList, guDongMap, guCounts, catCounts, guTotal } = (() => {
     const guCountMap = new Map<string, number>();
     // 구 → 동 → 카운트
     const guDong = new Map<string, Map<string, number>>();
@@ -512,6 +512,7 @@ export default function RestaurantsPage() {
       guDongMap: guDong,
       guCounts:  guCountMap,
       catCounts: catCountMap,
+      guTotal:   [...guCountMap.values()].reduce((a, b) => a + b, 0),
     };
   })();
 
@@ -766,8 +767,12 @@ export default function RestaurantsPage() {
       {/* 구별 카드 */}
       {guList.length > 0 && (
         <div>
-          <p className="text-xs text-muted mb-2 flex items-center gap-1">
-            <MapPin className="w-3 h-3" /> 구별 ({guList.length}개)
+          <p className="text-xs text-muted mb-2 flex items-center gap-2">
+            <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> 구별 ({guList.length}개)</span>
+            <span className={`text-[11px] ${guTotal === restaurants.length ? 'text-emerald-400' : 'text-amber-400'}`}>
+              합계 {guTotal.toLocaleString()} / 전체 {restaurants.length.toLocaleString()}
+              {guTotal !== restaurants.length && ` (미분류 ${restaurants.length - guTotal})`}
+            </span>
           </p>
           <div className="flex flex-wrap gap-2">
             {guList.map((gu) => (
