@@ -23,7 +23,8 @@ interface Restaurant {
   id: string;
   naver_place_id: string;
   name: string;
-  address: string | null;
+  address: string | null;       // 지번 주소 (동 포함)
+  road_address: string | null;  // 도로명 주소
   phone: string | null;
   category: string | null;
   rating: number | null;
@@ -79,13 +80,17 @@ function getRepresentativeTags(r: Restaurant): string[] {
 
 type SortField = 'name' | 'crawled_at' | 'opened_at' | 'category' | 'operating_status' | 'ai_summary' | 'visitor_review_count';
 
-/** 주소에서 구/동 추출 — 예: "창원 마산합포구 산호동 용마로 96" → { gu: "마산합포구", dong: "산호동" } */
-function parseLocation(address: string | null | undefined): { gu: string; dong: string } {
-  if (!address) return { gu: '', dong: '' };
-  const guMatch = address.match(/[가-힣]+구(?=\s|$)/);
-  const dongMatch = address.match(/[가-힣]+(?:동|읍|면)(?=\s|$)/);
+/** 주소에서 구/동 추출 — 지번(address) 우선, 없으면 도로명(road_address) 폴백 */
+function parseLocation(
+  address: string | null | undefined,
+  roadAddress?: string | null,
+): { gu: string; dong: string } {
+  const src = address || roadAddress || '';
+  if (!src) return { gu: '', dong: '' };
+  const guMatch   = src.match(/[가-힣]+구(?=\s|$)/);
+  const dongMatch = src.match(/[가-힣]+(?:동|읍|면)(?=\s|$)/);
   return {
-    gu: guMatch?.[0] ?? '',
+    gu:   guMatch?.[0]   ?? '',
     dong: dongMatch?.[0] ?? '',
   };
 }
@@ -145,7 +150,7 @@ export default function RestaurantsPage() {
   const [viewMode, setViewMode] = useState<'list' | 'thumbnail'>('list');
 
   // ── 페이지네이션 ──────────────────────────────────────────────
-  const PAGE_SIZE = 50;
+  const [pageSize,    setPageSize]    = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
 
   const supabase = createClient();
@@ -473,26 +478,30 @@ export default function RestaurantsPage() {
   }
 
   // 구/동 옵션 + 카운트 추출
-  const { guList, dongList, guCounts, dongCounts, catCounts } = (() => {
-    const guCountMap  = new Map<string, number>();
-    const dongCountMap = new Map<string, number>();
+  const { guList, guDongMap, guCounts, catCounts } = (() => {
+    const guCountMap = new Map<string, number>();
+    // 구 → 동 → 카운트
+    const guDong = new Map<string, Map<string, number>>();
     const catCountMap = new Map<string, number>();
 
     for (const r of restaurants) {
-      const { gu, dong } = parseLocation(r.address);
-      if (gu) guCountMap.set(gu, (guCountMap.get(gu) ?? 0) + 1);
-      if (dong && (!guFilter || gu === guFilter)) {
-        dongCountMap.set(dong, (dongCountMap.get(dong) ?? 0) + 1);
+      const { gu, dong } = parseLocation(r.address, (r as any).road_address);
+      if (gu) {
+        guCountMap.set(gu, (guCountMap.get(gu) ?? 0) + 1);
+        if (dong) {
+          if (!guDong.has(gu)) guDong.set(gu, new Map());
+          const dm = guDong.get(gu)!;
+          dm.set(dong, (dm.get(dong) ?? 0) + 1);
+        }
       }
       const cat = (r as any).unniepick_category || r.category;
       if (cat) catCountMap.set(cat, (catCountMap.get(cat) ?? 0) + 1);
     }
 
     return {
-      guList:   [...guCountMap.keys()].sort((a, b) => (guCountMap.get(b)! - guCountMap.get(a)!)),
-      dongList: [...dongCountMap.keys()].sort((a, b) => (dongCountMap.get(b)! - dongCountMap.get(a)!)),
+      guList:    [...guCountMap.keys()].sort((a, b) => (guCountMap.get(b)! - guCountMap.get(a)!)),
+      guDongMap: guDong,
       guCounts:  guCountMap,
-      dongCounts: dongCountMap,
       catCounts: catCountMap,
     };
   })();
@@ -531,7 +540,7 @@ export default function RestaurantsPage() {
       if (new Date(openedAt) < cutoff) return false;
     }
 
-    const { gu, dong } = parseLocation(r.address);
+    const { gu, dong } = parseLocation(r.address, (r as any).road_address);
     if (guFilter   && gu   !== guFilter)   return false;
     if (dongFilter && dong !== dongFilter) return false;
     if (!search) return true;
@@ -594,9 +603,9 @@ export default function RestaurantsPage() {
   });
 
   // 페이지네이션
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const totalPages = Math.ceil(filtered.length / pageSize);
   const safePage   = Math.min(currentPage, Math.max(1, totalPages));
-  const pagedList  = sorted.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const pagedList  = sorted.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   // 통계
   const newOpenCount = restaurants.filter((r) => r.tags?.includes('창원시 새로오픈 맛집')).length;
@@ -768,24 +777,35 @@ export default function RestaurantsPage() {
         </div>
       )}
 
-      {/* 동별 카드 */}
-      {dongList.length > 0 && (
-        <div>
-          <p className="text-xs text-muted mb-2 flex items-center gap-1">
-            <MapPin className="w-3 h-3" />
-            동별 ({dongList.length}개){guFilter && ` · ${guFilter}`}
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {dongList.slice(0, 30).map((dong) => (
-              <LocationChip
-                key={dong}
-                label={dong}
-                count={dongCounts.get(dong) ?? 0}
-                active={dongFilter === dong}
-                onClick={() => setDongFilter(dongFilter === dong ? '' : dong)}
-              />
-            ))}
-          </div>
+      {/* 동별 카드 — 구별로 그룹 표시 */}
+      {guDongMap.size > 0 && (
+        <div className="space-y-3">
+          {(guFilter ? [guFilter] : guList).map((gu) => {
+            const dongMap = guDongMap.get(gu);
+            if (!dongMap || dongMap.size === 0) return null;
+            const dongs = [...dongMap.entries()].sort((a, b) => b[1] - a[1]);
+            return (
+              <div key={gu}>
+                <p className="text-xs text-muted mb-1.5 flex items-center gap-1">
+                  <MapPin className="w-3 h-3" /> {gu} 동별 ({dongs.length}개)
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {dongs.map(([dong, cnt]) => (
+                    <LocationChip
+                      key={`${gu}-${dong}`}
+                      label={dong}
+                      count={cnt}
+                      active={dongFilter === dong}
+                      onClick={() => {
+                        if (guFilter !== gu) { setGuFilter(gu); }
+                        setDongFilter(dongFilter === dong ? '' : dong);
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -833,7 +853,10 @@ export default function RestaurantsPage() {
           <SelectFilter
             value={dongFilter}
             onChange={setDongFilter}
-            options={dongList}
+            options={guFilter
+              ? [...(guDongMap.get(guFilter)?.keys() ?? [])].sort()
+              : [...new Set([...guDongMap.values()].flatMap(m => [...m.keys()]))].sort()
+            }
             placeholder="전체 동"
             icon={<MapPin className="w-4 h-4" />}
           />
@@ -1104,56 +1127,57 @@ export default function RestaurantsPage() {
           )}
 
           {/* 페이지네이션 */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-1 pt-4 pb-2">
-              <button
-                onClick={() => setCurrentPage(1)}
-                disabled={safePage === 1}
-                className="px-2 py-1 rounded text-xs text-muted hover:text-primary disabled:opacity-30 transition"
-              >«</button>
-              <button
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={safePage === 1}
-                className="px-2 py-1 rounded text-xs text-muted hover:text-primary disabled:opacity-30 transition"
-              >‹</button>
-
-              {Array.from({ length: totalPages }, (_, i) => i + 1)
-                .filter(p => p === 1 || p === totalPages || Math.abs(p - safePage) <= 2)
-                .reduce<(number | '…')[]>((acc, p, idx, arr) => {
-                  if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push('…');
-                  acc.push(p);
-                  return acc;
-                }, [])
-                .map((p, idx) =>
-                  p === '…'
-                    ? <span key={`e${idx}`} className="px-1 text-xs text-dim">…</span>
-                    : <button
-                        key={p}
-                        onClick={() => setCurrentPage(p as number)}
-                        className={`min-w-[28px] px-2 py-1 rounded text-xs transition ${
-                          p === safePage
-                            ? 'bg-accent text-white font-semibold'
-                            : 'text-muted hover:text-primary'
-                        }`}
-                      >{p}</button>
-                )}
-
-              <button
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                disabled={safePage === totalPages}
-                className="px-2 py-1 rounded text-xs text-muted hover:text-primary disabled:opacity-30 transition"
-              >›</button>
-              <button
-                onClick={() => setCurrentPage(totalPages)}
-                disabled={safePage === totalPages}
-                className="px-2 py-1 rounded text-xs text-muted hover:text-primary disabled:opacity-30 transition"
-              >»</button>
-
-              <span className="ml-3 text-xs text-dim">
-                {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, filtered.length)} / {filtered.length}개
-              </span>
+          <div className="flex items-center justify-between pt-4 pb-2 gap-2 flex-wrap">
+            {/* 페이지당 개수 선택 */}
+            <div className="flex items-center gap-1.5 text-xs text-muted">
+              <span>페이지당</span>
+              {[10, 25, 50, 100].map(n => (
+                <button
+                  key={n}
+                  onClick={() => { setPageSize(n); setCurrentPage(1); }}
+                  className={`min-w-[32px] px-2 py-1 rounded transition ${
+                    pageSize === n ? 'bg-accent text-white font-semibold' : 'hover:text-primary'
+                  }`}
+                >{n}</button>
+              ))}
+              <span>개</span>
             </div>
-          )}
+
+            {/* 페이지 이동 */}
+            {totalPages > 1 && (
+              <div className="flex items-center gap-1">
+                <button onClick={() => setCurrentPage(1)} disabled={safePage === 1}
+                  className="px-2 py-1 rounded text-xs text-muted hover:text-primary disabled:opacity-30 transition">«</button>
+                <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={safePage === 1}
+                  className="px-2 py-1 rounded text-xs text-muted hover:text-primary disabled:opacity-30 transition">‹</button>
+
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter(p => p === 1 || p === totalPages || Math.abs(p - safePage) <= 2)
+                  .reduce<(number | '…')[]>((acc, p, idx, arr) => {
+                    if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push('…');
+                    acc.push(p);
+                    return acc;
+                  }, [])
+                  .map((p, idx) =>
+                    p === '…'
+                      ? <span key={`e${idx}`} className="px-1 text-xs text-dim">…</span>
+                      : <button key={p} onClick={() => setCurrentPage(p as number)}
+                          className={`min-w-[28px] px-2 py-1 rounded text-xs transition ${
+                            p === safePage ? 'bg-accent text-white font-semibold' : 'text-muted hover:text-primary'
+                          }`}>{p}</button>
+                  )}
+
+                <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={safePage === totalPages}
+                  className="px-2 py-1 rounded text-xs text-muted hover:text-primary disabled:opacity-30 transition">›</button>
+                <button onClick={() => setCurrentPage(totalPages)} disabled={safePage === totalPages}
+                  className="px-2 py-1 rounded text-xs text-muted hover:text-primary disabled:opacity-30 transition">»</button>
+              </div>
+            )}
+
+            <span className="text-xs text-dim">
+              {(safePage - 1) * pageSize + 1}–{Math.min(safePage * pageSize, filtered.length)} / {filtered.length}개
+            </span>
+          </div>
         </>
       )}
 
