@@ -72,7 +72,7 @@ const DEFAULT_GROUPS: NavGroup[] = [
       { id: 'applications',   href: '/dashboard/applications',   icon: 'ClipboardList', label: '가게 등록 신청' },
       { id: 'contexts',     href: '/dashboard/contexts',     icon: 'MapPin',        label: '매장 컨텍스트' },
       { id: 'brands',       href: '/dashboard/brands',       icon: 'Building2',         label: '브랜드관' },
-      { id: 'restaurants',        href: '/dashboard/restaurants',              icon: 'UtensilsCrossed', label: '창원 맛집' },
+      { id: 'restaurants',        href: '/dashboard/restaurants',              icon: 'UtensilsCrossed', label: '전체 가게 관리' },
       { id: 'restaurant-tags',    href: '/dashboard/restaurants/tags',         icon: 'Tag',             label: '업체 태그 관리' },
       { id: 'ai-chat',            href: '/dashboard/restaurants/ai-chat',      icon: 'Sparkles',        label: 'AI 맛집 추천' },
       { id: 'crawl-keywords',     href: '/dashboard/restaurants/keywords',     icon: 'Search',          label: '크롤링 키워드' },

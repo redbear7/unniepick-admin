@@ -472,7 +472,7 @@ export default function RestaurantsPage() {
         <div>
           <h1 className="text-2xl font-bold text-primary flex items-center gap-2">
             <UtensilsCrossed className="w-6 h-6" />
-            창원 맛집
+            전체 가게 관리
           </h1>
           <p className="text-sm text-muted mt-1">
             네이버 플레이스 기반 · 총 {restaurants.length}개
