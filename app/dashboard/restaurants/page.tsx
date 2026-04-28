@@ -167,13 +167,19 @@ export default function RestaurantsPage() {
     return () => observer.disconnect();
   }, []);
 
-  // 이미 stores에 등록된 naver_place_id 세트 조회
+  // 이미 stores에 등록된 restaurant UUID 세트 조회
   async function fetchRegisteredIds() {
-    const { data } = await supabase
+    const { data: storeData } = await supabase
       .from('stores')
       .select('naver_place_id')
       .not('naver_place_id', 'is', null);
-    setRegisteredIds(new Set((data ?? []).map((s: any) => s.naver_place_id).filter(Boolean)));
+    const naverIds = (storeData ?? []).map((s: any) => s.naver_place_id).filter(Boolean);
+    if (!naverIds.length) { setRegisteredIds(new Set()); return; }
+    const { data: rData } = await supabase
+      .from('restaurants')
+      .select('id')
+      .in('naver_place_id', naverIds);
+    setRegisteredIds(new Set((rData ?? []).map((r: any) => r.id)));
   }
 
   // 단일 업체 즉시 등록
@@ -184,12 +190,12 @@ export default function RestaurantsPage() {
       const res = await fetch('/api/restaurants/batch-register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ naver_place_ids: [r.naver_place_id] }),
+        body: JSON.stringify({ restaurant_ids: [r.id] }),
       });
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error ?? '등록 실패');
-      setRegisteredIds(prev => new Set([...prev, r.naver_place_id]));
-      setRegisterMsg(`✅ "${r.name}" 가게 등록 완료`);
+      setRegisteredIds(prev => new Set([...prev, r.id]));
+      setRegisterMsg(`✅ "${r.name}" 가게관리에 비활성으로 등록됨`);
       setTimeout(() => setRegisterMsg(''), 3000);
     } catch (e) {
       alert(`등록 실패: ${(e as Error).message}`);
@@ -198,11 +204,11 @@ export default function RestaurantsPage() {
     }
   }
 
-  // 체크박스 토글
-  function toggleSelect(naverPlaceId: string) {
+  // 체크박스 토글 (restaurant UUID 기준)
+  function toggleSelect(id: string) {
     setSelectedIds(prev => {
       const next = new Set(prev);
-      next.has(naverPlaceId) ? next.delete(naverPlaceId) : next.add(naverPlaceId);
+      next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
   }
@@ -210,8 +216,8 @@ export default function RestaurantsPage() {
   // 전체 선택 / 해제
   function toggleSelectAll() {
     const unregistered = filtered
-      .filter(r => !registeredIds.has(r.naver_place_id))
-      .map(r => r.naver_place_id);
+      .filter(r => !registeredIds.has(r.id))
+      .map(r => r.id);
     if (selectedIds.size === unregistered.length && unregistered.length > 0) {
       setSelectedIds(new Set());
     } else {
@@ -229,13 +235,13 @@ export default function RestaurantsPage() {
       const res = await fetch('/api/restaurants/batch-register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ naver_place_ids: ids }),
+        body: JSON.stringify({ restaurant_ids: ids }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? '등록 실패');
       setRegisteredIds(prev => new Set([...prev, ...data.registered]));
       setSelectedIds(new Set());
-      setRegisterMsg(`✅ ${data.registered.length}개 가게 등록 완료${data.failed.length ? ` · ${data.failed.length}개 실패` : ''}`);
+      setRegisterMsg(`✅ ${data.registered.length}개 가게관리에 비활성으로 등록됨${data.failed.length ? ` · ${data.failed.length}개 실패` : ''}`);
       setTimeout(() => setRegisterMsg(''), 4000);
     } catch (e) {
       alert(`일괄 등록 실패: ${(e as Error).message}`);
@@ -805,14 +811,14 @@ export default function RestaurantsPage() {
               onClick={toggleSelectAll}
               className="flex items-center gap-2 text-sm text-muted hover:text-primary transition"
             >
-              {selectedIds.size > 0 && selectedIds.size === filtered.filter(r => !registeredIds.has(r.naver_place_id)).length
+              {selectedIds.size > 0 && selectedIds.size === filtered.filter(r => !registeredIds.has(r.id)).length
                 ? <CheckSquare className="w-4 h-4 text-[#FF6F0F]" />
                 : <Square className="w-4 h-4" />
               }
               {selectedIds.size > 0 ? `${selectedIds.size}개 선택됨` : '미등록 전체 선택'}
             </button>
             <p className="text-xs text-muted">
-              등록됨 {[...registeredIds].filter(id => filtered.some(r => r.naver_place_id === id)).length}
+              등록됨 {filtered.filter(r => registeredIds.has(r.id)).length}
               / {filtered.length}개
             </p>
           </div>
@@ -825,7 +831,7 @@ export default function RestaurantsPage() {
                     {/* 체크박스 */}
                     <th className="px-4 py-3.5 w-8">
                       <button onClick={toggleSelectAll} className="flex items-center justify-center">
-                        {selectedIds.size > 0 && selectedIds.size === filtered.filter(r => !registeredIds.has(r.naver_place_id)).length
+                        {selectedIds.size > 0 && selectedIds.size === filtered.filter(r => !registeredIds.has(r.id)).length
                           ? <CheckSquare className="w-4 h-4 text-[#FF6F0F]" />
                           : <Square className="w-4 h-4 text-muted" />}
                       </button>
@@ -860,9 +866,9 @@ export default function RestaurantsPage() {
                       key={r.id}
                       r={r}
                       onClick={() => setSelected(r)}
-                      registered={registeredIds.has(r.naver_place_id)}
-                      selected={selectedIds.has(r.naver_place_id)}
-                      onSelect={() => toggleSelect(r.naver_place_id)}
+                      registered={registeredIds.has(r.id)}
+                      selected={selectedIds.has(r.id)}
+                      onSelect={() => toggleSelect(r.id)}
                       onAiSummary={() => generateAiSummary(r)}
                       aiLoading={aiSummaryingId === r.id}
                       onRegister={() => quickRegister(r)}
@@ -879,11 +885,13 @@ export default function RestaurantsPage() {
                   key={r.id}
                   r={r}
                   onClick={() => setSelected(r)}
-                  registered={registeredIds.has(r.naver_place_id)}
-                  selected={selectedIds.has(r.naver_place_id)}
-                  onSelect={() => toggleSelect(r.naver_place_id)}
+                  registered={registeredIds.has(r.id)}
+                  selected={selectedIds.has(r.id)}
+                  onSelect={() => toggleSelect(r.id)}
                   onAiSummary={() => generateAiSummary(r)}
                   aiLoading={aiSummaryingId === r.id}
+                  onRegister={() => quickRegister(r)}
+                  registering={registeringId === r.id}
                 />
               ))}
             </div>
@@ -904,7 +912,7 @@ export default function RestaurantsPage() {
         <DetailModal
           r={selected}
           onClose={() => setSelected(null)}
-          registered={registeredIds.has(selected.naver_place_id)}
+          registered={registeredIds.has(selected.id)}
         />
       )}
 
@@ -1156,14 +1164,11 @@ function RestaurantListRow({
       {/* 관리 */}
       <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-center gap-1.5 flex-wrap">
-          {/* 가게 등록 / 수정 */}
+          {/* 가게 등록 / 등록됨 */}
           {registered ? (
-            <Link
-              href={`/dashboard/stores?edit=${encodeURIComponent(r.naver_place_id ?? '')}`}
-              className="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-[#FF6F0F]/15 text-[#FF6F0F] border border-[#FF6F0F]/30 hover:bg-[#FF6F0F]/30 transition whitespace-nowrap"
-            >
-              수정
-            </Link>
+            <span className="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-green-500/15 text-green-400 border border-green-500/30 whitespace-nowrap">
+              등록됨
+            </span>
           ) : (
             <button
               onClick={onRegister}
@@ -1205,6 +1210,7 @@ function RestaurantCard({
   r, onClick,
   registered, selected, onSelect,
   onAiSummary, aiLoading,
+  onRegister, registering,
 }: {
   r: Restaurant;
   onClick: () => void;
@@ -1213,6 +1219,8 @@ function RestaurantCard({
   onSelect?: () => void;
   onAiSummary?: () => void;
   aiLoading?: boolean;
+  onRegister?: () => void;
+  registering?: boolean;
 }) {
   const topKeyword = r.review_keywords?.[0];
   return (
@@ -1417,28 +1425,18 @@ function RestaurantCard({
         {/* 가게 등록 / 등록됨 버튼 */}
         <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
           {registered ? (
-            <>
-              <div className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-green-500/10 border border-green-500/30 rounded-lg text-xs font-semibold text-green-400">
-                <Check className="w-3.5 h-3.5" />
-                가게 등록됨
-              </div>
-              <Link
-                href={`/dashboard/restaurants/register?naver_place_id=${r.naver_place_id}`}
-                className="flex items-center justify-center gap-1.5 px-3 py-2 bg-fill-subtle hover:bg-fill-medium border border-border-subtle rounded-lg text-xs font-semibold text-muted hover:text-primary transition"
-              >
-                <Pencil className="w-3 h-3" />
-                수정
-              </Link>
-            </>
+            <div className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-green-500/10 border border-green-500/30 rounded-lg text-xs font-semibold text-green-400">
+              <Check className="w-3.5 h-3.5" />
+              가게 등록됨
+            </div>
           ) : (
-            <Link
-              href={`/dashboard/restaurants/register?naver_place_id=${r.naver_place_id}`}
-              onClick={(e) => e.stopPropagation()}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#FF6F0F] hover:bg-[#e85e00] text-white rounded-lg text-xs font-bold transition"
+            <button
+              onClick={onRegister}
+              disabled={registering}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#FF6F0F] hover:bg-[#e85e00] text-white rounded-lg text-xs font-bold transition disabled:opacity-50"
             >
-              <PlusCircle className="w-3.5 h-3.5" />
-              가게 등록
-            </Link>
+              {registering ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><PlusCircle className="w-3.5 h-3.5" />가게 등록</>}
+            </button>
           )}
         </div>
 
@@ -1490,14 +1488,12 @@ function DetailModal({ r, onClose, registered }: { r: Restaurant; onClose: () =>
               <p className="text-sm text-muted mt-1">{r.category}</p>
             </div>
             <div className="flex items-center gap-2">
-              <Link
-                href={`/dashboard/restaurants/register?naver_place_id=${r.naver_place_id}`}
-                onClick={onClose}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FF6F0F] hover:bg-[#e85e00] text-white text-xs font-bold rounded-lg transition"
-              >
-                <PlusCircle className="w-3.5 h-3.5" />
-                {registered ? '가게 수정' : '가게 등록'}
-              </Link>
+              {registered && (
+                <span className="flex items-center gap-1 px-3 py-1.5 bg-green-500/15 text-green-400 border border-green-500/30 text-xs font-bold rounded-lg">
+                  <Check className="w-3 h-3" />
+                  등록됨
+                </span>
+              )}
               <button onClick={onClose} className="text-muted hover:text-primary"><X className="w-5 h-5" /></button>
             </div>
           </div>
