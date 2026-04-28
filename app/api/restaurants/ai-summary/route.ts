@@ -56,9 +56,12 @@ function buildPrompt(r: Record<string, unknown>): string {
     .map(k => k.menu)
     .join(', ');
 
-  const blogHints = toArr<{ title: string }>(r.blog_reviews)
-    .slice(0, 3)
-    .map(b => b.title)
+  const blogHints = toArr<{ title: string; snippet?: string }>(r.blog_reviews)
+    .slice(0, 4)
+    .map(b => {
+      const snippet = b.snippet ? ` — ${b.snippet.slice(0, 60)}` : '';
+      return `${b.title}${snippet}`;
+    })
     .join(' / ');
 
   const category = (r.unniepick_category || r.category || '') as string;
@@ -73,7 +76,7 @@ function buildPrompt(r: Record<string, unknown>): string {
 메뉴: ${menus || ''}
 손님들이 자주 언급한 키워드: ${reviewKw || ''}
 인기 메뉴: ${menuKw || ''}
-블로그 분위기: ${blogHints || ''}
+블로그·카페 리뷰: ${blogHints || ''}
 
 【큐레이터 작성 원칙】
 - 이 가게만의 시그니처 메뉴·대표 음식의 맛·식감·향·비주얼을 생생하게 표현

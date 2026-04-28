@@ -539,13 +539,13 @@ export default function RestaurantsPage() {
     }
   }
 
-  // ── 상세 보강 (B안: 네이버 Playwright) ───────────────────────────
+  // ── 블로그/카페 리뷰 보강 (B안: 네이버 공식 API) ──────────────────
   async function enrichByKeywords(keywords: string[]) {
     setKwEnriching(true);
     setKwLogs([]);
     setKwEnrichProgress('');
     try {
-      const res = await fetch('/api/collect/naver-enrich', {
+      const res = await fetch('/api/collect/naver-blog-enrich', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ keywords, limit: 30 }),
@@ -566,29 +566,24 @@ export default function RestaurantsPage() {
           try {
             const evt = JSON.parse(line.slice(6));
             if (evt.type === 'keyword') {
-              setKwLogs(p => [...p, ``, `🌐 [${evt.index + 1}/${evt.total}] "${evt.keyword}" 네이버 크롤링`]);
+              setKwLogs(p => [...p, ``, `📰 [${evt.index + 1}/${evt.total}] "${evt.keyword}" 블로그/카페 검색`]);
               setKwEnrichProgress(`[${evt.index + 1}/${evt.total}] ${evt.keyword}`);
             }
             if (evt.type === 'log') {
               const raw = String(evt.line ?? '').trim();
               if (!raw) continue;
-              // Playwright/Crawlee 내부 잡음만 제거
-              if (/^(INFO|DEBUG|WARN)\s+\w+Crawler/i.test(raw)) continue;
-              if (/^pw:api|^browserType\.|^node:internal/i.test(raw)) continue;
-              if (/StatisticsState|AutoscaledPool|MemoryInfo|requestHandlerTimeout/i.test(raw)) continue;
               const prefix = evt.isErr ? '   ⚠ ' : '   ';
               setKwLogs(p => [...p, `${prefix}${raw}`]);
             }
             if (evt.type === 'keyword_done') {
               const icon = evt.code === 0 ? '✓' : '✗';
-              setKwLogs(p => [...p, `   ${icon} 완료 (exit ${evt.code})`]);
+              setKwLogs(p => [...p, `   ${icon} 완료`]);
             }
             if (evt.type === 'delay') {
-              setKwLogs(p => [...p, `⏳ ${(evt.ms / 1000).toFixed(0)}초 대기 후 다음 키워드...`]);
-              setKwEnrichProgress(`⏳ 다음 키워드 대기 중... (${(evt.ms / 1000).toFixed(0)}초)`);
+              setKwEnrichProgress(`⏳ 다음 키워드 대기 중...`);
             }
             if (evt.type === 'done') {
-              setKwLogs(p => [...p, ``, `✅ 네이버 보강 완료`]);
+              setKwLogs(p => [...p, ``, `✅ 블로그/카페 리뷰 보강 완료 (${evt.processed}건 성공, ${evt.errors}건 오류)`]);
               setKwEnrichProgress('완료');
               success = true;
             }
@@ -1476,7 +1471,7 @@ export default function RestaurantsPage() {
                   onClick={() => enrichByKeywords(kwModal.keywords)}
                   className="w-full py-2.5 rounded-xl bg-green-500/20 hover:bg-green-500/30 border border-green-500/40 text-green-400 font-semibold text-sm transition"
                 >
-                  🔎 B안 — 네이버 상세 보강 (리뷰·메뉴)
+                  📰 B안 — 네이버 블로그/카페 리뷰 수집
                 </button>
                 {kwLogs.length > 0 && (
                   <button onClick={() => setKwModal(null)} className="w-full py-2 text-xs text-muted hover:text-primary transition">
@@ -1488,7 +1483,7 @@ export default function RestaurantsPage() {
               <div className="flex flex-col items-center gap-1.5 py-3">
                 <div className="flex items-center gap-2 text-sm text-muted">
                   <Loader2 className="w-4 h-4 animate-spin shrink-0" />
-                  {kwCollecting ? 'A안 카카오 수집 중...' : 'B안 네이버 보강 중...'}
+                  {kwCollecting ? 'A안 카카오 수집 중...' : 'B안 블로그/카페 검색 중...'}
                 </div>
                 {kwEnrichProgress && (
                   <span className="text-xs text-green-400 font-mono">{kwEnrichProgress}</span>
