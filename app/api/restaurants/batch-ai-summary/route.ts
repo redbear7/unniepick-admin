@@ -17,7 +17,7 @@ function adminSb() {
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({})) as { limit?: number };
-  const limit = Math.min(50, body.limit ?? 20);
+  const limit = Math.min(10, body.limit ?? 5);
 
   const sb = adminSb();
   const { data: rows, error } = await sb
@@ -46,8 +46,8 @@ export async function POST(req: NextRequest) {
     } catch {
       errors++;
     }
-    // rate limit 방지
-    await new Promise(r => setTimeout(r, 300));
+    // Gemini 무료 티어 15 RPM 대응 (4.5초 간격)
+    await new Promise(r => setTimeout(r, 4500));
   }
 
   return NextResponse.json({ ok: true, processed, errors });

@@ -105,26 +105,40 @@ export async function POST(req: NextRequest) {
   let summary = '';
   let features: AiFeatures = { 분위기태그: [], 추천메뉴: [], 방문팁: '', 특징키워드: [] };
 
-  try {
-    const result = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-    });
-    const text = result.text ?? '';
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      const parsed = JSON.parse(jsonMatch[0]);
-      summary = parsed.한줄요약 ?? '';
-      features = {
-        분위기태그:   parsed.분위기태그   ?? [],
-        추천메뉴:     parsed.추천메뉴     ?? [],
-        방문팁:       parsed.방문팁       ?? '',
-        특징키워드:   parsed.특징키워드   ?? [],
-      };
+  // 429 재시도 (최대 3회, 지수 백오프)
+  const MAX_RETRIES = 3;
+  let lastErr: unknown;
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    try {
+      const result = await ai.models.generateContent({
+        model: 'gemini-2.0-flash',
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      });
+      const text = result.text ?? '';
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        summary = parsed.한줄요약 ?? '';
+        features = {
+          분위기태그:   parsed.분위기태그   ?? [],
+          추천메뉴:     parsed.추천메뉴     ?? [],
+          방문팁:       parsed.방문팁       ?? '',
+          특징키워드:   parsed.특징키워드   ?? [],
+        };
+      }
+      lastErr = null;
+      break;
+    } catch (e) {
+      lastErr = e;
+      const msg = String(e);
+      if (msg.includes('429') && attempt < MAX_RETRIES - 1) {
+        await new Promise(r => setTimeout(r, (attempt + 1) * 5000)); // 5s, 10s
+        continue;
+      }
+      return NextResponse.json({ error: `AI 오류: ${e}` }, { status: 500 });
     }
-  } catch (e) {
-    return NextResponse.json({ error: `AI 오류: ${e}` }, { status: 500 });
   }
+  if (lastErr) return NextResponse.json({ error: `AI 오류: ${lastErr}` }, { status: 500 });
 
   const now = new Date().toISOString();
 
