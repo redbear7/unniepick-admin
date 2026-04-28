@@ -77,7 +77,7 @@ function getRepresentativeTags(r: Restaurant): string[] {
   return [...new Set([...custom, ...reviewTop, ...menuTop].filter(Boolean))].slice(0, 3);
 }
 
-type SortField = 'visitor_review_count' | 'crawled_at' | 'name';
+type SortField = 'crawled_at' | 'name';
 
 /** 주소에서 구/동 추출 — 예: "창원 마산합포구 산호동 용마로 96" → { gu: "마산합포구", dong: "산호동" } */
 function parseLocation(address: string | null | undefined): { gu: string; dong: string } {
@@ -388,8 +388,6 @@ export default function RestaurantsPage() {
     : null;
 
   // 통계
-  const totalReviews = restaurants.reduce((s, r) => s + (r.visitor_review_count ?? 0), 0);
-  const avgReviews = restaurants.length ? Math.round(totalReviews / restaurants.length) : 0;
   const newOpenCount = restaurants.filter((r) => r.tags?.includes('창원시 새로오픈 맛집')).length;
 
   return (
@@ -459,8 +457,6 @@ export default function RestaurantsPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard icon={<UtensilsCrossed className="w-4 h-4" />} label="총 업체" value={`${restaurants.length}개`} />
         <StatCard icon={<TrendingUp className="w-4 h-4" />} label="새로오픈" value={`${newOpenCount}개`} color="text-green-400" />
-        <StatCard icon={<MessageSquare className="w-4 h-4" />} label="총 리뷰" value={`${totalReviews.toLocaleString()}건`} />
-        <StatCard icon={<BarChart3 className="w-4 h-4" />} label="평균 리뷰" value={`${avgReviews}건`} />
       </div>
 
       {/* 영업 상태 필터 탭 */}
@@ -543,7 +539,6 @@ export default function RestaurantsPage() {
         <SelectFilter
           value={sortBy} onChange={(v) => setSortBy(v as SortField)}
           options={[
-            { value: 'visitor_review_count', label: '리뷰순' },
             { value: 'crawled_at', label: '최근순' },
             { value: 'name', label: '이름순' },
           ]}
@@ -999,8 +994,6 @@ function RestaurantCard({
         </div>
 
         <div className="flex items-center gap-3 text-sm">
-          {r.visitor_review_count > 0 && <span className="text-muted">리뷰 {r.visitor_review_count.toLocaleString()}</span>}
-          {r.review_count > 0 && <span className="text-muted">블로그 {r.review_count.toLocaleString()}</span>}
         </div>
 
         {/* 영업시간 */}
@@ -1185,7 +1178,7 @@ function DetailModal({ r, onClose, registered }: { r: Restaurant; onClose: () =>
                   </span>
                 )}
               </h2>
-              <p className="text-sm text-muted mt-1">{r.category} · 리뷰 {r.visitor_review_count?.toLocaleString()}건</p>
+              <p className="text-sm text-muted mt-1">{r.category}</p>
             </div>
             <div className="flex items-center gap-2">
               <Link
