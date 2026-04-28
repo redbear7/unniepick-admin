@@ -865,6 +865,8 @@ export default function RestaurantsPage() {
                       onSelect={() => toggleSelect(r.naver_place_id)}
                       onAiSummary={() => generateAiSummary(r)}
                       aiLoading={aiSummaryingId === r.id}
+                      onRegister={() => quickRegister(r)}
+                      registering={registeringId === r.naver_place_id}
                     />
                   ))}
                 </tbody>
@@ -1026,11 +1028,12 @@ function SelectFilter({ value, onChange, options, placeholder, icon }: {
 
 // ── 리스트 행 컴포넌트 ─────────────────────────────────────────────
 function RestaurantListRow({
-  r, onClick, registered, selected, onSelect, onAiSummary, aiLoading,
+  r, onClick, registered, selected, onSelect, onAiSummary, aiLoading, onRegister, registering,
 }: {
   r: Restaurant; onClick: () => void;
   registered?: boolean; selected?: boolean;
   onSelect?: () => void; onAiSummary?: () => void; aiLoading?: boolean;
+  onRegister?: () => void; registering?: boolean;
 }) {
   const catEmoji =
     r.category?.includes('카페') ? '☕'
@@ -1151,8 +1154,26 @@ function RestaurantListRow({
       <td className="px-4 py-3 text-center">{statusBadge}</td>
 
       {/* 관리 */}
-      <td className="px-4 py-3 text-center" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-center gap-1.5">
+      <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-center gap-1.5 flex-wrap">
+          {/* 가게 등록 / 수정 */}
+          {registered ? (
+            <Link
+              href={`/dashboard/stores?edit=${encodeURIComponent(r.naver_place_id ?? '')}`}
+              className="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-[#FF6F0F]/15 text-[#FF6F0F] border border-[#FF6F0F]/30 hover:bg-[#FF6F0F]/30 transition whitespace-nowrap"
+            >
+              수정
+            </Link>
+          ) : (
+            <button
+              onClick={onRegister}
+              disabled={registering}
+              className="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-blue-500/15 text-blue-400 border border-blue-500/30 hover:bg-blue-500/25 transition disabled:opacity-50 whitespace-nowrap"
+            >
+              {registering ? <Loader2 className="w-3 h-3 animate-spin inline" /> : '가게 등록'}
+            </button>
+          )}
+          {/* AI 요약 */}
           <button
             onClick={onAiSummary}
             disabled={aiLoading || hasAi}

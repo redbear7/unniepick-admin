@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
 import KakaoMapPicker from '@/components/KakaoMapPicker';
 import {
@@ -220,7 +221,8 @@ function couponConditionTags(c: StoreCoupon): string[] {
 /* ================================================================== */
 
 export default function StoresPage() {
-  const sb = createClient();
+  const sb     = createClient();
+  const router = useRouter();
 
   /* stores */
   const [stores,        setStores]        = useState<Store[]>([]);
@@ -354,9 +356,23 @@ export default function StoresPage() {
   };
 
   useEffect(() => {
-    loadStores();
-    loadProspects();
-    loadCouponCounts();
+    const init = async () => {
+      await Promise.all([loadStores(), loadProspects(), loadCouponCounts()]);
+
+      // ?edit=<naver_place_id> 쿼리 파라미터 → 해당 가게 수정 모달 자동 오픈
+      const editId = new URLSearchParams(window.location.search).get('edit');
+      if (editId) {
+        const { data } = await sb
+          .from('stores')
+          .select('id, name, address, phone, category, category_detail, is_active, created_at, updated_at, owner_id, image_url, subscription_expires_at, representative_price, price_label, price_range, geo_discoverable, latitude, longitude, naver_place_id, opened_at, closed_at')
+          .eq('naver_place_id', editId)
+          .maybeSingle();
+        if (data) openEdit(data as Store);
+        // URL 정리 (모달 오픈 후 query param 제거)
+        router.replace('/dashboard/stores', { scroll: false });
+      }
+    };
+    init();
     const ch = sb.channel('stores-rt')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'stores' }, loadStores)
       .subscribe();
