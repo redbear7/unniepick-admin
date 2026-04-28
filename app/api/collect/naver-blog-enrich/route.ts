@@ -150,16 +150,37 @@ export async function POST(req: NextRequest) {
             send({ type: 'log', keyword: keywords[0] ?? '', line: `  저장 오류: ${updateErr.message}`, isErr: true });
             totalErrors++;
           } else {
-            send({ type: 'log', keyword: keywords[0] ?? '', line: `  ✓ 블로그 ${blogResults.length}건 + 카페 ${cafeResults.length}건` });
+            send({ type: 'log', keyword: keywords[0] ?? '', line: `  ✓ 블로그 ${blogResults.length}건 + 카페 ${cafeResults.length}건 → AI 요약 생성 중...` });
             totalProcessed++;
+
+            // 블로그 수집 즉시 AI 요약 생성
+            try {
+              const aiRes = await fetch(
+                new URL('/api/restaurants/ai-summary', req.url).toString(),
+                {
+                  method:  'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body:    JSON.stringify({ restaurant_id: r.id }),
+                },
+              );
+              if (aiRes.ok) {
+                const aiData = await aiRes.json();
+                send({ type: 'log', keyword: keywords[0] ?? '', line: `  ✨ AI 요약: ${aiData.summary?.slice(0, 40) ?? '생성됨'}` });
+              } else {
+                const err = await aiRes.json().catch(() => ({}));
+                send({ type: 'log', keyword: keywords[0] ?? '', line: `  ⚠ AI 요약 실패: ${err.error ?? aiRes.status}`, isErr: true });
+              }
+            } catch (aiErr) {
+              send({ type: 'log', keyword: keywords[0] ?? '', line: `  ⚠ AI 요약 오류: ${(aiErr as Error).message}`, isErr: true });
+            }
           }
         } catch (e) {
           send({ type: 'log', keyword: keywords[0] ?? '', line: `  오류: ${(e as Error).message}`, isErr: true });
           totalErrors++;
         }
 
-        // 업체 간 딜레이 (API 부하 방지)
-        await new Promise(r => setTimeout(r, 250));
+        // 업체 간 딜레이 (Naver API + AI 연속 호출 방지)
+        await new Promise(r => setTimeout(r, 500));
       }
 
       send({ type: 'keyword_done', keyword: keywords[0] ?? '', code: 0 });

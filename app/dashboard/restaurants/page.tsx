@@ -786,6 +786,11 @@ export default function RestaurantsPage() {
 
   const sorted = [...filtered].sort((a, b) => {
     const dir = sortDir === 'asc' ? 1 : -1;
+
+    // B안 수집(blog_reviews) 업체 항상 상단 — 명시적 정렬 기준이 없을 때 적용
+    const hasBlogA = Array.isArray(a.blog_reviews) && a.blog_reviews.length > 0 ? 1 : 0;
+    const hasBlogB = Array.isArray(b.blog_reviews) && b.blog_reviews.length > 0 ? 1 : 0;
+
     if (sortBy === 'name') return a.name.localeCompare(b.name, 'ko') * dir;
     if (sortBy === 'crawled_at') return (new Date(a.crawled_at).getTime() - new Date(b.crawled_at).getTime()) * dir;
     if (sortBy === 'opened_at') {
@@ -804,7 +809,10 @@ export default function RestaurantsPage() {
       const hb = !!b.ai_summary ? 1 : 0;
       return (ha - hb) * dir;
     }
-    return 0;
+
+    // 기본: B안(blog) 있는 업체 상단 → crawled_at 최신순
+    if (hasBlogB !== hasBlogA) return hasBlogB - hasBlogA;
+    return new Date(b.crawled_at).getTime() - new Date(a.crawled_at).getTime();
   });
 
   // 페이지네이션

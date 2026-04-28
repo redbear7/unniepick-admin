@@ -124,7 +124,7 @@ interface CouponForm {
 
 const CATEGORIES = [
   '한식', '중식', '일식', '양식', '카페', '베이커리',
-  '술집', '분식', '패스트푸드', '기타',
+  '술집/바', '분식', '패스트푸드', '기타',
 ];
 
 const PRICE_PRESETS = [

@@ -144,11 +144,12 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({})) as {
     naver_place_id?: string;
     kakao_place_id?: string;
+    restaurant_id?: string;
   };
 
-  const { naver_place_id, kakao_place_id } = body;
-  if (!naver_place_id && !kakao_place_id) {
-    return NextResponse.json({ error: 'naver_place_id 또는 kakao_place_id 필요' }, { status: 400 });
+  const { naver_place_id, kakao_place_id, restaurant_id } = body;
+  if (!naver_place_id && !kakao_place_id && !restaurant_id) {
+    return NextResponse.json({ error: 'naver_place_id, kakao_place_id, 또는 restaurant_id 필요' }, { status: 400 });
   }
 
   const sb = adminSb();
@@ -157,7 +158,21 @@ export async function POST(req: NextRequest) {
   let data: Record<string, unknown> | null = null;
   let matchKey: { field: string; value: string };
 
-  if (naver_place_id) {
+  if (restaurant_id) {
+    const { data: row, error } = await sb
+      .from('restaurants')
+      .select(
+        'id, name, category, unniepick_category, kakao_category, address, ' +
+        'menu_items, review_keywords, menu_keywords, blog_reviews, tags_v2, ' +
+        'naver_place_id, kakao_place_id',
+      )
+      .eq('id', restaurant_id)
+      .maybeSingle();
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (!row)  return NextResponse.json({ error: '업체 없음' }, { status: 404 });
+    data = row as unknown as Record<string, unknown>;
+    matchKey = { field: 'id', value: restaurant_id };
+  } else if (naver_place_id) {
     const { data: row, error } = await sb
       .from('restaurants')
       .select(
