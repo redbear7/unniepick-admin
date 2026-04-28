@@ -52,6 +52,14 @@ interface Restaurant {
   created_at: string;
   tags_v2: Record<string, unknown> | null;
   tag_confidence: number | null;
+  ai_summary: string | null;
+  ai_features: {
+    분위기태그: string[];
+    추천메뉴: string[];
+    방문팁: string;
+    특징키워드: string[];
+  } | null;
+  ai_summary_at: string | null;
 }
 
 /** 카드에 표기할 대표 태그 3개 (custom_tags 우선, 부족하면 review_keywords 보완) */
@@ -107,6 +115,11 @@ export default function RestaurantsPage() {
   // ── 태그 추출 관련 state ──────────────────────────────────────────
   const [tagging,    setTagging]    = useState(false);
   const [tagMsg,     setTagMsg]     = useState('');
+
+  // ── AI 특징 요약 관련 state ───────────────────────────────────────
+  const [aiSummarizing,   setAiSummarizing]   = useState(false);
+  const [aiSummaryingId,  setAiSummaryingId]  = useState<string | null>(null);
+  const [aiMsg,           setAiMsg]           = useState('');
 
   // ── 무한 스크롤 ───────────────────────────────────────────────
   const COLS        = 3;   // xl:grid-cols-3 기준 1줄 = 3개
@@ -216,6 +229,51 @@ export default function RestaurantsPage() {
       alert(`일괄 등록 실패: ${(e as Error).message}`);
     } finally {
       setBulkRegistering(false);
+    }
+  }
+
+  // AI 특징 단건 생성
+  async function generateAiSummary(r: Restaurant) {
+    setAiSummaryingId(r.naver_place_id);
+    try {
+      const res  = await fetch('/api/restaurants/ai-summary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ naver_place_id: r.naver_place_id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? 'AI 요약 실패');
+      setRestaurants(prev => prev.map(p =>
+        p.naver_place_id === r.naver_place_id
+          ? { ...p, ai_summary: data.summary, ai_features: data.features }
+          : p,
+      ));
+    } catch (e) {
+      alert(`AI 요약 실패: ${(e as Error).message}`);
+    } finally {
+      setAiSummaryingId(null);
+    }
+  }
+
+  // AI 특징 일괄 생성
+  async function batchAiSummary() {
+    setAiSummarizing(true);
+    setAiMsg('');
+    try {
+      const res  = await fetch('/api/restaurants/batch-ai-summary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ limit: 20 }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? 'AI 요약 실패');
+      setAiMsg(`✨ ${data.processed}개 AI 특징 생성 완료${data.errors ? ` · ${data.errors}개 실패` : ''}`);
+      fetchRestaurants();
+      setTimeout(() => setAiMsg(''), 5000);
+    } catch (e) {
+      alert(`AI 요약 실패: ${(e as Error).message}`);
+    } finally {
+      setAiSummarizing(false);
     }
   }
 
@@ -344,6 +402,17 @@ export default function RestaurantsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          {/* AI 특징 일괄 생성 */}
+          <button
+            onClick={batchAiSummary}
+            disabled={aiSummarizing}
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-sm font-semibold transition shadow-sm"
+          >
+            {aiSummarizing
+              ? <><Loader2 className="w-4 h-4 animate-spin" />AI 요약 중...</>
+              : <>✨ AI 특징 생성</>
+            }
+          </button>
           {/* 태그 일괄 추출 */}
           <button
             onClick={batchExtractTags}
@@ -476,6 +545,13 @@ export default function RestaurantsPage() {
         </p>
       )}
 
+      {/* AI 요약 완료 메시지 */}
+      {aiMsg && (
+        <div className="px-4 py-2.5 bg-emerald-500/15 border border-emerald-500/30 rounded-xl text-sm text-emerald-400 font-semibold">
+          {aiMsg}
+        </div>
+      )}
+
       {/* 태그 추출 완료 메시지 */}
       {tagMsg && (
         <div className="px-4 py-2.5 bg-violet-500/15 border border-violet-500/30 rounded-xl text-sm text-violet-400 font-semibold">
@@ -524,6 +600,8 @@ export default function RestaurantsPage() {
                 registered={registeredIds.has(r.naver_place_id)}
                 selected={selectedIds.has(r.naver_place_id)}
                 onSelect={() => toggleSelect(r.naver_place_id)}
+                onAiSummary={() => generateAiSummary(r)}
+                aiLoading={aiSummaryingId === r.naver_place_id}
               />
             ))}
           </div>
@@ -668,12 +746,15 @@ function SelectFilter({ value, onChange, options, placeholder, icon }: {
 function RestaurantCard({
   r, onClick,
   registered, selected, onSelect,
+  onAiSummary, aiLoading,
 }: {
   r: Restaurant;
   onClick: () => void;
   registered?: boolean;
   selected?: boolean;
   onSelect?: () => void;
+  onAiSummary?: () => void;
+  aiLoading?: boolean;
 }) {
   const topKeyword = r.review_keywords?.[0];
   return (
@@ -824,6 +905,37 @@ function RestaurantCard({
             </span>
           </div>
         </div>
+
+        {/* AI 특징 요약 */}
+        {r.ai_summary ? (
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="px-3 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg mb-2"
+          >
+            <p className="text-xs font-semibold text-emerald-400 mb-1">✨ AI 특징</p>
+            <p className="text-xs text-secondary leading-relaxed">{r.ai_summary}</p>
+            {(r.ai_features?.분위기태그?.length ?? 0) > 0 && (
+              <div className="flex flex-wrap gap-1 mt-1.5">
+                {(r.ai_features?.분위기태그 ?? []).map((t, i) => (
+                  <span key={i} className="px-1.5 py-0.5 bg-emerald-500/15 text-emerald-400 rounded-full text-[10px] font-semibold">
+                    {t}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <button
+            onClick={(e) => { e.stopPropagation(); onAiSummary?.(); }}
+            disabled={aiLoading}
+            className="w-full flex items-center justify-center gap-1.5 py-1.5 mb-2 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 rounded-lg text-xs font-semibold text-emerald-400 transition disabled:opacity-50"
+          >
+            {aiLoading
+              ? <><Loader2 className="w-3 h-3 animate-spin" />AI 분석 중...</>
+              : <>✨ AI 특징 생성</>
+            }
+          </button>
+        )}
 
         {/* 가게 등록 / 등록됨 버튼 */}
         <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
