@@ -1079,13 +1079,13 @@ export default function RestaurantsPage() {
                       </button>
                     </th>
                     {([
-                      ['name',                  '가게명',     'left',   'px-4'],
-                      ['category',              '카테고리',   'left',   'px-4'],
-                      ['opened_at',             '개업일',     'left',   'px-4'],
-                      ['visitor_review_count',  '리뷰 수',    'right',  'px-4'],
-                      ['crawled_at',            '수집일',     'left',   'px-4'],
-                      ['ai_summary',            '수집데이터', 'left',   'px-4'],
-                      ['operating_status',      '상태',       'center', 'px-4'],
+                      ['name',                  '가게명',     'left',   'px-3'],
+                      ['category',              '카테고리',   'left',   'px-3'],
+                      ['ai_summary',            'AI 요약',    'left',   'px-3'],
+                      ['opened_at',             '개업일',     'left',   'px-3'],
+                      ['visitor_review_count',  '리뷰 수',    'right',  'px-3'],
+                      ['crawled_at',            '수집일',     'left',   'px-3'],
+                      ['operating_status',      '상태',       'center', 'px-3'],
                     ] as const).map(([col, label, align, px]) => (
                       <th key={col} className={`text-${align} ${px} py-3.5`}>
                         <button
@@ -1389,12 +1389,12 @@ function RestaurantListRow({
       </td>
 
       {/* 가게명 */}
-      <td className="px-4 py-3">
+      <td className="px-3 py-3">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-fill-subtle flex items-center justify-center text-base shrink-0">{catEmoji}</div>
-          <div>
+          <div className="w-7 h-7 rounded-lg bg-fill-subtle flex items-center justify-center text-sm shrink-0">{catEmoji}</div>
+          <div className="min-w-0">
             <div className="flex items-center gap-1 flex-wrap">
-              <p className="font-semibold text-sm text-primary">{r.name}</p>
+              <p className="font-semibold text-sm text-primary truncate max-w-[130px]">{r.name}</p>
               {(source === 'naver' || r.naver_place_id) && (
                 <span className="px-1 py-0.5 bg-green-600/20 text-green-400 text-[9px] font-bold rounded border border-green-600/30">N</span>
               )}
@@ -1406,7 +1406,7 @@ function RestaurantListRow({
               )}
             </div>
             {r.address && (
-              <p className="text-[11px] text-muted mt-0.5 max-w-[180px] truncate">
+              <p className="text-[11px] text-muted mt-0.5 max-w-[140px] truncate">
                 {r.address.replace(/^경남 창원시?\s?/, '').replace(/^창원시?\s?/, '')}
               </p>
             )}
@@ -1415,46 +1415,56 @@ function RestaurantListRow({
       </td>
 
       {/* 카테고리 */}
-      <td className="px-4 py-3">
-        <span className="px-2 py-1 bg-fill-subtle rounded-lg text-xs text-tertiary">
+      <td className="px-3 py-3">
+        <span className="px-2 py-1 bg-fill-subtle rounded-lg text-xs text-tertiary whitespace-nowrap">
           {unniepickCat || r.category || '미분류'}
         </span>
       </td>
 
+      {/* AI 요약 */}
+      <td className="px-3 py-3 max-w-[280px]">
+        {hasAi ? (
+          <div>
+            <p className="text-xs text-emerald-400 leading-relaxed">✨ {r.ai_summary}</p>
+            {(r as any).ai_features?.특징키워드?.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-1">
+                {((r as any).ai_features.특징키워드 as string[]).slice(0, 3).map((kw: string) => (
+                  <span key={kw} className="px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400/70 text-[10px]">{kw}</span>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-1">
+            {menuCount    > 0 && <span className="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 text-[10px]">메뉴 {menuCount}</span>}
+            {keywordCount > 0 && <span className="px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 text-[10px]">키워드 {keywordCount}</span>}
+            {blogCount    > 0 && <span className="px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400 text-[10px]">블로그 {blogCount}</span>}
+            {menuCount === 0 && keywordCount === 0 && blogCount === 0 && <span className="text-[10px] text-dim">—</span>}
+          </div>
+        )}
+      </td>
+
       {/* 개업일 */}
-      <td className="px-4 py-3 text-xs">
+      <td className="px-3 py-3 text-xs">
         {openedDate
           ? <p className={isRecentOpen ? 'text-sky-400 font-semibold' : 'text-muted'}>{openedDate}</p>
           : <span className="text-dim">—</span>}
       </td>
 
       {/* 리뷰 수 */}
-      <td className="px-4 py-3 text-right text-xs">
+      <td className="px-3 py-3 text-right text-xs">
         {r.visitor_review_count
           ? <span className="text-secondary font-medium">{r.visitor_review_count.toLocaleString()}</span>
           : <span className="text-dim">—</span>}
       </td>
 
       {/* 수집일 */}
-      <td className="px-4 py-3 text-xs">
+      <td className="px-3 py-3 text-xs">
         {crawledDate ? <p className="text-muted">{crawledDate}</p> : <span className="text-dim">—</span>}
       </td>
 
-      {/* 수집데이터 + AI */}
-      <td className="px-4 py-3">
-        <div className="flex flex-wrap gap-1 mb-1">
-          {menuCount    > 0 && <span className="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 text-[10px]">메뉴 {menuCount}</span>}
-          {keywordCount > 0 && <span className="px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 text-[10px]">키워드 {keywordCount}</span>}
-          {blogCount    > 0 && <span className="px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400 text-[10px]">블로그 {blogCount}</span>}
-          {menuCount === 0 && keywordCount === 0 && blogCount === 0 && <span className="text-[10px] text-dim">—</span>}
-        </div>
-        {hasAi
-          ? <p className="text-[11px] text-emerald-400 max-w-[160px] truncate">✨ {r.ai_summary}</p>
-          : <p className="text-[10px] text-dim">AI 없음</p>}
-      </td>
-
       {/* 상태 */}
-      <td className="px-4 py-3 text-center">{statusBadge}</td>
+      <td className="px-3 py-3 text-center">{statusBadge}</td>
 
       {/* 관리 */}
       <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
