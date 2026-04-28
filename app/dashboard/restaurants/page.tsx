@@ -382,9 +382,10 @@ export default function RestaurantsPage() {
   }
 
   // 구/동 옵션 + 카운트 추출
-  const { guList, dongList, guCounts, dongCounts } = (() => {
-    const guCountMap = new Map<string, number>();
+  const { guList, dongList, guCounts, dongCounts, catCounts } = (() => {
+    const guCountMap  = new Map<string, number>();
     const dongCountMap = new Map<string, number>();
+    const catCountMap = new Map<string, number>();
 
     for (const r of restaurants) {
       const { gu, dong } = parseLocation(r.address);
@@ -392,13 +393,15 @@ export default function RestaurantsPage() {
       if (dong && (!guFilter || gu === guFilter)) {
         dongCountMap.set(dong, (dongCountMap.get(dong) ?? 0) + 1);
       }
+      if (r.category) catCountMap.set(r.category, (catCountMap.get(r.category) ?? 0) + 1);
     }
 
     return {
-      guList: [...guCountMap.keys()].sort((a, b) => (guCountMap.get(b)! - guCountMap.get(a)!)),
+      guList:   [...guCountMap.keys()].sort((a, b) => (guCountMap.get(b)! - guCountMap.get(a)!)),
       dongList: [...dongCountMap.keys()].sort((a, b) => (dongCountMap.get(b)! - dongCountMap.get(a)!)),
-      guCounts: guCountMap,
+      guCounts:  guCountMap,
       dongCounts: dongCountMap,
+      catCounts: catCountMap,
     };
   })();
 
@@ -627,6 +630,26 @@ export default function RestaurantsPage() {
         </div>
       )}
 
+      {/* 카테고리 칩 */}
+      {categories.length > 0 && (
+        <div>
+          <p className="text-xs text-muted mb-2 flex items-center gap-1">
+            <Filter className="w-3 h-3" /> 카테고리 ({categories.length}개)
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {categories.map((cat) => (
+              <LocationChip
+                key={cat}
+                label={cat}
+                count={catCounts.get(cat) ?? 0}
+                active={categoryFilter === cat}
+                onClick={() => setCategoryFilter(categoryFilter === cat ? '' : cat)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* 필터 바 */}
       <div className="space-y-2.5">
         {/* 검색 + 드롭다운 */}
@@ -653,7 +676,6 @@ export default function RestaurantsPage() {
             placeholder="전체 동"
             icon={<MapPin className="w-4 h-4" />}
           />
-          <SelectFilter value={categoryFilter} onChange={setCategoryFilter} options={categories} placeholder="전체 카테고리" icon={<Filter className="w-4 h-4" />} />
           <SelectFilter
             value={sortBy} onChange={(v) => setSortBy(v as SortField)}
             options={[
