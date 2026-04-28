@@ -238,17 +238,21 @@ export default function RestaurantsPage() {
 
   // AI 특징 단건 생성
   async function generateAiSummary(r: Restaurant) {
-    setAiSummaryingId(r.naver_place_id);
+    setAiSummaryingId(r.id);
     try {
+      const kakaoId = (r as any).kakao_place_id as string | null;
+      const payload = r.naver_place_id
+        ? { naver_place_id: r.naver_place_id }
+        : { kakao_place_id: kakaoId };
       const res  = await fetch('/api/restaurants/ai-summary', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ naver_place_id: r.naver_place_id }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? 'AI 요약 실패');
       setRestaurants(prev => prev.map(p =>
-        p.naver_place_id === r.naver_place_id
+        p.id === r.id
           ? { ...p, ai_summary: data.summary, ai_features: data.features }
           : p,
       ));
@@ -638,7 +642,7 @@ export default function RestaurantsPage() {
                   selected={selectedIds.has(r.naver_place_id)}
                   onSelect={() => toggleSelect(r.naver_place_id)}
                   onAiSummary={() => generateAiSummary(r)}
-                  aiLoading={aiSummaryingId === r.naver_place_id}
+                  aiLoading={aiSummaryingId === r.id}
                 />
               ))}
             </div>
@@ -653,7 +657,7 @@ export default function RestaurantsPage() {
                   selected={selectedIds.has(r.naver_place_id)}
                   onSelect={() => toggleSelect(r.naver_place_id)}
                   onAiSummary={() => generateAiSummary(r)}
-                  aiLoading={aiSummaryingId === r.naver_place_id}
+                  aiLoading={aiSummaryingId === r.id}
                 />
               ))}
             </div>
@@ -817,6 +821,12 @@ function RestaurantListRow({
     : '🍜';
 
   const unniepickCat = (r as any).unniepick_category as string | null;
+  const source       = (r as any).source as string | null;
+  const kakaoPlaceId = (r as any).kakao_place_id as string | null;
+
+  const hasMenu    = Array.isArray(r.menu_items)    && r.menu_items.length    > 0;
+  const hasKeyword = Array.isArray(r.review_keywords) && r.review_keywords.length > 0;
+  const hasAi      = !!r.ai_summary;
 
   return (
     <div
@@ -849,8 +859,21 @@ function RestaurantListRow({
 
       {/* 메인 정보 */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-1.5 flex-wrap">
           <span className="font-semibold text-sm text-primary truncate">{r.name}</span>
+          {/* 출처 배지 */}
+          {source === 'naver' || r.naver_place_id ? (
+            <span className="px-1 py-0.5 bg-green-600/20 text-green-400 text-[9px] font-bold rounded border border-green-600/30">N</span>
+          ) : null}
+          {kakaoPlaceId ? (
+            <span className="px-1 py-0.5 bg-yellow-500/20 text-yellow-400 text-[9px] font-bold rounded border border-yellow-500/30">K</span>
+          ) : null}
+          {/* 수집 데이터 배지 */}
+          {hasMenu    && <span className="px-1 py-0.5 bg-slate-500/20 text-slate-400 text-[9px] rounded border border-slate-500/20">메뉴</span>}
+          {hasKeyword && <span className="px-1 py-0.5 bg-slate-500/20 text-slate-400 text-[9px] rounded border border-slate-500/20">키워드</span>}
+          {/* AI 요약 배지 */}
+          {hasAi && <span className="px-1 py-0.5 bg-emerald-500/20 text-emerald-400 text-[9px] rounded border border-emerald-500/30">✨AI</span>}
+          {/* 상태 배지 */}
           {r.is_new_open && (
             <span className="px-1.5 py-0.5 bg-green-500/15 text-green-400 text-[10px] rounded-full border border-green-500/25">NEW</span>
           )}
@@ -970,6 +993,27 @@ function RestaurantCard({
         }
       </div>
       <div className="p-4 space-y-2.5">
+        {/* 카드 출처/데이터 배지 줄 */}
+        {(() => {
+          const src     = (r as any).source as string | null;
+          const kId     = (r as any).kakao_place_id as string | null;
+          const hMenu   = Array.isArray(r.menu_items)     && r.menu_items.length     > 0;
+          const hKw     = Array.isArray(r.review_keywords) && r.review_keywords.length > 0;
+          const hAi     = !!r.ai_summary;
+          return (
+            <div className="flex items-center gap-1 flex-wrap -mb-1">
+              {(src === 'naver' || r.naver_place_id) && (
+                <span className="px-1 py-0.5 bg-green-600/20 text-green-400 text-[9px] font-bold rounded border border-green-600/30">N</span>
+              )}
+              {kId && (
+                <span className="px-1 py-0.5 bg-yellow-500/20 text-yellow-400 text-[9px] font-bold rounded border border-yellow-500/30">K</span>
+              )}
+              {hMenu  && <span className="px-1 py-0.5 bg-slate-500/20 text-slate-400 text-[9px] rounded border border-slate-500/20">메뉴</span>}
+              {hKw    && <span className="px-1 py-0.5 bg-slate-500/20 text-slate-400 text-[9px] rounded border border-slate-500/20">키워드</span>}
+              {hAi    && <span className="px-1 py-0.5 bg-emerald-500/20 text-emerald-400 text-[9px] rounded border border-emerald-500/30">✨AI</span>}
+            </div>
+          );
+        })()}
         <div className="flex items-start justify-between">
           <div>
             <h3 className="font-semibold text-primary flex items-center gap-2 flex-wrap">
