@@ -3,8 +3,17 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase';
 import { loadKakaoSDK } from '@/lib/kakaoMap';
+import { X, ExternalLink, Pencil, Check, Loader2 } from 'lucide-react';
 
 // ── 타입 ──────────────────────────────────────────────────────
+interface BlogReview {
+  title:    string;
+  snippet?: string;
+  date?:    string;
+  source?:  'blog' | 'cafe';
+  featured?: boolean;
+}
+
 interface PartnerPin {
   type: 'partner';
   id: string;
@@ -16,6 +25,9 @@ interface PartnerPin {
   lng: number;
   activeCoupons: number;
   totalCoupons: number;
+  naver_place_id: string | null;
+  instagram_url: string | null;
+  ai_summary: string | null;
 }
 
 interface RestaurantPin {
@@ -29,6 +41,9 @@ interface RestaurantPin {
   lat: number;
   lng: number;
   kakao_place_url: string | null;
+  blog_reviews: BlogReview[];
+  instagram_url: string | null;
+  ai_summary: string | null;
 }
 
 type MapPin = PartnerPin | RestaurantPin;
@@ -77,6 +92,241 @@ function esc(s: string) {
     .replace(/'/g, '&#39;');
 }
 
+// ── 블로그 사이드 패널 ──────────────────────────────────────────
+function BlogPanel({
+  pin,
+  onClose,
+}: {
+  pin: MapPin;
+  onClose: () => void;
+}) {
+  const sb = createClient();
+  const [reviews,     setReviews]     = useState<BlogReview[]>([]);
+  const [instaUrl,    setInstaUrl]    = useState('');
+  const [editing,     setEditing]     = useState(false);
+  const [editVal,     setEditVal]     = useState('');
+  const [saving,      setSaving]      = useState(false);
+  const [reviewSaving, setReviewSaving] = useState(false);
+  const [loadingBlog, setLoadingBlog] = useState(false);
+
+  // 대표 리뷰 상단 정렬
+  const sortedReviews = [...reviews].sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
+
+  useEffect(() => {
+    if (pin.type === 'restaurant') {
+      setReviews(pin.blog_reviews ?? []);
+      setInstaUrl(pin.instagram_url ?? '');
+    } else {
+      // 파트너: naver_place_id로 restaurants에서 블로그 리뷰 fetch
+      setInstaUrl(pin.instagram_url ?? '');
+      if (pin.naver_place_id) {
+        setLoadingBlog(true);
+        (async () => {
+          try {
+            const { data } = await sb.from('restaurants')
+              .select('blog_reviews, instagram_url')
+              .eq('naver_place_id', pin.naver_place_id)
+              .maybeSingle();
+            if (data?.blog_reviews) {
+              try {
+                const arr = Array.isArray(data.blog_reviews)
+                  ? data.blog_reviews
+                  : JSON.parse(data.blog_reviews);
+                setReviews(arr);
+              } catch {}
+            }
+            if (!pin.instagram_url && data?.instagram_url) {
+              setInstaUrl(data.instagram_url);
+            }
+          } finally {
+            setLoadingBlog(false);
+          }
+        })();
+      }
+    }
+  }, [pin]);
+
+  const startEdit = () => { setEditVal(instaUrl); setEditing(true); };
+
+  const saveUrl = async () => {
+    setSaving(true);
+    const url = editVal.trim();
+    if (pin.type === 'partner') {
+      await sb.from('stores').update({ instagram_url: url || null }).eq('id', pin.id);
+      if (pin.naver_place_id) {
+        await sb.from('restaurants').update({ instagram_url: url || null }).eq('naver_place_id', pin.naver_place_id);
+      }
+    } else {
+      await sb.from('restaurants').update({ instagram_url: url || null }).eq('id', pin.id);
+    }
+    setInstaUrl(url);
+    setEditing(false);
+    setSaving(false);
+  };
+
+  const persistReviews = async (newReviews: BlogReview[]) => {
+    setReviewSaving(true);
+    try {
+      if (pin.type === 'restaurant') {
+        await sb.from('restaurants').update({ blog_reviews: newReviews }).eq('id', pin.id);
+      } else if (pin.type === 'partner' && pin.naver_place_id) {
+        await sb.from('restaurants').update({ blog_reviews: newReviews }).eq('naver_place_id', pin.naver_place_id);
+      }
+    } finally {
+      setReviewSaving(false);
+    }
+  };
+
+  const deleteReview = async (item: BlogReview) => {
+    const newReviews = reviews.filter(r => r !== item);
+    setReviews(newReviews);
+    await persistReviews(newReviews);
+  };
+
+  const toggleFeatured = async (item: BlogReview) => {
+    const updated = reviews.map(r => r === item ? { ...r, featured: !r.featured } : r);
+    setReviews(updated);
+    await persistReviews(updated);
+  };
+
+  const cat   = pin.type === 'partner' ? pin.category : pin.unniepick_category;
+  const color = getCatColor(cat);
+
+  return (
+    <div className="flex flex-col h-full" style={{ fontFamily: '-apple-system,BlinkMacSystemFont,sans-serif' }}>
+      {/* 헤더 */}
+      <div className="flex items-start justify-between p-4 border-b border-border-main shrink-0">
+        <div className="flex-1 min-w-0 pr-2">
+          <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
+            {pin.type === 'partner' && (
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold"
+                style={{ background: '#FFF3EB', color: '#FF6F0F' }}>파트너</span>
+            )}
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold"
+              style={{ background: `${color}22`, color }}>
+              {cat ?? '미분류'}
+            </span>
+          </div>
+          <h2 className="font-bold text-base text-primary truncate">{pin.name}</h2>
+          {pin.address && <p className="text-xs text-muted mt-0.5 truncate">📍 {pin.address}</p>}
+        </div>
+        <button onClick={onClose} className="text-muted hover:text-primary transition shrink-0 p-1 -mt-1 -mr-1">
+          <X size={16} />
+        </button>
+      </div>
+
+      {/* AI 요약 */}
+      <div className="px-4 py-3 border-b border-border-main shrink-0">
+        <p className="text-[10px] font-semibold text-muted mb-1">✨ AI 요약</p>
+        {pin.ai_summary
+          ? <p className="text-xs text-emerald-400 leading-relaxed">{pin.ai_summary}</p>
+          : <p className="text-[11px] text-dim">AI 요약 없음</p>
+        }
+      </div>
+
+      {/* 블로그/인스타 링크 */}
+      <div className="px-4 py-3 border-b border-border-main shrink-0">
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="text-[11px] font-semibold text-muted">인스타그램 / 블로그 링크</span>
+          {!editing && (
+            <button onClick={startEdit} className="flex items-center gap-1 text-[10px] text-muted hover:text-primary transition">
+              <Pencil size={10} /> 수정
+            </button>
+          )}
+        </div>
+        {editing ? (
+          <div className="flex gap-2">
+            <input
+              autoFocus
+              value={editVal}
+              onChange={e => setEditVal(e.target.value)}
+              placeholder="https://www.instagram.com/..."
+              className="flex-1 px-2.5 py-1.5 rounded-lg bg-fill-subtle border border-border-main text-xs text-primary placeholder:text-dim focus:outline-none focus:border-[#FF6F0F]"
+            />
+            <button
+              onClick={saveUrl}
+              disabled={saving}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#FF6F0F] text-white text-xs font-bold transition disabled:opacity-50"
+            >
+              {saving ? <Loader2 size={11} className="animate-spin" /> : <Check size={11} />}
+            </button>
+            <button onClick={() => setEditing(false)} className="px-2 py-1.5 rounded-lg text-xs text-muted hover:text-primary transition">취소</button>
+          </div>
+        ) : instaUrl ? (
+          <a href={instaUrl} target="_blank" rel="noopener noreferrer"
+            className="flex items-center gap-1.5 text-xs text-sky-400 hover:text-sky-300 transition truncate">
+            <ExternalLink size={11} />
+            {instaUrl.replace('https://www.instagram.com/', '@').replace('https://', '').replace(/\/$/, '')}
+          </a>
+        ) : (
+          <p className="text-[11px] text-dim">링크 없음 — 수정 버튼으로 추가</p>
+        )}
+      </div>
+
+      {/* 블로그 리뷰 목록 */}
+      <div className="flex-1 overflow-y-auto px-4 py-3">
+        <div className="flex items-center justify-between mb-2.5">
+          <p className="text-[11px] font-semibold text-muted">블로그 / 카페 리뷰</p>
+          {reviewSaving && <Loader2 size={10} className="animate-spin text-muted" />}
+        </div>
+        {loadingBlog ? (
+          <div className="flex items-center gap-2 text-xs text-muted py-2">
+            <Loader2 size={12} className="animate-spin" /> 로딩 중...
+          </div>
+        ) : reviews.length === 0 ? (
+          <p className="text-[11px] text-dim">수집된 리뷰가 없습니다.</p>
+        ) : (
+          <div className="space-y-2">
+            {sortedReviews.map((r, i) => (
+              <div
+                key={i}
+                onClick={() => toggleFeatured(r)}
+                className={`group relative rounded-lg px-3 py-2.5 cursor-pointer transition-all border ${
+                  r.featured
+                    ? 'bg-amber-500/10 border-amber-500/40'
+                    : 'bg-transparent border-transparent hover:bg-fill-subtle hover:border-border-subtle'
+                }`}
+              >
+                {/* X 삭제 버튼 */}
+                <button
+                  onClick={e => { e.stopPropagation(); deleteReview(r); }}
+                  className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded text-dim hover:text-red-400 hover:bg-red-400/10"
+                  title="리뷰 삭제"
+                >
+                  <X size={10} />
+                </button>
+
+                <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                  {r.featured && (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded font-bold bg-amber-500/20 text-amber-400">
+                      ⭐ 대표
+                    </span>
+                  )}
+                  <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${
+                    r.source === 'cafe'
+                      ? 'bg-orange-500/15 text-orange-400'
+                      : 'bg-green-500/15 text-green-400'
+                  }`}>
+                    {r.source === 'cafe' ? '카페' : '블로그'}
+                  </span>
+                  {r.date && <span className="text-[9px] text-dim">{r.date.slice(0, 4)}.{r.date.slice(4, 6)}.{r.date.slice(6, 8)}</span>}
+                </div>
+                <p className={`text-xs font-medium leading-relaxed ${r.featured ? 'text-amber-300' : 'text-primary'}`}>
+                  {r.title}
+                </p>
+                {r.snippet && (
+                  <p className="text-[11px] text-muted mt-0.5 leading-relaxed line-clamp-2">{r.snippet}</p>
+                )}
+              </div>
+            ))}
+            <p className="text-[10px] text-dim text-center pt-1">리뷰를 클릭하면 대표 리뷰로 지정됩니다</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── 메인 컴포넌트 ───────────────────────────────────────────────
 export default function MapPage() {
   const containerRef  = useRef<HTMLDivElement>(null);
@@ -93,6 +343,9 @@ export default function MapPage() {
   const [category,     setCategory]     = useState<string>('all');
   const [layer,        setLayer]        = useState<'partner' | 'all'>('all');
 
+  // 블로그 패널
+  const [selectedPin,  setSelectedPin]  = useState<MapPin | null>(null);
+
   // ── 데이터 로드 ────────────────────────────────────────────────
   useEffect(() => {
     const sb = createClient();
@@ -103,17 +356,16 @@ export default function MapPage() {
         { data: restData },
       ] = await Promise.all([
         sb.from('stores')
-          .select('id, name, category, address, is_active, latitude, longitude')
+          .select('id, name, category, address, is_active, latitude, longitude, naver_place_id, instagram_url, ai_summary')
           .not('latitude', 'is', null).not('longitude', 'is', null),
         sb.from('coupons').select('store_id, is_active, expires_at'),
         sb.from('restaurants')
-          .select('id, name, kakao_category, unniepick_category, address, phone, latitude, longitude, kakao_place_url')
+          .select('id, name, kakao_category, unniepick_category, address, phone, latitude, longitude, kakao_place_url, blog_reviews, instagram_url, ai_summary')
           .eq('source', 'kakao')
           .not('latitude', 'is', null).not('longitude', 'is', null)
           .limit(3000),
       ]);
 
-      // 파트너 쿠폰 집계
       const now = new Date();
       const couponMap = new Map<string, { total: number; active: number }>();
       (couponData ?? []).forEach((c: any) => {
@@ -131,17 +383,31 @@ export default function MapPage() {
         lat: s.latitude, lng: s.longitude,
         activeCoupons: couponMap.get(s.id)?.active ?? 0,
         totalCoupons:  couponMap.get(s.id)?.total  ?? 0,
+        naver_place_id: s.naver_place_id ?? null,
+        instagram_url:  s.instagram_url  ?? null,
+        ai_summary:     s.ai_summary     ?? null,
       })));
 
-      setRestaurants((restData ?? []).map((r: any) => ({
-        type: 'restaurant',
-        id: r.id, name: r.name,
-        kakao_category: r.kakao_category,
-        unniepick_category: r.unniepick_category,
-        address: r.address, phone: r.phone,
-        lat: r.latitude, lng: r.longitude,
-        kakao_place_url: r.kakao_place_url,
-      })));
+      setRestaurants((restData ?? []).map((r: any) => {
+        let blogReviews: BlogReview[] = [];
+        try {
+          blogReviews = Array.isArray(r.blog_reviews)
+            ? r.blog_reviews
+            : JSON.parse(r.blog_reviews ?? '[]');
+        } catch {}
+        return {
+          type: 'restaurant',
+          id: r.id, name: r.name,
+          kakao_category: r.kakao_category,
+          unniepick_category: r.unniepick_category,
+          address: r.address, phone: r.phone,
+          lat: r.latitude, lng: r.longitude,
+          kakao_place_url: r.kakao_place_url,
+          blog_reviews: blogReviews,
+          instagram_url: r.instagram_url ?? null,
+          ai_summary:    r.ai_summary    ?? null,
+        };
+      }));
 
       setLoading(false);
     })();
@@ -153,109 +419,47 @@ export default function MapPage() {
     popupRef.current = null;
   }, []);
 
-  const showPartnerPopup = useCallback((kakao: any, map: any, p: PartnerPin) => {
-    closePopup();
-    const html =
-      `<div style="position:relative;background:#fff;border-radius:14px;padding:14px 16px 12px;` +
-      `min-width:220px;max-width:280px;box-shadow:0 4px 20px rgba(0,0,0,0.22);` +
-      `font-family:-apple-system,BlinkMacSystemFont,sans-serif;">` +
-        `<button onclick="window.__mapClose()" style="position:absolute;top:10px;right:10px;` +
-        `background:none;border:none;cursor:pointer;color:#9CA3AF;font-size:15px;padding:2px 4px;">✕</button>` +
-        `<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">` +
-          `<span style="font-size:10px;padding:2px 7px;border-radius:999px;font-weight:800;` +
-          `background:#FFF3EB;color:#FF6F0F;">파트너</span>` +
-          `<span style="font-size:10px;padding:2px 7px;border-radius:999px;font-weight:700;` +
-          `background:${p.is_active ? '#DCFCE7' : '#F3F4F6'};` +
-          `color:${p.is_active ? '#16A34A' : '#6B7280'};">${p.is_active ? '운영중' : '비활성'}</span>` +
-        `</div>` +
-        `<div style="font-weight:800;font-size:14px;color:#111;margin-bottom:6px;padding-right:20px;">` +
-          `${esc(p.name)}</div>` +
-        (p.address ? `<div style="font-size:11px;color:#6B7280;margin-bottom:8px;">📍 ${esc(p.address)}</div>` : '') +
-        `<div style="display:flex;gap:10px;font-size:11px;border-top:1px solid #F3F4F6;padding-top:8px;">` +
-          `<span style="color:#6B7280;">쿠폰 ${p.totalCoupons}개</span>` +
-          (p.activeCoupons > 0 ? `<span style="color:#FF6F0F;font-weight:700;">활성 ${p.activeCoupons}개</span>` : '') +
-        `</div>` +
-      `</div>`;
-    const popup = new kakao.maps.CustomOverlay({
-      position: new kakao.maps.LatLng(p.lat, p.lng),
-      content: html, yAnchor: 1.12, zIndex: 20,
-    });
-    popup.setMap(map);
-    popupRef.current = popup;
-  }, [closePopup]);
-
-  const showRestaurantPopup = useCallback((kakao: any, map: any, r: RestaurantPin) => {
-    closePopup();
-    const color = getCatColor(r.unniepick_category);
-    const html =
-      `<div style="position:relative;background:#fff;border-radius:14px;padding:14px 16px 12px;` +
-      `min-width:220px;max-width:280px;box-shadow:0 4px 20px rgba(0,0,0,0.22);` +
-      `font-family:-apple-system,BlinkMacSystemFont,sans-serif;">` +
-        `<button onclick="window.__mapClose()" style="position:absolute;top:10px;right:10px;` +
-        `background:none;border:none;cursor:pointer;color:#9CA3AF;font-size:15px;padding:2px 4px;">✕</button>` +
-        `<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">` +
-          `<span style="font-size:10px;padding:2px 7px;border-radius:999px;font-weight:700;` +
-          `background:${color}22;color:${color};">${esc(r.unniepick_category ?? '기타')}</span>` +
-        `</div>` +
-        `<div style="font-weight:800;font-size:14px;color:#111;margin-bottom:4px;padding-right:20px;">` +
-          `${esc(r.name)}</div>` +
-        (r.kakao_category
-          ? `<div style="font-size:10px;color:#9CA3AF;margin-bottom:6px;">${esc(r.kakao_category)}</div>`
-          : '') +
-        (r.address ? `<div style="font-size:11px;color:#6B7280;margin-bottom:8px;">📍 ${esc(r.address)}</div>` : '') +
-        (r.phone   ? `<div style="font-size:11px;color:#6B7280;margin-bottom:8px;">📞 ${esc(r.phone)}</div>` : '') +
-        `<div style="border-top:1px solid #F3F4F6;padding-top:10px;display:flex;flex-direction:column;gap:6px;">` +
-          `<div style="font-size:11px;color:#9CA3AF;font-weight:600;">언니픽 미입점 업체</div>` +
-          (r.kakao_place_url
-            ? `<a href="${esc(r.kakao_place_url)}" target="_blank" ` +
-              `style="font-size:11px;color:#3A86FF;font-weight:700;text-decoration:none;">카카오맵에서 보기 →</a>`
-            : '') +
-        `</div>` +
-      `</div>`;
-    const popup = new kakao.maps.CustomOverlay({
-      position: new kakao.maps.LatLng(r.lat, r.lng),
-      content: html, yAnchor: 1.12, zIndex: 20,
-    });
-    popup.setMap(map);
-    popupRef.current = popup;
-  }, [closePopup]);
-
   // ── 오버레이 빌드 ───────────────────────────────────────────────
   const buildOverlays = useCallback((
     kakao: any, map: any,
     pts: PartnerPin[], rests: RestaurantPin[],
     cat: string, lyr: string,
   ) => {
-    // 기존 오버레이 제거
     overlaysRef.current.forEach(o => o.setMap(null));
     overlaysRef.current = [];
     clustererRef.current?.clear();
     closePopup();
 
-    (window as any).__mapClose = closePopup;
-
-    // ── 파트너 마커 ──────────────────────────────────────────────
-    const filteredPartners = pts.filter(p =>
-      cat === 'all' || p.category === cat
-    );
-
-    (window as any).__mapPartnerClick = (id: string) => {
-      const p = pts.find(x => x.id === id);
-      if (p) showPartnerPopup(kakao, map, p);
+    (window as any).__mapClose    = closePopup;
+    (window as any).__mapPinClick = (id: string, type: 'partner' | 'restaurant') => {
+      if (type === 'partner') {
+        const p = pts.find(x => x.id === id);
+        if (p) setSelectedPin(p);
+      } else {
+        const r = rests.find(x => x.id === id);
+        if (r) setSelectedPin(r);
+      }
     };
 
+    // ── 파트너 칩 ──────────────────────────────────────────────
+    const filteredPartners = pts.filter(p => cat === 'all' || p.category === cat);
+
     filteredPartners.forEach(p => {
-      const color = p.activeCoupons > 0 ? '#FF6F0F' : p.is_active ? '#22C55E' : '#4B5563';
-      const badge = p.activeCoupons > 0
+      const color    = p.activeCoupons > 0 ? '#FF6F0F' : p.is_active ? '#22C55E' : '#4B5563';
+      const hasBlog  = !!(p.naver_place_id || p.instagram_url);
+      const badge    = p.activeCoupons > 0
         ? ` <span style="background:#FF6F0F;color:#fff;border-radius:999px;padding:1px 6px;font-size:10px;font-weight:800;">${p.activeCoupons}</span>`
         : '';
+      const blogIcon = hasBlog
+        ? `<span style="font-size:10px;margin-left:2px;" title="블로그 리뷰">📝</span>`
+        : '';
       const html =
-        `<div onclick="window.__mapPartnerClick('${p.id}')" style="display:flex;flex-direction:column;align-items:center;cursor:pointer;">` +
+        `<div onclick="window.__mapPinClick('${p.id}','partner')" style="display:flex;flex-direction:column;align-items:center;cursor:pointer;">` +
           `<div style="display:flex;align-items:center;gap:4px;background:#fff;border-radius:20px;` +
           `border:2.5px solid ${color};padding:4px 10px;box-shadow:0 2px 8px rgba(0,0,0,0.2);` +
           `font-family:-apple-system,BlinkMacSystemFont,sans-serif;">` +
             `<span style="font-size:11px;font-weight:800;color:${color};white-space:nowrap;` +
-            `overflow:hidden;text-overflow:ellipsis;max-width:110px;">${esc(p.name)}</span>${badge}` +
+            `overflow:hidden;text-overflow:ellipsis;max-width:110px;">${esc(p.name)}</span>${badge}${blogIcon}` +
           `</div>` +
           `<div style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;` +
           `border-top:7px solid ${color};margin-top:-1px;"></div>` +
@@ -268,40 +472,34 @@ export default function MapPage() {
       overlaysRef.current.push(ov);
     });
 
-    // ── 레스토랑 마커 (클러스터) ──────────────────────────────────
+    // ── 레스토랑 마커 ────────────────────────────────────────────
     if (lyr === 'all') {
-      const filteredRests = rests.filter(r =>
-        cat === 'all' || r.unniepick_category === cat
-      );
-
-      (window as any).__mapRestClick = (id: string) => {
-        const r = rests.find(x => x.id === id);
-        if (r) showRestaurantPopup(kakao, map, r);
-      };
+      const filteredRests = rests.filter(r => cat === 'all' || r.unniepick_category === cat);
 
       const markers = filteredRests.map(r => {
-        const color = getCatColor(r.unniepick_category);
-        const html =
-          `<div onclick="window.__mapRestClick('${r.id}')" ` +
-          `style="width:10px;height:10px;border-radius:50%;background:${color};` +
-          `border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.3);cursor:pointer;"></div>`;
+        const color   = getCatColor(r.unniepick_category);
+        const hasBlog = r.blog_reviews.length > 0;
+        // 블로그 있으면 약간 큰 사각형 닷, 없으면 기본 원
+        const html = hasBlog
+          ? `<div onclick="window.__mapPinClick('${r.id}','restaurant')" ` +
+            `style="width:12px;height:12px;border-radius:3px;background:${color};` +
+            `border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.35);cursor:pointer;" title="블로그 리뷰 있음"></div>`
+          : `<div onclick="window.__mapPinClick('${r.id}','restaurant')" ` +
+            `style="width:10px;height:10px;border-radius:50%;background:${color};` +
+            `border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.3);cursor:pointer;"></div>`;
         return new kakao.maps.CustomOverlay({
           position: new kakao.maps.LatLng(r.lat, r.lng),
           content: html, zIndex: 3,
         });
       });
 
-      // 클러스터러에 마커 추가
       if (clustererRef.current) {
         clustererRef.current.addOverlays(markers);
       } else {
-        markers.forEach(m => {
-          m.setMap(map);
-          overlaysRef.current.push(m);
-        });
+        markers.forEach(m => { m.setMap(map); overlaysRef.current.push(m); });
       }
     }
-  }, [closePopup, showPartnerPopup, showRestaurantPopup]);
+  }, [closePopup]);
 
   // ── 카카오맵 초기화 ────────────────────────────────────────────
   useEffect(() => {
@@ -321,7 +519,6 @@ export default function MapPage() {
         mapRef.current = map;
         kakao.maps.event.addListener(map, 'click', closePopup);
 
-        // 클러스터러 초기화
         if (kakao.maps.MarkerClusterer) {
           clustererRef.current = new kakao.maps.MarkerClusterer({
             map, averageCenter: true, minLevel: 5,
@@ -346,7 +543,6 @@ export default function MapPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading]);
 
-  // ── 필터 변경 → 재빌드 ─────────────────────────────────────────
   useEffect(() => {
     if (!mapRef.current) return;
     const kakao = (window as any).kakao;
@@ -354,7 +550,6 @@ export default function MapPage() {
     buildOverlays(kakao, mapRef.current, partners, restaurants, category, layer);
   }, [category, layer, partners, restaurants, buildOverlays]);
 
-  // ── 통계 ────────────────────────────────────────────────────────
   const partnerActive = partners.filter(p => p.is_active).length;
   const partnerCoupon = partners.filter(p => p.activeCoupons > 0).length;
   const restCount     = restaurants.length;
@@ -376,20 +571,15 @@ export default function MapPage() {
             </div>
           )}
         </div>
-
-        {/* 레이어 토글 */}
         <div className="flex bg-card border border-border-subtle rounded-xl p-1 gap-1">
           {([
             ['partner', '파트너만'],
             ['all',     '전체 (수집 포함)'],
           ] as const).map(([v, label]) => (
-            <button
-              key={v}
-              onClick={() => setLayer(v)}
+            <button key={v} onClick={() => setLayer(v)}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
                 layer === v ? 'bg-[#FF6F0F] text-white' : 'text-tertiary hover:text-primary'
-              }`}
-            >
+              }`}>
               {label}
             </button>
           ))}
@@ -399,62 +589,75 @@ export default function MapPage() {
       {/* 카테고리 탭 */}
       <div className="flex items-center gap-1.5 px-4 py-2 bg-sidebar border-b border-border-main shrink-0 overflow-x-auto">
         {CATEGORIES.map(c => (
-          <button
-            key={c.key}
-            onClick={() => setCategory(c.key)}
+          <button key={c.key} onClick={() => setCategory(c.key)}
             className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition ${
               category === c.key
                 ? 'bg-[#FF6F0F] text-white'
                 : 'bg-card border border-border-subtle text-tertiary hover:text-primary'
-            }`}
-          >
-            <span>{c.emoji}</span>
-            <span>{c.label}</span>
+            }`}>
+            <span>{c.emoji}</span><span>{c.label}</span>
           </button>
         ))}
       </div>
 
-      {/* 지도 영역 */}
-      <div className="flex-1 relative">
-        {/* 로딩 */}
-        {(loading || (!mapReady && !error)) && (
-          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-surface gap-3">
-            <div className="w-10 h-10 border-2 border-[#FF6F0F]/30 border-t-[#FF6F0F] rounded-full animate-spin" />
-            <p className="text-sm text-muted">{loading ? '데이터 로드 중...' : '지도 초기화 중...'}</p>
-          </div>
-        )}
+      {/* 지도 + 사이드 패널 */}
+      <div className="flex-1 flex overflow-hidden relative">
 
-        {/* 에러 */}
-        {error && (
-          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-surface gap-3">
-            <span className="text-3xl">⚠️</span>
-            <p className="text-sm font-semibold text-red-400">지도 로드 실패</p>
-            <p className="text-xs text-muted text-center max-w-sm">{error}</p>
-          </div>
-        )}
+        {/* 지도 */}
+        <div className="flex-1 relative">
+          {(loading || (!mapReady && !error)) && (
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-surface gap-3">
+              <div className="w-10 h-10 border-2 border-[#FF6F0F]/30 border-t-[#FF6F0F] rounded-full animate-spin" />
+              <p className="text-sm text-muted">{loading ? '데이터 로드 중...' : '지도 초기화 중...'}</p>
+            </div>
+          )}
+          {error && (
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-surface gap-3">
+              <span className="text-3xl">⚠️</span>
+              <p className="text-sm font-semibold text-red-400">지도 로드 실패</p>
+              <p className="text-xs text-muted text-center max-w-sm">{error}</p>
+            </div>
+          )}
 
-        {/* 범례 */}
-        {mapReady && (
-          <div className="absolute bottom-4 left-4 z-10 bg-card/90 backdrop-blur-sm border border-border-subtle rounded-xl px-3 py-2.5 flex flex-col gap-2 text-xs">
-            <div className="font-semibold text-tertiary mb-0.5">범례</div>
-            <span className="flex items-center gap-2">
-              <span className="w-5 h-5 rounded-full border-2 border-[#FF6F0F] bg-white inline-flex items-center justify-center text-[8px] font-bold text-[#FF6F0F]">N</span>
-              <span className="text-tertiary">파트너 (쿠폰)</span>
-            </span>
-            <span className="flex items-center gap-2">
-              <span className="w-5 h-5 rounded-full border-2 border-[#22C55E] bg-white inline-block" />
-              <span className="text-tertiary">파트너 (운영중)</span>
-            </span>
-            {layer === 'all' && (
+          {/* 범례 */}
+          {mapReady && (
+            <div className="absolute bottom-4 left-4 z-10 bg-card/90 backdrop-blur-sm border border-border-subtle rounded-xl px-3 py-2.5 flex flex-col gap-2 text-xs">
+              <div className="font-semibold text-tertiary mb-0.5">범례</div>
               <span className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#6B7280] border border-white inline-block" />
-                <span className="text-tertiary">수집 업체 (미입점)</span>
+                <span className="w-5 h-5 rounded-full border-2 border-[#FF6F0F] bg-white inline-flex items-center justify-center text-[8px] font-bold text-[#FF6F0F]">N</span>
+                <span className="text-tertiary">파트너 (쿠폰)</span>
               </span>
-            )}
-          </div>
-        )}
+              <span className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full border-2 border-[#22C55E] bg-white inline-block" />
+                <span className="text-tertiary">파트너 (운영중)</span>
+              </span>
+              {layer === 'all' && <>
+                <span className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#6B7280] border border-white inline-block" />
+                  <span className="text-tertiary">수집 업체</span>
+                </span>
+                <span className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-sm bg-[#6B7280] border border-white inline-block" />
+                  <span className="text-tertiary">수집 업체 (블로그 📝)</span>
+                </span>
+              </>}
+            </div>
+          )}
 
-        <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
+          <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
+        </div>
+
+        {/* 블로그 사이드 패널 */}
+        <div className={`shrink-0 border-l border-border-main bg-sidebar overflow-hidden transition-all duration-300 ${
+          selectedPin ? 'w-72' : 'w-0'
+        }`}>
+          {selectedPin && (
+            <BlogPanel
+              pin={selectedPin}
+              onClose={() => setSelectedPin(null)}
+            />
+          )}
+        </div>
       </div>
     </div>
   );
