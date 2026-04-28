@@ -1,12 +1,20 @@
 /**
- * 프록시 유틸리티
+ * 프록시 유틸리티 — 브라우저 스크래핑 전용
+ *
+ * ⚠️  공식 API (Kakao REST API, Naver API)에는 사용하지 않습니다.
+ *     공식 API는 API KEY 기반 인증이므로 IP 차단 없음.
+ *     할당량 초과 시 KEY가 거부되며 프록시로는 해결 불가.
+ *
+ * 적용 대상:
+ *   - main.ts       : 네이버 Playwright 스크래핑
+ *   - daum-main.ts  : 다음 Playwright 스크래핑
  *
  * .env 설정:
  *   PROXY_URL=http://user:pass@host:port        단일 프록시
  *   PROXY_URL=socks5://user:pass@host:port      SOCKS5 프록시
  *   PROXY_LIST=http://p1:port,http://p2:port    로테이션 (호출마다 랜덤 선택)
  *
- * 미설정 시 프록시 없이 동작 (기존과 동일).
+ * 미설정 시 직접 연결 (기존과 동일).
  */
 
 export type PlaywrightProxy = {
@@ -41,37 +49,6 @@ export function getPlaywrightProxy(): PlaywrightProxy | undefined {
     // URL 파싱 실패 시 그대로 server에 사용
     return { server: raw };
   }
-}
-
-// ── 프록시 적용 fetch (undici ProxyAgent 사용) ────────────────────
-// undici 미설치 시 경고 후 일반 fetch로 폴백
-let _proxyAgent: unknown = null;
-let _agentInit = false;
-
-async function getProxyAgent(): Promise<unknown | undefined> {
-  const proxyUrl = getProxyUrl();
-  if (!proxyUrl) return undefined;
-
-  if (!_agentInit) {
-    _agentInit = true;
-    try {
-      const { ProxyAgent } = await import('undici');
-      _proxyAgent = new ProxyAgent(proxyUrl);
-      console.log(`[proxy] fetch 프록시 적용: ${proxyUrl.replace(/:[^:@]+@/, ':***@')}`);
-    } catch {
-      console.warn('[proxy] undici 미설치 → fetch 프록시 미적용 (npm install undici)');
-    }
-  }
-  return _proxyAgent ?? undefined;
-}
-
-export async function proxyFetch(
-  url: string | URL,
-  opts: RequestInit = {},
-): Promise<Response> {
-  const agent = await getProxyAgent();
-  if (!agent) return fetch(url, opts);
-  return fetch(url, { ...opts, dispatcher: agent } as RequestInit & { dispatcher: unknown });
 }
 
 // ── 프록시 상태 출력 ─────────────────────────────────────────────
