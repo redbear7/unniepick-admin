@@ -182,6 +182,9 @@ async function collectFromPoint(point: GridPoint, categoryCode: string): Promise
     try {
       const data = await fetchKakaoCategory(categoryCode, point.lat, point.lng, point.radius, page);
       for (const doc of data.documents) {
+        // 창원시 외 주소 제외 (격자 경계에서 인접 시/구 유입 방지)
+        const addr = doc.address_name || doc.road_address_name || '';
+        if (!addr.includes('창원')) continue;
         if (!seen.has(doc.id)) { seen.add(doc.id); results.push(doc); }
       }
       if (data.meta.is_end) break;

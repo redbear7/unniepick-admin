@@ -448,7 +448,7 @@ export default function RestaurantsPage() {
 
     // 카테고리 필터는 클라이언트에서 처리 (unniepick_category 포함 대응)
 
-    const { data, error } = await query.limit(1000);
+    const { data, error } = await query.limit(10000);
     if (error) { console.error(error.message); setLoading(false); return; }
 
     const parseArr = (v: any) => {
