@@ -33,6 +33,31 @@ function stripHtml(html: string): string {
     .trim();
 }
 
+// 블로그 결과에서 인스타그램 계정 URL 추출
+// 1순위: instagram.com/xxx 직접 URL
+// 2순위: @handle 패턴 → URL 변환
+// 필터: 공식 계정(instagram.com/p/, /reel/, /explore/ 등) 제외
+function extractInstagram(results: BlogReview[]): string | null {
+  const text = results.map(r => `${r.title} ${r.snippet}`).join(' ');
+
+  // instagram.com/계정명 패턴 (포스트/릴/탐색 경로 제외)
+  const urlMatch = text.match(
+    /instagram\.com\/([a-zA-Z0-9_.]{3,30})(?:\/(?!p\/|reel\/|explore\/|stories\/))?/
+  );
+  if (urlMatch) {
+    const handle = urlMatch[1];
+    if (!['p', 'reel', 'explore', 'stories', 'accounts', 'tv'].includes(handle)) {
+      return `https://www.instagram.com/${handle}/`;
+    }
+  }
+
+  // @handle 패턴
+  const atMatch = text.match(/@([a-zA-Z0-9_.]{3,30})/);
+  if (atMatch) return `https://www.instagram.com/${atMatch[1]}/`;
+
+  return null;
+}
+
 async function naverSearch(
   type: 'blog' | 'cafearticle',
   query: string,
@@ -133,24 +158,33 @@ export async function POST(req: NextRequest) {
             return m ? `창원 ${m[1]}` : '창원';
           })();
 
-          // 블로그 5건 + 카페 3건 병렬 조회
-          const [blogResults, cafeResults] = await Promise.all([
+          // 블로그 5건 + 카페 3건 + 인스타 계정 검색 병렬 조회
+          const [blogResults, cafeResults, instaResults] = await Promise.all([
             naverSearch('blog',        `${r.name} ${cityHint}`, 5, clientId, clientSecret),
             naverSearch('cafearticle', `${r.name} ${cityHint}`, 3, clientId, clientSecret),
+            naverSearch('blog',        `${r.name} 인스타그램`,  3, clientId, clientSecret),
           ]);
 
           const combined: BlogReview[] = [...blogResults, ...cafeResults].slice(0, 8);
 
+          // 인스타그램 계정 추출
+          // 우선순위: instagram.com/xxx URL > @handle 패턴
+          const instagramUrl = extractInstagram([...blogResults, ...cafeResults, ...instaResults]);
+
+          const updatePayload: Record<string, unknown> = { blog_reviews: combined };
+          if (instagramUrl) updatePayload.instagram_url = instagramUrl;
+
           const { error: updateErr } = await sb
             .from('restaurants')
-            .update({ blog_reviews: combined })
+            .update(updatePayload)
             .eq('id', r.id);
 
           if (updateErr) {
             send({ type: 'log', keyword: keywords[0] ?? '', line: `  저장 오류: ${updateErr.message}`, isErr: true });
             totalErrors++;
           } else {
-            send({ type: 'log', keyword: keywords[0] ?? '', line: `  ✓ 블로그 ${blogResults.length}건 + 카페 ${cafeResults.length}건 → AI 요약 생성 중...` });
+            const instaNote = instagramUrl ? ` 📷 ${instagramUrl.replace('https://www.instagram.com/', '@').replace(/\/$/, '')}` : '';
+            send({ type: 'log', keyword: keywords[0] ?? '', line: `  ✓ 블로그 ${blogResults.length}건 + 카페 ${cafeResults.length}건${instaNote} → AI 요약 생성 중...` });
             totalProcessed++;
 
             // 블로그 수집 즉시 AI 요약 생성
