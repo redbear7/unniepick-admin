@@ -154,10 +154,15 @@ export default function RestaurantsPage() {
   const [collectGuFilter,  setCollectGuFilter]  = useState('');
 
   // ── 키워드 수집 모달 state ────────────────────────────────────────
-  const [kwModal,       setKwModal]       = useState<{ label: string; keywords: string[] } | null>(null);
+  const [kwModal,       setKwModal]       = useState<{ label: string; keywords: string[]; dong?: string } | null>(null);
   const [kwCollecting,  setKwCollecting]  = useState(false);
   const [kwLogs,        setKwLogs]        = useState<string[]>([]);
   const [kwEnriching,   setKwEnriching]   = useState(false);
+  // 동별 크롤링 횟수 (localStorage 영속)
+  const [dongCrawlCounts, setDongCrawlCounts] = useState<Record<string, number>>(() => {
+    if (typeof window === 'undefined') return {};
+    try { return JSON.parse(localStorage.getItem('unniepick_dong_crawl_counts') ?? '{}'); } catch { return {}; }
+  });
 
   // ── 뷰 모드 ───────────────────────────────────────────────────
   const [viewMode, setViewMode] = useState<'list' | 'thumbnail'>('list');
@@ -465,6 +470,15 @@ export default function RestaurantsPage() {
   }
 
   // ── 키워드 수집 (A안: 카카오 키워드 API) ─────────────────────────
+  function incrementDongCrawlCount(dong?: string) {
+    if (!dong) return;
+    setDongCrawlCounts(prev => {
+      const next = { ...prev, [dong]: (prev[dong] ?? 0) + 1 };
+      try { localStorage.setItem('unniepick_dong_crawl_counts', JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }
+
   async function collectByKeywords(keywords: string[]) {
     setKwCollecting(true);
     setKwLogs([]);
@@ -478,6 +492,7 @@ export default function RestaurantsPage() {
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buf = '';
+      let success = false;
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -490,10 +505,11 @@ export default function RestaurantsPage() {
             const evt = JSON.parse(line.slice(6));
             if (evt.type === 'keyword')      setKwLogs(p => [...p, `🔍 "${evt.keyword}" 수집 중...`]);
             if (evt.type === 'keyword_done') setKwLogs(p => [...p, `  └ ${evt.found}개 발견 (누적 ${evt.total_unique}개)`]);
-            if (evt.type === 'done')         setKwLogs(p => [...p, `✅ 완료 — 총 ${evt.total}개 수집, ${evt.saved}개 저장`]);
+            if (evt.type === 'done') { setKwLogs(p => [...p, `✅ 완료 — 총 ${evt.total}개 수집, ${evt.saved}개 저장`]); success = true; }
           } catch {}
         }
       }
+      if (success) incrementDongCrawlCount(kwModal?.dong);
       fetchRestaurants();
     } finally {
       setKwCollecting(false);
@@ -514,6 +530,7 @@ export default function RestaurantsPage() {
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buf = '';
+      let success = false;
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -528,10 +545,11 @@ export default function RestaurantsPage() {
             if (evt.type === 'log')          setKwLogs(p => { const next = [...p]; next[next.length - 1] = `  ${evt.line}`; return next; });
             if (evt.type === 'keyword_done') setKwLogs(p => [...p, `  └ 완료 (exit ${evt.code})`]);
             if (evt.type === 'delay')        setKwLogs(p => [...p, `⏳ 다음 키워드까지 ${(evt.ms/1000).toFixed(0)}초 대기...`]);
-            if (evt.type === 'done')         setKwLogs(p => [...p, '✅ 네이버 보강 완료']);
+            if (evt.type === 'done') { setKwLogs(p => [...p, '✅ 네이버 보강 완료']); success = true; }
           } catch {}
         }
       }
+      if (success) incrementDongCrawlCount(kwModal?.dong);
       fetchRestaurants();
     } finally {
       setKwEnriching(false);
@@ -550,14 +568,15 @@ export default function RestaurantsPage() {
         `${city} ${value} 술집`,
       ];
       label = `${value} 키워드 수집`;
+      setKwModal({ label, keywords, dong: value });
     } else {
       keywords = [
         `창원 ${value} 맛집`,
         `창원시 ${value}`,
       ];
       label = `${value} 키워드 수집`;
+      setKwModal({ label, keywords });
     }
-    setKwModal({ label, keywords });
     setKwLogs([]);
   }
 
@@ -945,6 +964,7 @@ export default function RestaurantsPage() {
                       count={cnt}
                       active={dongFilter === dong}
                       lastCrawledAt={dongLastCrawl.get(dong)}
+                      crawlStage={Math.min(3, dongCrawlCounts[dong] ?? 0) as 0 | 1 | 2 | 3}
                       onClick={() => {
                         if (guFilter !== gu) { setGuFilter(gu); }
                         setDongFilter(dongFilter === dong ? '' : dong);
@@ -1476,11 +1496,22 @@ function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label:
 }
 
 
+const CRAWL_STAGE_STYLES = [
+  // 0: 미수집 — 기본
+  { bg: 'bg-card', border: 'border-border-main', text: 'text-secondary', subtext: 'text-muted', dot: '' },
+  // 1: 1회 — 연두
+  { bg: 'bg-emerald-950/60', border: 'border-emerald-800', text: 'text-emerald-400', subtext: 'text-emerald-600', dot: '●' },
+  // 2: 2회 — 초록
+  { bg: 'bg-emerald-900/70', border: 'border-emerald-600', text: 'text-emerald-300', subtext: 'text-emerald-500', dot: '●●' },
+  // 3: 3회+ — 진초록
+  { bg: 'bg-emerald-800/80', border: 'border-emerald-400', text: 'text-emerald-200', subtext: 'text-emerald-400', dot: '●●●' },
+];
+
 function LocationChip({
-  label, count, active, onClick, onLongPress, lastCrawledAt,
+  label, count, active, onClick, onLongPress, lastCrawledAt, crawlStage = 0,
 }: {
   label: string; count: number; active: boolean; onClick: () => void;
-  onLongPress?: () => void; lastCrawledAt?: string;
+  onLongPress?: () => void; lastCrawledAt?: string; crawlStage?: 0 | 1 | 2 | 3;
 }) {
   const timerRef = useState<ReturnType<typeof setTimeout> | null>(null);
   const startPress = () => {
@@ -1489,27 +1520,30 @@ function LocationChip({
   };
   const endPress = () => { if (timerRef[0]) { clearTimeout(timerRef[0]); timerRef[1](null); } };
 
+  const stage = CRAWL_STAGE_STYLES[crawlStage];
+
   return (
     <button
       onClick={onClick}
       onMouseDown={startPress} onMouseUp={endPress} onMouseLeave={endPress}
       onTouchStart={startPress} onTouchEnd={endPress}
-      title={onLongPress ? '꾹 누르면 키워드 수집' : undefined}
+      title={onLongPress ? `꾹 누르면 키워드 수집${crawlStage > 0 ? ` (${crawlStage}회 완료)` : ''}` : undefined}
       className={`px-3 py-1.5 rounded-lg text-sm border transition flex flex-col items-start select-none ${
         active
           ? 'bg-[#FF6F0F] border-[#FF6F0F] text-white'
-          : 'bg-card border-border-main text-secondary hover:border-[#FF6F0F]/50 hover:text-primary'
+          : `${stage.bg} ${stage.border} ${stage.text} hover:border-[#FF6F0F]/50`
       } ${onLongPress ? 'cursor-pointer' : ''}`}
     >
       <div className="flex items-center gap-1.5">
         <span>{label}</span>
-        <span className={`text-xs ${active ? 'text-white/80' : 'text-muted'}`}>
-          {count}
-        </span>
-        {onLongPress && <span className="text-[9px] opacity-40">⬇</span>}
+        <span className={`text-xs ${active ? 'text-white/80' : 'text-muted'}`}>{count}</span>
+        {onLongPress && !active && crawlStage === 0 && <span className="text-[9px] opacity-30">⬇</span>}
+        {!active && crawlStage > 0 && (
+          <span className={`text-[8px] tracking-[-2px] leading-none ${stage.subtext}`}>{stage.dot}</span>
+        )}
       </div>
       {lastCrawledAt && (
-        <span className={`text-[9px] leading-none mt-0.5 ${active ? 'text-white/60' : 'text-muted/60'}`}>
+        <span className={`text-[9px] leading-none mt-0.5 ${active ? 'text-white/60' : stage.subtext}`}>
           {lastCrawledAt}
         </span>
       )}
