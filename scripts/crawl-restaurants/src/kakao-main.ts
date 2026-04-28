@@ -19,6 +19,7 @@ import { searchKakaoAll, type KakaoPlace } from './kakao-search.js';
 import { kakaoMidCategory, normalizeToUnniepick } from './category-map.js';
 import { autoTagRestaurant } from './tagger.js';
 import { notifyNewRestaurants, notifyDailySummary } from './notify.js';
+import { humanDelay, createTimer } from './human-delay.js';
 
 // ── KakaoPlace → KakaoRestaurantData 변환 ─────────────────────────────────────────
 function kakaoToRestaurant(place: KakaoPlace): KakaoRestaurantData {
@@ -70,14 +71,15 @@ function inferTags(category: string, name: string): string[] {
 
 // ── 키워드 1개 수집 ───────────────────────────────────────────────────────────
 async function collectByKeyword(kw: CrawlKeyword): Promise<KakaoRestaurantData[]> {
-  console.log(`\n  🔍 "${kw.keyword}" 검색 중...`);
+  const timer = createTimer(`"${kw.keyword}"`);
+  timer.log(`카카오 검색: "${kw.keyword}"`);
 
   const places = await searchKakaoAll(kw.keyword, {
     maxPages: 5,   // 최대 75개/키워드
-    delayMs:  400, // 요청 간격 400ms (초당 2.5건)
+    delayMs:  600, // 요청 간격 600ms
   });
 
-  console.log(`     → ${places.length}개 발견`);
+  timer.done(places.length, 0);
 
   return places.map(p => {
     const r = kakaoToRestaurant(p);
@@ -88,12 +90,14 @@ async function collectByKeyword(kw: CrawlKeyword): Promise<KakaoRestaurantData[]
 
 // ── 메인 크롤링 ───────────────────────────────────────────────────────────────
 async function crawl(keywords: CrawlKeyword[]) {
-  console.log(`\n${'='.repeat(50)}`);
+  const globalTimer = createTimer('카카오 전체 크롤링');
+  console.log(`\n${'='.repeat(54)}`);
   console.log(`[${new Date().toLocaleString('ko-KR')}] 카카오 API 크롤링 시작 (${keywords.length}개 키워드)`);
-  console.log(`${'='.repeat(50)}`);
+  console.log(`키워드 ${keywords.length}개 · 인간형 랜덤 딜레이 적용`);
+  console.log(`${'='.repeat(54)}`);
 
   const existingIds = await getExistingKakaoIds();
-  console.log(`기존 DB (카카오): ${existingIds.size}개`);
+  globalTimer.log(`기존 DB (카카오): ${existingIds.size}개`);
 
   const allResults: KakaoRestaurantData[] = [];
 
@@ -114,9 +118,9 @@ async function crawl(keywords: CrawlKeyword[]) {
         current_pid:     null,
       });
 
-      console.log(`  ✓ "${kw.keyword}" 완료 (${restaurants.length}개, 신규 ${newCount}개)`);
+      globalTimer.log(`✓ "${kw.keyword}" 완료 (${restaurants.length}개, 신규 ${newCount}개)`);
     } catch (e: any) {
-      console.error(`  ✗ "${kw.keyword}" 실패: ${e.message}`);
+      globalTimer.log(`✗ "${kw.keyword}" 실패: ${e.message}`);
       await updateKeywordStatus(kw.id, {
         status:          'failed',
         last_error:      e.message,
@@ -125,8 +129,10 @@ async function crawl(keywords: CrawlKeyword[]) {
       });
     }
 
-    // 키워드 간 대기 (1~2초 랜덤)
-    await new Promise(r => setTimeout(r, 1000 + Math.random() * 1000));
+    // 키워드 간 인간형 딜레이 (3~7초)
+    if (keywords.indexOf(kw) < keywords.length - 1) {
+      await humanDelay(3000, 7000);
+    }
   }
 
   // ── 중복 제거 (같은 카카오 ID) ─────────────────────────────────────────────
@@ -142,7 +148,7 @@ async function crawl(keywords: CrawlKeyword[]) {
     }
   }
   const deduped = [...unique.values()];
-  console.log(`\n중복 제거: ${allResults.length} → ${deduped.length}개`);
+  globalTimer.log(`중복 제거: ${allResults.length} → ${deduped.length}개`);
 
   // ── 신규 업체 감지 ───────────────────────────────────────────────────────────
   const newRestaurants = deduped.filter(r => r.kakao_place_id && !existingIds.has(r.kakao_place_id));
@@ -158,7 +164,7 @@ async function crawl(keywords: CrawlKeyword[]) {
   // ── DB 저장 ──────────────────────────────────────────────────────────────────
   if (deduped.length > 0) {
     const saved = await upsertKakaoRestaurants(deduped);
-    console.log(`\n💾 ${saved}개 DB 저장`);
+    globalTimer.log(`💾 ${saved}개 DB 저장`);
   }
 
   // ── 텔레그램 알림 ────────────────────────────────────────────────────────────
@@ -169,6 +175,7 @@ async function crawl(keywords: CrawlKeyword[]) {
     }
   }
 
+  globalTimer.done(deduped.length, newRestaurants.length);
   return { newRestaurants, total: deduped.length };
 }
 

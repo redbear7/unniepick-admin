@@ -8,6 +8,8 @@
     "crawl": "tsx src/main.ts --once",
     "crawl:kakao": "tsx src/kakao-main.ts --once",
     "crawl:kakao:start": "tsx src/kakao-main.ts",
+    "crawl:daum": "tsx src/daum-main.ts --once",
+    "crawl:daum:start": "tsx src/daum-main.ts",
     "api:kakao": "tsx src/kakao-api-collect.ts",
     "api:kakao:dry": "tsx src/kakao-api-collect.ts --dry-run",
     "verify": "tsx src/verify.ts",

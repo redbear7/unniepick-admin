@@ -12,16 +12,19 @@ import { autoTagRestaurant } from './tagger.js';
 import { normalizeToUnniepick } from './category-map.js';
 import { notifyNewRestaurants, notifyDailySummary } from './notify.js';
 import { processImage } from './image.js';
+import { humanDelay, microDelay, createTimer } from './human-delay.js';
 
 // ── 메인 크롤링 ─────────────────────────────────────────────
 
 async function crawl(keywords: CrawlKeyword[]) {
-  console.log(`\n${'='.repeat(50)}`);
-  console.log(`[${new Date().toLocaleString('ko-KR')}] 크롤링 시작 (${keywords.length}개 키워드)`);
-  console.log(`${'='.repeat(50)}`);
+  const globalTimer = createTimer('네이버 전체 크롤링');
+  console.log(`\n${'='.repeat(54)}`);
+  console.log(`[${new Date().toLocaleString('ko-KR')}] 네이버 크롤링 시작 (${keywords.length}개 키워드)`);
+  console.log(`키워드 ${keywords.length}개 · 인간형 랜덤 딜레이 적용`);
+  console.log(`${'='.repeat(54)}`);
 
   const existingIds = await getExistingIds();
-  console.log(`기존 DB: ${existingIds.size}개`);
+  globalTimer.log(`기존 DB: ${existingIds.size}개`);
 
   // 키워드별 결과를 수집하는 공유 맵 (스레드 안전: 키 단위로만 접근)
   const resultsMap = new Map<string, RestaurantData[]>();
@@ -80,7 +83,7 @@ async function crawl(keywords: CrawlKeyword[]) {
           } catch (e) {
             log.warning(`   분석 에러: ${(e as Error).message}`);
           }
-          await page.waitForTimeout(500 + Math.random() * 500);
+          await microDelay(400, 900);
         }
       }
 
@@ -143,7 +146,7 @@ async function crawl(keywords: CrawlKeyword[]) {
     }
   }
   const deduped = [...unique.values()];
-  console.log(`\n중복 제거: ${allResults.length} → ${deduped.length}개`);
+  globalTimer.log(`중복 제거: ${allResults.length} → ${deduped.length}개`);
 
   // ── 신규 업체 감지 ──
   const newRestaurants = deduped.filter((r) => !existingIds.has(r.naver_place_id!));
@@ -166,7 +169,7 @@ async function crawl(keywords: CrawlKeyword[]) {
   // DB 저장
   if (deduped.length > 0) {
     const saved = await upsertRestaurants(deduped);
-    console.log(`\n💾 ${saved}개 DB 저장`);
+    globalTimer.log(`💾 ${saved}개 DB 저장`);
   }
 
   // ── 신규 업체 텔레그램 알림 (키워드별로 분리) ──
@@ -177,6 +180,7 @@ async function crawl(keywords: CrawlKeyword[]) {
     }
   }
 
+  globalTimer.done(deduped.length, newRestaurants.length);
   return { newRestaurants, total: deduped.length };
 }
 
@@ -265,7 +269,7 @@ async function collectFromApollo(page: Page, query: string): Promise<RestaurantD
           { timeout: 5_000 },
         );
       } catch { /* 타임아웃 — 진행 */ }
-      await page.waitForTimeout(300); // 렌더링 안정화
+      await microDelay(200, 500); // 렌더링 안정화
     }
   }
 
