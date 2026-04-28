@@ -68,6 +68,7 @@ async function collectKeyword(
   keyword: string,
   maxPages = 5,
   onPage?: (page: number, found: number, total: number, isEnd: boolean) => void,
+  onPlace?: (name: string, category: string, address: string, isNew: boolean) => void,
 ): Promise<KakaoPlace[]> {
   const results: KakaoPlace[] = [];
   const seen = new Set<string>();
@@ -79,7 +80,9 @@ async function collectKeyword(
       for (const doc of data.documents) {
         const addr = doc.address_name || doc.road_address_name || '';
         if (!addr.includes('창원')) continue;
-        if (!seen.has(doc.id)) { seen.add(doc.id); results.push(doc); pageNew++; }
+        const isNew = !seen.has(doc.id);
+        if (isNew) { seen.add(doc.id); results.push(doc); pageNew++; }
+        onPlace?.(doc.place_name, mapCategory(doc.category_name), addr, isNew);
       }
       onPage?.(page, pageNew, results.length, data.meta.is_end);
       if (data.meta.is_end) break;
@@ -151,9 +154,15 @@ export async function POST(req: NextRequest) {
         const kw = keywords[i];
         send({ type: 'keyword', keyword: kw, index: i, total: keywords.length });
 
-        const places = await collectKeyword(kw, maxPages, (page, pageNew, cumTotal, isEnd) => {
-          send({ type: 'page', keyword: kw, page, pageNew, cumTotal, isEnd });
-        });
+        const places = await collectKeyword(
+          kw, maxPages,
+          (page, pageNew, cumTotal, isEnd) => {
+            send({ type: 'page', keyword: kw, page, pageNew, cumTotal, isEnd });
+          },
+          (name, category, address, isNew) => {
+            send({ type: 'place', keyword: kw, name, category, address, isNew });
+          },
+        );
         for (const p of places) allPlaces.set(p.id, p);
 
         // 카테고리별 집계

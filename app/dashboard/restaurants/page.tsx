@@ -506,9 +506,13 @@ export default function RestaurantsPage() {
             if (evt.type === 'keyword') {
               setKwLogs(p => [...p, ``, `📌 [${evt.index + 1}/${evt.total}] "${evt.keyword}"`]);
             }
+            if (evt.type === 'place') {
+              const dup = evt.isNew ? '' : ' (중복)';
+              setKwLogs(p => [...p, `   ${evt.isNew ? '↳' : '·'} ${evt.name}  ${evt.category}  ${evt.address}${dup}`]);
+            }
             if (evt.type === 'page') {
-              const status = evt.isEnd ? '마지막' : `${evt.page}p`;
-              setKwLogs(p => [...p, `   ${status} → +${evt.pageNew}개 (누적 ${evt.cumTotal}개)`]);
+              const status = evt.isEnd ? '마지막 페이지' : `${evt.page}페이지`;
+              setKwLogs(p => [...p, `   — ${status} 완료: +${evt.pageNew}개 (누적 ${evt.cumTotal}개) —`]);
             }
             if (evt.type === 'keyword_done') {
               const cats = Object.entries(evt.cats ?? {}).sort((a,b) => (b[1] as number) - (a[1] as number))
@@ -565,8 +569,10 @@ export default function RestaurantsPage() {
             if (evt.type === 'log') {
               const raw = String(evt.line ?? '').trim();
               if (!raw) continue;
-              // Playwright INFO/DEBUG 잡음 제거
-              if (/^(INFO|DEBUG|WARN|pw:api|Crawlee|PlaywrightCrawler)/i.test(raw)) continue;
+              // Playwright/Crawlee 내부 잡음만 제거
+              if (/^(INFO|DEBUG|WARN)\s+\w+Crawler/i.test(raw)) continue;
+              if (/^pw:api|^browserType\.|^node:internal/i.test(raw)) continue;
+              if (/StatisticsState|AutoscaledPool|MemoryInfo|requestHandlerTimeout/i.test(raw)) continue;
               const prefix = evt.isErr ? '   ⚠ ' : '   ';
               setKwLogs(p => [...p, `${prefix}${raw}`]);
             }
@@ -1409,7 +1415,7 @@ export default function RestaurantsPage() {
 
             {/* 로그 */}
             {kwLogs.length > 0 && (
-              <div className="bg-black/40 rounded-lg p-3 mb-4 max-h-52 overflow-y-auto">
+              <div className="bg-black/40 rounded-lg p-3 mb-4 max-h-80 overflow-y-auto">
                 {kwLogs.map((log, i) => {
                   if (!log.trim()) return <div key={i} className="h-1.5" />;
                   const isHeader = log.startsWith('📌') || log.startsWith('🌐');
