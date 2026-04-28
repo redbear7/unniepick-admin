@@ -55,7 +55,7 @@ async function crawl(keywords: CrawlKeyword[]) {
       const { kw } = request.userData as { kw: CrawlKeyword };
       log.info(`🔍 "${kw.keyword}" (리뷰 상세 분석)`);
 
-      await updateKeywordStatus(kw.id, { status: 'running', last_error: undefined });
+      if (!kw.id.startsWith('adhoc-')) await updateKeywordStatus(kw.id, { status: 'running', last_error: undefined });
 
       // ── 1. 목록에서 기본 정보 일괄 추출 ──
       const restaurants = await collectFromApollo(page, kw.keyword, limitArg);
@@ -108,7 +108,7 @@ async function crawl(keywords: CrawlKeyword[]) {
       resultsMap.set(kw.id, restaurants);
 
       const newForKw = restaurants.filter((r) => !existingIds.has(r.naver_place_id!)).length;
-      await updateKeywordStatus(kw.id, {
+      if (!kw.id.startsWith('adhoc-')) await updateKeywordStatus(kw.id, {
         status: 'success',
         last_crawled_at: new Date().toISOString(),
         last_result_count: restaurants.length,
@@ -122,7 +122,7 @@ async function crawl(keywords: CrawlKeyword[]) {
       const { kw } = request.userData as { kw: CrawlKeyword };
       const msg = request.errorMessages?.at(-1) ?? '크롤링 실패';
       log.error(`✗ "${kw.keyword}" 실패: ${msg}`);
-      await updateKeywordStatus(kw.id, {
+      if (!kw.id.startsWith('adhoc-')) await updateKeywordStatus(kw.id, {
         status: 'failed',
         last_error: msg,
         last_crawled_at: new Date().toISOString(),
