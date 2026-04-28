@@ -25,7 +25,6 @@ interface Store {
   updated_at:              string | null;
   owner_id:                string | null;
   image_url:               string | null;
-  tts_policy_id:           string | null;
   subscription_expires_at: string | null;
   representative_price:    number | null;
   price_label:             string | null;
@@ -36,13 +35,6 @@ interface Store {
   category_detail:         string | null;   // 카카오 full path (음식점 > 한식 > 냉면)
 }
 
-interface TtsPolicy {
-  id:               string;
-  name:             string;
-  daily_char_limit: number;
-  description:      string;
-  sort_order:       number;
-}
 
 interface StoreForm extends Omit<Store, 'id' | 'created_at' | 'updated_at'> {}
 
@@ -123,7 +115,7 @@ function defaultExpires(days = 30) {
 
 const EMPTY_FORM: StoreForm = {
   name: '', address: '', phone: '', category: '', is_active: true,
-  owner_id: null, image_url: null, tts_policy_id: null,
+  owner_id: null, image_url: null,
   subscription_expires_at: null,
   latitude: null, longitude: null,
   representative_price: null, price_label: null, price_range: null,
@@ -152,12 +144,6 @@ const COUPON_TYPES: { key: CouponType; label: string; icon: string; desc: string
 const MIN_PEOPLE_PRESETS  = [1, 2, 3, 4];
 const MIN_AMOUNT_PRESETS  = [0, 15000, 30000, 50000, 100000];
 
-const POLICY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  '스타터':   { bg: 'bg-slate-500/15',  text: 'text-slate-300',  border: 'border-slate-500/25' },
-  '프로':     { bg: 'bg-blue-500/15',   text: 'text-blue-400',   border: 'border-blue-500/25'  },
-  '프리미엄': { bg: 'bg-amber-400/15',  text: 'text-amber-400',  border: 'border-amber-400/25' },
-};
-const DEFAULT_POLICY_COLOR = { bg: 'bg-fill-subtle', text: 'text-dim', border: 'border-border-subtle' };
 
 /* ---- LocalStorage history ---- */
 interface StoreHistoryEntry {
@@ -219,11 +205,6 @@ export default function StoresPage() {
   const [loadingStores, setLoadingStores] = useState(true);
 
   /* TTS */
-  const [ttsPolicies,     setTtsPolicies]     = useState<TtsPolicy[]>([]);
-  const [policyChanging,  setPolicyChanging]  = useState<string | null>(null);
-  const [policyEditId,    setPolicyEditId]    = useState<string | null>(null);
-  const [policyEditLimit, setPolicyEditLimit] = useState(500);
-  const [savingPolicy,    setSavingPolicy]    = useState(false);
 
   /* history */
   const [historyStoreId, setHistoryStoreId] = useState<string | null>(null);
@@ -288,7 +269,7 @@ export default function StoresPage() {
   const loadStores = async () => {
     const { data, error } = await sb
       .from('stores')
-      .select('id, name, address, phone, category, category_detail, is_active, created_at, updated_at, owner_id, image_url, tts_policy_id, subscription_expires_at, representative_price, price_label, price_range, geo_discoverable, latitude, longitude')
+      .select('id, name, address, phone, category, category_detail, is_active, created_at, updated_at, owner_id, image_url, subscription_expires_at, representative_price, price_label, price_range, geo_discoverable, latitude, longitude')
       .order('created_at', { ascending: false });
 
     let rows: Store[];
@@ -315,10 +296,6 @@ export default function StoresPage() {
     }
   };
 
-  const loadTtsPolicies = async () => {
-    try { const r = await fetch('/api/tts/policy'); if (r.ok) setTtsPolicies(await r.json()); } catch {}
-  };
-
   const loadStoreCoupons = async (storeId: string) => {
     setCouponsLoading(true);
     setStoreCoupons([]);
@@ -332,7 +309,6 @@ export default function StoresPage() {
 
   useEffect(() => {
     loadStores();
-    loadTtsPolicies();
     loadCouponCounts();
     const ch = sb.channel('stores-rt')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'stores' }, loadStores)
@@ -369,23 +345,6 @@ export default function StoresPage() {
       window.open(`/owner/preview?s=${btoa(JSON.stringify(data.session))}`, '_blank');
     } catch (e) { alert((e as Error).message); }
     finally     { setPreviewingId(null); }
-  };
-
-  const handlePolicyChange = async (store_id: string, policy_id: string | null) => {
-    setPolicyChanging(store_id);
-    try {
-      await fetch('/api/tts/policy', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ store_id, policy_id }) });
-      setStores(p => p.map(s => s.id === store_id ? { ...s, tts_policy_id: policy_id } : s));
-    } finally { setPolicyChanging(null); }
-  };
-
-  const handlePolicyEdit = async (policyId: string) => {
-    setSavingPolicy(true);
-    try {
-      await fetch('/api/tts/policy', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: policyId, daily_char_limit: policyEditLimit }) });
-      await loadTtsPolicies();
-      setPolicyEditId(null);
-    } finally { setSavingPolicy(false); }
   };
 
   const toggleActive = async (store: Store) => {
@@ -435,7 +394,6 @@ export default function StoresPage() {
       name: store.name, address: store.address ?? '', phone: store.phone ?? '',
       category: store.category ?? '', is_active: store.is_active,
       owner_id: store.owner_id, image_url: store.image_url,
-      tts_policy_id: store.tts_policy_id,
       subscription_expires_at: store.subscription_expires_at ?? null,
       latitude: store.latitude ?? null, longitude: store.longitude ?? null,
       representative_price: store.representative_price ?? null,
@@ -486,7 +444,6 @@ export default function StoresPage() {
       is_active:               form.is_active,
       owner_id:                form.owner_id,
       image_url:               form.image_url,
-      tts_policy_id:           form.tts_policy_id || null,
       subscription_expires_at: form.subscription_expires_at || null,
       representative_price:    repIdx != null ? (formMenuItems[repIdx]?.price ?? null) : null,
       price_label:             repIdx != null ? (formMenuItems[repIdx]?.name || null) : null,
@@ -601,7 +558,6 @@ export default function StoresPage() {
       else if (sortCol === 'category')   { va = a.category ?? '';      vb = b.category ?? ''; }
       else if (sortCol === 'phone')      { va = a.phone ?? '';         vb = b.phone ?? ''; }
       else if (sortCol === 'owner')      { va = a.owner_id ? (ownerMap[a.owner_id]?.name ?? '') : ''; vb = b.owner_id ? (ownerMap[b.owner_id]?.name ?? '') : ''; }
-      else if (sortCol === 'policy')     { va = a.tts_policy_id ?? ''; vb = b.tts_policy_id ?? ''; }
       else if (sortCol === 'status')     { va = a.is_active ? 1 : 0;         vb = b.is_active ? 1 : 0; }
       else if (sortCol === 'updated_at') { va = a.updated_at ?? a.created_at; vb = b.updated_at ?? b.created_at; }
       else if (sortCol === 'coupons')    { va = couponCountMap[a.id] ?? 0;    vb = couponCountMap[b.id] ?? 0; }
@@ -969,50 +925,6 @@ export default function StoresPage() {
         ))}
       </div>
 
-      {/* TTS 정책 */}
-      <div className="bg-card border border-border-main rounded-2xl p-4 mb-5">
-        <p className="text-xs font-semibold text-muted mb-3">유료 회원 TTS 정책</p>
-        <div className="flex gap-3 flex-wrap">
-          {ttsPolicies.length === 0 && <p className="text-xs text-dim">정책 로드 중...</p>}
-          {ttsPolicies.map(p => {
-            const col      = POLICY_COLORS[p.name] ?? DEFAULT_POLICY_COLOR;
-            const isEdit   = policyEditId === p.id;
-            return (
-              <div key={p.id} className={`flex-1 min-w-[140px] rounded-xl border p-3 ${col.bg} ${col.border}`}>
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className={`text-xs font-bold ${col.text}`}>{p.name}</span>
-                  {isEdit ? (
-                    <div className="flex gap-1">
-                      <button onClick={() => handlePolicyEdit(p.id)} disabled={savingPolicy}
-                        className="text-[10px] px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded font-bold disabled:opacity-40">저장</button>
-                      <button onClick={() => setPolicyEditId(null)}
-                        className="text-[10px] p-0.5 bg-fill-subtle text-dim rounded hover:text-primary"><X size={9}/></button>
-                    </div>
-                  ) : (
-                    <button onClick={() => { setPolicyEditId(p.id); setPolicyEditLimit(p.daily_char_limit); }}
-                      className="text-dim hover:text-primary transition"><Pencil size={10}/></button>
-                  )}
-                </div>
-                {isEdit ? (
-                  <div className="flex items-center gap-1">
-                    <input type="number" value={policyEditLimit === -1 ? '' : policyEditLimit}
-                      onChange={e => setPolicyEditLimit(e.target.value === '' ? -1 : Number(e.target.value))}
-                      placeholder="-1 무제한"
-                      className="w-full px-2 py-1 bg-black/20 border border-white/10 rounded-lg text-xs text-primary outline-none"/>
-                    <span className="text-[10px] text-dim shrink-0">자/일</span>
-                  </div>
-                ) : (
-                  <p className="text-[11px] text-secondary">
-                    {p.daily_char_limit === -1 ? '무제한' : `${p.daily_char_limit.toLocaleString()}자/일`}
-                  </p>
-                )}
-                <p className="text-[10px] text-dim mt-1 truncate">{p.description}</p>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
       {/* 가게 목록 */}
       <div className="bg-card border border-border-main rounded-2xl overflow-hidden">
         <table className="w-full text-sm">
@@ -1023,7 +935,6 @@ export default function StoresPage() {
                 ['category',   '카테고리',   'left',   'px-4'],
                 ['phone',      '연락처',     'left',   'px-4'],
                 ['owner',      '사장님',     'left',   'px-4'],
-                ['policy',     'TTS 정책',   'left',   'px-4'],
                 ['created_at', '등록일',     'left',   'px-4'],
                 ['updated_at', '최근수정일', 'left',   'px-4'],
                 ['coupons',    '쿠폰',       'center', 'px-3'],
@@ -1105,36 +1016,6 @@ export default function StoresPage() {
                     ) : (
                       <div className="flex items-center gap-1 text-xs text-dim"><User size={11} /> 미연결</div>
                     )}
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="flex flex-col gap-1.5">
-                      {store.tts_policy_id ? (() => {
-                        const pol = ttsPolicies.find(p => p.id === store.tts_policy_id);
-                        const col = pol ? (POLICY_COLORS[pol.name] ?? DEFAULT_POLICY_COLOR) : DEFAULT_POLICY_COLOR;
-                        return <span className={`inline-flex w-fit items-center px-2 py-0.5 rounded-md text-[10px] font-bold ${col.bg} ${col.text} border ${col.border}`}>{pol?.name ?? '정책'}</span>;
-                      })() : (
-                        <span className="inline-flex w-fit items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-fill-subtle text-dim border border-border-subtle">미설정</span>
-                      )}
-                      <select
-                        value={store.tts_policy_id ?? ''}
-                        disabled={policyChanging === store.id}
-                        onChange={e => handlePolicyChange(store.id, e.target.value || null)}
-                        className="appearance-none bg-sidebar border border-border-subtle rounded-lg px-2 py-1 text-[11px] text-secondary outline-none cursor-pointer hover:border-[#FF6F0F]/40 transition disabled:opacity-50 max-w-[100px]"
-                      >
-                        <option value="">미설정</option>
-                        {ttsPolicies.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                      </select>
-                      {store.subscription_expires_at && (() => {
-                        const exp = new Date(store.subscription_expires_at);
-                        const daysLeft = Math.ceil((exp.getTime() - Date.now()) / 86400000);
-                        return (
-                          <div className={`flex items-center gap-1 text-[10px] mt-0.5 ${daysLeft < 0 ? 'text-red-400' : daysLeft <= 7 ? 'text-amber-400' : 'text-emerald-400'}`}>
-                            <Calendar size={9}/>
-                            {daysLeft < 0 ? `만료됨 (${exp.toLocaleDateString('ko-KR')})` : `D-${daysLeft} (${exp.toLocaleDateString('ko-KR')})`}
-                          </div>
-                        );
-                      })()}
-                    </div>
                   </td>
                   {/* 등록일 */}
                   <td className="px-4 py-4 text-xs">
