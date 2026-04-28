@@ -441,15 +441,6 @@ export default function RestaurantsPage() {
 
   async function fetchRestaurants() {
     setLoading(true);
-    let query = supabase
-      .from('restaurants')
-      .select('*')
-      .order('crawled_at', { ascending: false });
-
-    // 카테고리 필터는 클라이언트에서 처리 (unniepick_category 포함 대응)
-
-    const { data, error } = await query.limit(10000);
-    if (error) { console.error(error.message); setLoading(false); return; }
 
     const parseArr = (v: any) => {
       if (Array.isArray(v)) return v;
@@ -459,7 +450,25 @@ export default function RestaurantsPage() {
       if (v && typeof v === 'object' && !Array.isArray(v)) return v;
       try { return JSON.parse(v ?? '{}'); } catch { return {}; }
     };
-    const parsed = (data ?? []).map((r: any) => ({
+
+    // Supabase 서버 max_rows(1000) 우회 — range로 청크 단위 수집
+    const CHUNK = 1000;
+    const all: any[] = [];
+    let from = 0;
+    while (true) {
+      const { data, error } = await supabase
+        .from('restaurants')
+        .select('*')
+        .order('crawled_at', { ascending: false })
+        .range(from, from + CHUNK - 1);
+      if (error) { console.error(error.message); setLoading(false); return; }
+      if (!data || data.length === 0) break;
+      all.push(...data);
+      if (data.length < CHUNK) break;
+      from += CHUNK;
+    }
+
+    const parsed = all.map((r: any) => ({
       ...r,
       menu_items:      parseArr(r.menu_items),
       tags:            parseArr(r.tags),
@@ -470,8 +479,8 @@ export default function RestaurantsPage() {
       review_summary:  parseObj(r.review_summary),
     }));
     setRestaurants(parsed);
-    if (!categories.length && data?.length) {
-      const cats = [...new Set(data.map((r) => r.category).filter(Boolean))] as string[];
+    if (!categories.length && all.length) {
+      const cats = [...new Set(all.map((r) => r.category).filter(Boolean))] as string[];
       setCategories(cats.sort());
     }
     setLoading(false);
