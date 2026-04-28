@@ -104,6 +104,7 @@ export default function RestaurantsPage() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'suspected' | 'inactive'>('active');
   const [sourceFilter, setSourceFilter] = useState<'all' | 'naver' | 'kakao'>('all');
   const [aiFilter,     setAiFilter]     = useState<'all' | 'has' | 'none'>('all');
+  const [openedFilter, setOpenedFilter] = useState<'all' | '1' | '3' | '6' | '12'>('all');
   const [sortBy, setSortBy] = useState<SortField>('crawled_at');
   const [categories, setCategories] = useState<string[]>([]);
   const [selected, setSelected] = useState<Restaurant | null>(null);
@@ -147,7 +148,7 @@ export default function RestaurantsPage() {
   // 필터/검색/뷰 모드 변경 시 visibleCount 리셋
   useEffect(() => {
     setVisibleCount(viewMode === 'list' ? 40 : 24);
-  }, [search, categoryFilter, guFilter, dongFilter, statusFilter, sourceFilter, aiFilter, sortBy, viewMode]);
+  }, [search, categoryFilter, guFilter, dongFilter, statusFilter, sourceFilter, aiFilter, openedFilter, sortBy, viewMode]);
 
   // IntersectionObserver — sentinel 보이면 1줄(3개) 추가
   useEffect(() => {
@@ -412,6 +413,16 @@ export default function RestaurantsPage() {
     if (aiFilter === 'has'  && !r.ai_summary) return false;
     if (aiFilter === 'none' &&  r.ai_summary) return false;
 
+    // 개업일 필터
+    if (openedFilter !== 'all') {
+      const openedAt = (r as any).opened_at as string | null;
+      if (!openedAt) return false;
+      const months = parseInt(openedFilter, 10);
+      const cutoff = new Date();
+      cutoff.setMonth(cutoff.getMonth() - months);
+      if (new Date(openedAt) < cutoff) return false;
+    }
+
     const { gu, dong } = parseLocation(r.address);
     if (guFilter   && gu   !== guFilter)   return false;
     if (dongFilter && dong !== dongFilter) return false;
@@ -437,6 +448,14 @@ export default function RestaurantsPage() {
     all:  restaurants.length,
     has:  restaurants.filter((r) =>  r.ai_summary).length,
     none: restaurants.filter((r) => !r.ai_summary).length,
+  };
+
+  const now = Date.now();
+  const openedCounts = {
+    '1':  restaurants.filter((r) => { const d = (r as any).opened_at; return d && now - new Date(d).getTime() <= 1  * 30 * 24 * 3600 * 1000; }).length,
+    '3':  restaurants.filter((r) => { const d = (r as any).opened_at; return d && now - new Date(d).getTime() <= 3  * 30 * 24 * 3600 * 1000; }).length,
+    '6':  restaurants.filter((r) => { const d = (r as any).opened_at; return d && now - new Date(d).getTime() <= 6  * 30 * 24 * 3600 * 1000; }).length,
+    '12': restaurants.filter((r) => { const d = (r as any).opened_at; return d && now - new Date(d).getTime() <= 12 * 30 * 24 * 3600 * 1000; }).length,
   };
 
   const lastCrawled = restaurants.length
@@ -660,9 +679,33 @@ export default function RestaurantsPage() {
             ))}
           </div>
 
-          {(guFilter || dongFilter || categoryFilter || search || sourceFilter !== 'all' || aiFilter !== 'all') && (
+          <div className="w-px h-4 bg-border-subtle" />
+
+          {/* 개업일 필터 */}
+          <div className="flex items-center gap-1">
+            <span className="text-xs text-muted shrink-0">🆕 개업</span>
+            {([
+              { v: '1',  label: '1개월' },
+              { v: '3',  label: '3개월' },
+              { v: '6',  label: '6개월' },
+              { v: '12', label: '1년'   },
+            ] as const).map(({ v, label }) => (
+              <button key={v}
+                onClick={() => setOpenedFilter(openedFilter === v ? 'all' : v)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                  openedFilter === v
+                    ? 'bg-sky-600 text-white'
+                    : 'bg-card border border-border-subtle text-muted hover:text-primary'
+                }`}
+              >
+                {label} <span className="opacity-70">{openedCounts[v]}</span>
+              </button>
+            ))}
+          </div>
+
+          {(guFilter || dongFilter || categoryFilter || search || sourceFilter !== 'all' || aiFilter !== 'all' || openedFilter !== 'all') && (
             <button
-              onClick={() => { setGuFilter(''); setDongFilter(''); setCategoryFilter(''); setSearch(''); setSourceFilter('all'); setAiFilter('all'); }}
+              onClick={() => { setGuFilter(''); setDongFilter(''); setCategoryFilter(''); setSearch(''); setSourceFilter('all'); setAiFilter('all'); setOpenedFilter('all'); }}
               className="ml-auto px-3 py-1.5 text-xs text-muted hover:text-primary hover:bg-fill-subtle rounded-lg transition"
             >
               전체 초기화
@@ -957,6 +1000,15 @@ function RestaurantListRow({
     ? new Date(r.ai_summary_at).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })
     : null;
 
+  const openedAt  = (r as any).opened_at as string | null;
+  const openedDate = openedAt
+    ? new Date(openedAt).toLocaleDateString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit' })
+    : null;
+  // 6개월 이내면 NEW 강조
+  const isRecentOpen = openedAt
+    ? Date.now() - new Date(openedAt).getTime() <= 6 * 30 * 24 * 3600 * 1000
+    : false;
+
   return (
     <div
       onClick={onClick}
@@ -1025,27 +1077,26 @@ function RestaurantListRow({
 
         {/* ③ 수집 데이터 현황 */}
         <div className="flex items-center gap-2 flex-wrap">
+          {openedDate && (
+            <span className={`text-[10px] flex items-center gap-0.5 font-semibold ${isRecentOpen ? 'text-sky-400' : 'text-muted'}`}>
+              🆕 {openedDate} 개업
+            </span>
+          )}
           {crawledDate && (
             <span className="text-[10px] text-muted flex items-center gap-0.5">
               <Clock className="w-2.5 h-2.5" />{crawledDate} 수집
             </span>
           )}
           {menuCount > 0 && (
-            <span className="text-[10px] text-slate-400 flex items-center gap-0.5">
-              🍽 메뉴 {menuCount}개
-            </span>
+            <span className="text-[10px] text-slate-400">🍽 메뉴 {menuCount}개</span>
           )}
           {keywordCount > 0 && (
-            <span className="text-[10px] text-slate-400 flex items-center gap-0.5">
-              🏷 키워드 {keywordCount}개
-            </span>
+            <span className="text-[10px] text-slate-400">🏷 키워드 {keywordCount}개</span>
           )}
           {blogCount > 0 && (
-            <span className="text-[10px] text-slate-400 flex items-center gap-0.5">
-              📝 블로그 {blogCount}개
-            </span>
+            <span className="text-[10px] text-slate-400">📝 블로그 {blogCount}개</span>
           )}
-          {menuCount === 0 && keywordCount === 0 && blogCount === 0 && (
+          {menuCount === 0 && keywordCount === 0 && blogCount === 0 && !openedDate && (
             <span className="text-[10px] text-muted/50">수집 데이터 없음</span>
           )}
         </div>
