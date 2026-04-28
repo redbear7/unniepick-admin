@@ -15,27 +15,33 @@ import {
   getActiveKeywords, updateKeywordStatus,
   type KakaoRestaurantData, type CrawlKeyword,
 } from './storage.js';
-import { searchKakaoAll, kakaoGroupToCategory, type KakaoPlace } from './kakao-search.js';
+import { searchKakaoAll, type KakaoPlace } from './kakao-search.js';
+import { kakaoMidCategory, normalizeToUnniepick } from './category-map.js';
 import { autoTagRestaurant } from './tagger.js';
 import { notifyNewRestaurants, notifyDailySummary } from './notify.js';
 
 // ── KakaoPlace → KakaoRestaurantData 변환 ─────────────────────────────────────────
 function kakaoToRestaurant(place: KakaoPlace): KakaoRestaurantData {
-  const category = kakaoGroupToCategory(place.category_group_code, place.category_name);
-  const lat  = parseFloat(place.y)  || undefined;
-  const lng  = parseFloat(place.x) || undefined;
+  // kakao_category: 원본 전체 경로 보존 (예: "음식점 > 한식 > 설렁탕,국밥")
+  // category:       중간 뎁스 (예: "한식")  — 사람이 읽을 수 있는 수준
+  // unniepick_category: 언니픽 고정 카테고리 (예: "한식")
+  const category          = kakaoMidCategory(place.category_group_code, place.category_name);
+  const unniepick_category = normalizeToUnniepick(category);
+  const lat = parseFloat(place.y) || undefined;
+  const lng = parseFloat(place.x) || undefined;
 
   const data: KakaoRestaurantData = {
-    kakao_place_id:  place.id,
-    kakao_place_url: place.place_url,
-    kakao_category:  place.category_name,
-    source:          'kakao',
-    name:            place.place_name,
-    address:         place.road_address_name || place.address_name || '',
-    phone:           place.phone || '',
+    kakao_place_id:      place.id,
+    kakao_place_url:     place.place_url,
+    kakao_category:      place.category_name,  // 원본 전체 경로
+    source:              'kakao',
+    name:                place.place_name,
+    address:             place.road_address_name || place.address_name || '',
+    phone:               place.phone || '',
     category,
-    latitude:        lat,
-    longitude:       lng,
+    unniepick_category,
+    latitude:            lat,
+    longitude:           lng,
     tags: [],
   };
 

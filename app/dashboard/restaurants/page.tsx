@@ -130,6 +130,10 @@ export default function RestaurantsPage() {
   const [closureChecking, setClosureChecking] = useState(false);
   const [closureMsg,      setClosureMsg]      = useState('');
 
+  // ── 카테고리 정규화 관련 state ────────────────────────────────────
+  const [normalizing,   setNormalizing]   = useState(false);
+  const [normalizeMsg,  setNormalizeMsg]  = useState('');
+
   // ── 뷰 모드 ───────────────────────────────────────────────────
   const [viewMode, setViewMode] = useState<'list' | 'thumbnail'>('list');
 
@@ -322,6 +326,25 @@ export default function RestaurantsPage() {
       alert(`폐업 검수 실패: ${(e as Error).message}`);
     } finally {
       setClosureChecking(false);
+    }
+  }
+
+  // 카테고리 일괄 정규화
+  async function normalizeCategories() {
+    setNormalizing(true);
+    setNormalizeMsg('');
+    try {
+      const res  = await fetch('/api/restaurants/normalize-categories', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? '정규화 실패');
+      const top3 = (data.distribution ?? []).slice(0, 3).map((d: any) => `${d.cat}(${d.count})`).join(' · ');
+      setNormalizeMsg(`📂 ${data.updated}개 정규화 완료 · ${top3}`);
+      fetchRestaurants();
+      setTimeout(() => setNormalizeMsg(''), 8000);
+    } catch (e) {
+      alert(`카테고리 정규화 실패: ${(e as Error).message}`);
+    } finally {
+      setNormalizing(false);
     }
   }
 
@@ -557,6 +580,18 @@ export default function RestaurantsPage() {
             {closureChecking
               ? <><Loader2 className="w-4 h-4 animate-spin" />검수 중...</>
               : <>🔍 폐업 검수</>
+            }
+          </button>
+          {/* 카테고리 정규화 */}
+          <button
+            onClick={normalizeCategories}
+            disabled={normalizing}
+            title="전체 업체 unniepick_category 일괄 정규화 (최초 1회 또는 규칙 변경 시)"
+            className="flex items-center gap-2 px-4 py-2 bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white rounded-xl text-sm font-semibold transition shadow-sm"
+          >
+            {normalizing
+              ? <><Loader2 className="w-4 h-4 animate-spin" />정규화 중...</>
+              : <>📂 카테고리 정규화</>
             }
           </button>
           {/* 태그 일괄 추출 */}
@@ -801,6 +836,13 @@ export default function RestaurantsPage() {
           </button>
         </div>
       </div>
+
+      {/* 카테고리 정규화 결과 메시지 */}
+      {normalizeMsg && (
+        <div className="px-4 py-2.5 bg-sky-500/15 border border-sky-500/30 rounded-xl text-sm text-sky-400 font-semibold">
+          {normalizeMsg}
+        </div>
+      )}
 
       {/* 폐업 검수 결과 메시지 */}
       {closureMsg && (

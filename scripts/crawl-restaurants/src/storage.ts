@@ -60,6 +60,7 @@ export interface RestaurantData {
 export type KakaoRestaurantData = Omit<RestaurantData, 'naver_place_id'> & {
   kakao_place_id: string;
   source: 'kakao';
+  unniepick_category?: string;
 };
 
 export interface CrawlKeyword {

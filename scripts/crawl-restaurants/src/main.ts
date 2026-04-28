@@ -9,6 +9,7 @@ import {
   type CrawlKeyword,
 } from './storage.js';
 import { autoTagRestaurant } from './tagger.js';
+import { normalizeToUnniepick } from './category-map.js';
 import { notifyNewRestaurants, notifyDailySummary } from './notify.js';
 import { processImage } from './image.js';
 
@@ -210,6 +211,7 @@ async function collectFromApollo(page: Page, query: string): Promise<RestaurantD
             : val.address ?? '',
           phone: val.virtualPhone ?? val.phone ?? '',
           category: val.category ?? '',
+          // unniepick_category는 page.evaluate 밖에서 normalizeToUnniepick() 적용
           latitude: val.y ? parseFloat(val.y) : undefined,
           longitude: val.x ? parseFloat(val.x) : undefined,
           image_url: val.imageUrl ?? '',
@@ -227,6 +229,7 @@ async function collectFromApollo(page: Page, query: string): Promise<RestaurantD
       if (seenIds.has(item.naver_place_id!)) continue;
       seenIds.add(item.naver_place_id!);
       item.tags = inferTags(item.category ?? '', item.name);
+      (item as any).unniepick_category = normalizeToUnniepick(item.category);
       item.auto_tags = autoTagRestaurant(item);
       allResults.push(item);
       newCount++;
