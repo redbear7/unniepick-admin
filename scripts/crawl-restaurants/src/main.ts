@@ -33,10 +33,11 @@ async function crawl(keywords: CrawlKeyword[]) {
   const proxy = getPlaywrightProxy();
 
   const crawler = new PlaywrightCrawler({
-    maxConcurrency: 3,          // 키워드 3개 동시 크롤
-    maxRequestRetries: 2,       // 실패 시 자동 재시도 (지수 백오프)
-    retryOnBlocked: true,       // 봇 차단 감지 시 재시도
-    requestHandlerTimeoutSecs: 300,
+    maxConcurrency: 1,          // 네이버 429 방지: 키워드 1개씩 순차 크롤
+    maxRequestRetries: 1,       // 실패 시 1회만 재시도
+    retryOnBlocked: false,      // 차단 시 재시도 금지 (429 악화 방지)
+    navigationTimeoutSecs: 40,
+    requestHandlerTimeoutSecs: 600,
 
     // 네이티브 Chromium + stealth args + 프록시
     launchContext: {
@@ -198,10 +199,24 @@ async function collectFromApollo(
   const seenIds  = new Set<string>();
   const maxPage  = limit > 0 ? Math.max(1, Math.ceil(limit / 15)) : 5;
 
+  // 첫 요청 전 인간형 딜레이 (3~8초) — 봇 감지 회피
+  await humanDelay(3000, 8000);
+
   await page.goto(
     `https://pcmap.place.naver.com/restaurant/list?query=${encodeURIComponent(query)}`,
-    { waitUntil: 'networkidle', timeout: 20_000 },
+    { waitUntil: 'networkidle', timeout: 40_000 },
   );
+
+  // 429/차단 페이지 감지
+  const statusCode = await page.evaluate(() => {
+    const body = document.body?.innerText ?? '';
+    if (body.includes('429') || body.includes('Too Many Requests') || body.includes('차단')) return 429;
+    return 200;
+  });
+  if (statusCode === 429) {
+    throw new Error('Naver 429: 일시적 IP 차단 — 잠시 후 재시도');
+  }
+
   await waitForApollo(page);
 
   for (let pageNum = 1; pageNum <= maxPage; pageNum++) {
@@ -300,8 +315,9 @@ export async function crawlDetailInfo(page: Page, placeId: string): Promise<{
   menu_items?: Array<{ name: string; price?: string }>;
 }> {
   // ── 1. 홈 탭 ──
+  await microDelay(800, 2000);
   await page.goto(`https://pcmap.place.naver.com/restaurant/${placeId}/home`, {
-    waitUntil: 'networkidle', timeout: 20_000,
+    waitUntil: 'networkidle', timeout: 30_000,
   });
   await waitForApollo(page);
 
