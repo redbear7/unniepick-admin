@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { type Page } from 'playwright';
 import { PlaywrightCrawler } from 'crawlee';
-import { stealthChromium, LAUNCH_ARGS, injectStealth, waitForApollo, waitForContent } from './stealth-browser.js';
+import { stealthChromium, makeLaunchArgs, injectStealth, waitForApollo, waitForContent } from './stealth-browser.js';
 import {
   upsertRestaurants, getStats, getExistingIds,
   getActiveKeywords, updateKeywordStatus,
@@ -13,6 +13,7 @@ import { normalizeToUnniepick } from './category-map.js';
 import { notifyNewRestaurants, notifyDailySummary } from './notify.js';
 import { processImage } from './image.js';
 import { humanDelay, microDelay, createTimer } from './human-delay.js';
+import { getPlaywrightProxy, logProxyStatus } from './proxy.js';
 
 // ── 메인 크롤링 ─────────────────────────────────────────────
 
@@ -20,14 +21,16 @@ async function crawl(keywords: CrawlKeyword[]) {
   const globalTimer = createTimer('네이버 전체 크롤링');
   console.log(`\n${'='.repeat(54)}`);
   console.log(`[${new Date().toLocaleString('ko-KR')}] 네이버 크롤링 시작 (${keywords.length}개 키워드)`);
-  console.log(`키워드 ${keywords.length}개 · 인간형 랜덤 딜레이 적용`);
+  console.log(`키워드 ${keywords.length}개 · 인간형 랜덤 딜레이 적용${limitArg > 0 ? ` · 키워드당 최대 ${limitArg}개` : ''}`);
   console.log(`${'='.repeat(54)}`);
+  logProxyStatus();
 
   const existingIds = await getExistingIds();
   globalTimer.log(`기존 DB: ${existingIds.size}개`);
 
   // 키워드별 결과를 수집하는 공유 맵 (스레드 안전: 키 단위로만 접근)
   const resultsMap = new Map<string, RestaurantData[]>();
+  const proxy = getPlaywrightProxy();
 
   const crawler = new PlaywrightCrawler({
     maxConcurrency: 3,          // 키워드 3개 동시 크롤
@@ -35,10 +38,10 @@ async function crawl(keywords: CrawlKeyword[]) {
     retryOnBlocked: true,       // 봇 차단 감지 시 재시도
     requestHandlerTimeoutSecs: 300,
 
-    // 네이티브 Chromium + stealth args 사용
+    // 네이티브 Chromium + stealth args + 프록시
     launchContext: {
       launcher: stealthChromium as any,
-      launchOptions: LAUNCH_ARGS as any,
+      launchOptions: makeLaunchArgs(proxy) as any,
     },
 
     // 페이지 생성 후 첫 내비게이션 전에 stealth 스크립트 주입
@@ -55,7 +58,7 @@ async function crawl(keywords: CrawlKeyword[]) {
       await updateKeywordStatus(kw.id, { status: 'running', last_error: undefined });
 
       // ── 1. 목록에서 기본 정보 일괄 추출 ──
-      const restaurants = await collectFromApollo(page, kw.keyword);
+      const restaurants = await collectFromApollo(page, kw.keyword, limitArg);
       log.info(`   ${restaurants.length}개 업체 수집`);
 
       // ── 2. 리뷰 상세 분석 (항상 실행) ──
@@ -186,9 +189,14 @@ async function crawl(keywords: CrawlKeyword[]) {
 
 // ── Apollo 캐시에서 목록 기본 정보 일괄 추출 ────────────────
 
-async function collectFromApollo(page: Page, query: string): Promise<RestaurantData[]> {
+async function collectFromApollo(
+  page: Page,
+  query: string,
+  limit = 0,   // 0 = 무제한 (기본 5페이지)
+): Promise<RestaurantData[]> {
   const allResults: RestaurantData[] = [];
-  const seenIds = new Set<string>();
+  const seenIds  = new Set<string>();
+  const maxPage  = limit > 0 ? Math.max(1, Math.ceil(limit / 15)) : 5;
 
   await page.goto(
     `https://pcmap.place.naver.com/restaurant/list?query=${encodeURIComponent(query)}`,
@@ -196,7 +204,7 @@ async function collectFromApollo(page: Page, query: string): Promise<RestaurantD
   );
   await waitForApollo(page);
 
-  for (let pageNum = 1; pageNum <= 5; pageNum++) {
+  for (let pageNum = 1; pageNum <= maxPage; pageNum++) {
     // Apollo RestaurantListSummary에서 기본 정보 추출
     const items: RestaurantData[] = await page.evaluate(() => {
       const apollo = (window as any).__APOLLO_STATE__;
@@ -241,13 +249,19 @@ async function collectFromApollo(page: Page, query: string): Promise<RestaurantD
 
     console.log(`     페이지 ${pageNum}: ${newCount}개 (누적 ${allResults.length}개)`);
 
+    // limit 달성 시 조기 종료
+    if (limit > 0 && allResults.length >= limit) {
+      console.log(`     (한도 ${limit}개 도달 — 종료)`);
+      break;
+    }
+
     if (newCount === 0 && pageNum > 1) {
       console.log(`     (새 결과 없음 — 종료)`);
       break;
     }
 
     // 다음 페이지
-    if (pageNum < 5) {
+    if (pageNum < maxPage) {
       const nextBtn = await page.$('a:has-text("다음페이지"), button:has-text("다음페이지")');
       if (!nextBtn) { console.log(`     (마지막 페이지)`); break; }
 
@@ -273,7 +287,7 @@ async function collectFromApollo(page: Page, query: string): Promise<RestaurantD
     }
   }
 
-  return allResults;
+  return limit > 0 ? allResults.slice(0, limit) : allResults;
 }
 
 // ── 홈 탭 상세 정보 수집 (영업시간·홈페이지·메뉴판) ────────
@@ -565,9 +579,11 @@ function inferTags(category: string, name: string): string[] {
 
 // ── 실행 모드 ────────────────────────────────────────────────
 
-const args = process.argv.slice(2);
+const args         = process.argv.slice(2);
 const keywordIdArg = args.find((a) => a.startsWith('--keyword-id='))?.split('=')[1];
-const isOnce = args.includes('--once');
+const isOnce       = args.includes('--once');
+// 키워드당 최대 수집 업체 수 (0 = 무제한, 기본값)
+const limitArg     = parseInt(args.find(a => a.startsWith('--limit='))?.split('=')[1] ?? '0') || 0;
 
 async function runWithKeywords(keywords: CrawlKeyword[]) {
   if (!keywords.length) {

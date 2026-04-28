@@ -89,19 +89,23 @@ export async function searchKakaoAll(
     radius?: number;
     maxPages?: number;   // 기본 5페이지 (= 최대 75개)
     delayMs?: number;    // 요청 간격 ms (기본 300ms, rate-limit 방지)
+    limit?: number;      // 키워드당 최대 수집 업체 수 (미설정 = maxPages 기준)
   } = {},
 ): Promise<KakaoPlace[]> {
-  const maxPages = opts.maxPages ?? 5;
-  const delayMs  = opts.delayMs  ?? 300;
+  const limit    = opts.limit ?? Infinity;
+  // limit가 지정되면 필요한 페이지 수만큼만 요청
+  const maxPages = opts.limit
+    ? Math.min(opts.maxPages ?? 45, Math.ceil(opts.limit / 15))
+    : (opts.maxPages ?? 5);
+  const delayMs  = opts.delayMs ?? 300;
   const all: KakaoPlace[] = [];
 
   for (let page = 1; page <= maxPages; page++) {
     const result = await searchKakaoKeyword(query, page, opts);
     all.push(...result.places);
 
-    if (result.isEnd) {
-      break;
-    }
+    // limit 달성 시 조기 종료
+    if (all.length >= limit || result.isEnd) break;
 
     // 요청 간격 준수 (카카오 rate limit: 초당 10건)
     if (page < maxPages) {
@@ -109,7 +113,7 @@ export async function searchKakaoAll(
     }
   }
 
-  return all;
+  return isFinite(limit) ? all.slice(0, limit) : all;
 }
 
 // ── 카카오 카테고리 코드 → 한국어 카테고리 ───────────────────────────────────

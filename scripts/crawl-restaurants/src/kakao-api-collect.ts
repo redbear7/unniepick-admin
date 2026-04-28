@@ -16,6 +16,7 @@
 import 'dotenv/config';
 import { createClient } from '@supabase/supabase-js';
 import { createTimer } from './human-delay.js';
+import { proxyFetch, logProxyStatus } from './proxy.js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
@@ -163,7 +164,7 @@ async function fetchKakaoCategory(
   url.searchParams.set('size', '15');
   url.searchParams.set('sort', 'distance');
 
-  const res = await fetch(url.toString(), {
+  const res = await proxyFetch(url.toString(), {
     headers: { Authorization: `KakaoAK ${KAKAO_KEY}` },
   });
   if (!res.ok) throw new Error(`카카오 API ${res.status}: ${await res.text()}`);
@@ -235,6 +236,7 @@ async function main() {
   const totalCalls = allPoints.length * CATEGORIES.length * 3;
 
   console.log(`\n🗺️  카카오 API 수집 시작`);
+  logProxyStatus();
   console.log(`   기본 반경: ${RADIUS_ARG}m | 격자점: ${allPoints.length}개 | 카테고리: ${CATEGORIES.length}개`);
   console.log(`   예상 요청: 최대 ${totalCalls}회 (~${Math.round(totalCalls * 0.25 / 60)}분)`);
   if (DRY_RUN) console.log('   [DRY-RUN] DB 저장 없음\n');

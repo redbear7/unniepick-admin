@@ -4,9 +4,14 @@
  * 네이버 스크래핑 대체 — 브라우저 없음, IP 차단 위험 없음
  *
  * 사용법:
- *   npm run crawl:kakao           # is_daily=true 키워드 전체 실행
- *   npm run crawl:kakao -- --keyword-id=<uuid>  # 특정 키워드 1개
- *   npm run crawl:kakao -- --once               # 1회 즉시 실행 후 종료
+ *   npm run crawl:kakao                             # is_daily=true 키워드 전체
+ *   npm run crawl:kakao -- --keyword-id=<uuid>      # 특정 키워드 1개
+ *   npm run crawl:kakao -- --once                   # 1회 즉시 실행 후 종료
+ *   npm run crawl:kakao -- --once --limit=30        # 키워드당 최대 30개
+ *
+ * 프록시:
+ *   PROXY_URL=http://user:pass@host:port npm run crawl:kakao -- --once
+ *   PROXY_LIST=http://p1:port,http://p2:port npm run crawl:kakao -- --once
  */
 
 import 'dotenv/config';
@@ -72,11 +77,13 @@ function inferTags(category: string, name: string): string[] {
 // ── 키워드 1개 수집 ───────────────────────────────────────────────────────────
 async function collectByKeyword(kw: CrawlKeyword): Promise<KakaoRestaurantData[]> {
   const timer = createTimer(`"${kw.keyword}"`);
-  timer.log(`카카오 검색: "${kw.keyword}"`);
+  const limitLabel = limitArg > 0 ? ` (최대 ${limitArg}개)` : '';
+  timer.log(`카카오 검색: "${kw.keyword}"${limitLabel}`);
 
   const places = await searchKakaoAll(kw.keyword, {
-    maxPages: 5,   // 최대 75개/키워드
-    delayMs:  600, // 요청 간격 600ms
+    maxPages: limitArg > 0 ? Math.ceil(limitArg / 15) : 5,
+    delayMs:  600,
+    ...(limitArg > 0 ? { limit: limitArg } : {}),
   });
 
   timer.done(places.length, 0);
@@ -199,9 +206,10 @@ async function runWithKeywords(keywords: CrawlKeyword[]) {
   console.log(`📊 DB 총: ${stats.total}개\n`);
 }
 
-const args = process.argv.slice(2);
+const args         = process.argv.slice(2);
 const keywordIdArg = args.find(a => a.startsWith('--keyword-id='))?.split('=')[1];
-const isOnce = args.includes('--once');
+const isOnce       = args.includes('--once');
+const limitArg     = parseInt(args.find(a => a.startsWith('--limit='))?.split('=')[1] ?? '0') || 0;
 
 if (keywordIdArg) {
   const keywords = await getActiveKeywords({ id: keywordIdArg });

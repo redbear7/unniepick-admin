@@ -5,14 +5,19 @@
  * 사람처럼 느리고 랜덤하게 크롤링 (봇 탐지 회피)
  *
  * 사용법:
- *   npm run crawl:daum             # is_daily=true 키워드 전체
- *   npm run crawl:daum -- --keyword-id=<uuid>   # 특정 키워드 1개
- *   npm run crawl:daum -- --once                # 1회 즉시 실행
- *   npm run crawl:daum -- --query="창원 카페"   # 키워드 DB 없이 즉시 검색
+ *   npm run crawl:daum                           # is_daily=true 키워드 전체
+ *   npm run crawl:daum -- --keyword-id=<uuid>    # 특정 키워드 1개
+ *   npm run crawl:daum -- --once                 # 1회 즉시 실행
+ *   npm run crawl:daum -- --once --limit=20      # 키워드당 최대 20개
+ *   npm run crawl:daum -- --query="창원 카페"    # 키워드 DB 없이 즉시 검색
+ *
+ * 프록시:
+ *   PROXY_URL=http://user:pass@host:port npm run crawl:daum -- --once
  */
 
 import 'dotenv/config';
 import { chromium, type Page } from 'playwright';
+import { getPlaywrightProxy, logProxyStatus } from './proxy.js';
 import { createClient } from '@supabase/supabase-js';
 import { humanDelay, microDelay, scrollDelay, createTimer } from './human-delay.js';
 import {
@@ -209,6 +214,10 @@ async function crawl(keywords: CrawlKeyword[]) {
 
   const existingIds = await getExistingKakaoIds();
   globalTimer.log(`기존 DB (카카오): ${existingIds.size}개`);
+  logProxyStatus();
+
+  const proxy   = getPlaywrightProxy();
+  const maxPagesPerKw = limitArg > 0 ? Math.max(1, Math.ceil(limitArg / 10)) : 3;
 
   // 브라우저 1개로 순차 처리 (IP 부하 최소화)
   const browser = await chromium.launch({
@@ -223,6 +232,7 @@ async function crawl(keywords: CrawlKeyword[]) {
       '--disable-infobars',
       '--window-size=1280,800',
     ],
+    ...(proxy ? { proxy } : {}),
   });
 
   const allResults: KakaoRestaurantData[] = [];
@@ -234,7 +244,7 @@ async function crawl(keywords: CrawlKeyword[]) {
 
     try {
       const kwTimer = createTimer(`"${kw.keyword}"`);
-      const places  = await collectByKeyword(browser, kw.keyword, 3);
+      const places  = await collectByKeyword(browser, kw.keyword, maxPagesPerKw);
       const restaurants = places.map(p => {
         const r = daumToRestaurant(p);
         r.tags = [...new Set([...(r.tags ?? []), kw.keyword])];
@@ -317,9 +327,15 @@ async function crawl(keywords: CrawlKeyword[]) {
 async function runQuery(query: string) {
   console.log(`\n다음 즉시 검색: "${query}"`);
   const timer   = createTimer(query);
-  const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--lang=ko-KR'] });
+  const proxy   = getPlaywrightProxy();
+  const browser = await chromium.launch({
+    headless: true,
+    args: ['--no-sandbox', '--lang=ko-KR'],
+    ...(proxy ? { proxy } : {}),
+  });
   try {
-    const places  = await collectByKeyword(browser, query, 3);
+    const maxPages = limitArg > 0 ? Math.max(1, Math.ceil(limitArg / 10)) : 3;
+    const places   = await collectByKeyword(browser, query, maxPages);
     timer.done(places.length, 0);
     for (const p of places.slice(0, 5)) {
       console.log(`  · ${p.name} (${p.category}) ${p.phone} — ${p.address}`);
@@ -335,6 +351,8 @@ const args          = process.argv.slice(2);
 const keywordIdArg  = args.find(a => a.startsWith('--keyword-id='))?.split('=')[1];
 const queryArg      = args.find(a => a.startsWith('--query='))?.split('=')[1];
 const isOnce        = args.includes('--once');
+// 키워드당 최대 수집 업체 수 (0 = 무제한, 기본 3페이지 × ~10개/페이지 = ~30개)
+const limitArg      = parseInt(args.find(a => a.startsWith('--limit='))?.split('=')[1] ?? '0') || 0;
 
 if (queryArg) {
   await runQuery(queryArg);

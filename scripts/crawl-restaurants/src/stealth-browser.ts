@@ -17,23 +17,36 @@
  */
 import { chromium } from 'playwright';
 import type { BrowserContext, Page } from 'playwright';
+import type { PlaywrightProxy } from './proxy.js';
 
 export const stealthChromium = chromium;
 
+const BASE_ARGS = [
+  '--lang=ko-KR',
+  '--no-sandbox',
+  '--disable-setuid-sandbox',
+  '--disable-blink-features=AutomationControlled',
+  '--disable-dev-shm-usage',
+  '--disable-features=IsolateOrigins',
+  '--no-first-run',
+  '--no-default-browser-check',
+  '--disable-infobars',
+] as const;
+
+/** 프록시 없는 기본 실행 인수 (하위 호환) */
 export const LAUNCH_ARGS = {
   headless: true,
-  args: [
-    '--lang=ko-KR',
-    '--no-sandbox',
-    '--disable-setuid-sandbox',
-    '--disable-blink-features=AutomationControlled',
-    '--disable-dev-shm-usage',
-    '--disable-features=IsolateOrigins',
-    '--no-first-run',
-    '--no-default-browser-check',
-    '--disable-infobars',
-  ],
+  args: BASE_ARGS,
 } as const;
+
+/** 프록시를 포함한 실행 옵션 반환 */
+export function makeLaunchArgs(proxy?: PlaywrightProxy) {
+  return {
+    headless: true,
+    args: BASE_ARGS as readonly string[],
+    ...(proxy ? { proxy } : {}),
+  };
+}
 
 // ── 봇 탐지 우회 초기화 스크립트 ─────────────────────────────
 const STEALTH_SCRIPT = `

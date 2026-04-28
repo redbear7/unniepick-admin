@@ -12,6 +12,7 @@
     "crawl:daum:start": "tsx src/daum-main.ts",
     "api:kakao": "tsx src/kakao-api-collect.ts",
     "api:kakao:dry": "tsx src/kakao-api-collect.ts --dry-run",
+    "api:kakao:gu": "tsx src/kakao-api-collect.ts --dry-run",
     "verify": "tsx src/verify.ts",
     "verify:test": "tsx src/verify-test.ts",
     "naver:login": "tsx src/naver-login-setup.ts",
@@ -26,7 +27,8 @@
     "playwright": "^1.49.0",
     "playwright-extra": "^4.3.6",
     "puppeteer-extra-plugin-stealth": "^2.11.2",
-    "sharp": "^0.34.5"
+    "sharp": "^0.34.5",
+    "undici": "^7.25.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
