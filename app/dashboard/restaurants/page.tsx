@@ -134,6 +134,13 @@ export default function RestaurantsPage() {
   const [normalizing,   setNormalizing]   = useState(false);
   const [normalizeMsg,  setNormalizeMsg]  = useState('');
 
+  // ── 데이터 수집 관련 state ────────────────────────────────────────
+  const [kakaoCollecting,  setKakaoCollecting]  = useState(false);
+  const [kakaoProgress,    setKakaoProgress]    = useState('');
+  const [naverCollecting,  setNaverCollecting]  = useState(false);
+  const [naverMsg,         setNaverMsg]         = useState('');
+  const [collectGuFilter,  setCollectGuFilter]  = useState('');
+
   // ── 뷰 모드 ───────────────────────────────────────────────────
   const [viewMode, setViewMode] = useState<'list' | 'thumbnail'>('list');
 
@@ -358,6 +365,75 @@ export default function RestaurantsPage() {
     }
   }
 
+  // 카카오 API 격자 수집 (SSE 스트리밍)
+  async function collectKakao(gu?: string) {
+    setKakaoCollecting(true);
+    setKakaoProgress('수집 시작...');
+    try {
+      const res = await fetch('/api/collect/kakao', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gu: gu || undefined, radiusM: 1500 }),
+      });
+      if (!res.ok || !res.body) throw new Error(`서버 오류 ${res.status}`);
+
+      const reader  = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split('\n');
+        buf = lines.pop() ?? '';
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          try {
+            const evt = JSON.parse(line.slice(6));
+            if (evt.type === 'start') {
+              setKakaoProgress(`격자 ${evt.total}개 수집 시작 (${evt.regions?.join(', ')})`);
+            } else if (evt.type === 'progress') {
+              setKakaoProgress(`🗺 ${evt.point} (${evt.done}/${evt.total}) · 누적 ${evt.collected}개`);
+            } else if (evt.type === 'done') {
+              setKakaoProgress(`✅ 완료 · 수집 ${evt.total}개 · 저장 ${evt.saved}개`);
+              fetchRestaurants();
+              setTimeout(() => setKakaoProgress(''), 8000);
+            }
+          } catch {}
+        }
+      }
+    } catch (e) {
+      setKakaoProgress(`❌ ${(e as Error).message}`);
+      setTimeout(() => setKakaoProgress(''), 5000);
+    } finally {
+      setKakaoCollecting(false);
+    }
+  }
+
+  // 네이버 공식 API 수집
+  async function collectNaver() {
+    setNaverCollecting(true);
+    setNaverMsg('');
+    try {
+      const res  = await fetch('/api/collect/naver', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ limit: 20 }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? '수집 실패');
+      setNaverMsg(`✅ 네이버 ${data.saved}개 저장 (${data.total}개 수집)`);
+      fetchRestaurants();
+      setTimeout(() => setNaverMsg(''), 8000);
+    } catch (e) {
+      alert(`네이버 수집 실패: ${(e as Error).message}`);
+    } finally {
+      setNaverCollecting(false);
+    }
+  }
+
   // 태그 일괄 추출
   async function batchExtractTags() {
     setTagging(true);
@@ -553,6 +629,49 @@ export default function RestaurantsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          {/* 데이터 수집 — 카카오 API 격자 수집 */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => collectKakao(collectGuFilter || undefined)}
+              disabled={kakaoCollecting || naverCollecting}
+              title="카카오 공식 API · 헥스 격자(1.5km) · 창원시 FD6+CE7 전체 수집"
+              className="flex items-center gap-1.5 px-3 py-2 bg-yellow-600 hover:bg-yellow-500 disabled:opacity-50 text-white rounded-l-xl text-xs font-semibold transition shadow-sm"
+            >
+              {kakaoCollecting
+                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                : <span>🗺</span>
+              }
+              카카오 수집
+            </button>
+            {/* 구 선택 드롭다운 */}
+            <select
+              value={collectGuFilter}
+              onChange={e => setCollectGuFilter(e.target.value)}
+              disabled={kakaoCollecting}
+              className="px-2 py-2 bg-yellow-700 hover:bg-yellow-600 disabled:opacity-50 text-white rounded-r-xl text-xs font-semibold border-l border-yellow-500 cursor-pointer"
+              title="특정 구만 수집 (전체=전 구역)"
+            >
+              <option value="">전체</option>
+              <option value="성산구">성산구</option>
+              <option value="의창구">의창구</option>
+              <option value="마산합포구">마산합포구</option>
+              <option value="마산회원구">마산회원구</option>
+              <option value="진해구">진해구</option>
+            </select>
+          </div>
+          {/* 네이버 API 수집 */}
+          <button
+            onClick={collectNaver}
+            disabled={naverCollecting || kakaoCollecting}
+            title="네이버 로컬 검색 공식 API · crawl_keywords 키워드 기반"
+            className="flex items-center gap-1.5 px-3 py-2 bg-green-600 hover:bg-green-500 disabled:opacity-50 text-white rounded-xl text-xs font-semibold transition shadow-sm"
+          >
+            {naverCollecting
+              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              : <span>🔎</span>
+            }
+            네이버 수집
+          </button>
           {/* AI 요약 일괄 생성 — source별 분리 */}
           <div className="flex items-center gap-1">
             <button
@@ -846,6 +965,21 @@ export default function RestaurantsPage() {
           </button>
         </div>
       </div>
+
+      {/* 카카오 API 수집 진행 메시지 */}
+      {kakaoProgress && (
+        <div className="px-4 py-2.5 bg-yellow-500/15 border border-yellow-500/30 rounded-xl text-sm text-yellow-400 font-semibold flex items-center gap-2">
+          {kakaoCollecting && <Loader2 className="w-4 h-4 animate-spin shrink-0" />}
+          {kakaoProgress}
+        </div>
+      )}
+
+      {/* 네이버 수집 결과 메시지 */}
+      {naverMsg && (
+        <div className="px-4 py-2.5 bg-green-500/15 border border-green-500/30 rounded-xl text-sm text-green-400 font-semibold">
+          {naverMsg}
+        </div>
+      )}
 
       {/* 카테고리 정규화 결과 메시지 */}
       {normalizeMsg && (
