@@ -1733,6 +1733,9 @@ function RestaurantListRow({
               {kakaoPlaceId && (
                 <span className="px-1 py-0.5 bg-yellow-500/20 text-yellow-400 text-[9px] font-bold rounded border border-yellow-500/30">K</span>
               )}
+              {blogCount > 0 && (
+                <span title={`블로그/카페 리뷰 ${blogCount}건`} className="px-1 py-0.5 bg-sky-500/20 text-sky-400 text-[9px] font-bold rounded border border-sky-500/30">B</span>
+              )}
               {r.is_new_open && (
                 <span className="px-1 py-0.5 bg-green-500/15 text-green-400 text-[9px] font-bold rounded-full border border-green-500/25">NEW</span>
               )}
@@ -1907,6 +1910,7 @@ function RestaurantCard({
           const kId     = (r as any).kakao_place_id as string | null;
           const hMenu   = Array.isArray(r.menu_items)     && r.menu_items.length     > 0;
           const hKw     = Array.isArray(r.review_keywords) && r.review_keywords.length > 0;
+          const hBlog   = Array.isArray(r.blog_reviews)   && r.blog_reviews.length   > 0;
           const hAi     = !!r.ai_summary;
           return (
             <div className="flex items-center gap-1 flex-wrap -mb-1">
@@ -1916,6 +1920,7 @@ function RestaurantCard({
               {kId && (
                 <span className="px-1 py-0.5 bg-yellow-500/20 text-yellow-400 text-[9px] font-bold rounded border border-yellow-500/30">K</span>
               )}
+              {hBlog  && <span title={`블로그/카페 리뷰 ${r.blog_reviews.length}건`} className="px-1 py-0.5 bg-sky-500/20 text-sky-400 text-[9px] font-bold rounded border border-sky-500/30">B</span>}
               {hMenu  && <span className="px-1 py-0.5 bg-slate-500/20 text-slate-400 text-[9px] rounded border border-slate-500/20">메뉴</span>}
               {hKw    && <span className="px-1 py-0.5 bg-slate-500/20 text-slate-400 text-[9px] rounded border border-slate-500/20">키워드</span>}
               {hAi    && <span className="px-1 py-0.5 bg-emerald-500/20 text-emerald-400 text-[9px] rounded border border-emerald-500/30">✨AI</span>}
