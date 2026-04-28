@@ -604,7 +604,7 @@ export default function RestaurantsPage() {
         `${city} ${value} 맛집`,
         `${city} ${value} 카페`,
         `${city} ${value} 술집`,
-        `${city} ${value} 맛집 새로오픈`,
+        `${city} ${value} 맛집 신규오픈`,
       ];
       label = `${value} 키워드 수집`;
       setKwModal({ label, keywords, dong: value });
@@ -964,7 +964,7 @@ export default function RestaurantsPage() {
                 : 'bg-card border-border-main text-muted hover:text-primary hover:border-sky-600/40'
             }`}
           >
-            🆕 새로오픈
+            🆕 신규오픈
             <span className="opacity-70">
               {v === '1' ? '1개월' : v === '3' ? '3개월' : v === '6' ? '6개월' : '1년'}
             </span>
