@@ -325,7 +325,7 @@ for (let i = 0; i < newItems.length; i++) {
     // 이미지 처리
     if (store.image_url) {
       try {
-        const { url } = await processImage(store.image_url, store.naver_place_id);
+        const { url } = await processImage(store.image_url, store.naver_place_id!);
         store.image_url = url;
       } catch {}
     }

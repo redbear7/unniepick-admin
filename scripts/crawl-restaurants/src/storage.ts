@@ -22,7 +22,7 @@ export interface BlogReview {
 }
 
 export interface RestaurantData {
-  naver_place_id: string;
+  naver_place_id?: string;          // 네이버 수집 시 필수, 카카오 수집 시 미사용
   name: string;
   address?: string;
   phone?: string;
@@ -34,22 +34,33 @@ export interface RestaurantData {
   longitude?: number;
   image_url?: string;
   naver_place_url?: string;
+  // 카카오 전용 필드
+  kakao_place_id?: string;
+  kakao_place_url?: string;
+  kakao_category?: string;
+  source?: string;                  // 'naver' | 'kakao' | 'manual'
   menu_items?: Array<{ name: string; price?: string }>;
   tags?: string[];
   // 상세 정보 (홈 탭)
-  business_hours?: string;          // 영업시간 (예: "월-금 11:00-22:00")
-  business_hours_detail?: string;   // 요일별 상세 (JSON 문자열)
-  website_url?: string;             // 홈페이지
-  instagram_url?: string;           // 인스타그램
+  business_hours?: string;
+  business_hours_detail?: string;
+  website_url?: string;
+  instagram_url?: string;
   // 리뷰 분석
   review_keywords?: ReviewKeyword[];
   menu_keywords?: MenuKeyword[];
   review_summary?: Record<string, number>;
   blog_reviews?: BlogReview[];
   is_new_open?: boolean;
-  auto_tags?: Record<string, string[]>;  // 다차원 자동 태그 { foodType: [], atmosphere: [], ... }
+  auto_tags?: Record<string, string[]>;
   image_url_original?: string;
 }
+
+/** Kakao-sourced data is RestaurantData with kakao_place_id required */
+export type KakaoRestaurantData = Omit<RestaurantData, 'naver_place_id'> & {
+  kakao_place_id: string;
+  source: 'kakao';
+};
 
 export interface CrawlKeyword {
   id: string;
@@ -123,13 +134,20 @@ export async function getExistingIds(): Promise<Set<string>> {
   const { data } = await supabase
     .from('restaurants')
     .select('naver_place_id');
-  return new Set((data ?? []).map((r) => r.naver_place_id));
+  return new Set((data ?? []).map((r) => r.naver_place_id).filter(Boolean));
 }
 
-export async function upsertRestaurants(items: RestaurantData[]): Promise<number> {
-  if (!items.length) return 0;
+/** 기존 DB에 있는 kakao_place_id 목록 조회 (카카오 신규 감지용) */
+export async function getExistingKakaoIds(): Promise<Set<string>> {
+  const { data } = await supabase
+    .from('restaurants')
+    .select('kakao_place_id')
+    .not('kakao_place_id', 'is', null);
+  return new Set((data ?? []).map((r) => r.kakao_place_id).filter(Boolean));
+}
 
-  const rows = items.map((item) => ({
+function toRow(item: RestaurantData) {
+  return {
     ...item,
     menu_items: JSON.stringify(item.menu_items ?? []),
     review_keywords: JSON.stringify(item.review_keywords ?? []),
@@ -141,15 +159,40 @@ export async function upsertRestaurants(items: RestaurantData[]): Promise<number
     naver_verified: !!item.naver_place_url,
     crawled_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-  }));
+  };
+}
+
+export async function upsertRestaurants(items: RestaurantData[]): Promise<number> {
+  if (!items.length) return 0;
 
   const { data, error } = await supabase
     .from('restaurants')
-    .upsert(rows, { onConflict: 'naver_place_id', ignoreDuplicates: false })
+    .upsert(items.map(toRow), { onConflict: 'naver_place_id', ignoreDuplicates: false })
     .select('id');
 
   if (error) {
     console.error('[storage] upsert error:', error.message);
+    return 0;
+  }
+
+  return data?.length ?? 0;
+}
+
+export async function upsertKakaoRestaurants(items: KakaoRestaurantData[]): Promise<number> {
+  if (!items.length) return 0;
+
+  const rows = items.map(item => ({
+    ...toRow(item as RestaurantData),
+    naver_verified: false,
+  }));
+
+  const { data, error } = await supabase
+    .from('restaurants')
+    .upsert(rows, { onConflict: 'kakao_place_id', ignoreDuplicates: false })
+    .select('id');
+
+  if (error) {
+    console.error('[storage] kakao upsert error:', error.message);
     return 0;
   }
 

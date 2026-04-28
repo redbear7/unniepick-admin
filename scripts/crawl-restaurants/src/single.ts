@@ -215,7 +215,7 @@ try {
   // 2. 홈 탭 상세 정보 (영업시간·홈페이지·메뉴판) — 항상 수집
   console.log('\n📋 상세 정보 수집 중...');
   try {
-    const detail = await crawlDetailInfo(page, store.naver_place_id);
+    const detail = await crawlDetailInfo(page, store.naver_place_id!);
     if (detail.business_hours)        { store.business_hours = detail.business_hours; console.log(`  영업시간: ${detail.business_hours}`); }
     if (detail.business_hours_detail) store.business_hours_detail = detail.business_hours_detail;
     if (detail.website_url)           { store.website_url = detail.website_url; console.log(`  홈페이지: ${detail.website_url}`); }
@@ -229,7 +229,7 @@ try {
   if (analyzeReviews) {
     console.log('\n리뷰 분석 중...');
     try {
-      const reviews = await crawlReviews(page, store.naver_place_id);
+      const reviews = await crawlReviews(page, store.naver_place_id!);
       store.review_keywords = reviews.keywords;
       store.menu_keywords = reviews.menuKeywords;
       store.review_summary = reviews.summary;
@@ -244,7 +244,7 @@ try {
   if (store.image_url) {
     console.log('\n📷 이미지 처리 중...');
     try {
-      const { url, isProcessed } = await processImage(store.image_url, store.naver_place_id);
+      const { url, isProcessed } = await processImage(store.image_url, store.naver_place_id!);
       store.image_url = url;
       console.log(`  ${isProcessed ? '✓ 최적화 완료' : '(기존 이미지 사용)'}`);
     } catch (e) {

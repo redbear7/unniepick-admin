@@ -62,14 +62,14 @@ async function crawl(keywords: CrawlKeyword[]) {
           try {
             log.info(`   [${i + 1}/${restaurants.length}] ${r.name} 상세+리뷰 분석...`);
 
-            const detail = await crawlDetailInfo(page, r.naver_place_id);
+            const detail = await crawlDetailInfo(page, r.naver_place_id!);
             if (detail.business_hours)        r.business_hours = detail.business_hours;
             if (detail.business_hours_detail) r.business_hours_detail = detail.business_hours_detail;
             if (detail.website_url)           r.website_url = detail.website_url;
             if (detail.instagram_url)         r.instagram_url = detail.instagram_url;
             if (detail.menu_items?.length)    r.menu_items = detail.menu_items;
 
-            const reviews = await crawlReviews(page, r.naver_place_id);
+            const reviews = await crawlReviews(page, r.naver_place_id!);
             r.review_keywords = reviews.keywords;
             r.menu_keywords = reviews.menuKeywords;
             r.review_summary = reviews.summary;
@@ -92,7 +92,7 @@ async function crawl(keywords: CrawlKeyword[]) {
       for (const r of restaurants) {
         if (r.image_url) {
           (r as any).image_url_original = r.image_url;
-          const { url, isProcessed } = await processImage(r.image_url, r.naver_place_id);
+          const { url, isProcessed } = await processImage(r.image_url, r.naver_place_id!);
           if (isProcessed) { r.image_url = url; imgCount++; }
         }
       }
@@ -100,7 +100,7 @@ async function crawl(keywords: CrawlKeyword[]) {
 
       resultsMap.set(kw.id, restaurants);
 
-      const newForKw = restaurants.filter((r) => !existingIds.has(r.naver_place_id)).length;
+      const newForKw = restaurants.filter((r) => !existingIds.has(r.naver_place_id!)).length;
       await updateKeywordStatus(kw.id, {
         status: 'success',
         last_crawled_at: new Date().toISOString(),
@@ -134,18 +134,18 @@ async function crawl(keywords: CrawlKeyword[]) {
   const allResults = [...resultsMap.values()].flat();
   const unique = new Map<string, RestaurantData>();
   for (const r of allResults) {
-    const existing = unique.get(r.naver_place_id);
+    const existing = unique.get(r.naver_place_id!);
     if (existing) {
       existing.tags = [...new Set([...(existing.tags ?? []), ...(r.tags ?? [])])];
     } else {
-      unique.set(r.naver_place_id, r);
+      unique.set(r.naver_place_id!, r);
     }
   }
   const deduped = [...unique.values()];
   console.log(`\n중복 제거: ${allResults.length} → ${deduped.length}개`);
 
   // ── 신규 업체 감지 ──
-  const newRestaurants = deduped.filter((r) => !existingIds.has(r.naver_place_id));
+  const newRestaurants = deduped.filter((r) => !existingIds.has(r.naver_place_id!));
   if (newRestaurants.length > 0 && existingIds.size > 0) {
     console.log(`\n${'🆕'.repeat(20)}`);
     console.log(`🆕 신규 업체 ${newRestaurants.length}개 발견!`);
@@ -224,8 +224,8 @@ async function collectFromApollo(page: Page, query: string): Promise<RestaurantD
     // 새 ID만 추가
     let newCount = 0;
     for (const item of items) {
-      if (seenIds.has(item.naver_place_id)) continue;
-      seenIds.add(item.naver_place_id);
+      if (seenIds.has(item.naver_place_id!)) continue;
+      seenIds.add(item.naver_place_id!);
       item.tags = inferTags(item.category ?? '', item.name);
       item.auto_tags = autoTagRestaurant(item);
       allResults.push(item);

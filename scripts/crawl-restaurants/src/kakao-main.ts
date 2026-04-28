@@ -11,31 +11,31 @@
 
 import 'dotenv/config';
 import {
-  upsertRestaurants, getStats, getExistingIds,
+  upsertKakaoRestaurants, getStats, getExistingKakaoIds,
   getActiveKeywords, updateKeywordStatus,
-  type RestaurantData, type CrawlKeyword,
+  type KakaoRestaurantData, type CrawlKeyword,
 } from './storage.js';
 import { searchKakaoAll, kakaoGroupToCategory, type KakaoPlace } from './kakao-search.js';
 import { autoTagRestaurant } from './tagger.js';
 import { notifyNewRestaurants, notifyDailySummary } from './notify.js';
 
-// ── KakaoPlace → RestaurantData 변환 ─────────────────────────────────────────
-function kakaoToRestaurant(place: KakaoPlace): RestaurantData {
+// ── KakaoPlace → KakaoRestaurantData 변환 ─────────────────────────────────────────
+function kakaoToRestaurant(place: KakaoPlace): KakaoRestaurantData {
   const category = kakaoGroupToCategory(place.category_group_code, place.category_name);
   const lat  = parseFloat(place.y)  || undefined;
   const lng  = parseFloat(place.x) || undefined;
 
-  const data: RestaurantData = {
-    // kakao_ 접두어로 기존 naver ID와 충돌 방지
-    naver_place_id: `kakao_${place.id}`,
-    name:           place.place_name,
-    address:        place.road_address_name || place.address_name || '',
-    phone:          place.phone || '',
+  const data: KakaoRestaurantData = {
+    kakao_place_id:  place.id,
+    kakao_place_url: place.place_url,
+    kakao_category:  place.category_name,
+    source:          'kakao',
+    name:            place.place_name,
+    address:         place.road_address_name || place.address_name || '',
+    phone:           place.phone || '',
     category,
-    latitude:       lat,
-    longitude:      lng,
-    // 카카오 지도 URL
-    naver_place_url: place.place_url,
+    latitude:        lat,
+    longitude:       lng,
     tags: [],
   };
 
@@ -63,7 +63,7 @@ function inferTags(category: string, name: string): string[] {
 }
 
 // ── 키워드 1개 수집 ───────────────────────────────────────────────────────────
-async function collectByKeyword(kw: CrawlKeyword): Promise<RestaurantData[]> {
+async function collectByKeyword(kw: CrawlKeyword): Promise<KakaoRestaurantData[]> {
   console.log(`\n  🔍 "${kw.keyword}" 검색 중...`);
 
   const places = await searchKakaoAll(kw.keyword, {
@@ -86,10 +86,10 @@ async function crawl(keywords: CrawlKeyword[]) {
   console.log(`[${new Date().toLocaleString('ko-KR')}] 카카오 API 크롤링 시작 (${keywords.length}개 키워드)`);
   console.log(`${'='.repeat(50)}`);
 
-  const existingIds = await getExistingIds();
-  console.log(`기존 DB: ${existingIds.size}개`);
+  const existingIds = await getExistingKakaoIds();
+  console.log(`기존 DB (카카오): ${existingIds.size}개`);
 
-  const allResults: RestaurantData[] = [];
+  const allResults: KakaoRestaurantData[] = [];
 
   for (const kw of keywords) {
     await updateKeywordStatus(kw.id, { status: 'running', last_error: undefined });
@@ -97,7 +97,7 @@ async function crawl(keywords: CrawlKeyword[]) {
     try {
       const restaurants = await collectByKeyword(kw);
 
-      const newCount = restaurants.filter(r => !existingIds.has(r.naver_place_id)).length;
+      const newCount = restaurants.filter(r => r.kakao_place_id && !existingIds.has(r.kakao_place_id)).length;
       allResults.push(...restaurants);
 
       await updateKeywordStatus(kw.id, {
@@ -124,20 +124,22 @@ async function crawl(keywords: CrawlKeyword[]) {
   }
 
   // ── 중복 제거 (같은 카카오 ID) ─────────────────────────────────────────────
-  const unique = new Map<string, RestaurantData>();
+  const unique = new Map<string, KakaoRestaurantData>();
   for (const r of allResults) {
-    const existing = unique.get(r.naver_place_id);
+    const key = r.kakao_place_id ?? '';
+    if (!key) continue;
+    const existing = unique.get(key);
     if (existing) {
       existing.tags = [...new Set([...(existing.tags ?? []), ...(r.tags ?? [])])];
     } else {
-      unique.set(r.naver_place_id, r);
+      unique.set(key, r);
     }
   }
   const deduped = [...unique.values()];
   console.log(`\n중복 제거: ${allResults.length} → ${deduped.length}개`);
 
   // ── 신규 업체 감지 ───────────────────────────────────────────────────────────
-  const newRestaurants = deduped.filter(r => !existingIds.has(r.naver_place_id));
+  const newRestaurants = deduped.filter(r => r.kakao_place_id && !existingIds.has(r.kakao_place_id));
   if (newRestaurants.length > 0 && existingIds.size > 0) {
     console.log(`\n🆕 신규 업체 ${newRestaurants.length}개!`);
     for (const r of newRestaurants) {
@@ -149,7 +151,7 @@ async function crawl(keywords: CrawlKeyword[]) {
 
   // ── DB 저장 ──────────────────────────────────────────────────────────────────
   if (deduped.length > 0) {
-    const saved = await upsertRestaurants(deduped);
+    const saved = await upsertKakaoRestaurants(deduped);
     console.log(`\n💾 ${saved}개 DB 저장`);
   }
 
@@ -179,7 +181,7 @@ async function runWithKeywords(keywords: CrawlKeyword[]) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   ).from('crawl_keywords').select('last_new_count').in('id', keywords.map(k => k.id));
 
-  const newCount = (updated ?? []).reduce((s, r: any) => s + (r.last_new_count ?? 0), 0);
+  const newCount = ((updated ?? []) as any[]).reduce((s, r) => s + (r.last_new_count ?? 0), 0);
   await notifyDailySummary(stats.total, newCount, keywords.map(k => k.keyword));
   console.log(`📊 DB 총: ${stats.total}개\n`);
 }
