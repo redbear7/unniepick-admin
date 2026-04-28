@@ -144,7 +144,7 @@ export default function RestaurantsPage() {
   useEffect(() => {
     fetchRestaurants();
     fetchRegisteredIds();
-  }, [sortBy, categoryFilter]);
+  }, [sortBy]);
 
   // 필터/검색/뷰 모드 변경 시 visibleCount 리셋
   useEffect(() => {
@@ -350,7 +350,7 @@ export default function RestaurantsPage() {
       .select('*')
       .order('crawled_at', { ascending: false });
 
-    if (categoryFilter) query = query.eq('category', categoryFilter);
+    // 카테고리 필터는 클라이언트에서 처리 (unniepick_category 포함 대응)
 
     const { data, error } = await query.limit(1000);
     if (error) { console.error(error.message); setLoading(false); return; }
@@ -393,7 +393,8 @@ export default function RestaurantsPage() {
       if (dong && (!guFilter || gu === guFilter)) {
         dongCountMap.set(dong, (dongCountMap.get(dong) ?? 0) + 1);
       }
-      if (r.category) catCountMap.set(r.category, (catCountMap.get(r.category) ?? 0) + 1);
+      const cat = (r as any).unniepick_category || r.category;
+      if (cat) catCountMap.set(cat, (catCountMap.get(cat) ?? 0) + 1);
     }
 
     return {
@@ -411,6 +412,12 @@ export default function RestaurantsPage() {
     if (statusFilter === 'active'    && status !== 'active' && status !== 'unknown') return false;
     if (statusFilter === 'suspected' && status !== 'suspected') return false;
     if (statusFilter === 'inactive'  && status !== 'inactive')  return false;
+
+    // 카테고리 필터 (unniepick_category 우선)
+    if (categoryFilter) {
+      const cat = (r as any).unniepick_category || r.category;
+      if (cat !== categoryFilter) return false;
+    }
 
     // 출처 필터
     const src     = (r as any).source as string | null;
