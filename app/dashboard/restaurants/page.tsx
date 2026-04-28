@@ -154,10 +154,11 @@ export default function RestaurantsPage() {
   const [collectGuFilter,  setCollectGuFilter]  = useState('');
 
   // ── 키워드 수집 모달 state ────────────────────────────────────────
-  const [kwModal,       setKwModal]       = useState<{ label: string; keywords: string[]; dong?: string } | null>(null);
-  const [kwCollecting,  setKwCollecting]  = useState(false);
-  const [kwLogs,        setKwLogs]        = useState<string[]>([]);
-  const [kwEnriching,   setKwEnriching]   = useState(false);
+  const [kwModal,          setKwModal]          = useState<{ label: string; keywords: string[]; dong?: string } | null>(null);
+  const [kwCollecting,     setKwCollecting]     = useState(false);
+  const [kwLogs,           setKwLogs]           = useState<string[]>([]);
+  const [kwEnriching,      setKwEnriching]      = useState(false);
+  const [kwEnrichProgress, setKwEnrichProgress] = useState('');
   // 동별 크롤링 횟수 (localStorage 영속)
   const [dongCrawlCounts, setDongCrawlCounts] = useState<Record<string, number>>(() => {
     if (typeof window === 'undefined') return {};
@@ -542,6 +543,7 @@ export default function RestaurantsPage() {
   async function enrichByKeywords(keywords: string[]) {
     setKwEnriching(true);
     setKwLogs([]);
+    setKwEnrichProgress('');
     try {
       const res = await fetch('/api/collect/naver-enrich', {
         method: 'POST',
@@ -565,6 +567,7 @@ export default function RestaurantsPage() {
             const evt = JSON.parse(line.slice(6));
             if (evt.type === 'keyword') {
               setKwLogs(p => [...p, ``, `🌐 [${evt.index + 1}/${evt.total}] "${evt.keyword}" 네이버 크롤링`]);
+              setKwEnrichProgress(`[${evt.index + 1}/${evt.total}] ${evt.keyword}`);
             }
             if (evt.type === 'log') {
               const raw = String(evt.line ?? '').trim();
@@ -582,8 +585,13 @@ export default function RestaurantsPage() {
             }
             if (evt.type === 'delay') {
               setKwLogs(p => [...p, `⏳ ${(evt.ms / 1000).toFixed(0)}초 대기 후 다음 키워드...`]);
+              setKwEnrichProgress(`⏳ 다음 키워드 대기 중... (${(evt.ms / 1000).toFixed(0)}초)`);
             }
-            if (evt.type === 'done') { setKwLogs(p => [...p, ``, `✅ 네이버 보강 완료`]); success = true; }
+            if (evt.type === 'done') {
+              setKwLogs(p => [...p, ``, `✅ 네이버 보강 완료`]);
+              setKwEnrichProgress('완료');
+              success = true;
+            }
           } catch {}
         }
       }
@@ -1477,9 +1485,14 @@ export default function RestaurantsPage() {
                 )}
               </div>
             ) : (
-              <div className="flex items-center justify-center gap-2 py-3 text-sm text-muted">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                {kwCollecting ? 'A안 카카오 수집 중...' : 'B안 네이버 보강 중...'}
+              <div className="flex flex-col items-center gap-1.5 py-3">
+                <div className="flex items-center gap-2 text-sm text-muted">
+                  <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                  {kwCollecting ? 'A안 카카오 수집 중...' : 'B안 네이버 보강 중...'}
+                </div>
+                {kwEnrichProgress && (
+                  <span className="text-xs text-green-400 font-mono">{kwEnrichProgress}</span>
+                )}
               </div>
             )}
           </div>
