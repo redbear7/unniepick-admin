@@ -252,6 +252,12 @@ export default function StoresPage() {
   const [formMenuItems,  setFormMenuItems]    = useState<{ name: string; price: number | null }[]>([]);
   const [repIdx,         setRepIdx]           = useState<number | null>(null);
 
+  /* 무한 스크롤 */
+  const INITIAL_VISIBLE = 10;
+  const LOAD_MORE       = 10;
+  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
   /* coupon counts (list) */
   const [couponCountMap, setCouponCountMap] = useState<Record<string, number>>({});
 
@@ -333,6 +339,21 @@ export default function StoresPage() {
       .subscribe();
     return () => { sb.removeChannel(ch); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 필터·정렬·검색 변경 시 visibleCount 리셋
+  useEffect(() => { setVisibleCount(INITIAL_VISIBLE); }, [storeQ, storeFilter, sortCol, sortDir]);
+
+  // 무한 스크롤 sentinel
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      entries => { if (entries[0].isIntersecting) setVisibleCount(v => v + LOAD_MORE); },
+      { rootMargin: '200px' },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
   }, []);
 
   /* ---------------------------------------------------------------- */
@@ -1032,7 +1053,7 @@ export default function StoresPage() {
               ))
             ) : filteredStores.length === 0 ? (
               <tr><td colSpan={10} className="text-center py-12 text-dim">가게가 없어요</td></tr>
-            ) : filteredStores.map(store => {
+            ) : filteredStores.slice(0, visibleCount).map(store => {
               const owner = store.owner_id ? ownerMap[store.owner_id] : null;
               return (
                 <tr key={store.id} className="border-b border-border-main hover:bg-white/[0.02] transition">
@@ -1176,6 +1197,14 @@ export default function StoresPage() {
             })}
           </tbody>
         </table>
+
+        {/* 무한 스크롤 sentinel */}
+        {visibleCount < filteredStores.length && (
+          <div ref={sentinelRef} className="flex items-center justify-center py-4 text-xs text-muted gap-2 border-t border-border-main">
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            {filteredStores.length - visibleCount}개 더 있음
+          </div>
+        )}
       </div>
 
       {/* ============================================================ */}
