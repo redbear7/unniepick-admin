@@ -50,29 +50,31 @@ function kakaoMid(categoryName: string | null): string | null {
 export async function POST() {
   const sb = adminSb();
 
-  // 전체 레코드 조회 (unniepick_category 미설정 우선, 전체 처리)
-  const { data, error } = await sb
-    .from('restaurants')
-    .select('id, category, kakao_category, source');
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-
-  const rows = (data ?? []) as Array<{
-    id: string;
-    category: string | null;
-    kakao_category: string | null;
-    source: string | null;
-  }>;
+  // 전체 레코드 페이지네이션 조회 (Supabase 기본 1000행 제한 우회)
+  type Row = { id: string; category: string | null; kakao_category: string | null; source: string | null };
+  const rows: Row[] = [];
+  const PAGE = 1000;
+  let page = 0;
+  while (true) {
+    const { data, error } = await sb
+      .from('restaurants')
+      .select('id, category, kakao_category, source')
+      .range(page * PAGE, (page + 1) * PAGE - 1);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (!data || data.length === 0) break;
+    rows.push(...(data as Row[]));
+    if (data.length < PAGE) break;
+    page++;
+  }
 
   let updated = 0;
+  const errors: string[] = [];
   const BATCH = 200;
 
   for (let i = 0; i < rows.length; i += BATCH) {
     const batch = rows.slice(i, i + BATCH);
 
     const patches = batch.map(r => {
-      // 카카오: kakao_category(전체경로) 중간뎁스 → normalize
-      // 네이버: category 그대로 → normalize
       const mid = r.source === 'kakao' ? kakaoMid(r.kakao_category) : null;
       const unniepick_category = normalize(mid ?? r.category);
       return { id: r.id, unniepick_category };
@@ -84,6 +86,7 @@ export async function POST() {
 
     if (upsertErr) {
       console.error('[normalize] batch error:', upsertErr.message);
+      errors.push(upsertErr.message);
     } else {
       updated += patches.length;
     }
@@ -101,6 +104,7 @@ export async function POST() {
     ok: true,
     total: rows.length,
     updated,
+    errors: errors.length > 0 ? errors.slice(0, 3) : undefined,
     distribution: Object.entries(dist)
       .sort((a, b) => b[1] - a[1])
       .map(([cat, count]) => ({ cat, count })),

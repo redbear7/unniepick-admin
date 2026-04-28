@@ -338,7 +338,9 @@ export default function RestaurantsPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? '정규화 실패');
       const top3 = (data.distribution ?? []).slice(0, 3).map((d: any) => `${d.cat}(${d.count})`).join(' · ');
-      setNormalizeMsg(`📂 ${data.updated}개 정규화 완료 · ${top3}`);
+      const count = data.updated > 0 ? data.updated : data.total;
+      const suffix = data.errors?.length ? ` (upsert 오류: ${data.errors[0]})` : '';
+      setNormalizeMsg(`📂 ${count}개 정규화 완료 · ${top3}${suffix}`);
       fetchRestaurants();
       setTimeout(() => setNormalizeMsg(''), 8000);
     } catch (e) {
