@@ -309,19 +309,19 @@ function BlogPanel({
               <p className="text-xs text-secondary leading-relaxed whitespace-pre-line">{selectedReview.snippet}</p>
             )}
           </div>
-          <div className="px-4 py-3 border-t border-border-main shrink-0">
-            <button
-              onClick={() => {
-                const url = selectedReview.link ||
-                  `https://search.naver.com/search.naver?where=blog&query=${encodeURIComponent(selectedReview.title)}`;
-                setViewerUrl(url);
-                setViewerTitle(selectedReview.title);
-              }}
-              className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl bg-[#03C75A]/15 text-[#03C75A] text-xs font-semibold hover:bg-[#03C75A]/25 transition"
-            >
-              {selectedReview.link ? '원문 보기 ↗' : '네이버에서 검색 ↗'}
-            </button>
-          </div>
+          {selectedReview.link && (
+            <div className="px-4 py-3 border-t border-border-main shrink-0">
+              <button
+                onClick={() => {
+                  setViewerUrl(selectedReview.link!);
+                  setViewerTitle(selectedReview.title);
+                }}
+                className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl bg-[#03C75A]/15 text-[#03C75A] text-xs font-semibold hover:bg-[#03C75A]/25 transition"
+              >
+                원문 보기 ↗
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -427,18 +427,18 @@ function BlogPanel({
                   )}
                   <div className="flex items-center justify-between mt-1">
                     <p className="text-[10px] text-dim">탭하여 자세히 보기 →</p>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const url = r.link
-                          || `https://search.naver.com/search.naver?where=blog&query=${encodeURIComponent(r.title)}`;
-                        setViewerUrl(url);
-                        setViewerTitle(r.title);
-                      }}
-                      className="text-[10px] text-[#03C75A] hover:underline shrink-0 ml-2"
-                    >
-                      {r.link ? '원문 보기 ↗' : '네이버 검색 ↗'}
-                    </button>
+                    {r.link && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setViewerUrl(r.link!);
+                          setViewerTitle(r.title);
+                        }}
+                        className="text-[10px] text-[#03C75A] hover:underline shrink-0 ml-2"
+                      >
+                        원문 보기 ↗
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
