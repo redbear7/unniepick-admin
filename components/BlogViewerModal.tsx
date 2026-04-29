@@ -47,7 +47,7 @@ export default function BlogViewerModal({ url, title, onClose }: Props) {
     >
       <div
         className="bg-[#0d1117] border border-white/10 rounded-2xl flex flex-col overflow-hidden shadow-2xl"
-        style={{ width: 'min(900px, 95vw)', height: 'min(85vh, 800px)' }}
+        style={{ width: 390, height: 'min(85vh, 800px)' }}
         onClick={e => e.stopPropagation()}
       >
         {/* 헤더 */}
