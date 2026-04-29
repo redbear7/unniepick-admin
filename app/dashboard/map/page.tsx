@@ -153,6 +153,27 @@ function getCatColor(cat: string | null) {
   return CATEGORY_COLOR[cat ?? '기타'] ?? '#6B7280';
 }
 
+const CATEGORY_EMOJI: Record<string, string> = {
+  '카페·디저트':  '☕',
+  '한식':         '🍚',
+  '고기·구이':    '🥩',
+  '치킨·버거':    '🍗',
+  '면류·냉면':    '🍜',
+  '국밥·탕·찌개': '🍲',
+  '일식·초밥':    '🍣',
+  '해산물·회':    '🐟',
+  '양식·파스타':  '🍝',
+  '중식':         '🥢',
+  '분식·떡볶이':  '🍢',
+  '베이커리·빵집':'🥐',
+  '브런치·샐러드':'🥗',
+  '술집·이자카야':'🍺',
+};
+
+function getCatEmoji(cat: string | null) {
+  return CATEGORY_EMOJI[cat ?? ''] ?? '🍽️';
+}
+
 function esc(s: string) {
   return String(s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;')
@@ -503,6 +524,8 @@ export default function MapPage() {
   const loadedIdsRef   = useRef<Set<string>>(new Set());                 // 뷰포트 캐시
   const fetchingVPRef  = useRef(false);
   const idleTimerRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const zoomTimerRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const zoomRef        = useRef<number>(7);                              // 현재 줌 레벨
 
   // 필터 상태를 ref로도 유지 (클로저에서 최신값 접근)
   const categoryRef    = useRef<string>('all');
@@ -692,39 +715,74 @@ export default function MapPage() {
     };
   }, []);
 
-  // ── 수집 업체 오버레이 생성 (단일) ─────────────────────────────
-  const makeRestOverlay = useCallback((kakao: any, pin: RestaurantPin, hlIds: Set<string>) => {
-    const isHL  = hlIds.has(pin.id);
-    const color = getCatColor(pin.unniepick_category);
+  // ── 수집 업체 오버레이 생성 (줌 레벨 반영) ───────────────────
+  const makeRestOverlay = useCallback((kakao: any, pin: RestaurantPin, hlIds: Set<string>, zoom?: number) => {
+    const isHL    = hlIds.has(pin.id);
+    const color   = getCatColor(pin.unniepick_category);
+    const emoji   = getCatEmoji(pin.unniepick_category);
     const hasBlog = pin.blog_reviews.length > 0;
-    let html: string;
+    const lv      = zoom ?? zoomRef.current;
+
+    // AI 추천 핀 — 항상 풀 칩
     if (isHL) {
-      html =
+      const html =
         `<div onclick="window.__mapPinClick('${pin.id}','restaurant')" ` +
         `style="display:flex;flex-direction:column;align-items:center;cursor:pointer;">` +
           `<div style="display:flex;align-items:center;gap:3px;background:#FF6F0F;border-radius:16px;` +
-          `padding:3px 8px;box-shadow:0 2px 10px rgba(255,111,15,0.6);` +
+          `padding:3px 9px;box-shadow:0 2px 10px rgba(255,111,15,0.55);` +
           `font-family:-apple-system,BlinkMacSystemFont,sans-serif;">` +
-            `<span style="font-size:9px;color:#fff;">✨</span>` +
+            `<span style="font-size:10px;">✨</span>` +
             `<span style="font-size:11px;font-weight:800;color:#fff;white-space:nowrap;` +
             `max-width:90px;overflow:hidden;text-overflow:ellipsis;">${esc(pin.name)}</span>` +
           `</div>` +
           `<div style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;` +
           `border-top:7px solid #FF6F0F;margin-top:-1px;"></div>` +
         `</div>`;
-    } else if (hasBlog) {
-      html = `<div onclick="window.__mapPinClick('${pin.id}','restaurant')" ` +
-        `style="width:12px;height:12px;border-radius:3px;background:${color};` +
-        `border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.35);cursor:pointer;"></div>`;
-    } else {
-      html = `<div onclick="window.__mapPinClick('${pin.id}','restaurant')" ` +
-        `style="width:10px;height:10px;border-radius:50%;background:${color};` +
-        `border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.3);cursor:pointer;"></div>`;
+      return new kakao.maps.CustomOverlay({ position: new kakao.maps.LatLng(pin.lat, pin.lng), content: html, yAnchor: 1, zIndex: 9 });
     }
-    return new kakao.maps.CustomOverlay({
-      position: new kakao.maps.LatLng(pin.lat, pin.lng),
-      content: html, zIndex: isHL ? 8 : 3,
-    });
+
+    // 레벨 7+ (시 전체 뷰) — 이모지 원형 도트
+    if (lv >= 7) {
+      const blogDot = hasBlog
+        ? `<div style="position:absolute;top:-2px;right:-2px;width:6px;height:6px;border-radius:50%;` +
+          `background:#22C55E;border:1px solid #fff;"></div>`
+        : '';
+      const html =
+        `<div onclick="window.__mapPinClick('${pin.id}','restaurant')" ` +
+        `style="position:relative;width:22px;height:22px;border-radius:50%;` +
+        `background:#fff;border:2px solid ${color};` +
+        `display:flex;align-items:center;justify-content:center;` +
+        `box-shadow:0 1px 4px rgba(0,0,0,0.18);cursor:pointer;font-size:11px;">` +
+          `${emoji}${blogDot}` +
+        `</div>`;
+      return new kakao.maps.CustomOverlay({ position: new kakao.maps.LatLng(pin.lat, pin.lng), content: html, zIndex: 3 });
+    }
+
+    // 레벨 5~6 (동 단위) — 이모지 + 짧은 상호명 (7자 절삭)
+    // 레벨 ≤ 4 (거리 단위) — 이모지 + 전체 상호명
+    const maxLen = lv >= 5 ? 7 : 14;
+    const displayName = pin.name.length > maxLen ? pin.name.slice(0, maxLen) + '…' : pin.name;
+    const blogDot = hasBlog
+      ? `<div style="width:5px;height:5px;border-radius:50%;background:#22C55E;flex-shrink:0;"></div>`
+      : '';
+    const borderWidth = hasBlog ? '2px' : '1.5px';
+    const html =
+      `<div onclick="window.__mapPinClick('${pin.id}','restaurant')" ` +
+      `style="display:flex;flex-direction:column;align-items:center;cursor:pointer;">` +
+        `<div style="display:flex;align-items:center;gap:3px;` +
+        `background:rgba(255,255,255,0.96);border-radius:12px;` +
+        `border:${borderWidth} solid ${color};` +
+        `padding:2px 6px 2px 4px;` +
+        `box-shadow:0 1px 4px rgba(0,0,0,0.15);` +
+        `font-family:-apple-system,BlinkMacSystemFont,sans-serif;">` +
+          `<span style="font-size:11px;line-height:1;">${emoji}</span>` +
+          `<span style="font-size:10px;font-weight:600;color:#111;white-space:nowrap;">${esc(displayName)}</span>` +
+          `${blogDot}` +
+        `</div>` +
+        `<div style="width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;` +
+        `border-top:5px solid ${color};margin-top:-1px;"></div>` +
+      `</div>`;
+    return new kakao.maps.CustomOverlay({ position: new kakao.maps.LatLng(pin.lat, pin.lng), content: html, yAnchor: 1, zIndex: hasBlog ? 5 : 3 });
   }, []);
 
   // ── 파트너 칩 재빌드 ────────────────────────────────────────────
@@ -789,6 +847,22 @@ export default function MapPage() {
         newOv.setMap(isVisible(entry.pin, lyr, cat, sty) ? map : null);
         restOvMapRef.current.set(id, { ov: newOv, pin: entry.pin });
       }
+    }
+  }, [makeRestOverlay, isVisible]);
+
+  // ── 줌 변경 시 수집업체 오버레이 재생성 ───────────────────────
+  const refreshRestOverlays = useCallback((kakao: any, map: any) => {
+    const zoom = map.getLevel();
+    zoomRef.current = zoom;
+    const cat = categoryRef.current;
+    const lyr = layerRef.current;
+    const sty = styleRef.current;
+    const hls = hlIdsRef.current;
+    for (const [id, entry] of restOvMapRef.current) {
+      entry.ov.setMap(null);
+      const newOv = makeRestOverlay(kakao, entry.pin, hls, zoom);
+      newOv.setMap(isVisible(entry.pin, lyr, cat, sty) ? map : null);
+      restOvMapRef.current.set(id, { ov: newOv, pin: entry.pin });
     }
   }, [makeRestOverlay, isVisible]);
 
@@ -861,6 +935,12 @@ export default function MapPage() {
         kakao.maps.event.addListener(map, 'idle', () => {
           if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
           idleTimerRef.current = setTimeout(() => fetchViewport(map), 400);
+        });
+
+        // zoom_changed → 상호명 표시 방식 변경 (디바운스 300ms)
+        kakao.maps.event.addListener(map, 'zoom_changed', () => {
+          if (zoomTimerRef.current) clearTimeout(zoomTimerRef.current);
+          zoomTimerRef.current = setTimeout(() => refreshRestOverlays(kakao, map), 300);
         });
 
         // 초기 파트너 칩 그리기
