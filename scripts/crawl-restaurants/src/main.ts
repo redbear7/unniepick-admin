@@ -520,13 +520,32 @@ async function crawlReviews(page: Page, placeId: string): Promise<{
   await waitForContent(page);
 
   const blogReviews: BlogReview[] = await page.evaluate(() => {
-    const body = document.body.innerText;
-    const lines = body.split('\n').map((l) => l.trim()).filter(Boolean);
-    const reviews: Array<{ title: string; snippet: string; date: string }> = [];
+    // ── 1. DOM에서 블로그 링크 선추출 ───────────────────────────
+    const anchorLinks: { href: string; text: string }[] = [];
+    document.querySelectorAll<HTMLAnchorElement>('a[href]').forEach(a => {
+      const href = a.href ?? '';
+      if (!href.includes('blog.naver.com') && !href.includes('m.blog.naver.com') && !href.includes('post.naver.com')) return;
+      const text = a.textContent?.trim() ?? '';
+      anchorLinks.push({ href, text });
+    });
 
+    function findLink(title: string): string {
+      if (!title || !anchorLinks.length) return '';
+      const exact = anchorLinks.find(a => a.text === title);
+      if (exact) return exact.href;
+      const partial = anchorLinks.find(a =>
+        a.text.length >= 10 && (title.includes(a.text) || a.text.includes(title.slice(0, 15))),
+      );
+      return partial?.href ?? '';
+    }
+
+    // ── 2. innerText 기반 제목·snippet·날짜 파싱 ────────────────
     // 블로그 리뷰 구조:
     // [닉네임] [블로그명] [다음] [제목] [본문...] [yy.mm.dd.요일] [yyyy년 mm월 dd일 ...]
     // 날짜 패턴으로 리뷰 경계를 나누고, 직전 긴 텍스트들에서 제목/본문 추출
+    const body = document.body.innerText;
+    const lines = body.split('\n').map((l) => l.trim()).filter(Boolean);
+    const reviews: Array<{ title: string; snippet: string; date: string; link: string }> = [];
 
     let started = false;
     let buffer: string[] = [];
@@ -541,21 +560,18 @@ async function crawlReviews(page: Page, placeId: string): Promise<{
       }
       if (!started) continue;
 
-      // 짧은 날짜 = 리뷰 경계 (긴 날짜는 직후에 오므로 스킵)
+      // 짧은 날짜 = 리뷰 경계
       if (dateShort.test(line)) {
-        // buffer에서 제목(20~80자)과 본문(80자+) 추출
         const title = buffer.find((l) => l.length >= 15 && l.length <= 80) ?? '';
         const snippet = buffer.find((l) => l.length > 80)?.slice(0, 300) ?? '';
-
         if (title || snippet) {
-          reviews.push({ title, snippet, date: line });
+          reviews.push({ title, snippet, date: line, link: findLink(title) });
         }
         buffer = [];
         continue;
       }
-      if (dateLong.test(line)) continue; // 긴 날짜는 스킵
+      if (dateLong.test(line)) continue;
 
-      // 필터링
       if (line.length < 5 || skipPatterns.test(line)) continue;
       if (line === '다음' || line === '이전' || line === '안내') continue;
 

@@ -19,6 +19,9 @@ export interface BlogReview {
   title: string;
   snippet: string;
   date?: string;
+  link?: string;   // 블로그 원문 URL (blog.naver.com 등)
+  source?: 'blog' | 'cafe';
+  featured?: boolean;
 }
 
 export interface RestaurantData {

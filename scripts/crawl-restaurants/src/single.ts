@@ -132,9 +132,30 @@ async function crawlReviews(page: Page, placeId: string): Promise<{
   await waitForContent(page);
 
   const blogReviews: BlogReview[] = await page.evaluate(() => {
+    // ── 1. DOM에서 블로그 링크 선추출 ───────────────────────────
+    const anchorLinks: { href: string; text: string }[] = [];
+    document.querySelectorAll<HTMLAnchorElement>('a[href]').forEach(a => {
+      const href = a.href ?? '';
+      if (!href.includes('blog.naver.com') && !href.includes('m.blog.naver.com') && !href.includes('post.naver.com')) return;
+      const text = a.textContent?.trim() ?? '';
+      anchorLinks.push({ href, text });
+    });
+
+    function findLink(title: string): string {
+      if (!title || !anchorLinks.length) return '';
+      const exact = anchorLinks.find(a => a.text === title);
+      if (exact) return exact.href;
+      // 제목이 앵커 텍스트를 포함하거나 그 반대
+      const partial = anchorLinks.find(a =>
+        a.text.length >= 10 && (title.includes(a.text) || a.text.includes(title.slice(0, 15))),
+      );
+      return partial?.href ?? '';
+    }
+
+    // ── 2. innerText 기반 제목·snippet·날짜 파싱 ────────────────
     const body = document.body.innerText;
     const lines = body.split('\n').map((l) => l.trim()).filter(Boolean);
-    const reviews: Array<{ title: string; snippet: string; date: string }> = [];
+    const reviews: Array<{ title: string; snippet: string; date: string; link: string }> = [];
 
     let started = false;
     let buffer: string[] = [];
@@ -149,7 +170,7 @@ async function crawlReviews(page: Page, placeId: string): Promise<{
       if (dateShort.test(line)) {
         const title = buffer.find((l) => l.length >= 15 && l.length <= 80) ?? '';
         const snippet = buffer.find((l) => l.length > 80)?.slice(0, 300) ?? '';
-        if (title || snippet) reviews.push({ title, snippet, date: line });
+        if (title || snippet) reviews.push({ title, snippet, date: line, link: findLink(title) });
         buffer = [];
         continue;
       }
