@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Store, FileText, Music, Ticket,
   Users, LogOut, ChevronRight, ScrollText, MapPin, PlaySquare, Zap, Map, ListMusic, Tag, Building2, Megaphone, Film, Video, KeyRound, Bell,
   GripVertical, Pencil, Check, X, Settings, ImagePlus, PanelBottom, ClipboardList, UtensilsCrossed, BarChart3, Search, BookOpen, Sparkles, Brain, Gift, Star,
-  FolderInput, MessageSquare,
+  FolderInput, MessageSquare, Layers,
 } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 import {
@@ -37,7 +37,7 @@ import { CSS } from '@dnd-kit/utilities';
 
 const ICON_MAP: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
   LayoutDashboard, Store, FileText, Music, Ticket,
-  Users, ScrollText, MapPin, PlaySquare, Zap, Map, ListMusic, Tag, Building2, Megaphone, Film, Video, KeyRound, Bell, ImagePlus, PanelBottom, ClipboardList, UtensilsCrossed, BarChart3, Search, BookOpen, Sparkles, Brain, Gift, Star, MessageSquare,
+  Users, ScrollText, MapPin, PlaySquare, Zap, Map, ListMusic, Tag, Building2, Megaphone, Film, Video, KeyRound, Bell, ImagePlus, PanelBottom, ClipboardList, UtensilsCrossed, BarChart3, Search, BookOpen, Sparkles, Brain, Gift, Star, MessageSquare, Layers,
 };
 
 interface NavItem {
@@ -77,6 +77,7 @@ const DEFAULT_GROUPS: NavGroup[] = [
       { id: 'ai-chat',            href: '/dashboard/restaurants/ai-chat',      icon: 'Sparkles',        label: 'AI 맛집 추천' },
       { id: 'crawl-keywords',     href: '/dashboard/restaurants/keywords',     icon: 'Search',          label: '크롤링 키워드' },
       { id: 'restaurant-bi',      href: '/dashboard/restaurants/analytics',    icon: 'BarChart3',       label: '맛집 분석' },
+      { id: 'categories', href: '/dashboard/categories', icon: 'Layers', label: '업종 카테고리' },
     ],
   },
   {
