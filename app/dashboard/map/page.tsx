@@ -543,7 +543,7 @@ export default function MapPage() {
   // 필터 상태를 ref로도 유지 (클로저에서 최신값 접근)
   const categoryRef    = useRef<string>('all');
   const styleRef       = useRef<string>('all');
-  const layerRef       = useRef<'partner' | 'all'>('all');
+  const layerRef       = useRef<'partner' | 'all'>('partner');
   const hlIdsRef       = useRef<Set<string>>(new Set());
 
   const [partners,     setPartners]     = useState<PartnerPin[]>([]);
@@ -554,7 +554,7 @@ export default function MapPage() {
   const [error,        setError]        = useState('');
   const [category,     setCategory]     = useState<string>('all');
   const [style,        setStyle]        = useState<string>('all');
-  const [layer,        setLayer]        = useState<'partner' | 'all'>('all');
+  const [layer,        setLayer]        = useState<'partner' | 'all'>('partner');
 
   // 블로그 패널
   const [selectedPin,  setSelectedPin]  = useState<MapPin | null>(null);
