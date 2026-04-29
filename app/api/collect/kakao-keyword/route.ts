@@ -18,30 +18,32 @@ function adminSb() {
 
 const KAKAO_KEY = process.env.KAKAO_REST_API_KEY!;
 
-const CATEGORY_MAP: Record<string, string> = {
-  '한식': '한식', '중식': '중식', '일식': '일식', '양식': '양식', '분식': '분식',
-  '치킨': '치킨', '피자': '피자', '패스트푸드': '패스트푸드',
-  '술집': '술집/바', '이자카야': '술집/바', '포장마차': '술집/바', '호프': '술집/바',
-  '뷔페': '뷔페', '브런치': '브런치', '베이커리': '베이커리', '샌드위치': '브런치',
-  '카페': '카페', '커피': '카페', '디저트': '카페', '아이스크림': '카페',
-  '인도음식': '아시안', '태국음식': '아시안', '베트남음식': '아시안', '아시아음식': '아시안',
-  '멕시코음식': '양식', '스테이크': '양식',
-  '해산물': '해산물', '회': '해산물', '초밥': '일식', '라멘': '일식', '돈까스': '일식',
-  '곱창': '한식', '삼겹살': '한식', '고기': '한식', '국밥': '한식',
-  '냉면': '한식', '보쌈': '한식', '족발': '한식',
-  '떡': '간식', '간식': '간식', '토스트': '간식', '도넛': '간식', '닭강정': '간식',
-  '도시락': '도시락', '샐러드': '샐러드', '샤브샤브': '한식', '철판': '한식',
-};
+// ── v2 카테고리 매핑 (카카오 3뎁스 우선 매핑) ────────────────────
+const CATEGORY_RULES: Array<{ result: string; keywords: string[] }> = [
+  { result: '카페·디저트',   keywords: ['카페', '커피', '디저트', '아이스크림', '빙수', '버블티', '스무디'] },
+  { result: '베이커리·빵집', keywords: ['베이커리', '빵', '제과', '케이크', '도넛', '크루아상'] },
+  { result: '고기·구이',     keywords: ['삼겹살', '갈비', '곱창', '막창', '대창', '불고기', '오리구이', '닭갈비', '족발', '보쌈', '바비큐'] },
+  { result: '해산물·회',     keywords: ['회', '해물', '해산물', '낙지', '조개', '굴', '새우', '대게', '꽃게', '아구', '복어', '장어'] },
+  { result: '국밥·탕·찌개', keywords: ['국밥', '해장국', '설렁탕', '순대국', '감자탕', '순두부', '된장찌개', '부대찌개', '곰탕', '삼계탕'] },
+  { result: '면류·냉면',     keywords: ['냉면', '막국수', '칼국수', '수제비', '쌀국수', '라멘', '우동', '소바', '라면', '짬뽕', '짜장'] },
+  { result: '일식·초밥',     keywords: ['일식', '초밥', '롤', '돈카츠', '돈까스', '텐동', '오마카세', '야키토리'] },
+  { result: '중식',          keywords: ['중식', '중국', '딤섬', '마라', '탕수육', '양꼬치', '훠궈'] },
+  { result: '양식·파스타',   keywords: ['양식', '파스타', '스테이크', '이탈리안', '프렌치', '그릴', '피자'] },
+  { result: '치킨·버거',     keywords: ['치킨', '버거', '햄버거', '패스트푸드', '핫도그'] },
+  { result: '분식·떡볶이',   keywords: ['분식', '떡볶이', '순대', '김밥', '만두', '튀김', '포장마차', '닭강정', '샤브샤브'] },
+  { result: '술집·이자카야', keywords: ['술집', '호프', '포차', '이자카야', '맥주', '와인바', '펍', '주점'] },
+  { result: '브런치·샐러드', keywords: ['브런치', '샐러드', '도시락', '비건'] },
+  { result: '한식',          keywords: ['한식', '비빔밥', '쌈밥', '백반', '정식', '기사식당', '철판'] },
+];
 
 function mapCategory(kakaoCategory: string): string {
-  const parts = kakaoCategory.split('>').map(s => s.trim());
-  for (const part of parts.slice(1)) {
-    for (const [key, val] of Object.entries(CATEGORY_MAP)) {
-      if (part.includes(key)) return val;
+  const parts = kakaoCategory.split('>').map(s => s.trim()).filter(Boolean);
+  for (const part of [...parts].reverse()) {
+    for (const { result, keywords } of CATEGORY_RULES) {
+      if (keywords.some(kw => part.includes(kw))) return result;
     }
   }
-  if (kakaoCategory.includes('카페')) return '카페';
-  if (kakaoCategory.trim() === '음식점') return '한식';
+  if (kakaoCategory.includes('카페')) return '카페·디저트';
   return '기타';
 }
 

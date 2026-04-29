@@ -9,6 +9,8 @@ interface Row {
   kakao_category: string | null;
   category: string | null;
   unniepick_category: string | null;
+  unniepick_style: string | null;
+  unniepick_sub: string | null;
   source: string | null;
 }
 
@@ -173,7 +175,7 @@ export default function CategoriesPage() {
     while (true) {
       const { data, error } = await sb
         .from('restaurants')
-        .select('kakao_category, category, unniepick_category, source')
+        .select('kakao_category, category, unniepick_category, unniepick_style, unniepick_sub, source')
         .range(from, from + PAGE - 1);
       if (error || !data || data.length === 0) break;
       all.push(...(data as Row[]));
@@ -203,9 +205,11 @@ export default function CategoriesPage() {
   const naverRows  = useMemo(() => rows.filter(r => r.source === 'naver' || (!r.kakao_category && r.category)), [rows]);
   const allRows    = rows;
 
-  const kakaoTree   = useMemo(() => buildKakaoTree(kakaoRows), [kakaoRows]);
-  const naverItems  = useMemo(() => buildFlatCounts(naverRows.map(r => r.category)), [naverRows]);
+  const kakaoTree      = useMemo(() => buildKakaoTree(kakaoRows), [kakaoRows]);
+  const naverItems     = useMemo(() => buildFlatCounts(naverRows.map(r => r.category)), [naverRows]);
   const unniepickItems = useMemo(() => buildFlatCounts(allRows.map(r => r.unniepick_category)), [allRows]);
+  const styleItems     = useMemo(() => buildFlatCounts(allRows.map(r => r.unniepick_style)), [allRows]);
+  const subItems       = useMemo(() => buildFlatCounts(allRows.map(r => r.unniepick_sub)).slice(0, 50), [allRows]);
 
   return (
     <div className="p-6 h-full overflow-hidden flex flex-col gap-4">
@@ -240,26 +244,41 @@ export default function CategoriesPage() {
           <RefreshCw className="w-5 h-5 animate-spin mr-2" /> 로딩 중...
         </div>
       ) : (
-        /* 3-column grid */
-        <div className="flex-1 grid grid-cols-3 gap-4 overflow-hidden min-h-0">
-          {/* Kakao */}
-          <Panel title="카카오 업종 트리" badge="K" total={kakaoRows.length} badgeColor="bg-yellow-500/15 text-yellow-400 border border-yellow-500/30">
-            {Object.values(kakaoTree.children)
-              .sort((a, b) => b.count - a.count)
-              .map(node => (
-                <KakaoNode key={node.label} node={node} depth={0} total={kakaoRows.length} />
-              ))}
-          </Panel>
+        <div className="flex-1 flex flex-col gap-4 overflow-hidden min-h-0">
+          {/* 상단: 카카오 트리 + 네이버 + 언니픽 장르 */}
+          <div className="grid grid-cols-3 gap-4 flex-1 overflow-hidden min-h-0">
+            {/* Kakao */}
+            <Panel title="카카오 업종 트리" badge="K" total={kakaoRows.length} badgeColor="bg-yellow-500/15 text-yellow-400 border border-yellow-500/30">
+              {Object.values(kakaoTree.children)
+                .sort((a, b) => b.count - a.count)
+                .map(node => (
+                  <KakaoNode key={node.label} node={node} depth={0} total={kakaoRows.length} />
+                ))}
+            </Panel>
 
-          {/* Naver */}
-          <Panel title="네이버 업종" badge="N" total={naverRows.length} badgeColor="bg-green-600/15 text-green-400 border border-green-600/30">
-            <FlatList items={naverItems} total={naverRows.length} color="green" />
-          </Panel>
+            {/* Naver */}
+            <Panel title="네이버 업종" badge="N" total={naverRows.length} badgeColor="bg-green-600/15 text-green-400 border border-green-600/30">
+              <FlatList items={naverItems} total={naverRows.length} color="green" />
+            </Panel>
 
-          {/* Unniepick */}
-          <Panel title="언니픽 정규화 카테고리" badge="U" total={allRows.length} badgeColor="bg-[#FF6F0F]/15 text-[#FF6F0F] border border-[#FF6F0F]/30">
-            <FlatList items={unniepickItems} total={allRows.length} color="orange" />
-          </Panel>
+            {/* Unniepick 장르 */}
+            <Panel title="언니픽 장르 (v2)" badge="U" total={allRows.length} badgeColor="bg-[#FF6F0F]/15 text-[#FF6F0F] border border-[#FF6F0F]/30">
+              <FlatList items={unniepickItems} total={allRows.length} color="orange" />
+            </Panel>
+          </div>
+
+          {/* 하단: 용도(스타일) + 세부분류 */}
+          <div className="grid grid-cols-2 gap-4 h-56 shrink-0">
+            {/* Style */}
+            <Panel title="용도 분류 (unniepick_style)" badge="S" total={allRows.filter(r => r.unniepick_style).length} badgeColor="bg-violet-500/15 text-violet-400 border border-violet-500/30">
+              <FlatList items={styleItems} total={allRows.length} color="orange" />
+            </Panel>
+
+            {/* Sub */}
+            <Panel title="세부 분류 Top 50 (unniepick_sub)" badge="D" total={allRows.filter(r => r.unniepick_sub).length} badgeColor="bg-sky-500/15 text-sky-400 border border-sky-500/30">
+              <FlatList items={subItems} total={allRows.filter(r => r.unniepick_sub).length} color="green" />
+            </Panel>
+          </div>
         </div>
       )}
     </div>

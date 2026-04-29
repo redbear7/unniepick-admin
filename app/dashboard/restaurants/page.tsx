@@ -2404,11 +2404,21 @@ function DetailModal({ r, onClose, registered, onRegister, registering, onUpdate
                 </div>
               )}
               {/* 언니픽 정규화 */}
-              <div className="flex items-start gap-2">
+              <div className="flex items-start gap-2 flex-wrap">
                 <span className="shrink-0 mt-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#FF6F0F]/15 text-[#FF6F0F] border border-[#FF6F0F]/30">U</span>
                 <span className={`px-2 py-0.5 rounded text-xs border ${(r as any).unniepick_category ? 'bg-[#FF6F0F]/10 text-[#FF6F0F] border-[#FF6F0F]/25' : 'bg-fill-subtle text-dim border-border-subtle'}`}>
                   {(r as any).unniepick_category ?? '미정규화'}
                 </span>
+                {(r as any).unniepick_style && (
+                  <span className="px-2 py-0.5 rounded text-xs bg-violet-500/10 text-violet-400 border border-violet-500/20">
+                    {(r as any).unniepick_style}
+                  </span>
+                )}
+                {(r as any).unniepick_sub && (
+                  <span className="px-2 py-0.5 rounded text-xs bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                    {(r as any).unniepick_sub}
+                  </span>
+                )}
               </div>
             </div>
           </Section>

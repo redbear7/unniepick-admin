@@ -54,24 +54,23 @@ function extractNaverPlaceId(link: string): string | null {
   return m ? m[1] : null;
 }
 
-// ── 언니픽 카테고리 간이 매핑 ─────────────────────────────────────
+// ── v2 언니픽 카테고리 매핑 ──────────────────────────────────────
 function mapNaverCategory(category: string): string {
   const c = category;
-  if (c.includes('카페') || c.includes('커피'))                     return '카페';
-  if (c.includes('베이커리') || c.includes('빵'))                   return '베이커리';
-  if (c.includes('한식') || c.includes('국밥') || c.includes('삼겹')) return '한식';
-  if (c.includes('일식') || c.includes('초밥') || c.includes('라멘')) return '일식';
-  if (c.includes('중식') || c.includes('짜장') || c.includes('짬뽕')) return '중식';
-  if (c.includes('양식') || c.includes('파스타') || c.includes('피자')) return '양식';
-  if (c.includes('치킨'))                                           return '치킨';
-  if (c.includes('분식') || c.includes('떡볶이'))                    return '분식';
-  if (c.includes('술집') || c.includes('이자카야') || c.includes('호프')) return '술집/바';
-  if (c.includes('해산물') || c.includes('회') || c.includes('해물')) return '해산물';
-  if (c.includes('샐러드'))                                         return '샐러드';
-  if (c.includes('도시락'))                                         return '도시락';
-  if (c.includes('간식') || c.includes('닭강정'))                   return '간식';
-  if (c.includes('뷔페'))                                           return '뷔페';
-  if (c.includes('브런치'))                                         return '브런치';
+  if (c.includes('카페') || c.includes('커피') || c.includes('디저트'))           return '카페·디저트';
+  if (c.includes('베이커리') || c.includes('빵') || c.includes('제과'))           return '베이커리·빵집';
+  if (c.includes('삼겹') || c.includes('갈비') || c.includes('곱창') || c.includes('불고기') || c.includes('족발') || c.includes('보쌈')) return '고기·구이';
+  if (c.includes('회') || c.includes('해산물') || c.includes('해물') || c.includes('낙지') || c.includes('조개')) return '해산물·회';
+  if (c.includes('국밥') || c.includes('해장국') || c.includes('설렁탕') || c.includes('순두부') || c.includes('찌개')) return '국밥·탕·찌개';
+  if (c.includes('냉면') || c.includes('칼국수') || c.includes('라멘') || c.includes('우동') || c.includes('쌀국수')) return '면류·냉면';
+  if (c.includes('일식') || c.includes('초밥') || c.includes('돈카츠') || c.includes('오마카세'))                return '일식·초밥';
+  if (c.includes('중식') || c.includes('짜장') || c.includes('짬뽕') || c.includes('마라'))                     return '중식';
+  if (c.includes('양식') || c.includes('파스타') || c.includes('스테이크') || c.includes('이탈리안'))            return '양식·파스타';
+  if (c.includes('치킨') || c.includes('버거') || c.includes('피자'))             return '치킨·버거';
+  if (c.includes('분식') || c.includes('떡볶이') || c.includes('김밥'))           return '분식·떡볶이';
+  if (c.includes('술집') || c.includes('이자카야') || c.includes('호프') || c.includes('포차')) return '술집·이자카야';
+  if (c.includes('브런치') || c.includes('샐러드'))                               return '브런치·샐러드';
+  if (c.includes('한식'))                                                          return '한식';
   return '기타';
 }
 
