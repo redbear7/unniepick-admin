@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase';
 import { loadKakaoSDK } from '@/lib/kakaoMap';
 import { X, Loader2, ChevronLeft } from 'lucide-react';
+import BlogViewerModal from '@/components/BlogViewerModal';
 
 // ── 타입 ──────────────────────────────────────────────────────
 interface BlogReview {
@@ -106,6 +107,8 @@ function BlogPanel({
   const [reviewSaving,   setReviewSaving]   = useState(false);
   const [loadingBlog,    setLoadingBlog]    = useState(false);
   const [selectedReview, setSelectedReview] = useState<BlogReview | null>(null);
+  const [viewerUrl,      setViewerUrl]      = useState<string | null>(null);
+  const [viewerTitle,    setViewerTitle]    = useState<string>('');
 
   // 대표 리뷰 상단 정렬
   const sortedReviews = [...reviews].sort((a, b) => {
@@ -225,17 +228,17 @@ function BlogPanel({
           </div>
           {/* 원문 보기 버튼 */}
           <div className="px-4 py-3 border-t border-border-main shrink-0">
-            <a
-              href={
-                selectedReview.link ||
-                `https://search.naver.com/search.naver?where=blog&query=${encodeURIComponent(selectedReview.title)}`
-              }
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              onClick={() => {
+                const url = selectedReview.link ||
+                  `https://search.naver.com/search.naver?where=blog&query=${encodeURIComponent(selectedReview.title)}`;
+                setViewerUrl(url);
+                setViewerTitle(selectedReview.title);
+              }}
               className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl bg-[#03C75A]/15 text-[#03C75A] text-xs font-semibold hover:bg-[#03C75A]/25 transition"
             >
               {selectedReview.link ? '원문 보기 ↗' : '네이버에서 검색 ↗'}
-            </a>
+            </button>
           </div>
         </div>
       )}
@@ -350,6 +353,13 @@ function BlogPanel({
           </div>
         )}
       </div>
+      {viewerUrl && (
+        <BlogViewerModal
+          url={viewerUrl}
+          title={viewerTitle}
+          onClose={() => setViewerUrl(null)}
+        />
+      )}
     </div>
   );
 }

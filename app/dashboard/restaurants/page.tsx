@@ -10,6 +10,7 @@ import {
   LayoutList, LayoutGrid,
 } from 'lucide-react';
 import Link from 'next/link';
+import BlogViewerModal from '@/components/BlogViewerModal';
 
 /* ------------------------------------------------------------------ */
 /* Types                                                                */
@@ -1132,8 +1133,9 @@ export default function RestaurantsPage() {
       {/* 카테고리 칩 */}
       {catCounts.size > 0 && (
         <div>
-          <p className="text-xs text-muted mb-2 flex items-center gap-1">
+          <p className="text-xs text-muted mb-2 flex items-center gap-1.5">
             <Filter className="w-3 h-3" /> 업종 ({catCounts.size}개)
+            <span className="text-[10px] text-dim font-mono bg-fill-subtle border border-border-subtle px-1.5 py-0.5 rounded">unniepick_category</span>
           </p>
           <div className="flex flex-wrap gap-2">
             {[...catCounts.entries()]
@@ -2253,10 +2255,12 @@ function DetailModal({ r, onClose, registered, onRegister, registering, onUpdate
       return (b.date ?? '') > (a.date ?? '') ? 1 : (b.date ?? '') < (a.date ?? '') ? -1 : 0;
     });
 
-  const [reviews, setReviews] = useState<BlogReview[]>(() =>
+  const [reviews,    setReviews]    = useState<BlogReview[]>(() =>
     sortReviews((r.blog_reviews ?? []).filter(rv => rv.source !== 'cafe'))
   );
-  const [saving, setSaving] = useState(false);
+  const [saving,     setSaving]     = useState(false);
+  const [viewerUrl,  setViewerUrl]  = useState<string | null>(null);
+  const [viewerTitle,setViewerTitle]= useState<string>('');
 
   const persistReviews = async (next: BlogReview[]) => {
     setSaving(true);
@@ -2516,14 +2520,12 @@ function DetailModal({ r, onClose, registered, onRegister, registering, onUpdate
                       <p className="text-xs text-muted mt-1 line-clamp-3 leading-relaxed">{br.snippet}</p>
                     )}
                     {br.link && (
-                      <a
-                        href={br.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
+                        onClick={() => { setViewerUrl(br.link!); setViewerTitle(br.title); }}
                         className="text-[10px] text-[#03C75A] hover:underline mt-1.5 inline-block"
                       >
                         원문 보기 ↗
-                      </a>
+                      </button>
                     )}
                   </div>
                 ))}
@@ -2589,6 +2591,13 @@ function DetailModal({ r, onClose, registered, onRegister, registering, onUpdate
           )}
         </div>
       </div>
+      {viewerUrl && (
+        <BlogViewerModal
+          url={viewerUrl}
+          title={viewerTitle}
+          onClose={() => setViewerUrl(null)}
+        />
+      )}
     </div>
   );
 }
