@@ -53,6 +53,8 @@ interface Prospect {
   operating_status: string | null;
   opened_at: string | null;
   closed_at: string | null;
+  latitude: number | null;
+  longitude: number | null;
   ai_summary: string | null;
   ai_features: { 분위기태그: string[]; 추천메뉴: string[]; 방문팁: string; 특징키워드: string[] } | null;
   menu_items: Array<{ name: string; price?: string }>;
@@ -409,7 +411,7 @@ export default function StoresPage() {
   const loadProspects = async () => {
     const { data } = await sb
       .from('restaurants')
-      .select('id, name, address, phone, category, unniepick_category, naver_place_id, kakao_place_id, kakao_place_url, naver_place_url, source, operating_status, opened_at, closed_at, ai_summary, ai_features, menu_items, review_keywords, blog_reviews, crawled_at')
+      .select('id, name, address, phone, category, unniepick_category, naver_place_id, kakao_place_id, kakao_place_url, naver_place_url, source, operating_status, opened_at, closed_at, latitude, longitude, ai_summary, ai_features, menu_items, review_keywords, blog_reviews, crawled_at')
       .not('operating_status', 'in', '("inactive","relocated")')
       .order('crawled_at', { ascending: false })
       .limit(2000);
@@ -700,7 +702,7 @@ export default function StoresPage() {
     try {
       const [storesRes, prospectsRes] = await Promise.all([
         sb.from('stores').select('*'),
-        sb.from('restaurants').select('id, name, address, phone, category, unniepick_category, naver_place_id, kakao_place_id, source, operating_status, opened_at, closed_at, ai_summary, crawled_at'),
+        sb.from('restaurants').select('id, name, address, phone, category, unniepick_category, naver_place_id, kakao_place_id, source, operating_status, opened_at, closed_at, latitude, longitude, ai_summary, crawled_at'),
       ]);
       const payload = {
         exported_at: new Date().toISOString(),
@@ -722,6 +724,10 @@ export default function StoresPage() {
 
   async function convertToPartner() {
     if (!convertTarget || !convertForm.name.trim()) return;
+    if (convertTarget.latitude == null || convertTarget.longitude == null) {
+      alert('좌표(위도/경도) 정보가 없습니다. 수집 업체의 네이버 정보를 먼저 확인하거나, 직접 등록을 이용해주세요.');
+      return;
+    }
     setConverting(true);
     try {
       const { error } = await sb.from('stores').insert({
@@ -730,6 +736,8 @@ export default function StoresPage() {
         phone:           convertForm.phone   || convertTarget.phone,
         category:        convertForm.category || convertTarget.unniepick_category || convertTarget.category,
         is_active:       true,
+        latitude:        convertTarget.latitude,
+        longitude:       convertTarget.longitude,
         naver_place_id:  convertTarget.naver_place_id,
         ai_summary:      convertTarget.ai_summary,
         ai_features:     convertTarget.ai_features,
