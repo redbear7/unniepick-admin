@@ -2127,8 +2127,9 @@ export default function StoresPage() {
           <div className="p-6 space-y-4">
             {/* 헤더 */}
             <div className="flex items-start justify-between">
-              <div>
+              <div className="flex-1 min-w-0 pr-2">
                 <h2 className="font-bold text-primary text-lg">{slideProspect.name}</h2>
+                {/* 출처·카테고리 배지 */}
                 <div className="flex gap-1 mt-1.5 flex-wrap">
                   {slideProspect.naver_place_id && <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-green-600/20 text-green-400 border border-green-600/30">N 네이버</span>}
                   {slideProspect.kakao_place_id && <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">K 카카오</span>}
@@ -2139,8 +2140,28 @@ export default function StoresPage() {
                   )}
                   <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">⭐ 잠재</span>
                 </div>
+                {/* 수집 데이터 요약 배지 */}
+                {((slideProspect.menu_items?.length ?? 0) > 0 || (slideProspect.review_keywords?.length ?? 0) > 0 || (slideProspect.blog_reviews?.length ?? 0) > 0) && (
+                  <div className="flex gap-1 mt-1.5 flex-wrap">
+                    {(slideProspect.menu_items?.length ?? 0) > 0 && (
+                      <span className="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 text-[9px] font-semibold">
+                        메뉴 {slideProspect.menu_items.length}개
+                      </span>
+                    )}
+                    {(slideProspect.review_keywords?.length ?? 0) > 0 && (
+                      <span className="px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 text-[9px] font-semibold">
+                        키워드 {slideProspect.review_keywords.length}개
+                      </span>
+                    )}
+                    {(slideProspect.blog_reviews?.length ?? 0) > 0 && (
+                      <span className="px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400 text-[9px] font-semibold">
+                        블로그 {slideProspect.blog_reviews.length}개
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
-              <button onClick={() => setSlideProspect(null)} className="text-muted hover:text-primary p-1"><X size={18} /></button>
+              <button onClick={() => setSlideProspect(null)} className="text-muted hover:text-primary p-1 shrink-0"><X size={18} /></button>
             </div>
 
             {/* 기본정보 */}
@@ -2171,7 +2192,7 @@ export default function StoresPage() {
             </div>
 
             {/* 수집 데이터 */}
-            {((slideProspect.menu_items?.length ?? 0) > 0 || (slideProspect.review_keywords?.length ?? 0) > 0) && (
+            {((slideProspect.menu_items?.length ?? 0) > 0 || (slideProspect.review_keywords?.length ?? 0) > 0 || (slideProspect.blog_reviews?.length ?? 0) > 0) && (
               <div className="bg-fill-subtle rounded-xl p-4 space-y-3 text-xs">
                 <p className="font-semibold text-muted">수집 데이터</p>
                 {(slideProspect.menu_items?.length ?? 0) > 0 && (
@@ -2191,6 +2212,21 @@ export default function StoresPage() {
                       {slideProspect.review_keywords.slice(0, 6).map((k, i) => (
                         <span key={i} className="px-2 py-0.5 bg-fill-medium text-secondary rounded-lg">{k.keyword}</span>
                       ))}
+                    </div>
+                  </div>
+                )}
+                {(slideProspect.blog_reviews?.length ?? 0) > 0 && (
+                  <div>
+                    <p className="text-muted mb-1.5">블로그 리뷰 ({slideProspect.blog_reviews.length}개)</p>
+                    <div className="space-y-1.5">
+                      {slideProspect.blog_reviews.slice(0, 3).map((r, i) => (
+                        <p key={i} className="text-secondary leading-snug line-clamp-1 pl-2 border-l-2 border-sky-500/30">
+                          {r.title}
+                        </p>
+                      ))}
+                      {slideProspect.blog_reviews.length > 3 && (
+                        <p className="text-dim text-[10px] pl-2">+{slideProspect.blog_reviews.length - 3}개 더</p>
+                      )}
                     </div>
                   </div>
                 )}
