@@ -504,11 +504,7 @@ export default function MapPage() {
         });
       });
 
-      if (clustererRef.current) {
-        clustererRef.current.addOverlays(markers);
-      } else {
-        markers.forEach(m => { m.setMap(map); overlaysRef.current.push(m); });
-      }
+      markers.forEach(m => { m.setMap(map); overlaysRef.current.push(m); });
     }
   }, [closePopup]);
 

@@ -1803,8 +1803,8 @@ function RestaurantListRow({
 
       {/* 리뷰 수 */}
       <td className="px-3 py-3 text-right text-xs">
-        {r.visitor_review_count
-          ? <span className="text-secondary font-medium">{r.visitor_review_count.toLocaleString()}</span>
+        {(r.visitor_review_count || r.review_count)
+          ? <span className="text-secondary font-medium">{(r.visitor_review_count || r.review_count).toLocaleString()}</span>
           : <span className="text-dim">—</span>}
       </td>
 
