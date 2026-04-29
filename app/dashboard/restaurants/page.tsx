@@ -2122,8 +2122,15 @@ function RestaurantCard({
 
 function DetailModal({ r, onClose, registered }: { r: Restaurant; onClose: () => void; registered?: boolean }) {
   const sb = createClient();
+  const sortReviews = (list: BlogReview[]) =>
+    [...list].sort((a, b) => {
+      const featDiff = (b.featured ? 1 : 0) - (a.featured ? 1 : 0);
+      if (featDiff !== 0) return featDiff;
+      return (b.date ?? '') > (a.date ?? '') ? 1 : (b.date ?? '') < (a.date ?? '') ? -1 : 0;
+    });
+
   const [reviews, setReviews] = useState<BlogReview[]>(() =>
-    [...(r.blog_reviews ?? [])].sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0))
+    sortReviews(r.blog_reviews ?? [])
   );
   const [saving, setSaving] = useState(false);
 
@@ -2141,7 +2148,7 @@ function DetailModal({ r, onClose, registered }: { r: Restaurant; onClose: () =>
 
   const toggleFeatured = async (item: BlogReview) => {
     const updated = reviews.map(rv => rv === item ? { ...rv, featured: !rv.featured } : rv);
-    const sorted  = [...updated].sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
+    const sorted  = sortReviews(updated);
     setReviews(sorted);
     await persistReviews(sorted);
   };

@@ -108,7 +108,11 @@ function BlogPanel({
   const [selectedReview, setSelectedReview] = useState<BlogReview | null>(null);
 
   // 대표 리뷰 상단 정렬
-  const sortedReviews = [...reviews].sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
+  const sortedReviews = [...reviews].sort((a, b) => {
+    const featDiff = (b.featured ? 1 : 0) - (a.featured ? 1 : 0);
+    if (featDiff !== 0) return featDiff;
+    return (b.date ?? '') > (a.date ?? '') ? 1 : (b.date ?? '') < (a.date ?? '') ? -1 : 0;
+  });
 
   useEffect(() => {
     if (pin.type === 'restaurant') {
