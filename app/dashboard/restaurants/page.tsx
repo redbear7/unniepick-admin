@@ -17,7 +17,14 @@ import Link from 'next/link';
 
 interface ReviewKeyword { keyword: string; count: number }
 interface MenuKeyword { menu: string; count: number }
-interface BlogReview { title: string; snippet: string; date?: string }
+interface BlogReview {
+  title:    string;
+  snippet:  string;
+  date?:    string;
+  source?:  'blog' | 'cafe';
+  link?:    string;
+  featured?: boolean;
+}
 
 interface Restaurant {
   id: string;
@@ -2114,6 +2121,31 @@ function RestaurantCard({
 /* ------------------------------------------------------------------ */
 
 function DetailModal({ r, onClose, registered }: { r: Restaurant; onClose: () => void; registered?: boolean }) {
+  const sb = createClient();
+  const [reviews, setReviews] = useState<BlogReview[]>(() =>
+    [...(r.blog_reviews ?? [])].sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0))
+  );
+  const [saving, setSaving] = useState(false);
+
+  const persistReviews = async (next: BlogReview[]) => {
+    setSaving(true);
+    await sb.from('restaurants').update({ blog_reviews: next }).eq('id', r.id);
+    setSaving(false);
+  };
+
+  const deleteReview = async (item: BlogReview) => {
+    const next = reviews.filter(rv => rv !== item);
+    setReviews(next);
+    await persistReviews(next);
+  };
+
+  const toggleFeatured = async (item: BlogReview) => {
+    const updated = reviews.map(rv => rv === item ? { ...rv, featured: !rv.featured } : rv);
+    const sorted  = [...updated].sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
+    setReviews(sorted);
+    await persistReviews(sorted);
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-black/60 flex items-start justify-center pt-10 overflow-y-auto" onClick={onClose}>
       <div className="bg-sidebar border border-border-main rounded-2xl w-full max-w-2xl mx-4 mb-10 overflow-hidden" onClick={(e) => e.stopPropagation()}>
@@ -2264,14 +2296,87 @@ function DetailModal({ r, onClose, registered }: { r: Restaurant; onClose: () =>
           )}
 
           {/* 블로그 리뷰 */}
-          {r.blog_reviews?.length > 0 && (
-            <Section title="블로그 리뷰" icon={<Newspaper className="w-4 h-4" />}>
-              <div className="space-y-3">
-                {r.blog_reviews.map((br, i) => (
-                  <div key={i} className="bg-fill-subtle rounded-lg p-3">
-                    {br.title && <p className="text-sm font-medium text-primary">{br.title}</p>}
-                    {br.snippet && <p className="text-xs text-muted mt-1 line-clamp-3">{br.snippet}</p>}
-                    {br.date && <p className="text-[10px] text-dim mt-1">{br.date}</p>}
+          {reviews.length > 0 && (
+            <Section
+              title={`블로그 리뷰 (${reviews.length}건)`}
+              icon={
+                <span className="flex items-center gap-1.5">
+                  <Newspaper className="w-4 h-4" />
+                  {saving && <Loader2 className="w-3 h-3 animate-spin text-muted" />}
+                </span>
+              }
+            >
+              <div className="space-y-2">
+                {reviews.map((br, i) => (
+                  <div
+                    key={i}
+                    className={`rounded-lg p-3 border transition-all ${
+                      br.featured
+                        ? 'bg-amber-500/10 border-amber-500/40'
+                        : 'bg-fill-subtle border-border-subtle'
+                    }`}
+                  >
+                    {/* 헤더 행: 배지 + 버튼 */}
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {br.featured && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded font-bold bg-amber-500/20 text-amber-400">⭐ 대표</span>
+                        )}
+                        {br.source && (
+                          <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${
+                            br.source === 'cafe'
+                              ? 'bg-orange-500/15 text-orange-400'
+                              : 'bg-green-500/15 text-green-400'
+                          }`}>
+                            {br.source === 'cafe' ? '카페' : '블로그'}
+                          </span>
+                        )}
+                        {br.date && (
+                          <span className="text-[9px] text-dim">
+                            {br.date.length === 8
+                              ? `${br.date.slice(0,4)}.${br.date.slice(4,6)}.${br.date.slice(6,8)}`
+                              : br.date}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0 ml-2">
+                        <button
+                          onClick={() => toggleFeatured(br)}
+                          title={br.featured ? '대표 해제' : '대표 리뷰로 지정'}
+                          className={`p-1 rounded text-[11px] transition-colors ${
+                            br.featured
+                              ? 'text-amber-400 bg-amber-500/20'
+                              : 'text-muted hover:text-amber-400 hover:bg-amber-500/10'
+                          }`}
+                        >⭐</button>
+                        <button
+                          onClick={() => deleteReview(br)}
+                          title="리뷰 삭제"
+                          className="p-1 rounded text-muted hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                    {/* 본문 */}
+                    {br.title && (
+                      <p className={`text-sm font-medium leading-relaxed ${br.featured ? 'text-amber-200' : 'text-primary'}`}>
+                        {br.title}
+                      </p>
+                    )}
+                    {br.snippet && (
+                      <p className="text-xs text-muted mt-1 line-clamp-3 leading-relaxed">{br.snippet}</p>
+                    )}
+                    {br.link && (
+                      <a
+                        href={br.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[10px] text-[#03C75A] hover:underline mt-1.5 inline-block"
+                      >
+                        원문 보기 ↗
+                      </a>
+                    )}
                   </div>
                 ))}
               </div>
