@@ -1,10 +1,50 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase';
 import { loadKakaoSDK } from '@/lib/kakaoMap';
-import { X, Loader2, ChevronLeft, Search, Sparkles } from 'lucide-react';
+import { X, Loader2, ChevronLeft, Search, Sparkles, Clock } from 'lucide-react';
 import BlogViewerModal from '@/components/BlogViewerModal';
+
+// ── 시간대별 AI 검색 추천어 ─────────────────────────────────────
+function getTimeSuggestions(): { label: string; query: string }[] {
+  const h = new Date().getHours();
+  if (h >= 6 && h < 11) return [
+    { label: '☕ 아침 카페',       query: '아침 카페 브런치' },
+    { label: '🥐 베이커리',        query: '의창구 베이커리 빵집' },
+    { label: '🥗 브런치',          query: '브런치 샐러드 카페' },
+    { label: '🎫 쿠폰 카페',       query: '쿠폰 있는 카페' },
+    { label: '📍 의창구 아침',     query: '의창구 아침 식사' },
+  ];
+  if (h >= 11 && h < 14) return [
+    { label: '🍚 직장인 점심',     query: '상남동 점심 혼밥' },
+    { label: '🍜 국밥·탕',        query: '점심 국밥 탕 찌개' },
+    { label: '🍣 일식 점심',      query: '일식 점심 세트' },
+    { label: '🎫 쿠폰 맛집',      query: '쿠폰 있는 점심 맛집' },
+    { label: '📍 의창구 점심',    query: '의창구 점심 맛집' },
+  ];
+  if (h >= 14 && h < 18) return [
+    { label: '☕ 디저트 카페',     query: '디저트 카페 케이크' },
+    { label: '🍡 달달한 간식',    query: '오후 간식 달달한 카페' },
+    { label: '🍰 카페 추천',      query: '분위기 좋은 카페' },
+    { label: '🎫 쿠폰 카페',      query: '쿠폰 있는 카페' },
+    { label: '📍 의창구 카페',    query: '의창구 카페 추천' },
+  ];
+  if (h >= 18 && h < 22) return [
+    { label: '🥩 저녁 고기집',    query: '저녁 고기 구이 회식' },
+    { label: '💑 데이트 맛집',    query: '데이트 분위기 좋은 맛집' },
+    { label: '🍣 저녁 일식',      query: '저녁 일식 초밥' },
+    { label: '🍺 술집·이자카야',  query: '술자리 이자카야 분위기' },
+    { label: '📍 의창구 저녁',    query: '의창구 저녁 식사' },
+  ];
+  return [
+    { label: '🍗 야식 치킨',      query: '야식 치킨 배달' },
+    { label: '🍺 심야 술집',      query: '야간 술집 포차' },
+    { label: '🍜 야식 분식',      query: '야식 떡볶이 분식' },
+    { label: '🎫 쿠폰 맛집',      query: '쿠폰 있는 맛집' },
+    { label: '📍 의창구 야식',    query: '의창구 야식' },
+  ];
+}
 
 // ── 타입 ──────────────────────────────────────────────────────
 interface BlogReview {
@@ -456,12 +496,15 @@ export default function MapPage() {
   const [selectedPin,  setSelectedPin]  = useState<MapPin | null>(null);
 
   // AI 검색
-  const [aiQuery,      setAiQuery]      = useState('');
-  const [aiSearching,  setAiSearching]  = useState(false);
-  const [aiResults,    setAiResults]    = useState<AiResult[]>([]);
-  const [aiPanelOpen,  setAiPanelOpen]  = useState(false);
-  const [highlightIds, setHighlightIds] = useState<Set<string>>(new Set());
-  const aiAbortRef = useRef<AbortController | null>(null);
+  const [aiQuery,        setAiQuery]        = useState('');
+  const [aiSearching,    setAiSearching]    = useState(false);
+  const [aiResults,      setAiResults]      = useState<AiResult[]>([]);
+  const [aiPanelOpen,    setAiPanelOpen]    = useState(false);
+  const [highlightIds,   setHighlightIds]   = useState<Set<string>>(new Set());
+  const [suggestionOpen, setSuggestionOpen] = useState(false);
+  const aiAbortRef    = useRef<AbortController | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const timeSuggestions = useMemo(() => getTimeSuggestions(), []);
 
   // ── AI 검색 ───────────────────────────────────────────────────
   const doAiSearch = useCallback(async (q: string) => {
@@ -475,6 +518,7 @@ export default function MapPage() {
     setAiSearching(true);
     setAiPanelOpen(true);
     setSelectedPin(null);
+    setSuggestionOpen(false);
 
     try {
       const res = await fetch('/api/restaurants/search', {
@@ -536,6 +580,7 @@ export default function MapPage() {
     setAiPanelOpen(false);
     setAiSearching(false);
     setAiQuery('');
+    setSuggestionOpen(false);
   }, []);
 
   // AI 결과에서 핀 선택 → 지도 이동 + 블로그 패널 열기
@@ -565,9 +610,7 @@ export default function MapPage() {
         sb.from('coupons').select('store_id, is_active, expires_at'),
         sb.from('restaurants')
           .select('id, name, kakao_category, unniepick_category, address, phone, latitude, longitude, kakao_place_url, blog_reviews, instagram_url, ai_summary')
-          .eq('source', 'kakao')
-          .not('latitude', 'is', null).not('longitude', 'is', null)
-          .limit(3000),
+          .not('latitude', 'is', null).not('longitude', 'is', null),
       ]);
 
       const now = new Date();
@@ -811,16 +854,21 @@ export default function MapPage() {
       </div>
 
       {/* AI 검색 바 */}
-      <div className="px-4 py-2 bg-sidebar border-b border-border-main shrink-0">
+      <div className="px-4 py-2 bg-sidebar border-b border-border-main shrink-0 relative">
         <form
           onSubmit={e => { e.preventDefault(); doAiSearch(aiQuery); }}
           className="flex items-center gap-2"
         >
-          <div className="flex-1 flex items-center gap-2 bg-card border border-border-subtle rounded-xl px-3 py-2 focus-within:border-[#FF6F0F]/60 transition">
+          <div className={`flex-1 flex items-center gap-2 bg-card border rounded-xl px-3 py-2 transition ${
+            suggestionOpen ? 'border-[#FF6F0F]/60 rounded-b-none' : 'border-border-subtle focus-within:border-[#FF6F0F]/60'
+          }`}>
             <Sparkles size={13} className="text-[#FF6F0F] shrink-0" />
             <input
+              ref={searchInputRef}
               value={aiQuery}
               onChange={e => setAiQuery(e.target.value)}
+              onFocus={() => setSuggestionOpen(true)}
+              onBlur={() => setTimeout(() => setSuggestionOpen(false), 150)}
               placeholder="AI 맛집 검색 — 예: 상남동 데이트 파스타, 쿠폰 있는 카페..."
               className="flex-1 bg-transparent text-xs text-primary placeholder:text-dim outline-none"
             />
@@ -839,6 +887,41 @@ export default function MapPage() {
             검색
           </button>
         </form>
+
+        {/* 추천 검색어 드롭다운 */}
+        {suggestionOpen && (
+          <div className="absolute left-4 right-[4.5rem] top-full z-50 bg-card border border-[#FF6F0F]/40 border-t-0 rounded-b-xl shadow-lg overflow-hidden">
+            <div className="px-3 pt-2.5 pb-1 flex items-center gap-1.5">
+              <Clock size={10} className="text-dim" />
+              <span className="text-[10px] text-dim font-semibold">
+                {(() => {
+                  const h = new Date().getHours();
+                  if (h >= 6 && h < 11) return '아침 추천 검색어';
+                  if (h >= 11 && h < 14) return '점심 추천 검색어';
+                  if (h >= 14 && h < 18) return '오후 추천 검색어';
+                  if (h >= 18 && h < 22) return '저녁 추천 검색어';
+                  return '야간 추천 검색어';
+                })()}
+              </span>
+            </div>
+            <div className="px-2 pb-2 flex flex-wrap gap-1.5">
+              {timeSuggestions.map(s => (
+                <button
+                  key={s.query}
+                  type="button"
+                  onMouseDown={() => {
+                    setAiQuery(s.query);
+                    setSuggestionOpen(false);
+                    doAiSearch(s.query);
+                  }}
+                  className="px-2.5 py-1.5 rounded-lg bg-fill-subtle border border-border-subtle text-[11px] text-secondary hover:border-[#FF6F0F]/50 hover:text-[#FF6F0F] hover:bg-[#FF6F0F]/5 transition whitespace-nowrap"
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 카테고리 탭 */}
