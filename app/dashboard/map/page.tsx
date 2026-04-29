@@ -284,7 +284,7 @@ function BlogPanel({
             <Loader2 size={12} className="animate-spin" /> 로딩 중...
           </div>
         ) : reviews.length === 0 ? (
-          <p className="text-[11px] text-dim">수집된 리뷰가 없습니다.</p>
+          <p className="text-[11px] text-dim">매칭된 블로그 리뷰 없음</p>
         ) : (
           <div className="space-y-2">
             {sortedReviews.map((r, i) => (

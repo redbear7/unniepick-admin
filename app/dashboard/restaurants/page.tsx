@@ -2448,6 +2448,12 @@ function DetailModal({ r, onClose, registered, onRegister, registering, onUpdate
           )}
 
           {/* 블로그 리뷰 */}
+          {reviews.length === 0 && (
+            <div className="flex items-center gap-2 py-2">
+              <Newspaper className="w-4 h-4 text-muted shrink-0" />
+              <p className="text-sm text-dim">매칭된 블로그 리뷰 없음</p>
+            </div>
+          )}
           {reviews.length > 0 && (
             <Section
               title={`블로그 리뷰 (${reviews.length}건)`}
