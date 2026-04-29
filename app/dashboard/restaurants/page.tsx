@@ -1953,9 +1953,15 @@ function RestaurantListRow({
 
       {/* 리뷰 수 */}
       <td className="px-3 py-3 text-right text-xs">
-        {(r.visitor_review_count || r.review_count)
-          ? <span className="text-secondary font-medium">{(r.visitor_review_count || r.review_count).toLocaleString()}</span>
-          : <span className="text-dim">—</span>}
+        <div className="flex flex-col items-end gap-0.5">
+          {(r.visitor_review_count || r.review_count) > 0 && (
+            <span className="text-secondary font-medium">{(r.visitor_review_count || r.review_count).toLocaleString()}</span>
+          )}
+          {blogCount > 0
+            ? <span className="text-sky-400 font-medium">블로그 {blogCount}</span>
+            : (r.visitor_review_count || r.review_count) <= 0 && <span className="text-dim">—</span>
+          }
+        </div>
       </td>
 
       {/* 수집일 */}
