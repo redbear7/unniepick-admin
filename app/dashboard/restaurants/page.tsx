@@ -1606,15 +1606,6 @@ export default function RestaurantsPage() {
                       📰 C안만 — 블로그 리뷰 보강
                     </button>
                   </div>
-                  <div className="border-t border-white/10 pt-1">
-                    <button
-                      onClick={purgeCafeReviews}
-                      disabled={purgingCafe}
-                      className="w-full py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 text-xs transition disabled:opacity-50"
-                    >
-                      {purgingCafe ? '정리 중...' : '🗑 DB 카페 리뷰 일괄 삭제'}
-                    </button>
-                  </div>
                   {kwLogs.length > 0 && (
                     <button onClick={() => setKwModal(null)} className="w-full py-2 text-xs text-muted hover:text-primary transition">
                       닫기
