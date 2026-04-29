@@ -88,39 +88,52 @@ const OFFTRACK_KW = [
 
 // ── 연관성 점수 계산 ─────────────────────────────────────────────
 // 반환값 0 → 제외
+//
+// isBranch = 상호명에 지점 접미사가 있음 ("투다리 이미지점" 등)
+//   → 브랜드명이 본문에만 등장하면 "지나가는 언급"으로 간주 → 제외
+//   → 반드시 제목에 브랜드/전체명이 있거나, 전체명이 본문에 있어야 통과
+// !isBranch = 단독 상호명 ("티파니", "점빵" 등)
+//   → 본문 매칭도 허용하되 지역+음식 컨텍스트 필요
 function relevanceScore(
   review: BlogReview,
   tokens: ReturnType<typeof extractNameTokens>,
   locationTokens: string[],
 ): number {
-  const title   = review.title;
-  const snippet = review.snippet;
-  const text    = `${title} ${snippet}`;
+  const title    = review.title;
+  const snippet  = review.snippet;
+  const text     = `${title} ${snippet}`;
+  const isBranch = tokens.full !== tokens.brand;
 
-  // 1. 비식품 블랙리스트 감지 → 제목에 전체 상호명이 없으면 즉시 제외
-  const hasOfftrack = OFFTRACK_KW.some(kw => text.includes(kw));
-  if (hasOfftrack && !title.includes(tokens.full)) return 0;
+  // 1. 비식품 블랙리스트 감지 → 제목에 전체 상호명 없으면 즉시 제외
+  if (OFFTRACK_KW.some(kw => text.includes(kw)) && !title.includes(tokens.full)) return 0;
 
   // 2. 이름 매칭 점수
   let score = 0;
-  if      (title.includes(tokens.full))    score = 4;
-  else if (title.includes(tokens.brand))   score = 3;
-  else if (text.includes(tokens.full))     score = 2;
-  else if (text.includes(tokens.brand))    score = 1;
-  else {
-    const matchedInTitle = tokens.words.filter(w => title.includes(w)).length;
-    if (matchedInTitle >= Math.ceil(tokens.words.length / 2)) score = 1;
+  if      (title.includes(tokens.full))  score = 4; // 제목에 전체 상호명
+  else if (title.includes(tokens.brand)) score = 3; // 제목에 브랜드명
+  else if (text.includes(tokens.full))   score = 2; // 본문에 전체 상호명
+  else if (!isBranch && text.includes(tokens.brand)) score = 1; // 단독 상호: 본문 브랜드 허용
+  // isBranch인데 브랜드가 본문에만 → score=0 (지나가는 언급)
+
+  // 단어 분리 부분 매칭 (제목 한정)
+  if (score === 0) {
+    const matched = tokens.words.filter(w => w.length >= 2 && title.includes(w)).length;
+    if (matched >= Math.ceil(tokens.words.length * 0.6)) score = 1;
   }
   if (score === 0) return 0;
 
-  // 3. 지역 일치 여부
+  // 3. 지역 & 음식 컨텍스트
   const hasLocation = locationTokens.some(loc => text.includes(loc));
+  const hasFoodCtx  = FOOD_KW.some(kw => text.includes(kw));
 
-  // 4. 음식 컨텍스트 여부
-  const hasFoodCtx = FOOD_KW.some(kw => text.includes(kw));
+  // score 1: 지역 AND 음식 모두 있어야 통과
+  if (score === 1 && !(hasLocation && hasFoodCtx)) return 0;
 
-  // 저신뢰 매칭(본문에만 이름 등장)은 지역 OR 음식 컨텍스트 둘 다 없으면 제외
-  if (score <= 2 && !hasLocation && !hasFoodCtx) return 0;
+  // score 2: 지역 OR 음식 하나는 있어야 통과
+  if (score === 2 && !hasLocation && !hasFoodCtx) return 0;
+
+  // isBranch score 2(전체명이 본문에): 지역 일치까지 요구
+  if (isBranch && score === 2 && !hasLocation) return 0;
 
   // 지역 일치 보너스
   if (hasLocation) score += 1;
