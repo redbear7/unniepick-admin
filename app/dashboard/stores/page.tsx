@@ -36,8 +36,6 @@ interface Store {
   longitude:               number | null;
   category_detail:         string | null;   // 카카오 full path (음식점 > 한식 > 냉면)
   naver_place_id:          string | null;
-  opened_at:               string | null;
-  closed_at:               string | null;
 }
 
 interface Prospect {
@@ -149,7 +147,7 @@ const EMPTY_FORM: StoreForm = {
   representative_price: null, price_label: null, price_range: null,
   geo_discoverable: false,
   category_detail: null,
-  naver_place_id: null, opened_at: null, closed_at: null,
+  naver_place_id: null,
 };
 
 const EMPTY_COUPON: CouponForm = {
@@ -381,7 +379,7 @@ export default function StoresPage() {
   const loadStores = async () => {
     const { data, error } = await sb
       .from('stores')
-      .select('id, name, address, phone, category, category_detail, is_active, created_at, updated_at, owner_id, image_url, subscription_expires_at, representative_price, price_label, price_range, geo_discoverable, latitude, longitude, naver_place_id, opened_at, closed_at')
+      .select('id, name, address, phone, category, category_detail, is_active, created_at, updated_at, owner_id, image_url, subscription_expires_at, representative_price, price_label, price_range, geo_discoverable, latitude, longitude, naver_place_id')
       .order('created_at', { ascending: false });
 
     let rows: Store[];
@@ -438,7 +436,7 @@ export default function StoresPage() {
       if (editId) {
         const { data } = await sb
           .from('stores')
-          .select('id, name, address, phone, category, category_detail, is_active, created_at, updated_at, owner_id, image_url, subscription_expires_at, representative_price, price_label, price_range, geo_discoverable, latitude, longitude, naver_place_id, opened_at, closed_at')
+          .select('id, name, address, phone, category, category_detail, is_active, created_at, updated_at, owner_id, image_url, subscription_expires_at, representative_price, price_label, price_range, geo_discoverable, latitude, longitude, naver_place_id')
           .eq('naver_place_id', editId)
           .maybeSingle();
         if (data) openEdit(data as Store);
@@ -539,8 +537,6 @@ export default function StoresPage() {
       geo_discoverable: store.geo_discoverable ?? false,
       category_detail:  store.category_detail ?? null,
       naver_place_id: store.naver_place_id ?? null,
-      opened_at: store.opened_at ?? null,
-      closed_at: store.closed_at ?? null,
     });
     setNaverQ(''); setNaverResults([]); setNaverErr(''); setSaveError('');
     setMenuExtractErr('');
@@ -735,7 +731,6 @@ export default function StoresPage() {
         category:        convertForm.category || convertTarget.unniepick_category || convertTarget.category,
         is_active:       true,
         naver_place_id:  convertTarget.naver_place_id,
-        opened_at:       convertTarget.opened_at,
         ai_summary:      convertTarget.ai_summary,
         ai_features:     convertTarget.ai_features,
       });
@@ -1236,7 +1231,6 @@ export default function StoresPage() {
                     ['phone',       '연락처',     'left',   'px-4'],
                     ['collect',     '수집 데이터','left',   'px-4'],
                     ['ai_summary',  'AI 요약',    'left',   'px-4'],
-                    ['opened_at',   '개업일',     'left',   'px-4'],
                     ['owner',       '사장님',     'left',   'px-4'],
                     ['coupons',     '쿠폰',       'center', 'px-3'],
                     ['status',      '상태',       'center', 'px-4'],
@@ -1400,12 +1394,6 @@ export default function StoresPage() {
                           </td>
                         );
                       })()}
-                      {/* 개업일 */}
-                      <td className="px-4 py-4 text-xs">
-                        {store.opened_at
-                          ? <p className="text-sky-400">{new Date(store.opened_at).toLocaleDateString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit' })}</p>
-                          : <span className="text-dim">-</span>}
-                      </td>
                       <td className="px-4 py-4">
                         {owner ? (
                           <div className="flex items-center gap-2">
