@@ -161,12 +161,14 @@ export default function RestaurantsPage() {
   const [collectGuFilter,  setCollectGuFilter]  = useState('');
 
   // ── 키워드 수집 모달 state ────────────────────────────────────────
-  const [kwModal,          setKwModal]          = useState<{ label: string; keywords: string[]; dong?: string } | null>(null);
+  const [kwModal,          setKwModal]          = useState<{ label: string; keywords: string[]; naverKeywords: string[]; dong?: string } | null>(null);
   const [kwCollecting,     setKwCollecting]     = useState(false);
+  const [kwNaverCollecting,setKwNaverCollecting]= useState(false);
   const [kwLogs,           setKwLogs]           = useState<string[]>([]);
   const [kwEnriching,      setKwEnriching]      = useState(false);
   const [kwEnrichProgress, setKwEnrichProgress] = useState('');
   const [purgingCafe,      setPurgingCafe]      = useState(false);
+  const [chainStep,        setChainStep]        = useState<'A' | 'B' | 'C' | null>(null);
   // 동별 크롤링 횟수 (localStorage 영속)
   const [dongCrawlCounts, setDongCrawlCounts] = useState<Record<string, number>>(() => {
     if (typeof window === 'undefined') return {};
@@ -488,20 +490,20 @@ export default function RestaurantsPage() {
     });
   }
 
-  async function collectByKeywords(keywords: string[]) {
+  async function collectByKeywords(keywords: string[]): Promise<boolean> {
     setKwCollecting(true);
     setKwLogs([]);
+    let success = false;
     try {
       const res = await fetch('/api/collect/kakao-keyword', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ keywords, maxPages: 5 }),
       });
-      if (!res.body) return;
+      if (!res.body) return false;
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buf = '';
-      let success = false;
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -545,9 +547,59 @@ export default function RestaurantsPage() {
     } finally {
       setKwCollecting(false);
     }
+    return success;
   }
 
-  // ── 블로그 리뷰 보강 (B안: 네이버 공식 API) ──────────────────
+  // ── A→B→C 전체 자동 체인 실행 ────────────────────────────────────
+  async function runFullChain() {
+    if (!kwModal) return;
+    setChainStep('A');
+    setKwLogs([]);
+    setKwEnrichProgress('');
+
+    const aOk = await collectByKeywords(kwModal.keywords);
+
+    if (kwModal.naverKeywords.length) {
+      setChainStep('B');
+      await collectByNaverKeywords(kwModal.naverKeywords);
+    }
+
+    setChainStep('C');
+    await enrichByKeywords(kwModal.keywords);
+
+    setChainStep(null);
+    if (aOk) incrementDongCrawlCount(kwModal.dong);
+  }
+
+  // ── B안: 네이버 로컬 검색으로 신규 업체 수집 (새로오픈 등) ──────
+  async function collectByNaverKeywords(keywords: string[]): Promise<boolean> {
+    if (!keywords.length) return true;
+    setKwNaverCollecting(true);
+    try {
+      setKwLogs(p => [...p, ``, `🔍 B안 네이버 로컬 검색 시작`]);
+      const res = await fetch('/api/collect/naver', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ keywords }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        for (const r of (data.results ?? [])) {
+          setKwLogs(p => [...p, `   📍 "${r.keyword}" — ${r.collected}개 수집, ${r.saved}개 저장`]);
+        }
+        setKwLogs(p => [...p, `   ✅ 네이버 로컬 완료 — 총 ${data.total}개 수집, ${data.saved}개 저장`]);
+        fetchRestaurants();
+        return true;
+      } else {
+        setKwLogs(p => [...p, `   ⚠ 네이버 수집 오류: ${data.error}`]);
+        return false;
+      }
+    } finally {
+      setKwNaverCollecting(false);
+    }
+  }
+
+  // ── C안: 블로그 리뷰 보강 (네이버 공식 API) ───────────────────────
   async function enrichByKeywords(keywords: string[]) {
     setKwEnriching(true);
     setKwLogs([]);
@@ -626,6 +678,7 @@ export default function RestaurantsPage() {
   // ── 동/카테고리 롱프레스 → 키워드 자동 생성 ──────────────────────
   function openKwModal(type: 'dong' | 'category', value: string, gu?: string) {
     let keywords: string[];
+    let naverKeywords: string[];
     let label: string;
     if (type === 'dong') {
       const city = gu === '김해 장유' ? '김해 장유' : '창원';
@@ -633,19 +686,21 @@ export default function RestaurantsPage() {
         `${city} ${value} 맛집`,
         `${city} ${value} 카페`,
         `${city} ${value} 술집`,
-        `${city} ${value} 맛집 새로오픈`,
       ];
+      naverKeywords = [`${city} ${value} 맛집 새로오픈`];
       label = `${value} 키워드 수집`;
-      setKwModal({ label, keywords, dong: value });
+      setKwModal({ label, keywords, naverKeywords, dong: value });
     } else {
       keywords = [
         `창원 ${value} 맛집`,
         `창원시 ${value}`,
       ];
+      naverKeywords = [];
       label = `${value} 키워드 수집`;
-      setKwModal({ label, keywords });
+      setKwModal({ label, keywords, naverKeywords });
     }
     setKwLogs([]);
+    setChainStep(null);
   }
 
   async function fetchRestaurants() {
@@ -1461,13 +1516,25 @@ export default function RestaurantsPage() {
             </div>
 
             {/* 키워드 목록 */}
-            <div className="space-y-1.5 mb-4">
+            <div className="space-y-1 mb-4">
+              <p className="text-[10px] text-muted mb-1">A안 — 카카오</p>
               {kwModal.keywords.map(kw => (
-                <div key={kw} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-fill-subtle text-sm text-secondary">
-                  <Search className="w-3.5 h-3.5 text-muted shrink-0" />
+                <div key={kw} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-fill-subtle text-sm text-secondary">
+                  <Search className="w-3 h-3 text-muted shrink-0" />
                   {kw}
                 </div>
               ))}
+              {kwModal.naverKeywords.length > 0 && (
+                <>
+                  <p className="text-[10px] text-sky-400/70 mt-2 mb-1">B안 — 네이버 로컬</p>
+                  {kwModal.naverKeywords.map(kw => (
+                    <div key={kw} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-sky-500/10 text-sm text-sky-300 border border-sky-500/20">
+                      <Search className="w-3 h-3 text-sky-400/60 shrink-0" />
+                      {kw}
+                    </div>
+                  ))}
+                </>
+              )}
             </div>
 
             {/* 로그 */}
@@ -1493,44 +1560,69 @@ export default function RestaurantsPage() {
             )}
 
             {/* 버튼 */}
-            {!kwCollecting && !kwEnriching ? (
-              <div className="space-y-2">
-                <button
-                  onClick={() => collectByKeywords(kwModal.keywords)}
-                  className="w-full py-2.5 rounded-xl bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/40 text-yellow-400 font-semibold text-sm transition"
-                >
-                  🗺 A안 — 카카오 키워드 수집 (빠름)
-                </button>
-                <button
-                  onClick={() => enrichByKeywords(kwModal.keywords)}
-                  className="w-full py-2.5 rounded-xl bg-green-500/20 hover:bg-green-500/30 border border-green-500/40 text-green-400 font-semibold text-sm transition"
-                >
-                  📰 B안 — 네이버 블로그 리뷰 수집
-                </button>
-                <button
-                  onClick={purgeCafeReviews}
-                  disabled={purgingCafe}
-                  className="w-full py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 font-semibold text-sm transition disabled:opacity-50"
-                >
-                  {purgingCafe ? '정리 중...' : '🗑 DB 카페 리뷰 일괄 삭제'}
-                </button>
-                {kwLogs.length > 0 && (
-                  <button onClick={() => setKwModal(null)} className="w-full py-2 text-xs text-muted hover:text-primary transition">
-                    닫기
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center gap-1.5 py-3">
-                <div className="flex items-center gap-2 text-sm text-muted">
-                  <Loader2 className="w-4 h-4 animate-spin shrink-0" />
-                  {kwCollecting ? 'A안 카카오 수집 중...' : 'B안 블로그 검색 중...'}
+            {(() => {
+              const busy = kwCollecting || kwNaverCollecting || kwEnriching;
+              if (busy) return (
+                <div className="flex flex-col items-center gap-1.5 py-3">
+                  <div className="flex items-center gap-2 text-sm text-muted">
+                    <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                    {kwCollecting       ? `A안 카카오 수집 중...${chainStep ? ` (체인 ${chainStep}/C)` : ''}` :
+                     kwNaverCollecting  ? 'B안 네이버 로컬 수집 중...' :
+                                         'C안 블로그 리뷰 보강 중...'}
+                  </div>
+                  {kwEnrichProgress && (
+                    <span className="text-xs text-green-400 font-mono">{kwEnrichProgress}</span>
+                  )}
                 </div>
-                {kwEnrichProgress && (
-                  <span className="text-xs text-green-400 font-mono">{kwEnrichProgress}</span>
-                )}
-              </div>
-            )}
+              );
+              return (
+                <div className="space-y-2">
+                  {/* 전체 자동 체인 */}
+                  <button
+                    onClick={runFullChain}
+                    className="w-full py-2.5 rounded-xl bg-[#FF6F0F]/20 hover:bg-[#FF6F0F]/30 border border-[#FF6F0F]/50 text-[#FF6F0F] font-bold text-sm transition"
+                  >
+                    ⚡ A → B → C 전체 자동 수집
+                  </button>
+                  <div className="border-t border-white/10 pt-2 space-y-1.5">
+                    <button
+                      onClick={() => collectByKeywords(kwModal.keywords)}
+                      className="w-full py-2 rounded-xl bg-yellow-500/15 hover:bg-yellow-500/25 border border-yellow-500/30 text-yellow-400 text-sm transition"
+                    >
+                      🗺 A안만 — 카카오 키워드 수집
+                    </button>
+                    {kwModal.naverKeywords.length > 0 && (
+                      <button
+                        onClick={() => collectByNaverKeywords(kwModal.naverKeywords)}
+                        className="w-full py-2 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/30 text-sky-400 text-sm transition"
+                      >
+                        🔍 B안만 — 네이버 새로오픈 수집
+                      </button>
+                    )}
+                    <button
+                      onClick={() => enrichByKeywords(kwModal.keywords)}
+                      className="w-full py-2 rounded-xl bg-green-500/15 hover:bg-green-500/25 border border-green-500/30 text-green-400 text-sm transition"
+                    >
+                      📰 C안만 — 블로그 리뷰 보강
+                    </button>
+                  </div>
+                  <div className="border-t border-white/10 pt-1">
+                    <button
+                      onClick={purgeCafeReviews}
+                      disabled={purgingCafe}
+                      className="w-full py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 text-xs transition disabled:opacity-50"
+                    >
+                      {purgingCafe ? '정리 중...' : '🗑 DB 카페 리뷰 일괄 삭제'}
+                    </button>
+                  </div>
+                  {kwLogs.length > 0 && (
+                    <button onClick={() => setKwModal(null)} className="w-full py-2 text-xs text-muted hover:text-primary transition">
+                      닫기
+                    </button>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}
