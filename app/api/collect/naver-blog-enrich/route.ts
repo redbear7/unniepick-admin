@@ -11,10 +11,11 @@ import { NextRequest } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 interface BlogReview {
-  title: string;
+  title:   string;
   snippet: string;
-  date: string;
-  source: 'blog' | 'cafe';
+  date:    string;
+  source:  'blog' | 'cafe';
+  link:    string;
 }
 
 function adminSb() {
@@ -84,6 +85,7 @@ async function naverSearch(
     title:   stripHtml(item.title ?? ''),
     snippet: stripHtml(item.description ?? ''),
     date:    item.postdate ?? '',
+    link:    item.link ?? '',
     source,
   }));
 }

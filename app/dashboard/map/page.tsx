@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase';
 import { loadKakaoSDK } from '@/lib/kakaoMap';
-import { X, Loader2 } from 'lucide-react';
+import { X, Loader2, ChevronLeft } from 'lucide-react';
 
 // ── 타입 ──────────────────────────────────────────────────────
 interface BlogReview {
@@ -11,6 +11,7 @@ interface BlogReview {
   snippet?: string;
   date?:    string;
   source?:  'blog' | 'cafe';
+  link?:    string;
   featured?: boolean;
 }
 
@@ -101,9 +102,10 @@ function BlogPanel({
   onClose: () => void;
 }) {
   const sb = createClient();
-  const [reviews,      setReviews]      = useState<BlogReview[]>([]);
-  const [reviewSaving, setReviewSaving] = useState(false);
-  const [loadingBlog,  setLoadingBlog]  = useState(false);
+  const [reviews,        setReviews]        = useState<BlogReview[]>([]);
+  const [reviewSaving,   setReviewSaving]   = useState(false);
+  const [loadingBlog,    setLoadingBlog]    = useState(false);
+  const [selectedReview, setSelectedReview] = useState<BlogReview | null>(null);
 
   // 대표 리뷰 상단 정렬
   const sortedReviews = [...reviews].sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
@@ -166,7 +168,62 @@ function BlogPanel({
   const color = getCatColor(cat);
 
   return (
-    <div className="flex flex-col h-full" style={{ fontFamily: '-apple-system,BlinkMacSystemFont,sans-serif' }}>
+    <div className="relative flex flex-col h-full" style={{ fontFamily: '-apple-system,BlinkMacSystemFont,sans-serif' }}>
+
+      {/* ── 리뷰 상세 모달 오버레이 ── */}
+      {selectedReview && (
+        <div className="absolute inset-0 z-20 bg-sidebar flex flex-col">
+          {/* 모달 헤더 */}
+          <div className="flex items-center gap-2 px-3 py-3 border-b border-border-main shrink-0">
+            <button
+              onClick={() => setSelectedReview(null)}
+              className="p-1 rounded text-muted hover:text-primary transition"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <span className="text-xs font-semibold text-primary flex-1">블로그 리뷰 상세</span>
+            <div className="flex items-center gap-1.5">
+              {selectedReview.featured && (
+                <span className="text-[9px] px-1.5 py-0.5 rounded font-bold bg-amber-500/20 text-amber-400">⭐ 대표</span>
+              )}
+              <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${
+                selectedReview.source === 'cafe'
+                  ? 'bg-orange-500/15 text-orange-400'
+                  : 'bg-green-500/15 text-green-400'
+              }`}>
+                {selectedReview.source === 'cafe' ? '카페' : '블로그'}
+              </span>
+              {selectedReview.date && (
+                <span className="text-[9px] text-dim">
+                  {selectedReview.date.slice(0,4)}.{selectedReview.date.slice(4,6)}.{selectedReview.date.slice(6,8)}
+                </span>
+              )}
+            </div>
+          </div>
+          {/* 모달 본문 */}
+          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+            <h3 className="text-sm font-bold text-primary leading-relaxed">{selectedReview.title}</h3>
+            {selectedReview.snippet && (
+              <p className="text-xs text-secondary leading-relaxed whitespace-pre-line">{selectedReview.snippet}</p>
+            )}
+          </div>
+          {/* 원문 보기 버튼 */}
+          <div className="px-4 py-3 border-t border-border-main shrink-0">
+            <a
+              href={
+                selectedReview.link ||
+                `https://search.naver.com/search.naver?where=blog&query=${encodeURIComponent(selectedReview.title)}`
+              }
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl bg-[#03C75A]/15 text-[#03C75A] text-xs font-semibold hover:bg-[#03C75A]/25 transition"
+            >
+              {selectedReview.link ? '원문 보기 ↗' : '네이버에서 검색 ↗'}
+            </a>
+          </div>
+        </div>
+      )}
+
       {/* 헤더 */}
       <div className="flex items-start justify-between p-4 border-b border-border-main shrink-0">
         <div className="flex-1 min-w-0 pr-2">
@@ -259,12 +316,19 @@ function BlogPanel({
                     </button>
                   </div>
                 </div>
-                <p className={`text-xs font-medium leading-relaxed ${r.featured ? 'text-amber-300' : 'text-primary'}`}>
-                  {r.title}
-                </p>
-                {r.snippet && (
-                  <p className="text-[11px] text-muted mt-0.5 leading-relaxed line-clamp-2">{r.snippet}</p>
-                )}
+                {/* 클릭 → 상세 모달 */}
+                <div
+                  onClick={() => setSelectedReview(r)}
+                  className="cursor-pointer"
+                >
+                  <p className={`text-xs font-medium leading-relaxed ${r.featured ? 'text-amber-300' : 'text-primary'}`}>
+                    {r.title}
+                  </p>
+                  {r.snippet && (
+                    <p className="text-[11px] text-muted mt-0.5 leading-relaxed line-clamp-2">{r.snippet}</p>
+                  )}
+                  <p className="text-[10px] text-dim mt-1">탭하여 자세히 보기 →</p>
+                </div>
               </div>
             ))}
           </div>

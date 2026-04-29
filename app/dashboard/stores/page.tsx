@@ -297,6 +297,30 @@ export default function StoresPage() {
   const [naverSearching, setNaverSearching] = useState(false);
   const [naverErr,      setNaverErr]      = useState('');
 
+  /* 블로그 리뷰 미리보기 (가게 정보 폼 하단) */
+  const [formBlogReviews, setFormBlogReviews] = useState<Array<{
+    title: string; snippet?: string; source?: string; date?: string; link?: string;
+  }>>([]);
+
+  useEffect(() => {
+    if (!editModal || editModal === 'new') { setFormBlogReviews([]); return; }
+    const store = editModal as Store;
+    const sb = createClient();
+    (async () => {
+      let blogReviews: typeof formBlogReviews = [];
+      const byId = store.naver_place_id
+        ? await sb.from('restaurants').select('blog_reviews').eq('naver_place_id', store.naver_place_id).maybeSingle()
+        : { data: null };
+      const raw = byId.data?.blog_reviews
+        ?? (await sb.from('restaurants').select('blog_reviews').eq('name', store.name).not('blog_reviews', 'is', null).limit(1))
+            .data?.[0]?.blog_reviews;
+      if (raw) {
+        blogReviews = (Array.isArray(raw) ? raw : []).slice(0, 2);
+      }
+      setFormBlogReviews(blogReviews);
+    })();
+  }, [editModal]);
+
   /* menu items */
   const menuFileRef = useRef<HTMLInputElement>(null);
   const [menuExtracting, setMenuExtracting]   = useState(false);
@@ -1905,6 +1929,48 @@ export default function StoresPage() {
                       </div>
                     </div>
                   </div>
+
+                  {/* 블로그 리뷰 미리보기 (상위 2개) */}
+                  {formBlogReviews.length > 0 && (
+                    <div className="border-t border-border-main pt-3 space-y-2">
+                      <p className="text-xs text-muted flex items-center gap-1">
+                        📝 블로그 리뷰
+                        <span className="text-dim">· {formBlogReviews.length}건</span>
+                      </p>
+                      {formBlogReviews.map((r, i) => (
+                        <div key={i} className="rounded-xl bg-sidebar border border-border-subtle px-3 py-2.5">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${
+                              r.source === 'cafe'
+                                ? 'bg-orange-500/15 text-orange-400'
+                                : 'bg-green-500/15 text-green-400'
+                            }`}>
+                              {r.source === 'cafe' ? '카페' : '블로그'}
+                            </span>
+                            {r.date && (
+                              <span className="text-[9px] text-dim">
+                                {r.date.slice(0,4)}.{r.date.slice(4,6)}.{r.date.slice(6,8)}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-primary font-medium leading-relaxed">{r.title}</p>
+                          {r.snippet && (
+                            <p className="text-[11px] text-muted mt-0.5 leading-relaxed line-clamp-2">{r.snippet}</p>
+                          )}
+                          {r.link && (
+                            <a
+                              href={r.link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[10px] text-[#03C75A] hover:underline mt-1 inline-block"
+                            >
+                              원문 보기 ↗
+                            </a>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </>
               )}
 
