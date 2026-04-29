@@ -166,6 +166,7 @@ export default function RestaurantsPage() {
   const [kwLogs,           setKwLogs]           = useState<string[]>([]);
   const [kwEnriching,      setKwEnriching]      = useState(false);
   const [kwEnrichProgress, setKwEnrichProgress] = useState('');
+  const [purgingCafe,      setPurgingCafe]      = useState(false);
   // 동별 크롤링 횟수 (localStorage 영속)
   const [dongCrawlCounts, setDongCrawlCounts] = useState<Record<string, number>>(() => {
     if (typeof window === 'undefined') return {};
@@ -546,7 +547,7 @@ export default function RestaurantsPage() {
     }
   }
 
-  // ── 블로그/카페 리뷰 보강 (B안: 네이버 공식 API) ──────────────────
+  // ── 블로그 리뷰 보강 (B안: 네이버 공식 API) ──────────────────
   async function enrichByKeywords(keywords: string[]) {
     setKwEnriching(true);
     setKwLogs([]);
@@ -573,7 +574,7 @@ export default function RestaurantsPage() {
           try {
             const evt = JSON.parse(line.slice(6));
             if (evt.type === 'keyword') {
-              setKwLogs(p => [...p, ``, `📰 [${evt.index + 1}/${evt.total}] "${evt.keyword}" 블로그/카페 검색`]);
+              setKwLogs(p => [...p, ``, `📰 [${evt.index + 1}/${evt.total}] "${evt.keyword}" 블로그 검색`]);
               setKwEnrichProgress(`[${evt.index + 1}/${evt.total}] ${evt.keyword}`);
             }
             if (evt.type === 'log') {
@@ -590,7 +591,7 @@ export default function RestaurantsPage() {
               setKwEnrichProgress(`⏳ 다음 키워드 대기 중...`);
             }
             if (evt.type === 'done') {
-              setKwLogs(p => [...p, ``, `✅ 블로그/카페 리뷰 보강 완료 (${evt.processed}건 성공, ${evt.errors}건 오류)`]);
+              setKwLogs(p => [...p, ``, `✅ 블로그 리뷰 보강 완료 (${evt.processed}건 성공, ${evt.errors}건 오류)`]);
               setKwEnrichProgress('완료');
               success = true;
             }
@@ -601,6 +602,24 @@ export default function RestaurantsPage() {
       fetchRestaurants();
     } finally {
       setKwEnriching(false);
+    }
+  }
+
+  // ── DB에서 카페 리뷰 일괄 정리 ───────────────────────────────────
+  async function purgeCafeReviews() {
+    if (!confirm('DB의 모든 카페(cafearticle) 리뷰를 삭제합니다. 계속하시겠습니까?')) return;
+    setPurgingCafe(true);
+    try {
+      const res = await fetch('/api/collect/purge-cafe-reviews', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        alert(`완료: ${data.targets}개 업체 중 ${data.updated}개 업체의 카페 리뷰 삭제`);
+        fetchRestaurants();
+      } else {
+        alert(`오류: ${data.error}`);
+      }
+    } finally {
+      setPurgingCafe(false);
     }
   }
 
@@ -1486,7 +1505,14 @@ export default function RestaurantsPage() {
                   onClick={() => enrichByKeywords(kwModal.keywords)}
                   className="w-full py-2.5 rounded-xl bg-green-500/20 hover:bg-green-500/30 border border-green-500/40 text-green-400 font-semibold text-sm transition"
                 >
-                  📰 B안 — 네이버 블로그/카페 리뷰 수집
+                  📰 B안 — 네이버 블로그 리뷰 수집
+                </button>
+                <button
+                  onClick={purgeCafeReviews}
+                  disabled={purgingCafe}
+                  className="w-full py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 font-semibold text-sm transition disabled:opacity-50"
+                >
+                  {purgingCafe ? '정리 중...' : '🗑 DB 카페 리뷰 일괄 삭제'}
                 </button>
                 {kwLogs.length > 0 && (
                   <button onClick={() => setKwModal(null)} className="w-full py-2 text-xs text-muted hover:text-primary transition">
@@ -1498,7 +1524,7 @@ export default function RestaurantsPage() {
               <div className="flex flex-col items-center gap-1.5 py-3">
                 <div className="flex items-center gap-2 text-sm text-muted">
                   <Loader2 className="w-4 h-4 animate-spin shrink-0" />
-                  {kwCollecting ? 'A안 카카오 수집 중...' : 'B안 블로그/카페 검색 중...'}
+                  {kwCollecting ? 'A안 카카오 수집 중...' : 'B안 블로그 검색 중...'}
                 </div>
                 {kwEnrichProgress && (
                   <span className="text-xs text-green-400 font-mono">{kwEnrichProgress}</span>
@@ -1749,7 +1775,7 @@ function RestaurantListRow({
                 <span className="px-1 py-0.5 bg-yellow-500/20 text-yellow-400 text-[9px] font-bold rounded border border-yellow-500/30">K</span>
               )}
               {blogCount > 0 && (
-                <span title={`블로그/카페 리뷰 ${blogCount}건`} className="px-1 py-0.5 bg-sky-500/20 text-sky-400 text-[9px] font-bold rounded border border-sky-500/30">B</span>
+                <span title={`블로그 리뷰 ${blogCount}건`} className="px-1 py-0.5 bg-sky-500/20 text-sky-400 text-[9px] font-bold rounded border border-sky-500/30">B</span>
               )}
               {r.is_new_open && (
                 <span className="px-1 py-0.5 bg-green-500/15 text-green-400 text-[9px] font-bold rounded-full border border-green-500/25">NEW</span>
@@ -1935,7 +1961,7 @@ function RestaurantCard({
               {kId && (
                 <span className="px-1 py-0.5 bg-yellow-500/20 text-yellow-400 text-[9px] font-bold rounded border border-yellow-500/30">K</span>
               )}
-              {hBlog  && <span title={`블로그/카페 리뷰 ${r.blog_reviews.length}건`} className="px-1 py-0.5 bg-sky-500/20 text-sky-400 text-[9px] font-bold rounded border border-sky-500/30">B</span>}
+              {hBlog  && <span title={`블로그 리뷰 ${r.blog_reviews.length}건`} className="px-1 py-0.5 bg-sky-500/20 text-sky-400 text-[9px] font-bold rounded border border-sky-500/30">B</span>}
               {hMenu  && <span className="px-1 py-0.5 bg-slate-500/20 text-slate-400 text-[9px] rounded border border-slate-500/20">메뉴</span>}
               {hKw    && <span className="px-1 py-0.5 bg-slate-500/20 text-slate-400 text-[9px] rounded border border-slate-500/20">키워드</span>}
               {hAi    && <span className="px-1 py-0.5 bg-emerald-500/20 text-emerald-400 text-[9px] rounded border border-emerald-500/30">✨AI</span>}
@@ -2130,7 +2156,7 @@ function DetailModal({ r, onClose, registered }: { r: Restaurant; onClose: () =>
     });
 
   const [reviews, setReviews] = useState<BlogReview[]>(() =>
-    sortReviews(r.blog_reviews ?? [])
+    sortReviews((r.blog_reviews ?? []).filter(rv => rv.source !== 'cafe'))
   );
   const [saving, setSaving] = useState(false);
 

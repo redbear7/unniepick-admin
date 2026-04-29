@@ -116,7 +116,7 @@ function BlogPanel({
 
   useEffect(() => {
     if (pin.type === 'restaurant') {
-      setReviews(pin.blog_reviews ?? []);
+      setReviews((pin.blog_reviews ?? []).filter(rv => rv.source !== 'cafe'));
     } else {
       // 파트너: naver_place_id로 restaurants에서 블로그 리뷰 fetch
       if (pin.naver_place_id) {
@@ -129,10 +129,10 @@ function BlogPanel({
               .maybeSingle();
             if (data?.blog_reviews) {
               try {
-                const arr = Array.isArray(data.blog_reviews)
+                const arr = (Array.isArray(data.blog_reviews)
                   ? data.blog_reviews
-                  : JSON.parse(data.blog_reviews);
-                setReviews(arr);
+                  : JSON.parse(data.blog_reviews)) as BlogReview[];
+                setReviews(arr.filter(rv => rv.source !== 'cafe'));
               } catch {}
             }
           } finally {
@@ -261,7 +261,7 @@ function BlogPanel({
       {/* 블로그 리뷰 목록 */}
       <div className="flex-1 overflow-y-auto px-4 py-3">
         <div className="flex items-center justify-between mb-2.5">
-          <p className="text-[11px] font-semibold text-muted">블로그 / 카페 리뷰</p>
+          <p className="text-[11px] font-semibold text-muted">블로그 리뷰</p>
           {reviewSaving && <Loader2 size={10} className="animate-spin text-muted" />}
         </div>
         {loadingBlog ? (
