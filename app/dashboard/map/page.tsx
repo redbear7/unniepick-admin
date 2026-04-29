@@ -598,19 +598,37 @@ export default function MapPage() {
   // ── 데이터 로드 ────────────────────────────────────────────────
   useEffect(() => {
     const sb = createClient();
+
+    // Supabase 기본 limit=1000 우회 — 전체 페이지네이션
+    async function fetchAllRestaurants() {
+      const PAGE = 1000;
+      let all: any[] = [];
+      let from = 0;
+      while (true) {
+        const { data, error } = await sb
+          .from('restaurants')
+          .select('id, name, kakao_category, unniepick_category, address, phone, latitude, longitude, kakao_place_url, blog_reviews, instagram_url, ai_summary')
+          .not('latitude', 'is', null).not('longitude', 'is', null)
+          .range(from, from + PAGE - 1);
+        if (error || !data?.length) break;
+        all = all.concat(data);
+        if (data.length < PAGE) break;   // 마지막 페이지
+        from += PAGE;
+      }
+      return all;
+    }
+
     (async () => {
       const [
         { data: storeData },
         { data: couponData },
-        { data: restData },
+        restData,
       ] = await Promise.all([
         sb.from('stores')
           .select('id, name, category, address, is_active, latitude, longitude, naver_place_id, instagram_url, ai_summary')
           .not('latitude', 'is', null).not('longitude', 'is', null),
         sb.from('coupons').select('store_id, is_active, expires_at'),
-        sb.from('restaurants')
-          .select('id, name, kakao_category, unniepick_category, address, phone, latitude, longitude, kakao_place_url, blog_reviews, instagram_url, ai_summary')
-          .not('latitude', 'is', null).not('longitude', 'is', null),
+        fetchAllRestaurants(),
       ]);
 
       const now = new Date();
@@ -635,7 +653,7 @@ export default function MapPage() {
         ai_summary:     s.ai_summary     ?? null,
       })));
 
-      setRestaurants((restData ?? []).map((r: any) => {
+      setRestaurants(restData.map((r: any) => {
         let blogReviews: BlogReview[] = [];
         try {
           blogReviews = Array.isArray(r.blog_reviews)
