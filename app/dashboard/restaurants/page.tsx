@@ -154,6 +154,7 @@ export default function RestaurantsPage() {
   const [normalizing,   setNormalizing]   = useState(false);
   const [normalizeMsg,  setNormalizeMsg]  = useState('');
   const [resetting,     setResetting]     = useState(false);
+  const [scoring,       setScoring]       = useState(false);
 
   // ── 데이터 수집 관련 state ────────────────────────────────────────
   const [kakaoCollecting,  setKakaoCollecting]  = useState(false);
@@ -398,6 +399,22 @@ export default function RestaurantsPage() {
       alert(`카테고리 정규화 실패: ${(e as Error).message}`);
     } finally {
       setNormalizing(false);
+    }
+  }
+
+  // discovery_score 일괄 계산
+  async function computeScores() {
+    setScoring(true);
+    try {
+      const res  = await fetch('/api/restaurants/compute-scores', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? '스코어 계산 실패');
+      setNormalizeMsg(`⭐ ${data.updated}개 스코어 갱신 완료`);
+      setTimeout(() => setNormalizeMsg(''), 5000);
+    } catch (e) {
+      alert(`스코어 계산 실패: ${(e as Error).message}`);
+    } finally {
+      setScoring(false);
     }
   }
 
@@ -1043,6 +1060,18 @@ export default function RestaurantsPage() {
             {resetting
               ? <><Loader2 className="w-4 h-4 animate-spin" />초기화 중...</>
               : <>🔄 카테고리 초기화</>
+            }
+          </button>
+          {/* discovery_score 계산 */}
+          <button
+            onClick={computeScores}
+            disabled={scoring}
+            title="쿠폰·블로그리뷰·AI요약 등 기반으로 discovery_score 일괄 계산"
+            className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white rounded-xl text-sm font-semibold transition shadow-sm"
+          >
+            {scoring
+              ? <><Loader2 className="w-4 h-4 animate-spin" />스코어 계산 중...</>
+              : <>⭐ 스코어 계산</>
             }
           </button>
           {/* 태그 일괄 추출 */}
