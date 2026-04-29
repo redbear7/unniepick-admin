@@ -2637,12 +2637,17 @@ function DetailModal({ r, onClose, registered, onRegister, registering, onUpdate
                     {br.snippet && (
                       <p className="text-xs text-muted mt-1 line-clamp-3 leading-relaxed">{br.snippet}</p>
                     )}
-                    {br.link && (
+                    {br.title && (
                       <button
-                        onClick={() => { setViewerUrl(br.link!); setViewerTitle(br.title); }}
+                        onClick={() => {
+                          const url = br.link
+                            || `https://search.naver.com/search.naver?where=blog&query=${encodeURIComponent(br.title)}`;
+                          setViewerUrl(url);
+                          setViewerTitle(br.title);
+                        }}
                         className="text-[10px] text-[#03C75A] hover:underline mt-1.5 inline-block"
                       >
-                        원문 보기 ↗
+                        {br.link ? '원문 보기 ↗' : '네이버 검색 ↗'}
                       </button>
                     )}
                   </div>

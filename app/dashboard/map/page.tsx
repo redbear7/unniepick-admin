@@ -425,7 +425,21 @@ function BlogPanel({
                   {r.snippet && (
                     <p className="text-[11px] text-muted mt-0.5 leading-relaxed line-clamp-2">{r.snippet}</p>
                   )}
-                  <p className="text-[10px] text-dim mt-1">탭하여 자세히 보기 →</p>
+                  <div className="flex items-center justify-between mt-1">
+                    <p className="text-[10px] text-dim">탭하여 자세히 보기 →</p>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const url = r.link
+                          || `https://search.naver.com/search.naver?where=blog&query=${encodeURIComponent(r.title)}`;
+                        setViewerUrl(url);
+                        setViewerTitle(r.title);
+                      }}
+                      className="text-[10px] text-[#03C75A] hover:underline shrink-0 ml-2"
+                    >
+                      {r.link ? '원문 보기 ↗' : '네이버 검색 ↗'}
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
