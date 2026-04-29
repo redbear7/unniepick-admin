@@ -153,6 +153,7 @@ export default function RestaurantsPage() {
   // ── 카테고리 정규화 관련 state ────────────────────────────────────
   const [normalizing,   setNormalizing]   = useState(false);
   const [normalizeMsg,  setNormalizeMsg]  = useState('');
+  const [resetting,     setResetting]     = useState(false);
 
   // ── 데이터 수집 관련 state ────────────────────────────────────────
   const [kakaoCollecting,  setKakaoCollecting]  = useState(false);
@@ -358,6 +359,24 @@ export default function RestaurantsPage() {
       alert(`폐업 검수 실패: ${(e as Error).message}`);
     } finally {
       setClosureChecking(false);
+    }
+  }
+
+  // 카테고리 정규화 롤백 (전체 NULL 초기화)
+  async function resetCategories() {
+    if (!confirm('전체 unniepick_category를 NULL로 초기화합니다. 계속할까요?')) return;
+    setResetting(true);
+    try {
+      const res  = await fetch('/api/restaurants/normalize-categories/reset', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? '롤백 실패');
+      setNormalizeMsg(`🔄 ${data.reset}개 초기화 완료`);
+      fetchRestaurants();
+      setTimeout(() => setNormalizeMsg(''), 5000);
+    } catch (e) {
+      alert(`롤백 실패: ${(e as Error).message}`);
+    } finally {
+      setResetting(false);
     }
   }
 
@@ -1005,13 +1024,25 @@ export default function RestaurantsPage() {
           {/* 카테고리 정규화 */}
           <button
             onClick={normalizeCategories}
-            disabled={normalizing}
+            disabled={normalizing || resetting}
             title="전체 업체 unniepick_category 일괄 정규화 (최초 1회 또는 규칙 변경 시)"
             className="flex items-center gap-2 px-4 py-2 bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white rounded-xl text-sm font-semibold transition shadow-sm"
           >
             {normalizing
               ? <><Loader2 className="w-4 h-4 animate-spin" />정규화 중...</>
               : <>📂 카테고리 정규화</>
+            }
+          </button>
+          {/* 카테고리 정규화 롤백 */}
+          <button
+            onClick={resetCategories}
+            disabled={normalizing || resetting}
+            title="unniepick_category 전체 NULL 초기화 (재정규화 전 롤백)"
+            className="flex items-center gap-2 px-4 py-2 bg-zinc-600 hover:bg-zinc-700 disabled:opacity-50 text-white rounded-xl text-sm font-semibold transition shadow-sm"
+          >
+            {resetting
+              ? <><Loader2 className="w-4 h-4 animate-spin" />초기화 중...</>
+              : <>🔄 카테고리 초기화</>
             }
           </button>
           {/* 태그 일괄 추출 */}
