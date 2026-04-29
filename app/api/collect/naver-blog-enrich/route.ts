@@ -2,8 +2,8 @@
  * POST /api/collect/naver-blog-enrich
  * body: { keywords: string[], limit?: number }
  *
- * 네이버 블로그/카페 검색 API로 업체별 리뷰 보강
- * - Playwright 크롤링 없이 공식 API만 사용 (차단 없음)
+ * 네이버 블로그 검색 API로 업체별 리뷰 보강
+ * - 상호명 연관성 점수 기반 필터링
  * - .env: NAVER_CLIENT_ID, NAVER_CLIENT_SECRET
  * - SSE(text/event-stream)으로 진행 상황 실시간 전달
  */
@@ -34,16 +34,62 @@ function stripHtml(html: string): string {
     .trim();
 }
 
+/**
+ * 상호명에서 핵심 브랜드 토큰 추출
+ * "스타비어 창원점" → ["스타비어", "창원점", "스타비어"]  (전체, 지점포함, 핵심)
+ * - 마지막 단어가 "점/지점/분점/본점"으로 끝나면 지점 단어로 인식 → 핵심은 나머지
+ */
+function extractNameTokens(name: string): { full: string; brand: string; words: string[] } {
+  const cleaned = name.trim();
+  const parts   = cleaned.split(/\s+/);
+
+  // 지점 접미사 패턴
+  const branchSuffix = /^.{1,6}(점|지점|분점|본점|직영점|센터)$/;
+
+  let brand = cleaned;
+  if (parts.length >= 2 && branchSuffix.test(parts[parts.length - 1])) {
+    brand = parts.slice(0, -1).join(' ');
+  }
+
+  // 최소 2글자 이상인 단어만 토큰으로 사용
+  const words = [...new Set([cleaned, brand, ...parts].filter(w => w.length >= 2))];
+
+  return { full: cleaned, brand, words };
+}
+
+/**
+ * 연관성 점수 계산
+ * 점수 3: 제목에 전체 상호명 포함
+ * 점수 2: 제목에 핵심 브랜드명 포함
+ * 점수 1: 본문에 핵심 브랜드명 포함
+ * 점수 0: 무관 → 제외 대상
+ */
+function relevanceScore(review: BlogReview, tokens: ReturnType<typeof extractNameTokens>): number {
+  const title   = review.title.toLowerCase();
+  const snippet = review.snippet.toLowerCase();
+  const full    = tokens.full.toLowerCase();
+  const brand   = tokens.brand.toLowerCase();
+
+  if (title.includes(full))   return 3;
+  if (title.includes(brand))  return 2;
+  if (snippet.includes(full)) return 2;
+  if (snippet.includes(brand)) return 1;
+
+  // 단어 분리해서 절반 이상 제목에 있으면 1점
+  const matchedInTitle = tokens.words.filter(w => title.includes(w.toLowerCase())).length;
+  if (matchedInTitle >= Math.ceil(tokens.words.length / 2)) return 1;
+
+  return 0;
+}
 
 async function naverSearch(
-  type: 'blog' | 'cafearticle',
   query: string,
   display: number,
   clientId: string,
   clientSecret: string,
 ): Promise<BlogReview[]> {
   const encoded = encodeURIComponent(query);
-  const url = `https://openapi.naver.com/v1/search/${type}.json?query=${encoded}&display=${display}&sort=sim`;
+  const url = `https://openapi.naver.com/v1/search/blog.json?query=${encoded}&display=${display}&sort=sim`;
 
   const res = await fetch(url, {
     headers: {
@@ -55,14 +101,13 @@ async function naverSearch(
   if (!res.ok) return [];
 
   const data = await res.json();
-  const source = type === 'blog' ? 'blog' : 'cafe';
 
   return (data.items ?? []).map((item: Record<string, string>) => ({
     title:   stripHtml(item.title ?? ''),
     snippet: stripHtml(item.description ?? ''),
     date:    item.postdate ?? '',
     link:    item.link ?? '',
-    source,
+    source:  'blog' as const,
   }));
 }
 
@@ -102,8 +147,6 @@ export async function POST(req: NextRequest) {
       let totalProcessed = 0;
       let totalErrors    = 0;
 
-      // blog_reviews가 없는 업체를 최근 수집 순으로 조회
-      // (태그 방식 대신 — Kakao A안은 tags를 저장하지 않음)
       const { data: rows, error } = await sb
         .from('restaurants')
         .select('id, name, address')
@@ -121,7 +164,7 @@ export async function POST(req: NextRequest) {
 
       const restaurants = rows ?? [];
       send({ type: 'keyword', keyword: keywords[0] ?? '', index: 0, total: 1 });
-      send({ type: 'log', keyword: keywords[0] ?? '', line: `블로그/카페 리뷰 없는 업체 ${restaurants.length}개 검색 시작` });
+      send({ type: 'log', keyword: keywords[0] ?? '', line: `블로그 리뷰 없는 업체 ${restaurants.length}개 검색 시작` });
 
       for (let j = 0; j < restaurants.length; j++) {
         if (closed) break;
@@ -129,19 +172,33 @@ export async function POST(req: NextRequest) {
         send({ type: 'log', keyword: keywords[0] ?? '', line: `[${j + 1}/${restaurants.length}] ${r.name}` });
 
         try {
-          // 지역 힌트: 주소에서 시/구 추출, 없으면 '창원'
           const cityHint = (() => {
             if (!r.address) return '창원';
             const m = r.address.match(/창원[시]?\s?(\S+구|\S+면|\S+동)/);
             return m ? `창원 ${m[1]}` : '창원';
           })();
 
-          // 블로그 8건 수집 (날짜 내림차순 정렬)
-          const blogResults = await naverSearch('blog', `${r.name} ${cityHint}`, 8, clientId, clientSecret);
+          const tokens = extractNameTokens(r.name);
 
-          const combined: BlogReview[] = [...blogResults]
-            .sort((a, b) => (b.date > a.date ? 1 : b.date < a.date ? -1 : 0))
-            .slice(0, 8);
+          // 후보 15건 수집 → 연관성 필터 후 상위 8건
+          const candidates = await naverSearch(
+            `${r.name} ${cityHint}`, 15, clientId, clientSecret,
+          );
+
+          // 점수 계산 + 점수 0 제외 + 점수↓ 날짜↓ 정렬
+          const scored = candidates
+            .map(rv => ({ rv, score: relevanceScore(rv, tokens) }))
+            .filter(x => x.score > 0)
+            .sort((a, b) =>
+              b.score !== a.score
+                ? b.score - a.score
+                : (b.rv.date > a.rv.date ? 1 : b.rv.date < a.rv.date ? -1 : 0),
+            );
+
+          const combined: BlogReview[] = scored.slice(0, 8).map(x => x.rv);
+
+          const skipped  = candidates.length - scored.length;
+          const note     = skipped > 0 ? ` (무관 ${skipped}건 제외)` : '';
 
           const updatePayload: Record<string, unknown> = { blog_reviews: combined };
 
@@ -154,10 +211,9 @@ export async function POST(req: NextRequest) {
             send({ type: 'log', keyword: keywords[0] ?? '', line: `  저장 오류: ${updateErr.message}`, isErr: true });
             totalErrors++;
           } else {
-            send({ type: 'log', keyword: keywords[0] ?? '', line: `  ✓ 블로그 ${blogResults.length}건 → AI 요약 생성 중...` });
+            send({ type: 'log', keyword: keywords[0] ?? '', line: `  ✓ ${combined.length}건 저장${note} → AI 요약 생성 중...` });
             totalProcessed++;
 
-            // 블로그 수집 즉시 AI 요약 생성
             try {
               const aiRes = await fetch(
                 new URL('/api/restaurants/ai-summary', req.url).toString(),
@@ -183,12 +239,10 @@ export async function POST(req: NextRequest) {
           totalErrors++;
         }
 
-        // 업체 간 딜레이 (Naver API + AI 연속 호출 방지)
         await new Promise(r => setTimeout(r, 500));
       }
 
       send({ type: 'keyword_done', keyword: keywords[0] ?? '', code: 0 });
-
       send({ type: 'done', processed: totalProcessed, errors: totalErrors });
       closed = true;
       try { controller.close(); } catch {}
