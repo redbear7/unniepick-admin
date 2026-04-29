@@ -154,24 +154,26 @@ export default function CrawlKeywordsPage() {
   // ── 단일 업체 크롤링 함수들 ──
 
   async function fetchSingleStatus() {
-    const res = await fetch('/api/crawl-restaurants/single');
-    const data = await res.json();
-    setSingleRunning(!!data.running);
-    if (data.log) {
-      setSingleLog(data.log);
-      setTimeout(() => {
-        if (singleLogPreRef.current)
-          singleLogPreRef.current.scrollTop = singleLogPreRef.current.scrollHeight;
-      }, 50);
-    }
-    if (data.result && data.result.status) {
-      setSingleResult(data.result);
-      // 완료 시 히스토리에 추가 (running → done 전환 시점)
-      if (!data.running && data.result.finishedAt) {
-        addToHistory(data.result);
+    try {
+      const res = await fetch('/api/crawl-restaurants/single');
+      const data = await res.json();
+      setSingleRunning(!!data.running);
+      if (data.log) {
+        setSingleLog(data.log);
+        setTimeout(() => {
+          if (singleLogPreRef.current)
+            singleLogPreRef.current.scrollTop = singleLogPreRef.current.scrollHeight;
+        }, 50);
       }
-    }
-    return !!data.running;
+      if (data.result && data.result.status) {
+        setSingleResult(data.result);
+        // 완료 시 히스토리에 추가 (running → done 전환 시점)
+        if (!data.running && data.result.finishedAt) {
+          addToHistory(data.result);
+        }
+      }
+      return !!data.running;
+    } catch { return false; }
   }
 
   async function runSingleCrawl() {
@@ -223,18 +225,20 @@ export default function CrawlKeywordsPage() {
   // ── 네이버 폴더 가져오기 함수들 ──────────────────────────────
 
   async function fetchFolderStatus() {
-    const res = await fetch('/api/crawl-restaurants/naver-folder');
-    const data = await res.json();
-    setFolderRunning(!!data.running);
-    if (data.log) {
-      setFolderLog(data.log);
-      setTimeout(() => {
-        if (folderLogPreRef.current)
-          folderLogPreRef.current.scrollTop = folderLogPreRef.current.scrollHeight;
-      }, 50);
-    }
-    if (data.result?.status) setFolderResult(data.result);
-    return !!data.running;
+    try {
+      const res = await fetch('/api/crawl-restaurants/naver-folder');
+      const data = await res.json();
+      setFolderRunning(!!data.running);
+      if (data.log) {
+        setFolderLog(data.log);
+        setTimeout(() => {
+          if (folderLogPreRef.current)
+            folderLogPreRef.current.scrollTop = folderLogPreRef.current.scrollHeight;
+        }, 50);
+      }
+      if (data.result?.status) setFolderResult(data.result);
+      return !!data.running;
+    } catch { return false; }
   }
 
   async function runFolderCrawl() {
@@ -278,19 +282,23 @@ export default function CrawlKeywordsPage() {
   }, [folderRunning, folderLogOpen]);
 
   async function checkVerifyStatus() {
-    const res = await fetch('/api/crawl-restaurants/verify');
-    const data = await res.json();
-    setVerifyRunning(!!data.running);
-    return !!data.running;
+    try {
+      const res = await fetch('/api/crawl-restaurants/verify');
+      const data = await res.json();
+      setVerifyRunning(!!data.running);
+      return !!data.running;
+    } catch { return false; }
   }
 
   async function fetchVerifyLog() {
-    const res = await fetch('/api/crawl-restaurants/verify/log');
-    const data = await res.json();
-    setVerifyLog(data.content || '(로그 없음 — 아직 실행하지 않았습니다)');
-    setTimeout(() => {
-      if (verifyLogPreRef.current) verifyLogPreRef.current.scrollTop = verifyLogPreRef.current.scrollHeight;
-    }, 50);
+    try {
+      const res = await fetch('/api/crawl-restaurants/verify/log');
+      const data = await res.json();
+      setVerifyLog(data.content || '(로그 없음 — 아직 실행하지 않았습니다)');
+      setTimeout(() => {
+        if (verifyLogPreRef.current) verifyLogPreRef.current.scrollTop = verifyLogPreRef.current.scrollHeight;
+      }, 50);
+    } catch { /* 폴링 중 네트워크 오류 무시 */ }
   }
 
   async function runVerify() {
@@ -896,7 +904,8 @@ function KeywordRow({
       setTimeout(() => {
         if (logPreRef.current) logPreRef.current.scrollTop = logPreRef.current.scrollHeight;
       }, 50);
-    } finally {
+    } catch { /* 폴링 중 네트워크 오류 무시 */ }
+    finally {
       setLogLoading(false);
     }
   };
