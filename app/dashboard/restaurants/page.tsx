@@ -1624,6 +1624,8 @@ export default function RestaurantsPage() {
           r={selected}
           onClose={() => setSelected(null)}
           registered={registeredIds.has(selected.id)}
+          onRegister={() => quickRegister(selected)}
+          registering={registeringId === selected.id}
         />
       )}
 
@@ -2229,7 +2231,13 @@ function RestaurantCard({
 /* Detail Modal                                                         */
 /* ------------------------------------------------------------------ */
 
-function DetailModal({ r, onClose, registered }: { r: Restaurant; onClose: () => void; registered?: boolean }) {
+function DetailModal({ r, onClose, registered, onRegister, registering }: {
+  r: Restaurant;
+  onClose: () => void;
+  registered?: boolean;
+  onRegister?: () => void;
+  registering?: boolean;
+}) {
   const sb = createClient();
   const sortReviews = (list: BlogReview[]) =>
     [...list].sort((a, b) => {
@@ -2283,7 +2291,7 @@ function DetailModal({ r, onClose, registered }: { r: Restaurant; onClose: () =>
           </div>
         )}
         <div className="p-6 space-y-5">
-          <div className="flex items-start justify-between">
+          <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="text-xl font-bold text-primary">{r.name}</h2>
@@ -2302,16 +2310,13 @@ function DetailModal({ r, onClose, registered }: { r: Restaurant; onClose: () =>
               {r.ai_summary && (
                 <p className="text-sm text-muted mt-1.5 leading-relaxed line-clamp-2">{r.ai_summary}</p>
               )}
-            </div>
-            <div className="flex items-center gap-2">
-              {registered && (
-                <span className="flex items-center gap-1 px-3 py-1.5 bg-green-500/15 text-green-400 border border-green-500/30 text-xs font-bold rounded-lg">
-                  <Check className="w-3 h-3" />
-                  등록됨
-                </span>
+              {r.crawled_at && (
+                <p className="text-[11px] text-dim mt-1">
+                  수집일: {new Date(r.crawled_at).toLocaleString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                </p>
               )}
-              <button onClick={onClose} className="text-muted hover:text-primary"><X className="w-5 h-5" /></button>
             </div>
+            <button onClick={onClose} className="text-muted hover:text-primary shrink-0"><X className="w-5 h-5" /></button>
           </div>
 
           {/* 기본 정보 */}
@@ -2336,14 +2341,6 @@ function DetailModal({ r, onClose, registered }: { r: Restaurant; onClose: () =>
                 <ExternalLink className="w-3.5 h-3.5" />
               </a>
             )}
-            {r.phone && (
-              <a
-                href={`tel:${r.phone}`}
-                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-fill-subtle hover:bg-[#FF6F0F]/15 hover:text-[#FF6F0F] border border-border-subtle rounded-lg text-sm font-medium text-secondary transition"
-              >
-                📞 전화
-              </a>
-            )}
             {r.website_url && (
               <a
                 href={r.website_url}
@@ -2353,6 +2350,24 @@ function DetailModal({ r, onClose, registered }: { r: Restaurant; onClose: () =>
               >
                 🔗 홈페이지
               </a>
+            )}
+            {onRegister && (
+              <button
+                onClick={onRegister}
+                disabled={registered || registering}
+                className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition border ${
+                  registered
+                    ? 'bg-green-500/10 border-green-500/30 text-green-400 cursor-default'
+                    : 'bg-[#FF6F0F]/15 hover:bg-[#FF6F0F]/25 border-[#FF6F0F]/40 text-[#FF6F0F] disabled:opacity-50'
+                }`}
+              >
+                {registering
+                  ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> 등록 중...</>
+                  : registered
+                  ? <><Check className="w-3.5 h-3.5" /> 등록됨</>
+                  : <><PlusCircle className="w-3.5 h-3.5" /> 가게 등록</>
+                }
+              </button>
             )}
           </div>
 
