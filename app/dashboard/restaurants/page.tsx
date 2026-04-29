@@ -1626,6 +1626,12 @@ export default function RestaurantsPage() {
           registered={registeredIds.has(selected.id)}
           onRegister={() => quickRegister(selected)}
           registering={registeringId === selected.id}
+          onUpdateReviews={(newReviews) => {
+            setRestaurants(prev => prev.map(p =>
+              p.id === selected.id ? { ...p, blog_reviews: newReviews } : p
+            ));
+            setSelected(prev => prev ? { ...prev, blog_reviews: newReviews } : prev);
+          }}
         />
       )}
 
@@ -2231,12 +2237,13 @@ function RestaurantCard({
 /* Detail Modal                                                         */
 /* ------------------------------------------------------------------ */
 
-function DetailModal({ r, onClose, registered, onRegister, registering }: {
+function DetailModal({ r, onClose, registered, onRegister, registering, onUpdateReviews }: {
   r: Restaurant;
   onClose: () => void;
   registered?: boolean;
   onRegister?: () => void;
   registering?: boolean;
+  onUpdateReviews?: (newReviews: BlogReview[]) => void;
 }) {
   const sb = createClient();
   const sortReviews = (list: BlogReview[]) =>
@@ -2262,6 +2269,8 @@ function DetailModal({ r, onClose, registered, onRegister, registering }: {
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         console.error('blog_reviews 저장 실패:', err.error ?? res.status);
+      } else {
+        onUpdateReviews?.(next);
       }
     } finally {
       setSaving(false);
