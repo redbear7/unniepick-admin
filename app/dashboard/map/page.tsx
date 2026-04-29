@@ -524,8 +524,7 @@ export default function MapPage() {
   const loadedIdsRef   = useRef<Set<string>>(new Set());                 // 뷰포트 캐시
   const fetchingVPRef  = useRef(false);
   const idleTimerRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const zoomTimerRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const zoomRef        = useRef<number>(7);                              // 현재 줌 레벨
+  const zoomRef        = useRef<number>(7);                              // 현재 줌 레벨 (map 초기 level과 일치)
 
   // 필터 상태를 ref로도 유지 (클로저에서 최신값 접근)
   const categoryRef    = useRef<string>('all');
@@ -741,8 +740,11 @@ export default function MapPage() {
       return new kakao.maps.CustomOverlay({ position: new kakao.maps.LatLng(pin.lat, pin.lng), content: html, yAnchor: 1, zIndex: 9 });
     }
 
-    // 레벨 7+ (시 전체 뷰) — 이모지 원형 도트
-    if (lv >= 7) {
+    // 레벨 8+ (시 전체 뷰) — 이모지 원형 도트만 표시 (너무 밀집)
+    // 레벨 7: 구 단위 — 짧은 상호명
+    // 레벨 5~6: 동 단위 — 상호명
+    // 레벨 ≤4: 거리 단위 — 전체 상호명
+    if (lv >= 8) {
       const blogDot = hasBlog
         ? `<div style="position:absolute;top:-2px;right:-2px;width:6px;height:6px;border-radius:50%;` +
           `background:#22C55E;border:1px solid #fff;"></div>`
@@ -758,9 +760,8 @@ export default function MapPage() {
       return new kakao.maps.CustomOverlay({ position: new kakao.maps.LatLng(pin.lat, pin.lng), content: html, zIndex: 3 });
     }
 
-    // 레벨 5~6 (동 단위) — 이모지 + 짧은 상호명 (7자 절삭)
-    // 레벨 ≤ 4 (거리 단위) — 이모지 + 전체 상호명
-    const maxLen = lv >= 5 ? 7 : 14;
+    // 레벨 7 → 5자, 레벨 5~6 → 7자, 레벨 ≤4 → 전체 상호명
+    const maxLen = lv >= 7 ? 5 : lv >= 5 ? 7 : 14;
     const displayName = pin.name.length > maxLen ? pin.name.slice(0, maxLen) + '…' : pin.name;
     const blogDot = hasBlog
       ? `<div style="width:5px;height:5px;border-radius:50%;background:#22C55E;flex-shrink:0;"></div>`
@@ -821,9 +822,10 @@ export default function MapPage() {
   []);
 
   // ── 새 수집업체 오버레이 추가 (증분) ───────────────────────────
-  const addRestOverlays = useCallback((kakao: any, map: any, newPins: RestaurantPin[], cat: string, lyr: string, sty: string, hlIds: Set<string>) => {
+  const addRestOverlays = useCallback((kakao: any, map: any, newPins: RestaurantPin[], cat: string, lyr: string, sty: string, hlIds: Set<string>, zoom?: number) => {
+    const lv = zoom ?? zoomRef.current;
     newPins.forEach(pin => {
-      const ov = makeRestOverlay(kakao, pin, hlIds);
+      const ov = makeRestOverlay(kakao, pin, hlIds, lv);
       ov.setMap(isVisible(pin, lyr, cat, sty) ? map : null);
       restOvMapRef.current.set(pin.id, { ov, pin });
     });
@@ -891,9 +893,10 @@ export default function MapPage() {
       const newRows = (data ?? []).filter(r => !loadedIdsRef.current.has(r.id));
       if (newRows.length > 0) {
         newRows.forEach(r => loadedIdsRef.current.add(r.id));
-        const kakao   = (window as any).kakao;
-        const newPins = newRows.map(toRestPin);
-        addRestOverlays(kakao, map, newPins, categoryRef.current, layerRef.current, styleRef.current, hlIdsRef.current);
+        const kakao      = (window as any).kakao;
+        const newPins    = newRows.map(toRestPin);
+        const currentZoom = map.getLevel();          // 항상 실시간 줌 레벨 사용
+        addRestOverlays(kakao, map, newPins, categoryRef.current, layerRef.current, styleRef.current, hlIdsRef.current, currentZoom);
         setRestaurants(prev => [...prev, ...newPins]);
       }
     } catch (e) {
@@ -931,16 +934,19 @@ export default function MapPage() {
 
         kakao.maps.event.addListener(map, 'click', closePopup);
 
-        // idle 이벤트 → 뷰포트 변경 시 새 영역 fetch (디바운스 400ms)
+        // idle 이벤트 → 줌 변경 감지 + 오버레이 재빌드 + 뷰포트 fetch (디바운스 400ms)
+        // idle은 pan/zoom 애니메이션 완전 종료 후 발생 → map.getLevel() 항상 최신값
         kakao.maps.event.addListener(map, 'idle', () => {
           if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
-          idleTimerRef.current = setTimeout(() => fetchViewport(map), 400);
-        });
-
-        // zoom_changed → 상호명 표시 방식 변경 (디바운스 300ms)
-        kakao.maps.event.addListener(map, 'zoom_changed', () => {
-          if (zoomTimerRef.current) clearTimeout(zoomTimerRef.current);
-          zoomTimerRef.current = setTimeout(() => refreshRestOverlays(kakao, map), 300);
+          idleTimerRef.current = setTimeout(async () => {
+            const currentZoom = map.getLevel();
+            if (currentZoom !== zoomRef.current) {
+              // 줌 레벨이 바뀌었으면 모든 오버레이를 새 줌으로 재빌드 (상호명 표시 여부 갱신)
+              refreshRestOverlays(kakao, map);
+            }
+            // 새 뷰포트 데이터 fetch (증분)
+            await fetchViewport(map);
+          }, 400);
         });
 
         // 초기 파트너 칩 그리기
