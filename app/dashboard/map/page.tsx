@@ -478,15 +478,26 @@ function AiResultPanel({
 
 // ── 메인 컴포넌트 ───────────────────────────────────────────────
 export default function MapPage() {
-  const containerRef  = useRef<HTMLDivElement>(null);
-  const mapRef        = useRef<any>(null);
-  const overlaysRef   = useRef<any[]>([]);
-  const clustererRef  = useRef<any>(null);
-  const popupRef      = useRef<any>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const mapRef       = useRef<any>(null);
+  const popupRef     = useRef<any>(null);
+
+  // ── 오버레이 관리 (재빌드 없이 증분 추가) ─────────────────────
+  const partnerOvsRef  = useRef<any[]>([]);                              // 파트너 칩
+  const restOvMapRef   = useRef<Map<string, { ov: any; pin: RestaurantPin }>>(new Map()); // id → overlay
+  const loadedIdsRef   = useRef<Set<string>>(new Set());                 // 뷰포트 캐시
+  const fetchingVPRef  = useRef(false);
+  const idleTimerRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 필터 상태를 ref로도 유지 (클로저에서 최신값 접근)
+  const categoryRef    = useRef<string>('all');
+  const layerRef       = useRef<'partner' | 'all'>('all');
+  const hlIdsRef       = useRef<Set<string>>(new Set());
 
   const [partners,     setPartners]     = useState<PartnerPin[]>([]);
-  const [restaurants,  setRestaurants]  = useState<RestaurantPin[]>([]);
+  const [restaurants,  setRestaurants]  = useState<RestaurantPin[]>([]);  // 뷰포트 누적
   const [loading,      setLoading]      = useState(true);
+  const [vpLoading,    setVpLoading]    = useState(false);
   const [mapReady,     setMapReady]     = useState(false);
   const [error,        setError]        = useState('');
   const [category,     setCategory]     = useState<string>('all');
@@ -505,6 +516,11 @@ export default function MapPage() {
   const aiAbortRef    = useRef<AbortController | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const timeSuggestions = useMemo(() => getTimeSuggestions(), []);
+
+  // ref ↔ state 동기화
+  useEffect(() => { categoryRef.current = category; }, [category]);
+  useEffect(() => { layerRef.current = layer; }, [layer]);
+  useEffect(() => { hlIdsRef.current = highlightIds; }, [highlightIds]);
 
   // ── AI 검색 ───────────────────────────────────────────────────
   const doAiSearch = useCallback(async (q: string) => {
@@ -585,7 +601,9 @@ export default function MapPage() {
 
   // AI 결과에서 핀 선택 → 지도 이동 + 블로그 패널 열기
   const selectAiResult = useCallback((restaurantId: string) => {
-    const pin = restaurants.find(r => r.id === restaurantId);
+    // restOvMapRef에서 먼저 찾고, 없으면 restaurants state에서 찾음
+    const entry = restOvMapRef.current.get(restaurantId);
+    const pin   = entry?.pin ?? restaurants.find(r => r.id === restaurantId);
     if (!pin || !mapRef.current) return;
     const kakao = (window as any).kakao;
     if (kakao?.maps) {
@@ -595,42 +613,16 @@ export default function MapPage() {
     setSelectedPin(pin);
   }, [restaurants]);
 
-  // ── 데이터 로드 ────────────────────────────────────────────────
+  // ── 파트너 데이터 로드 (최초 1회) ────────────────────────────
   useEffect(() => {
     const sb = createClient();
-
-    // Supabase 기본 limit=1000 우회 — 전체 페이지네이션
-    async function fetchAllRestaurants() {
-      const PAGE = 1000;
-      let all: any[] = [];
-      let from = 0;
-      while (true) {
-        const { data, error } = await sb
-          .from('restaurants')
-          .select('id, name, kakao_category, unniepick_category, address, phone, latitude, longitude, kakao_place_url, blog_reviews, instagram_url, ai_summary')
-          .not('latitude', 'is', null).not('longitude', 'is', null)
-          .range(from, from + PAGE - 1);
-        if (error || !data?.length) break;
-        all = all.concat(data);
-        if (data.length < PAGE) break;   // 마지막 페이지
-        from += PAGE;
-      }
-      return all;
-    }
-
     (async () => {
-      const [
-        { data: storeData },
-        { data: couponData },
-        restData,
-      ] = await Promise.all([
+      const [{ data: storeData }, { data: couponData }] = await Promise.all([
         sb.from('stores')
           .select('id, name, category, address, is_active, latitude, longitude, naver_place_id, instagram_url, ai_summary')
           .not('latitude', 'is', null).not('longitude', 'is', null),
         sb.from('coupons').select('store_id, is_active, expires_at'),
-        fetchAllRestaurants(),
       ]);
-
       const now = new Date();
       const couponMap = new Map<string, { total: number; active: number }>();
       (couponData ?? []).forEach((c: any) => {
@@ -640,10 +632,8 @@ export default function MapPage() {
           active: prev.active + (c.is_active && new Date(c.expires_at) >= now ? 1 : 0),
         });
       });
-
       setPartners((storeData ?? []).map((s: any) => ({
-        type: 'partner',
-        id: s.id, name: s.name, category: s.category,
+        type: 'partner', id: s.id, name: s.name, category: s.category,
         address: s.address, is_active: s.is_active,
         lat: s.latitude, lng: s.longitude,
         activeCoupons: couponMap.get(s.id)?.active ?? 0,
@@ -652,28 +642,6 @@ export default function MapPage() {
         instagram_url:  s.instagram_url  ?? null,
         ai_summary:     s.ai_summary     ?? null,
       })));
-
-      setRestaurants(restData.map((r: any) => {
-        let blogReviews: BlogReview[] = [];
-        try {
-          blogReviews = Array.isArray(r.blog_reviews)
-            ? r.blog_reviews
-            : JSON.parse(r.blog_reviews ?? '[]');
-        } catch {}
-        return {
-          type: 'restaurant',
-          id: r.id, name: r.name,
-          kakao_category: r.kakao_category,
-          unniepick_category: r.unniepick_category,
-          address: r.address, phone: r.phone,
-          lat: r.latitude, lng: r.longitude,
-          kakao_place_url: r.kakao_place_url,
-          blog_reviews: blogReviews,
-          instagram_url: r.instagram_url ?? null,
-          ai_summary:    r.ai_summary    ?? null,
-        };
-      }));
-
       setLoading(false);
     })();
   }, []);
@@ -684,41 +652,73 @@ export default function MapPage() {
     popupRef.current = null;
   }, []);
 
-  // ── 오버레이 빌드 ───────────────────────────────────────────────
-  const buildOverlays = useCallback((
-    kakao: any, map: any,
-    pts: PartnerPin[], rests: RestaurantPin[],
-    cat: string, lyr: string,
-    hlIds: Set<string>,
-  ) => {
-    overlaysRef.current.forEach(o => o.setMap(null));
-    overlaysRef.current = [];
-    clustererRef.current?.clear();
-    closePopup();
-
-    (window as any).__mapClose    = closePopup;
-    (window as any).__mapPinClick = (id: string, type: 'partner' | 'restaurant') => {
-      if (type === 'partner') {
-        const p = pts.find(x => x.id === id);
-        if (p) setSelectedPin(p);
-      } else {
-        const r = rests.find(x => x.id === id);
-        if (r) setSelectedPin(r);
-      }
+  // ── row → RestaurantPin 변환 ────────────────────────────────────
+  const toRestPin = useCallback((r: any): RestaurantPin => {
+    let blogReviews: BlogReview[] = [];
+    try {
+      blogReviews = Array.isArray(r.blog_reviews)
+        ? r.blog_reviews
+        : JSON.parse(r.blog_reviews ?? '[]');
+    } catch {}
+    return {
+      type: 'restaurant', id: r.id, name: r.name,
+      kakao_category: r.kakao_category,
+      unniepick_category: r.unniepick_category,
+      address: r.address, phone: r.phone,
+      lat: r.latitude, lng: r.longitude,
+      kakao_place_url: r.kakao_place_url,
+      blog_reviews: blogReviews,
+      instagram_url: r.instagram_url ?? null,
+      ai_summary:    r.ai_summary    ?? null,
     };
+  }, []);
 
-    // ── 파트너 칩 ──────────────────────────────────────────────
-    const filteredPartners = pts.filter(p => cat === 'all' || p.category === cat);
+  // ── 수집 업체 오버레이 생성 (단일) ─────────────────────────────
+  const makeRestOverlay = useCallback((kakao: any, pin: RestaurantPin, hlIds: Set<string>) => {
+    const isHL  = hlIds.has(pin.id);
+    const color = getCatColor(pin.unniepick_category);
+    const hasBlog = pin.blog_reviews.length > 0;
+    let html: string;
+    if (isHL) {
+      html =
+        `<div onclick="window.__mapPinClick('${pin.id}','restaurant')" ` +
+        `style="display:flex;flex-direction:column;align-items:center;cursor:pointer;">` +
+          `<div style="display:flex;align-items:center;gap:3px;background:#FF6F0F;border-radius:16px;` +
+          `padding:3px 8px;box-shadow:0 2px 10px rgba(255,111,15,0.6);` +
+          `font-family:-apple-system,BlinkMacSystemFont,sans-serif;">` +
+            `<span style="font-size:9px;color:#fff;">✨</span>` +
+            `<span style="font-size:11px;font-weight:800;color:#fff;white-space:nowrap;` +
+            `max-width:90px;overflow:hidden;text-overflow:ellipsis;">${esc(pin.name)}</span>` +
+          `</div>` +
+          `<div style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;` +
+          `border-top:7px solid #FF6F0F;margin-top:-1px;"></div>` +
+        `</div>`;
+    } else if (hasBlog) {
+      html = `<div onclick="window.__mapPinClick('${pin.id}','restaurant')" ` +
+        `style="width:12px;height:12px;border-radius:3px;background:${color};` +
+        `border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.35);cursor:pointer;"></div>`;
+    } else {
+      html = `<div onclick="window.__mapPinClick('${pin.id}','restaurant')" ` +
+        `style="width:10px;height:10px;border-radius:50%;background:${color};` +
+        `border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.3);cursor:pointer;"></div>`;
+    }
+    return new kakao.maps.CustomOverlay({
+      position: new kakao.maps.LatLng(pin.lat, pin.lng),
+      content: html, zIndex: isHL ? 8 : 3,
+    });
+  }, []);
 
-    filteredPartners.forEach(p => {
-      const color    = p.activeCoupons > 0 ? '#FF6F0F' : p.is_active ? '#22C55E' : '#4B5563';
-      const hasBlog  = !!(p.naver_place_id || p.instagram_url);
-      const badge    = p.activeCoupons > 0
-        ? ` <span style="background:#FF6F0F;color:#fff;border-radius:999px;padding:1px 6px;font-size:10px;font-weight:800;">${p.activeCoupons}</span>`
+  // ── 파트너 칩 재빌드 ────────────────────────────────────────────
+  const rebuildPartners = useCallback((kakao: any, map: any, pts: PartnerPin[], cat: string) => {
+    partnerOvsRef.current.forEach(o => o.setMap(null));
+    partnerOvsRef.current = [];
+    pts.filter(p => cat === 'all' || p.category === cat).forEach(p => {
+      const color   = p.activeCoupons > 0 ? '#FF6F0F' : p.is_active ? '#22C55E' : '#4B5563';
+      const hasBlog = !!(p.naver_place_id || p.instagram_url);
+      const badge   = p.activeCoupons > 0
+        ? `<span style="background:#FF6F0F;color:#fff;border-radius:999px;padding:1px 6px;font-size:10px;font-weight:800;">${p.activeCoupons}</span>`
         : '';
-      const blogIcon = hasBlog
-        ? `<span style="font-size:10px;margin-left:2px;" title="블로그 리뷰">📝</span>`
-        : '';
+      const blogIcon = hasBlog ? `<span style="font-size:10px;margin-left:2px;">📝</span>` : '';
       const html =
         `<div onclick="window.__mapPinClick('${p.id}','partner')" style="display:flex;flex-direction:column;align-items:center;cursor:pointer;">` +
           `<div style="display:flex;align-items:center;gap:4px;background:#fff;border-radius:20px;` +
@@ -730,110 +730,146 @@ export default function MapPage() {
           `<div style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;` +
           `border-top:7px solid ${color};margin-top:-1px;"></div>` +
         `</div>`;
-      const ov = new kakao.maps.CustomOverlay({
-        position: new kakao.maps.LatLng(p.lat, p.lng),
-        content: html, yAnchor: 1, zIndex: 10,
-      });
+      const ov = new kakao.maps.CustomOverlay({ position: new kakao.maps.LatLng(p.lat, p.lng), content: html, yAnchor: 1, zIndex: 10 });
       ov.setMap(map);
-      overlaysRef.current.push(ov);
+      partnerOvsRef.current.push(ov);
     });
+  }, []);
 
-    // ── 레스토랑 마커 ────────────────────────────────────────────
-    if (lyr === 'all') {
-      const filteredRests = rests.filter(r => cat === 'all' || r.unniepick_category === cat);
+  // ── 새 수집업체 오버레이 추가 (증분) ───────────────────────────
+  const addRestOverlays = useCallback((kakao: any, map: any, newPins: RestaurantPin[], cat: string, lyr: string, hlIds: Set<string>) => {
+    newPins.forEach(pin => {
+      const ov = makeRestOverlay(kakao, pin, hlIds);
+      const visible = lyr === 'all' && (cat === 'all' || pin.unniepick_category === cat);
+      ov.setMap(visible ? map : null);
+      restOvMapRef.current.set(pin.id, { ov, pin });
+    });
+  }, [makeRestOverlay]);
 
-      const markers = filteredRests.map(r => {
-        const isHighlighted = hlIds.has(r.id);
-        const color   = getCatColor(r.unniepick_category);
-        const hasBlog = r.blog_reviews.length > 0;
-
-        let html: string;
-        if (isHighlighted) {
-          // AI 추천 핀 — 큰 라벨 칩
-          html =
-            `<div onclick="window.__mapPinClick('${r.id}','restaurant')" ` +
-            `style="display:flex;flex-direction:column;align-items:center;cursor:pointer;">` +
-              `<div style="display:flex;align-items:center;gap:3px;background:#FF6F0F;border-radius:16px;` +
-              `padding:3px 8px;box-shadow:0 2px 10px rgba(255,111,15,0.6);` +
-              `font-family:-apple-system,BlinkMacSystemFont,sans-serif;">` +
-                `<span style="font-size:9px;font-weight:900;color:#fff;">✨</span>` +
-                `<span style="font-size:11px;font-weight:800;color:#fff;white-space:nowrap;` +
-                `max-width:90px;overflow:hidden;text-overflow:ellipsis;">${esc(r.name)}</span>` +
-              `</div>` +
-              `<div style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;` +
-              `border-top:7px solid #FF6F0F;margin-top:-1px;"></div>` +
-            `</div>`;
-        } else if (hasBlog) {
-          html =
-            `<div onclick="window.__mapPinClick('${r.id}','restaurant')" ` +
-            `style="width:12px;height:12px;border-radius:3px;background:${color};` +
-            `border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.35);cursor:pointer;" title="블로그 리뷰 있음"></div>`;
-        } else {
-          html =
-            `<div onclick="window.__mapPinClick('${r.id}','restaurant')" ` +
-            `style="width:10px;height:10px;border-radius:50%;background:${color};` +
-            `border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.3);cursor:pointer;"></div>`;
-        }
-
-        return new kakao.maps.CustomOverlay({
-          position: new kakao.maps.LatLng(r.lat, r.lng),
-          content: html,
-          zIndex: isHighlighted ? 8 : 3,
-        });
-      });
-
-      markers.forEach(m => { m.setMap(map); overlaysRef.current.push(m); });
+  // ── 필터 변경 시 기존 오버레이 show/hide ───────────────────────
+  const applyRestFilter = useCallback((map: any, cat: string, lyr: string, hlIds: Set<string>) => {
+    for (const [, entry] of restOvMapRef.current) {
+      const visible = lyr === 'all' && (cat === 'all' || entry.pin.unniepick_category === cat);
+      entry.ov.setMap(visible ? map : null);
     }
-  }, [closePopup]);
+  }, []);
+
+  // ── AI 하이라이트 변경: 해당 핀만 재생성 ──────────────────────
+  const applyHighlight = useCallback((kakao: any, map: any, hlIds: Set<string>, lyr: string, cat: string) => {
+    for (const [id, entry] of restOvMapRef.current) {
+      const wasHL = entry.ov.getZIndex?.() === 8;
+      const isHL  = hlIds.has(id);
+      if (wasHL !== isHL) {
+        entry.ov.setMap(null);
+        const newOv = makeRestOverlay(kakao, entry.pin, hlIds);
+        const visible = lyr === 'all' && (cat === 'all' || entry.pin.unniepick_category === cat);
+        newOv.setMap(visible ? map : null);
+        restOvMapRef.current.set(id, { ov: newOv, pin: entry.pin });
+      }
+    }
+  }, [makeRestOverlay]);
+
+  // ── 뷰포트 기반 수집업체 fetch ─────────────────────────────────
+  const fetchViewport = useCallback(async (map: any) => {
+    if (fetchingVPRef.current) return;
+    fetchingVPRef.current = true;
+    setVpLoading(true);
+    try {
+      const sb     = createClient();
+      const bounds = map.getBounds();
+      const sw     = bounds.getSouthWest();
+      const ne     = bounds.getNorthEast();
+      // 뷰포트보다 약간 넓게 (20%) 미리 로드
+      const latPad = (ne.getLat() - sw.getLat()) * 0.2;
+      const lngPad = (ne.getLng() - sw.getLng()) * 0.2;
+
+      const { data } = await sb.from('restaurants')
+        .select('id, name, kakao_category, unniepick_category, address, phone, latitude, longitude, kakao_place_url, blog_reviews, instagram_url, ai_summary')
+        .gte('latitude',  sw.getLat() - latPad)
+        .lte('latitude',  ne.getLat() + latPad)
+        .gte('longitude', sw.getLng() - lngPad)
+        .lte('longitude', ne.getLng() + lngPad)
+        .not('latitude', 'is', null);
+
+      const newRows = (data ?? []).filter(r => !loadedIdsRef.current.has(r.id));
+      if (newRows.length > 0) {
+        newRows.forEach(r => loadedIdsRef.current.add(r.id));
+        const kakao   = (window as any).kakao;
+        const newPins = newRows.map(toRestPin);
+        addRestOverlays(kakao, map, newPins, categoryRef.current, layerRef.current, hlIdsRef.current);
+        setRestaurants(prev => [...prev, ...newPins]);
+      }
+    } catch (e) {
+      console.error('[fetchViewport]', e);
+    } finally {
+      fetchingVPRef.current = false;
+      setVpLoading(false);
+    }
+  }, [toRestPin, addRestOverlays]);
 
   // ── 카카오맵 초기화 ────────────────────────────────────────────
   useEffect(() => {
     if (loading || !containerRef.current) return;
     let cancelled = false;
-
     (async () => {
       try {
         await loadKakaoSDK();
         if (cancelled || !containerRef.current) return;
-
         const kakao = (window as any).kakao;
-        const map = new kakao.maps.Map(containerRef.current, {
+        const map   = new kakao.maps.Map(containerRef.current, {
           center: new kakao.maps.LatLng(35.2285, 128.6811),
           level: 7,
         });
         mapRef.current = map;
+
+        // 핀 클릭 전역 핸들러 등록
+        (window as any).__mapPinClick = (id: string, type: 'partner' | 'restaurant') => {
+          if (type === 'partner') {
+            setSelectedPin(s => partners.find(x => x.id === id) ?? s);
+          } else {
+            const entry = restOvMapRef.current.get(id);
+            if (entry) setSelectedPin(entry.pin);
+          }
+        };
+
         kakao.maps.event.addListener(map, 'click', closePopup);
 
-        if (kakao.maps.MarkerClusterer) {
-          clustererRef.current = new kakao.maps.MarkerClusterer({
-            map, averageCenter: true, minLevel: 5,
-            disableClickZoom: false,
-            styles: [{
-              width: '36px', height: '36px', background: 'rgba(107,114,128,0.85)',
-              borderRadius: '50%', color: '#fff', textAlign: 'center',
-              lineHeight: '36px', fontSize: '12px', fontWeight: '700',
-              border: '2px solid #fff', boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
-            }],
-          });
-        }
+        // idle 이벤트 → 뷰포트 변경 시 새 영역 fetch (디바운스 400ms)
+        kakao.maps.event.addListener(map, 'idle', () => {
+          if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+          idleTimerRef.current = setTimeout(() => fetchViewport(map), 400);
+        });
 
-        buildOverlays(kakao, map, partners, restaurants, category, layer, highlightIds);
+        // 초기 파트너 칩 그리기
+        rebuildPartners(kakao, map, partners, categoryRef.current);
+        // 초기 뷰포트 fetch
+        await fetchViewport(map);
+
         if (!cancelled) setMapReady(true);
       } catch (e: any) {
         if (!cancelled) setError(e.message ?? '카카오맵 로드 실패');
       }
     })();
-
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading]);
 
+  // ── 파트너 / 카테고리 / 레이어 변경 ────────────────────────────
   useEffect(() => {
     if (!mapRef.current) return;
     const kakao = (window as any).kakao;
     if (!kakao?.maps) return;
-    buildOverlays(kakao, mapRef.current, partners, restaurants, category, layer, highlightIds);
-  }, [category, layer, partners, restaurants, highlightIds, buildOverlays]);
+    rebuildPartners(kakao, mapRef.current, partners, category);
+    applyRestFilter(mapRef.current, category, layer, highlightIds);
+  }, [category, layer, partners, rebuildPartners, applyRestFilter, highlightIds]);
+
+  // ── AI 하이라이트 변경 ─────────────────────────────────────────
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const kakao = (window as any).kakao;
+    if (!kakao?.maps) return;
+    applyHighlight(kakao, mapRef.current, highlightIds, layer, category);
+  }, [highlightIds, applyHighlight, layer, category]);
 
   const partnerActive = partners.filter(p => p.is_active).length;
   const partnerCoupon = partners.filter(p => p.activeCoupons > 0).length;
@@ -852,7 +888,10 @@ export default function MapPage() {
               <span>운영중 <b className="text-[#22C55E]">{partnerActive}</b></span>
               <span>쿠폰 <b className="text-[#FF6F0F]">{partnerCoupon}</b></span>
               <span className="text-border-main">|</span>
-              <span>수집 업체 <b className="text-tertiary">{restCount}</b></span>
+              <span className="flex items-center gap-1">
+                수집 업체 <b className="text-tertiary">{restCount}</b>
+                {vpLoading && <Loader2 size={10} className="animate-spin text-[#FF6F0F]" />}
+              </span>
             </div>
           )}
         </div>
