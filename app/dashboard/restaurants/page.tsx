@@ -2284,17 +2284,24 @@ function DetailModal({ r, onClose, registered }: { r: Restaurant; onClose: () =>
         )}
         <div className="p-6 space-y-5">
           <div className="flex items-start justify-between">
-            <div>
-              <h2 className="text-xl font-bold text-primary flex items-center gap-2 flex-wrap">
-                {r.name}
-                {r.is_new_open && <span className="px-2 py-0.5 bg-green-500/15 text-green-400 text-xs rounded-full">NEW</span>}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-xl font-bold text-primary">{r.name}</h2>
+                {r.category && (
+                  <span className="px-2 py-0.5 bg-fill-subtle border border-border-subtle text-muted text-xs rounded-full shrink-0">
+                    {r.category}
+                  </span>
+                )}
+                {r.is_new_open && <span className="px-2 py-0.5 bg-green-500/15 text-green-400 text-xs rounded-full shrink-0">NEW</span>}
                 {registered && (
-                  <span className="flex items-center gap-1 px-2 py-0.5 bg-green-500/15 text-green-400 text-xs rounded-full border border-green-500/25">
+                  <span className="flex items-center gap-1 px-2 py-0.5 bg-green-500/15 text-green-400 text-xs rounded-full border border-green-500/25 shrink-0">
                     <Check className="w-3 h-3" /> 등록됨
                   </span>
                 )}
-              </h2>
-              <p className="text-sm text-muted mt-1">{r.category}</p>
+              </div>
+              {r.ai_summary && (
+                <p className="text-sm text-muted mt-1.5 leading-relaxed line-clamp-2">{r.ai_summary}</p>
+              )}
             </div>
             <div className="flex items-center gap-2">
               {registered && (
@@ -2335,16 +2342,6 @@ function DetailModal({ r, onClose, registered }: { r: Restaurant; onClose: () =>
                 className="flex items-center justify-center gap-2 px-4 py-2.5 bg-fill-subtle hover:bg-[#FF6F0F]/15 hover:text-[#FF6F0F] border border-border-subtle rounded-lg text-sm font-medium text-secondary transition"
               >
                 📞 전화
-              </a>
-            )}
-            {r.instagram_url && (
-              <a
-                href={r.instagram_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-pink-500/10 hover:bg-pink-500/20 border border-pink-500/30 rounded-lg text-sm font-medium text-pink-400 transition"
-              >
-                📸 인스타그램
               </a>
             )}
             {r.website_url && (
