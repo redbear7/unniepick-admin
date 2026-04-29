@@ -2304,9 +2304,9 @@ function DetailModal({ r, onClose, registered, onRegister, registering, onUpdate
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="text-xl font-bold text-primary">{r.name}</h2>
-                {r.category && (
+                {((r as any).unniepick_category || r.category) && (
                   <span className="px-2 py-0.5 bg-fill-subtle border border-border-subtle text-muted text-xs rounded-full shrink-0">
-                    {r.category}
+                    {(r as any).unniepick_category || r.category}
                   </span>
                 )}
                 {r.is_new_open && <span className="px-2 py-0.5 bg-green-500/15 text-green-400 text-xs rounded-full shrink-0">NEW</span>}
