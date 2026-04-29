@@ -108,15 +108,15 @@ async function rankCandidates(
   if (!candidates.length) return [];
 
   const list = candidates.slice(0, 15).map((r, i) => {
-    const blogCount = Array.isArray(r.blog_reviews) ? r.blog_reviews.length : 0;
+    const hasBlog   = Array.isArray(r.blog_reviews) && r.blog_reviews.length > 0;
     const hasCoupon = (r.discovery_score ?? 0) >= 1000;
-    return `[${i + 1}] id:${r.id} | ${r.name} | ${r.unniepick_category ?? '기타'}${r.unniepick_style ? ' / ' + r.unniepick_style : ''} | ★${r.rating ?? '?'} 리뷰${r.visitor_review_count ?? 0}건 블로그${blogCount}건${hasCoupon ? ' 🎫쿠폰있음' : ''} | ${r.address ?? '주소미상'}${r.ai_summary ? ' | AI: ' + r.ai_summary.slice(0, 60) : ''}`;
+    return `[${i + 1}] id:${r.id} | ${r.name} | ${r.unniepick_category ?? '기타'}${r.unniepick_style ? ' / ' + r.unniepick_style : ''}${hasCoupon ? ' 🎫쿠폰있음' : ''}${hasBlog ? ' 📝블로그리뷰있음' : ''} | ${r.address ?? '주소미상'}${r.ai_summary ? ' | AI: ' + r.ai_summary.slice(0, 60) : ''}`;
   }).join('\n');
 
   const prompt = `사용자 요청: "${filter.rewritten_intent}"
 
 아래 맛집 중 가장 잘 맞는 3~5개를 골라 추천해줘.
-쿠폰이 있는 업체(🎫)와 블로그 리뷰가 많은 업체를 우선 고려해줘.
+쿠폰이 있는 업체(🎫)와 블로그 리뷰가 있는 업체를 우선 고려해줘.
 
 ${list}
 
@@ -125,8 +125,8 @@ JSON 배열로만 응답 (다른 텍스트 없이):
   {
     "rank": 1,
     "restaurant_id": "id값 그대로",
-    "why": "왜 이 곳이 잘 맞는지 2~3문장 (구체적으로, 쿠폰/블로그/AI요약 언급 가능)",
-    "matched_signals": ["매칭 근거 2~4개 배열, 예: '블로그 리뷰 8건', '쿠폰 보유', '상남동 위치']"
+    "why": "왜 이 곳이 잘 맞는지 1~2문장. 리뷰 건수·평점 수치는 절대 언급 금지. 음식 특징, 분위기, 위치, 쿠폰 여부 위주로.",
+    "matched_signals": ["매칭 근거 2~3개, 예: '쿠폰 보유', '상남동 위치', '회식 분위기 적합'"]
   }
 ]`;
 
