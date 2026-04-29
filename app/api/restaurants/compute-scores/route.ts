@@ -62,7 +62,7 @@ export async function POST() {
   while (true) {
     const { data, error } = await sb
       .from('restaurants')
-      .select('id, naver_place_id, kakao_place_id, phone, image_url, menu_items, ai_summary, blog_reviews, operating_status, tags, crawled_at')
+      .select('id, naver_place_id, kakao_place_id, image_url, ai_summary, blog_reviews, tags, crawled_at')
       .range(page * PAGE, (page + 1) * PAGE - 1);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -97,16 +97,6 @@ export async function POST() {
 
       // 이미지
       if (r.image_url) score += 30;
-
-      // 메뉴
-      const hasMenu = Array.isArray(r.menu_items) ? r.menu_items.length > 0 : !!r.menu_items;
-      if (hasMenu) score += 20;
-
-      // 전화번호
-      if (r.phone) score += 10;
-
-      // 영업 상태
-      if (r.operating_status === 'active') score += 30;
 
       // 신규오픈 태그
       const tags = Array.isArray(r.tags) ? r.tags : [];
