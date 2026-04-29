@@ -24,6 +24,27 @@ function adminSb() {
   );
 }
 
+/**
+ * AI가 반환한 텍스트에서 JSON을 안전하게 파싱.
+ * DeepSeek 등 LLM이 한글 키를 무따옴표로 쓰거나 후행 쉼표를 남기는 경우 자동 수정.
+ */
+function safeParseJson(raw: string): Record<string, unknown> | null {
+  // 1차: 그대로 파싱
+  try { return JSON.parse(raw) as Record<string, unknown>; } catch { /* continue */ }
+
+  // 2차: 공통 오류 수정 후 재시도
+  const fixed = raw
+    .replace(/,\s*([}\]])/g, '$1')                                              // 후행 쉼표 제거
+    .replace(/([{,]\s*)([가-힣a-zA-Z_$][가-힣a-zA-Z0-9_$]*)\s*:/g, '$1"$2":'); // 무따옴표 키
+  try { return JSON.parse(fixed) as Record<string, unknown>; } catch { /* continue */ }
+
+  // 3차: 줄바꿈·탭 정규화 후 재시도
+  const normalized = fixed.replace(/[\r\n\t]/g, ' ').replace(/\s{2,}/g, ' ');
+  try { return JSON.parse(normalized) as Record<string, unknown>; } catch { /* continue */ }
+
+  return null;
+}
+
 function toArr<T>(v: unknown): T[] {
   if (Array.isArray(v)) return v as T[];
   if (typeof v === 'string') {
@@ -92,7 +113,7 @@ function buildPrompt(r: Record<string, unknown>): string {
 - 네이버·카카오 플랫폼명 언급
 - "정보 없음" 표현을 결과에 포함하는 것
 
-다음 JSON 형식으로만 응답. 설명 없이 JSON만:
+반드시 아래 JSON 형식만 출력. 마크다운·설명·코드블록 없이 JSON 객체만. 모든 키는 반드시 큰따옴표("") 사용:
 {
   "한줄요약": "40자 이내 — 시그니처 메뉴·맛·분위기가 생생하게 느껴지는 한 문장",
   "분위기태그": ["태그1", "태그2", "태그3"],
@@ -233,14 +254,21 @@ export async function POST(req: NextRequest) {
     const text      = await callOpenRouter(prompt, apiKey);
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
-      const parsed = JSON.parse(jsonMatch[0]);
-      summary  = parsed.한줄요약 ?? '';
-      features = {
-        분위기태그: parsed.분위기태그 ?? [],
-        추천메뉴:   parsed.추천메뉴   ?? [],
-        방문팁:     parsed.방문팁     ?? '',
-        특징키워드: parsed.특징키워드 ?? [],
-      };
+      const parsed = safeParseJson(jsonMatch[0]);
+      if (parsed) {
+        summary  = String(parsed.한줄요약 ?? '');
+        features = {
+          분위기태그: Array.isArray(parsed.분위기태그) ? parsed.분위기태그 as string[] : [],
+          추천메뉴:   Array.isArray(parsed.추천메뉴)   ? parsed.추천메뉴   as string[] : [],
+          방문팁:     String(parsed.방문팁 ?? ''),
+          특징키워드: Array.isArray(parsed.특징키워드) ? parsed.특징키워드 as string[] : [],
+        };
+      } else {
+        // JSON 파싱 완전 실패 → 정규식으로 한줄요약만 구조
+        const m = text.match(/["']?한줄요약["']?\s*:\s*["']([^"'\n]{4,60})["']/);
+        if (m) summary = m[1];
+        console.warn('[ai-summary] JSON 파싱 실패, 한줄요약만 추출:', summary || '없음');
+      }
     }
   } catch (e) {
     const msg = String(e);
