@@ -4,7 +4,7 @@
  * → 브레인스토밍 메시지를 마인드맵 JSON으로 정리 (Gemini)
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenAI } from '@google/genai';
+import { openrouterChat } from '@/lib/openrouter';
 import { createClient } from '@supabase/supabase-js';
 
 function sb() {
@@ -67,9 +67,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: '정리할 내용이 없습니다' }, { status: 400 });
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return NextResponse.json({ error: 'GEMINI_API_KEY 미설정' }, { status: 500 });
-
   // user + ai 메시지 모두 포함 — AI 분석 내용까지 마인드맵에 반영
   const brainstorm = messages
     .map(m => {
@@ -78,15 +75,11 @@ export async function POST(req: NextRequest) {
     })
     .join('\n\n');
 
-  const ai = new GoogleGenAI({ apiKey });
-
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: [{ role: 'user', parts: [{ text: `${ORGANIZE_PROMPT}\n\n---브레인스토밍 내용---\n${brainstorm}` }] }],
-    });
-
-    const raw = response.text ?? '';
+    const raw = await openrouterChat(
+      `${ORGANIZE_PROMPT}\n\n---브레인스토밍 내용---\n${brainstorm}`,
+      { temperature: 0.5, maxTokens: 2048 },
+    );
     // JSON 블록 추출 (```json ... ``` 혹은 순수 JSON)
     const jsonMatch = raw.match(/```json\s*([\s\S]*?)```/) ?? raw.match(/(\{[\s\S]*\})/);
     const jsonStr = jsonMatch ? jsonMatch[1].trim() : raw.trim();

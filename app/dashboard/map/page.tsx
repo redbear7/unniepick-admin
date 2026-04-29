@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase';
 import { loadKakaoSDK } from '@/lib/kakaoMap';
-import { X, Loader2, ChevronLeft } from 'lucide-react';
+import { X, Loader2, ChevronLeft, Search, Sparkles } from 'lucide-react';
 import BlogViewerModal from '@/components/BlogViewerModal';
 
 // ── 타입 ──────────────────────────────────────────────────────
@@ -49,6 +49,17 @@ interface RestaurantPin {
 }
 
 type MapPin = PartnerPin | RestaurantPin;
+
+interface AiResult {
+  rank: number;
+  restaurant_id: string;
+  name: string;
+  category: string;
+  rating: number | null;
+  address: string | null;
+  why: string;
+  coupon: { title: string; discount: string; description: string } | null;
+}
 
 // ── 카테고리 설정 ───────────────────────────────────────────────
 const CATEGORIES = [
@@ -110,7 +121,6 @@ function BlogPanel({
   const [viewerUrl,      setViewerUrl]      = useState<string | null>(null);
   const [viewerTitle,    setViewerTitle]    = useState<string>('');
 
-  // 대표 리뷰 상단 정렬
   const sortedReviews = [...reviews].sort((a, b) => {
     const featDiff = (b.featured ? 1 : 0) - (a.featured ? 1 : 0);
     if (featDiff !== 0) return featDiff;
@@ -121,7 +131,6 @@ function BlogPanel({
     if (pin.type === 'restaurant') {
       setReviews((pin.blog_reviews ?? []).filter(rv => rv.source !== 'cafe'));
     } else {
-      // 파트너: naver_place_id로 restaurants에서 블로그 리뷰 fetch
       if (pin.naver_place_id) {
         setLoadingBlog(true);
         (async () => {
@@ -192,7 +201,6 @@ function BlogPanel({
       {/* ── 리뷰 상세 모달 오버레이 ── */}
       {selectedReview && (
         <div className="absolute inset-0 z-20 bg-sidebar flex flex-col">
-          {/* 모달 헤더 */}
           <div className="flex items-center gap-2 px-3 py-3 border-b border-border-main shrink-0">
             <button
               onClick={() => setSelectedReview(null)}
@@ -219,14 +227,12 @@ function BlogPanel({
               )}
             </div>
           </div>
-          {/* 모달 본문 */}
           <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
             <h3 className="text-sm font-bold text-primary leading-relaxed">{selectedReview.title}</h3>
             {selectedReview.snippet && (
               <p className="text-xs text-secondary leading-relaxed whitespace-pre-line">{selectedReview.snippet}</p>
             )}
           </div>
-          {/* 원문 보기 버튼 */}
           <div className="px-4 py-3 border-t border-border-main shrink-0">
             <button
               onClick={() => {
@@ -296,7 +302,6 @@ function BlogPanel({
                     : 'bg-fill-subtle border-border-subtle'
                 }`}
               >
-                {/* 헤더 행: 배지들 + 우측 액션 버튼 */}
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-1.5 flex-wrap">
                     {r.featured && (
@@ -313,7 +318,6 @@ function BlogPanel({
                     </span>
                     {r.date && <span className="text-[9px] text-dim">{r.date.slice(0, 4)}.{r.date.slice(4, 6)}.{r.date.slice(6, 8)}</span>}
                   </div>
-                  {/* 액션 버튼 항상 표시 */}
                   <div className="flex items-center gap-1 shrink-0 ml-1">
                     <button
                       onClick={() => toggleFeatured(r)}
@@ -335,7 +339,6 @@ function BlogPanel({
                     </button>
                   </div>
                 </div>
-                {/* 클릭 → 상세 모달 */}
                 <div
                   onClick={() => setSelectedReview(r)}
                   className="cursor-pointer"
@@ -364,6 +367,75 @@ function BlogPanel({
   );
 }
 
+// ── AI 검색 결과 패널 ────────────────────────────────────────────
+function AiResultPanel({
+  results,
+  searching,
+  onSelect,
+  onClose,
+}: {
+  results: AiResult[];
+  searching: boolean;
+  onSelect: (id: string) => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="flex flex-col h-full" style={{ fontFamily: '-apple-system,BlinkMacSystemFont,sans-serif' }}>
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border-main shrink-0">
+        <div className="flex items-center gap-2">
+          <Sparkles size={13} className="text-[#FF6F0F]" />
+          <span className="text-xs font-bold text-primary">AI 맛집 추천</span>
+          {searching && <Loader2 size={11} className="animate-spin text-[#FF6F0F]" />}
+        </div>
+        <button onClick={onClose} className="p-1 text-muted hover:text-primary transition">
+          <X size={14} />
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2">
+        {results.length === 0 && searching && (
+          <div className="flex flex-col items-center gap-2 py-8 text-muted">
+            <Loader2 size={18} className="animate-spin" />
+            <p className="text-xs">AI가 맛집을 찾고 있어요...</p>
+          </div>
+        )}
+        {results.map(r => (
+          <button
+            key={r.restaurant_id}
+            onClick={() => onSelect(r.restaurant_id)}
+            className="w-full text-left rounded-xl border border-border-subtle bg-fill-subtle hover:border-[#FF6F0F]/40 hover:bg-[#FF6F0F]/5 transition-all px-3 py-2.5 group"
+          >
+            <div className="flex items-start gap-2">
+              <span className="shrink-0 w-5 h-5 rounded-full bg-[#FF6F0F] text-white text-[10px] font-black flex items-center justify-center mt-0.5">
+                {r.rank}
+              </span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-xs font-bold text-primary truncate">{r.name}</span>
+                  {r.coupon && (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold bg-[#FF6F0F]/15 text-[#FF6F0F] shrink-0">
+                      🎫 {r.coupon.discount}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                  <span className="text-[10px] text-muted">{r.category}</span>
+                  {r.rating && <span className="text-[10px] text-amber-400">★ {r.rating}</span>}
+                  {r.address && <span className="text-[10px] text-dim truncate">{r.address}</span>}
+                </div>
+                <p className="text-[11px] text-secondary mt-1.5 leading-relaxed line-clamp-2">{r.why}</p>
+                <p className="text-[10px] text-[#FF6F0F] mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  지도에서 보기 →
+                </p>
+              </div>
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── 메인 컴포넌트 ───────────────────────────────────────────────
 export default function MapPage() {
   const containerRef  = useRef<HTMLDivElement>(null);
@@ -382,6 +454,101 @@ export default function MapPage() {
 
   // 블로그 패널
   const [selectedPin,  setSelectedPin]  = useState<MapPin | null>(null);
+
+  // AI 검색
+  const [aiQuery,      setAiQuery]      = useState('');
+  const [aiSearching,  setAiSearching]  = useState(false);
+  const [aiResults,    setAiResults]    = useState<AiResult[]>([]);
+  const [aiPanelOpen,  setAiPanelOpen]  = useState(false);
+  const [highlightIds, setHighlightIds] = useState<Set<string>>(new Set());
+  const aiAbortRef = useRef<AbortController | null>(null);
+
+  // ── AI 검색 ───────────────────────────────────────────────────
+  const doAiSearch = useCallback(async (q: string) => {
+    if (!q.trim()) return;
+    aiAbortRef.current?.abort();
+    const ctrl = new AbortController();
+    aiAbortRef.current = ctrl;
+
+    setAiResults([]);
+    setHighlightIds(new Set());
+    setAiSearching(true);
+    setAiPanelOpen(true);
+    setSelectedPin(null);
+
+    try {
+      const res = await fetch('/api/restaurants/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: q }),
+        signal: ctrl.signal,
+      });
+
+      const reader = res.body?.getReader();
+      if (!reader) return;
+
+      const dec = new TextDecoder();
+      let buf = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        const lines = buf.split('\n');
+        buf = lines.pop() ?? '';
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          try {
+            const ev = JSON.parse(line.slice(6));
+            if (ev.type === 'recommendation') {
+              const result: AiResult = {
+                rank:          ev.rank,
+                restaurant_id: ev.restaurant_id,
+                name:          ev.name,
+                category:      ev.category,
+                rating:        ev.rating ?? null,
+                address:       ev.address ?? null,
+                why:           ev.why,
+                coupon:        ev.coupon ? {
+                  title:       ev.coupon.title,
+                  discount:    ev.coupon.discount,
+                  description: ev.coupon.description,
+                } : null,
+              };
+              setAiResults(prev => [...prev, result]);
+              setHighlightIds(prev => new Set([...prev, ev.restaurant_id]));
+            }
+          } catch {}
+        }
+      }
+    } catch (e: any) {
+      if (e.name !== 'AbortError') console.error('[ai-search]', e);
+    } finally {
+      setAiSearching(false);
+    }
+  }, []);
+
+  const clearAiSearch = useCallback(() => {
+    aiAbortRef.current?.abort();
+    setAiResults([]);
+    setHighlightIds(new Set());
+    setAiPanelOpen(false);
+    setAiSearching(false);
+    setAiQuery('');
+  }, []);
+
+  // AI 결과에서 핀 선택 → 지도 이동 + 블로그 패널 열기
+  const selectAiResult = useCallback((restaurantId: string) => {
+    const pin = restaurants.find(r => r.id === restaurantId);
+    if (!pin || !mapRef.current) return;
+    const kakao = (window as any).kakao;
+    if (kakao?.maps) {
+      mapRef.current.setCenter(new kakao.maps.LatLng(pin.lat, pin.lng));
+      mapRef.current.setLevel(4);
+    }
+    setSelectedPin(pin);
+  }, [restaurants]);
 
   // ── 데이터 로드 ────────────────────────────────────────────────
   useEffect(() => {
@@ -461,6 +628,7 @@ export default function MapPage() {
     kakao: any, map: any,
     pts: PartnerPin[], rests: RestaurantPin[],
     cat: string, lyr: string,
+    hlIds: Set<string>,
   ) => {
     overlaysRef.current.forEach(o => o.setMap(null));
     overlaysRef.current = [];
@@ -514,19 +682,42 @@ export default function MapPage() {
       const filteredRests = rests.filter(r => cat === 'all' || r.unniepick_category === cat);
 
       const markers = filteredRests.map(r => {
+        const isHighlighted = hlIds.has(r.id);
         const color   = getCatColor(r.unniepick_category);
         const hasBlog = r.blog_reviews.length > 0;
-        // 블로그 있으면 약간 큰 사각형 닷, 없으면 기본 원
-        const html = hasBlog
-          ? `<div onclick="window.__mapPinClick('${r.id}','restaurant')" ` +
+
+        let html: string;
+        if (isHighlighted) {
+          // AI 추천 핀 — 큰 라벨 칩
+          html =
+            `<div onclick="window.__mapPinClick('${r.id}','restaurant')" ` +
+            `style="display:flex;flex-direction:column;align-items:center;cursor:pointer;">` +
+              `<div style="display:flex;align-items:center;gap:3px;background:#FF6F0F;border-radius:16px;` +
+              `padding:3px 8px;box-shadow:0 2px 10px rgba(255,111,15,0.6);` +
+              `font-family:-apple-system,BlinkMacSystemFont,sans-serif;">` +
+                `<span style="font-size:9px;font-weight:900;color:#fff;">✨</span>` +
+                `<span style="font-size:11px;font-weight:800;color:#fff;white-space:nowrap;` +
+                `max-width:90px;overflow:hidden;text-overflow:ellipsis;">${esc(r.name)}</span>` +
+              `</div>` +
+              `<div style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;` +
+              `border-top:7px solid #FF6F0F;margin-top:-1px;"></div>` +
+            `</div>`;
+        } else if (hasBlog) {
+          html =
+            `<div onclick="window.__mapPinClick('${r.id}','restaurant')" ` +
             `style="width:12px;height:12px;border-radius:3px;background:${color};` +
-            `border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.35);cursor:pointer;" title="블로그 리뷰 있음"></div>`
-          : `<div onclick="window.__mapPinClick('${r.id}','restaurant')" ` +
+            `border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.35);cursor:pointer;" title="블로그 리뷰 있음"></div>`;
+        } else {
+          html =
+            `<div onclick="window.__mapPinClick('${r.id}','restaurant')" ` +
             `style="width:10px;height:10px;border-radius:50%;background:${color};` +
             `border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.3);cursor:pointer;"></div>`;
+        }
+
         return new kakao.maps.CustomOverlay({
           position: new kakao.maps.LatLng(r.lat, r.lng),
-          content: html, zIndex: 3,
+          content: html,
+          zIndex: isHighlighted ? 8 : 3,
         });
       });
 
@@ -565,7 +756,7 @@ export default function MapPage() {
           });
         }
 
-        buildOverlays(kakao, map, partners, restaurants, category, layer);
+        buildOverlays(kakao, map, partners, restaurants, category, layer, highlightIds);
         if (!cancelled) setMapReady(true);
       } catch (e: any) {
         if (!cancelled) setError(e.message ?? '카카오맵 로드 실패');
@@ -580,8 +771,8 @@ export default function MapPage() {
     if (!mapRef.current) return;
     const kakao = (window as any).kakao;
     if (!kakao?.maps) return;
-    buildOverlays(kakao, mapRef.current, partners, restaurants, category, layer);
-  }, [category, layer, partners, restaurants, buildOverlays]);
+    buildOverlays(kakao, mapRef.current, partners, restaurants, category, layer, highlightIds);
+  }, [category, layer, partners, restaurants, highlightIds, buildOverlays]);
 
   const partnerActive = partners.filter(p => p.is_active).length;
   const partnerCoupon = partners.filter(p => p.activeCoupons > 0).length;
@@ -619,6 +810,37 @@ export default function MapPage() {
         </div>
       </div>
 
+      {/* AI 검색 바 */}
+      <div className="px-4 py-2 bg-sidebar border-b border-border-main shrink-0">
+        <form
+          onSubmit={e => { e.preventDefault(); doAiSearch(aiQuery); }}
+          className="flex items-center gap-2"
+        >
+          <div className="flex-1 flex items-center gap-2 bg-card border border-border-subtle rounded-xl px-3 py-2 focus-within:border-[#FF6F0F]/60 transition">
+            <Sparkles size={13} className="text-[#FF6F0F] shrink-0" />
+            <input
+              value={aiQuery}
+              onChange={e => setAiQuery(e.target.value)}
+              placeholder="AI 맛집 검색 — 예: 상남동 데이트 파스타, 쿠폰 있는 카페..."
+              className="flex-1 bg-transparent text-xs text-primary placeholder:text-dim outline-none"
+            />
+            {aiQuery && (
+              <button type="button" onClick={clearAiSearch} className="text-dim hover:text-muted transition">
+                <X size={12} />
+              </button>
+            )}
+          </div>
+          <button
+            type="submit"
+            disabled={!aiQuery.trim() || aiSearching}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#FF6F0F] text-white text-xs font-semibold disabled:opacity-40 transition hover:bg-[#E55F00]"
+          >
+            {aiSearching ? <Loader2 size={12} className="animate-spin" /> : <Search size={12} />}
+            검색
+          </button>
+        </form>
+      </div>
+
       {/* 카테고리 탭 */}
       <div className="flex items-center gap-1.5 px-4 py-2 bg-sidebar border-b border-border-main shrink-0 overflow-x-auto">
         {CATEGORIES.map(c => (
@@ -633,8 +855,22 @@ export default function MapPage() {
         ))}
       </div>
 
-      {/* 지도 + 사이드 패널 */}
+      {/* 지도 + 사이드 패널들 */}
       <div className="flex-1 flex overflow-hidden relative">
+
+        {/* AI 결과 패널 (좌측) */}
+        <div className={`shrink-0 border-r border-border-main bg-sidebar overflow-hidden transition-all duration-300 ${
+          aiPanelOpen ? 'w-72' : 'w-0'
+        }`}>
+          {aiPanelOpen && (
+            <AiResultPanel
+              results={aiResults}
+              searching={aiSearching}
+              onSelect={selectAiResult}
+              onClose={clearAiSearch}
+            />
+          )}
+        </div>
 
         {/* 지도 */}
         <div className="flex-1 relative">
@@ -673,6 +909,12 @@ export default function MapPage() {
                   <span className="w-3 h-3 rounded-sm bg-[#6B7280] border border-white inline-block" />
                   <span className="text-tertiary">수집 업체 (블로그 📝)</span>
                 </span>
+                {highlightIds.size > 0 && (
+                  <span className="flex items-center gap-2">
+                    <span className="px-1.5 py-0.5 rounded-full bg-[#FF6F0F] text-white text-[9px] font-black">✨</span>
+                    <span className="text-tertiary">AI 추천</span>
+                  </span>
+                )}
               </>}
             </div>
           )}
@@ -680,7 +922,7 @@ export default function MapPage() {
           <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
         </div>
 
-        {/* 블로그 사이드 패널 */}
+        {/* 블로그 사이드 패널 (우측) */}
         <div className={`shrink-0 border-l border-border-main bg-sidebar overflow-hidden transition-all duration-300 ${
           selectedPin ? 'w-72' : 'w-0'
         }`}>

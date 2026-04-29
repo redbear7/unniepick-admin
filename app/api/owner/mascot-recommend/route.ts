@@ -3,6 +3,7 @@
  * 오너 마스코트 — 가게 정보 + 시간대 + 플레이리스트 분석 후 추천
  */
 import { NextRequest, NextResponse } from 'next/server';
+import { openrouterChat } from '@/lib/openrouter';
 import { createClient } from '@supabase/supabase-js';
 
 function sb() {
@@ -102,25 +103,7 @@ ${JSON.stringify(playlistSummary, null, 2)}
 - playlist_id는 반드시 위 목록에 있는 실제 id만 사용`;
 
   try {
-    const apiKey = process.env.GEMINI_API_KEY;
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-
-    const res = await fetch(url, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.8, maxOutputTokens: 1024 },
-      }),
-    });
-
-    if (!res.ok) {
-      const e = await res.json().catch(() => ({}));
-      throw new Error(e?.error?.message || `HTTP ${res.status}`);
-    }
-
-    const resp = await res.json();
-    const raw  = resp.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const raw = await openrouterChat(prompt, { temperature: 0.8, maxTokens: 1024 });
     const jsonStr = raw.match(/```json\s*([\s\S]*?)```/)?.[1]
       || raw.match(/```\s*([\s\S]*?)```/)?.[1]
       || raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1);

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { openrouterChat } from '@/lib/openrouter';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -11,11 +12,6 @@ export async function OPTIONS() {
 }
 
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json({ error: 'GEMINI_API_KEY 미설정' }, { status: 500, headers: CORS });
-  }
-
   const { store_name, description, category } = await req.json();
 
   if (!store_name || !description || !category) {
@@ -57,26 +53,10 @@ export async function POST(req: NextRequest) {
 - 내용은 실제 업체처럼 보여야 함
 - 이모지 사용 금지
 - 마크다운 포맷 금지
-- 줄바꿈은 \n으로만 표시`;
-
-  const body = {
-    contents: [{ parts: [{ text: prompt }] }],
-    generationConfig: { temperature: 0.7, maxOutputTokens: 1024 },
-  };
+- 줄바꿈은 \\n으로만 표시`;
 
   try {
-    const resp = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      }
-    );
-    const data = await resp.json();
-    const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-
-    // JSON 추출 (```json ... ``` 감싸인 경우 제거)
+    const raw = await openrouterChat(prompt, { temperature: 0.7, maxTokens: 1024 });
     const jsonStr = raw.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
     const result = JSON.parse(jsonStr);
 

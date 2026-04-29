@@ -2,11 +2,12 @@
  * POST /api/applications/coupon-suggest
  *
  * 가게 정보(이름, 카테고리, 주소)를 바탕으로
- * Gemini 2.0 Flash가 쿠폰 3가지를 추천해 줌
+ * AI가 쿠폰 3가지를 추천해 줌
  *
  * Response: { suggestions: CouponSuggestion[] }
  */
 import { NextRequest, NextResponse } from 'next/server';
+import { openrouterChat } from '@/lib/openrouter';
 
 export interface CouponSuggestion {
   discount_type:  'free_item' | 'percent' | 'amount';
@@ -25,11 +26,6 @@ export async function POST(req: NextRequest) {
 
   if (!store_name) {
     return NextResponse.json({ error: '가게명이 필요합니다' }, { status: 400 });
-  }
-
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json({ error: 'GEMINI_API_KEY 미설정' }, { status: 500 });
   }
 
   const categoryLabel: Record<string, string> = {
@@ -84,27 +80,8 @@ export async function POST(req: NextRequest) {
 ]`;
 
   try {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-      {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.7, maxOutputTokens: 512 },
-        }),
-      },
-    );
+    const raw = await openrouterChat(prompt, { temperature: 0.7, maxTokens: 512 });
 
-    if (!res.ok) {
-      const e = await res.json().catch(() => ({}));
-      throw new Error(e?.error?.message ?? `Gemini HTTP ${res.status}`);
-    }
-
-    const resp = await res.json();
-    const raw  = resp.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-
-    // JSON 파싱 — 마크다운 블록 제거
     const jsonStr = raw
       .replace(/```json\s*/g, '')
       .replace(/```\s*/g, '')
@@ -112,7 +89,6 @@ export async function POST(req: NextRequest) {
 
     const suggestions: CouponSuggestion[] = JSON.parse(jsonStr);
 
-    // 최소 유효성 검증
     const valid = suggestions.every(s =>
       s.discount_type && s.title && typeof s.discount_value === 'number'
     );
@@ -121,7 +97,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ suggestions: suggestions.slice(0, 3) });
   } catch (e: unknown) {
     console.error('[coupon-suggest] error:', (e as Error).message);
-    // fallback — 기본 추천 3개
     const fallback: CouponSuggestion[] = [
       {
         discount_type: 'free_item',

@@ -14,7 +14,7 @@
  */
 import { NextRequest } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { GoogleGenAI } from '@google/genai';
+import { openrouterChat } from '@/lib/openrouter';
 
 function adminSb() {
   return createClient(
@@ -69,7 +69,7 @@ interface RankedItem {
   matched_signals: string[];
 }
 
-async function parseQuery(ai: GoogleGenAI, query: string): Promise<ParsedFilter> {
+async function parseQuery(query: string): Promise<ParsedFilter> {
   const prompt = `창원 맛집 검색 쿼리를 JSON으로 파싱해줘. 값이 없으면 null.
 
 쿼리: "${query}"
@@ -85,11 +85,7 @@ JSON 형식 (이 형식 그대로, 다른 텍스트 없이):
 }`;
 
   try {
-    const res = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-    });
-    const text = res.text ?? '';
+    const text = await openrouterChat(prompt, { temperature: 0.2, maxTokens: 256 });
     const jsonStr = text.match(/\{[\s\S]*\}/)?.[0] ?? '{}';
     const parsed = JSON.parse(jsonStr);
     return {
@@ -106,7 +102,6 @@ JSON 형식 (이 형식 그대로, 다른 텍스트 없이):
 }
 
 async function rankCandidates(
-  ai: GoogleGenAI,
   filter: ParsedFilter,
   candidates: CandidateRow[],
 ): Promise<RankedItem[]> {
@@ -136,11 +131,7 @@ JSON 배열로만 응답 (다른 텍스트 없이):
 ]`;
 
   try {
-    const res = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-    });
-    const text = res.text ?? '';
+    const text = await openrouterChat(prompt, { temperature: 0.5, maxTokens: 1024 });
     const jsonStr = text.match(/\[[\s\S]*\]/)?.[0] ?? '[]';
     const parsed = JSON.parse(jsonStr);
     return Array.isArray(parsed) ? parsed : [];
@@ -155,13 +146,7 @@ export async function POST(req: NextRequest) {
     return new Response('{"error":"query 필요"}', { status: 400 });
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return new Response('{"error":"GEMINI_API_KEY 없음"}', { status: 500 });
-  }
-
   const sb  = adminSb();
-  const ai  = new GoogleGenAI({ apiKey });
   const enc = new TextEncoder();
 
   const stream = new ReadableStream({
@@ -175,7 +160,7 @@ export async function POST(req: NextRequest) {
 
       try {
         /* ── 1. 쿼리 파싱 ──────────────────────────────── */
-        const filter = await parseQuery(ai, query);
+        const filter = await parseQuery(query);
 
         const chips: { text: string; color: string }[] = [];
         if (filter.gu)       chips.push({ text: filter.gu,       color: '#3B82F6' });
@@ -259,7 +244,7 @@ export async function POST(req: NextRequest) {
         }
 
         /* ── 4. Gemini 랭킹 ────────────────────────────── */
-        const ranked = await rankCandidates(ai, filter, rows);
+        const ranked = await rankCandidates(filter, rows);
 
         if (!ranked.length) {
           send({ type: 'done' });

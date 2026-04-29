@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { GoogleGenAI } from '@google/genai';
+import { openrouterStream } from '@/lib/openrouter';
 
 function adminSb() {
   return createClient(
@@ -113,60 +113,32 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: '메시지가 없습니다' }, { status: 400 });
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json({ error: 'GEMINI_API_KEY 미설정' }, { status: 500 });
-  }
-
   const [dbContext, restaurantContext] = await Promise.all([
     fetchDbContext(),
     fetchRestaurantContext(),
   ]);
   const systemWithContext = `${SYSTEM_PROMPT}\n\n## 현재 DB 현황\n${dbContext}${restaurantContext}`;
 
-  const ai = new GoogleGenAI({ apiKey });
-
-  // 컨텍스트 한도 초과 방지: 최근 40개 메시지만 유지 (약 20턴)
+  // 최근 40개 메시지만 유지 (약 20턴)
   const MAX_HISTORY = 40;
   const trimmed = messages.length > MAX_HISTORY
     ? messages.slice(messages.length - MAX_HISTORY)
     : messages;
 
-  // Gemini history 형식으로 변환 (마지막 user 메시지 제외)
-  const history = trimmed.slice(0, -1).map(m => ({
-    role: m.role === 'assistant' ? 'model' : 'user',
-    parts: [{ text: m.content }],
+  const orMessages = trimmed.map(m => ({
+    role: m.role === 'assistant' ? 'assistant' : 'user',
+    content: m.content,
   }));
-  const lastMessage = trimmed[trimmed.length - 1].content;
 
-  const stream = new ReadableStream({
-    async start(controller) {
-      try {
-        const chat = ai.chats.create({
-          model: 'gemini-2.5-flash',
-          config: { systemInstruction: systemWithContext },
-          history,
-        });
-
-        const result = await chat.sendMessageStream({ message: lastMessage });
-
-        for await (const chunk of result) {
-          const text = chunk.text;
-          if (text) {
-            controller.enqueue(new TextEncoder().encode(text));
-          }
-        }
-      } catch (e) {
-        controller.enqueue(
-          new TextEncoder().encode(`\n[오류: ${(e as Error).message}]`),
-        );
-      } finally {
-        controller.close();
-      }
-    },
-  });
+  let stream: ReadableStream<Uint8Array>;
+  try {
+    stream = await openrouterStream(orMessages, systemWithContext);
+  } catch (e) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 500 });
+  }
 
   return new Response(stream, {
     headers: { 'Content-Type': 'text/plain; charset=utf-8' },
   });
 }
+
