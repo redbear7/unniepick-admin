@@ -146,10 +146,22 @@ function BlogPanel({
   const persistReviews = async (newReviews: BlogReview[]) => {
     setReviewSaving(true);
     try {
-      if (pin.type === 'restaurant') {
-        await sb.from('restaurants').update({ blog_reviews: newReviews }).eq('id', pin.id);
-      } else if (pin.type === 'partner' && pin.naver_place_id) {
-        await sb.from('restaurants').update({ blog_reviews: newReviews }).eq('naver_place_id', pin.naver_place_id);
+      const body: Record<string, unknown> = { blog_reviews: newReviews };
+      if (pin.type === 'restaurant' && pin.id) {
+        body.id = pin.id;
+      } else if (pin.naver_place_id) {
+        body.naver_place_id = pin.naver_place_id;
+      } else {
+        return;
+      }
+      const res = await fetch('/api/restaurants/blog-reviews', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        console.error('blog_reviews 저장 실패:', err.error ?? res.status);
       }
     } finally {
       setReviewSaving(false);

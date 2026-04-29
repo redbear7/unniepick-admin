@@ -2254,8 +2254,19 @@ function DetailModal({ r, onClose, registered }: { r: Restaurant; onClose: () =>
 
   const persistReviews = async (next: BlogReview[]) => {
     setSaving(true);
-    await sb.from('restaurants').update({ blog_reviews: next }).eq('id', r.id);
-    setSaving(false);
+    try {
+      const res = await fetch('/api/restaurants/blog-reviews', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: r.id, blog_reviews: next }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        console.error('blog_reviews 저장 실패:', err.error ?? res.status);
+      }
+    } finally {
+      setSaving(false);
+    }
   };
 
   const deleteReview = async (item: BlogReview) => {
