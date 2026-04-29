@@ -78,6 +78,7 @@ interface RestaurantPin {
   name: string;
   kakao_category: string | null;
   unniepick_category: string | null;
+  unniepick_style: string | null;
   address: string | null;
   phone: string | null;
   lat: number;
@@ -101,37 +102,51 @@ interface AiResult {
   coupon: { title: string; discount: string; description: string } | null;
 }
 
-// ── 카테고리 설정 ───────────────────────────────────────────────
+// ── 언니픽 장르(v2) + 용도 설정 ────────────────────────────────
 const CATEGORIES = [
-  { key: 'all',    label: '전체',    emoji: '🗺️' },
-  { key: '한식',   label: '한식',    emoji: '🍚' },
-  { key: '카페',   label: '카페',    emoji: '☕' },
-  { key: '치킨',   label: '치킨',    emoji: '🍗' },
-  { key: '술집/바', label: '술집/바', emoji: '🍺' },
-  { key: '일식',   label: '일식',    emoji: '🍣' },
-  { key: '중식',   label: '중식',    emoji: '🥢' },
-  { key: '양식',   label: '양식',    emoji: '🍝' },
-  { key: '분식',   label: '분식',    emoji: '🍢' },
-  { key: '베이커리', label: '베이커리', emoji: '🥐' },
-  { key: '간식',   label: '간식',    emoji: '🍡' },
+  { key: 'all',          label: '전체',       emoji: '🗺️' },
+  { key: '카페·디저트',   label: '카페·디저트', emoji: '☕' },
+  { key: '한식',          label: '한식',       emoji: '🍚' },
+  { key: '고기·구이',     label: '고기·구이',  emoji: '🥩' },
+  { key: '치킨·버거',     label: '치킨·버거',  emoji: '🍗' },
+  { key: '면류·냉면',     label: '면류·냉면',  emoji: '🍜' },
+  { key: '국밥·탕·찌개',  label: '국밥·탕',   emoji: '🍲' },
+  { key: '일식·초밥',     label: '일식·초밥',  emoji: '🍣' },
+  { key: '해산물·회',     label: '해산물·회',  emoji: '🐟' },
+  { key: '양식·파스타',   label: '양식·파스타', emoji: '🍝' },
+  { key: '중식',          label: '중식',       emoji: '🥢' },
+  { key: '분식·떡볶이',   label: '분식·떡볶이', emoji: '🍢' },
+  { key: '베이커리·빵집', label: '베이커리',   emoji: '🥐' },
+  { key: '브런치·샐러드', label: '브런치',     emoji: '🥗' },
+  { key: '술집·이자카야', label: '술집·이자카야', emoji: '🍺' },
+] as const;
+
+const STYLES = [
+  { key: 'all',      label: '용도 전체',  emoji: '🍽️' },
+  { key: '일반식사',  label: '일반식사',  emoji: '🍽️' },
+  { key: '데이트·모임', label: '데이트',  emoji: '💑' },
+  { key: '회식·단체', label: '회식·단체', emoji: '👥' },
+  { key: '혼밥·간편식', label: '혼밥',   emoji: '🍱' },
+  { key: '술자리',    label: '술자리',   emoji: '🍻' },
+  { key: '카페·여가', label: '카페·여가', emoji: '☕' },
 ] as const;
 
 const CATEGORY_COLOR: Record<string, string> = {
-  '한식':    '#E85D04',
-  '카페':    '#7B5EA7',
-  '치킨':    '#F77F00',
-  '술집/바':  '#D62828',
-  '일식':    '#3A86FF',
-  '중식':    '#FB5607',
-  '양식':    '#2EC4B6',
-  '분식':    '#FFBE0B',
-  '베이커리': '#C77DFF',
-  '간식':    '#FF9AC9',
-  '도시락':  '#6D6875',
-  '샐러드':  '#52B788',
-  '아시안':  '#F4A261',
-  '해산물':  '#023E8A',
-  '기타':    '#6B7280',
+  '카페·디저트':  '#7B5EA7',
+  '한식':         '#E85D04',
+  '고기·구이':    '#C1121F',
+  '치킨·버거':    '#F77F00',
+  '면류·냉면':    '#4CC9F0',
+  '국밥·탕·찌개': '#E63946',
+  '일식·초밥':    '#3A86FF',
+  '해산물·회':    '#023E8A',
+  '양식·파스타':  '#2EC4B6',
+  '중식':         '#FB5607',
+  '분식·떡볶이':  '#FFBE0B',
+  '베이커리·빵집':'#C77DFF',
+  '브런치·샐러드':'#52B788',
+  '술집·이자카야':'#D62828',
+  '기타':         '#6B7280',
 };
 
 function getCatColor(cat: string | null) {
@@ -491,6 +506,7 @@ export default function MapPage() {
 
   // 필터 상태를 ref로도 유지 (클로저에서 최신값 접근)
   const categoryRef    = useRef<string>('all');
+  const styleRef       = useRef<string>('all');
   const layerRef       = useRef<'partner' | 'all'>('all');
   const hlIdsRef       = useRef<Set<string>>(new Set());
 
@@ -501,6 +517,7 @@ export default function MapPage() {
   const [mapReady,     setMapReady]     = useState(false);
   const [error,        setError]        = useState('');
   const [category,     setCategory]     = useState<string>('all');
+  const [style,        setStyle]        = useState<string>('all');
   const [layer,        setLayer]        = useState<'partner' | 'all'>('all');
 
   // 블로그 패널
@@ -519,6 +536,7 @@ export default function MapPage() {
 
   // ref ↔ state 동기화
   useEffect(() => { categoryRef.current = category; }, [category]);
+  useEffect(() => { styleRef.current = style; }, [style]);
   useEffect(() => { layerRef.current = layer; }, [layer]);
   useEffect(() => { hlIdsRef.current = highlightIds; }, [highlightIds]);
 
@@ -664,6 +682,7 @@ export default function MapPage() {
       type: 'restaurant', id: r.id, name: r.name,
       kakao_category: r.kakao_category,
       unniepick_category: r.unniepick_category,
+      unniepick_style: r.unniepick_style ?? null,
       address: r.address, phone: r.phone,
       lat: r.latitude, lng: r.longitude,
       kakao_place_url: r.kakao_place_url,
@@ -736,38 +755,42 @@ export default function MapPage() {
     });
   }, []);
 
+  // ── 가시성 판단 헬퍼 ────────────────────────────────────────────
+  const isVisible = useCallback((pin: RestaurantPin, lyr: string, cat: string, sty: string) =>
+    lyr === 'all'
+    && (cat === 'all' || pin.unniepick_category === cat)
+    && (sty === 'all' || pin.unniepick_style === sty),
+  []);
+
   // ── 새 수집업체 오버레이 추가 (증분) ───────────────────────────
-  const addRestOverlays = useCallback((kakao: any, map: any, newPins: RestaurantPin[], cat: string, lyr: string, hlIds: Set<string>) => {
+  const addRestOverlays = useCallback((kakao: any, map: any, newPins: RestaurantPin[], cat: string, lyr: string, sty: string, hlIds: Set<string>) => {
     newPins.forEach(pin => {
       const ov = makeRestOverlay(kakao, pin, hlIds);
-      const visible = lyr === 'all' && (cat === 'all' || pin.unniepick_category === cat);
-      ov.setMap(visible ? map : null);
+      ov.setMap(isVisible(pin, lyr, cat, sty) ? map : null);
       restOvMapRef.current.set(pin.id, { ov, pin });
     });
-  }, [makeRestOverlay]);
+  }, [makeRestOverlay, isVisible]);
 
   // ── 필터 변경 시 기존 오버레이 show/hide ───────────────────────
-  const applyRestFilter = useCallback((map: any, cat: string, lyr: string, hlIds: Set<string>) => {
+  const applyRestFilter = useCallback((map: any, cat: string, lyr: string, sty: string) => {
     for (const [, entry] of restOvMapRef.current) {
-      const visible = lyr === 'all' && (cat === 'all' || entry.pin.unniepick_category === cat);
-      entry.ov.setMap(visible ? map : null);
+      entry.ov.setMap(isVisible(entry.pin, lyr, cat, sty) ? map : null);
     }
-  }, []);
+  }, [isVisible]);
 
   // ── AI 하이라이트 변경: 해당 핀만 재생성 ──────────────────────
-  const applyHighlight = useCallback((kakao: any, map: any, hlIds: Set<string>, lyr: string, cat: string) => {
+  const applyHighlight = useCallback((kakao: any, map: any, hlIds: Set<string>, lyr: string, cat: string, sty: string) => {
     for (const [id, entry] of restOvMapRef.current) {
       const wasHL = entry.ov.getZIndex?.() === 8;
       const isHL  = hlIds.has(id);
       if (wasHL !== isHL) {
         entry.ov.setMap(null);
         const newOv = makeRestOverlay(kakao, entry.pin, hlIds);
-        const visible = lyr === 'all' && (cat === 'all' || entry.pin.unniepick_category === cat);
-        newOv.setMap(visible ? map : null);
+        newOv.setMap(isVisible(entry.pin, lyr, cat, sty) ? map : null);
         restOvMapRef.current.set(id, { ov: newOv, pin: entry.pin });
       }
     }
-  }, [makeRestOverlay]);
+  }, [makeRestOverlay, isVisible]);
 
   // ── 뷰포트 기반 수집업체 fetch ─────────────────────────────────
   const fetchViewport = useCallback(async (map: any) => {
@@ -784,7 +807,7 @@ export default function MapPage() {
       const lngPad = (ne.getLng() - sw.getLng()) * 0.2;
 
       const { data } = await sb.from('restaurants')
-        .select('id, name, kakao_category, unniepick_category, address, phone, latitude, longitude, kakao_place_url, blog_reviews, instagram_url, ai_summary')
+        .select('id, name, kakao_category, unniepick_category, unniepick_style, address, phone, latitude, longitude, kakao_place_url, blog_reviews, instagram_url, ai_summary')
         .gte('latitude',  sw.getLat() - latPad)
         .lte('latitude',  ne.getLat() + latPad)
         .gte('longitude', sw.getLng() - lngPad)
@@ -796,7 +819,7 @@ export default function MapPage() {
         newRows.forEach(r => loadedIdsRef.current.add(r.id));
         const kakao   = (window as any).kakao;
         const newPins = newRows.map(toRestPin);
-        addRestOverlays(kakao, map, newPins, categoryRef.current, layerRef.current, hlIdsRef.current);
+        addRestOverlays(kakao, map, newPins, categoryRef.current, layerRef.current, styleRef.current, hlIdsRef.current);
         setRestaurants(prev => [...prev, ...newPins]);
       }
     } catch (e) {
@@ -854,22 +877,22 @@ export default function MapPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading]);
 
-  // ── 파트너 / 카테고리 / 레이어 변경 ────────────────────────────
+  // ── 파트너 / 카테고리 / 레이어 / 스타일 변경 ──────────────────
   useEffect(() => {
     if (!mapRef.current) return;
     const kakao = (window as any).kakao;
     if (!kakao?.maps) return;
     rebuildPartners(kakao, mapRef.current, partners, category);
-    applyRestFilter(mapRef.current, category, layer, highlightIds);
-  }, [category, layer, partners, rebuildPartners, applyRestFilter, highlightIds]);
+    applyRestFilter(mapRef.current, category, layer, style);
+  }, [category, style, layer, partners, rebuildPartners, applyRestFilter]);
 
   // ── AI 하이라이트 변경 ─────────────────────────────────────────
   useEffect(() => {
     if (!mapRef.current) return;
     const kakao = (window as any).kakao;
     if (!kakao?.maps) return;
-    applyHighlight(kakao, mapRef.current, highlightIds, layer, category);
-  }, [highlightIds, applyHighlight, layer, category]);
+    applyHighlight(kakao, mapRef.current, highlightIds, layer, category, style);
+  }, [highlightIds, applyHighlight, layer, category, style]);
 
   const partnerActive = partners.filter(p => p.is_active).length;
   const partnerCoupon = partners.filter(p => p.activeCoupons > 0).length;
@@ -981,16 +1004,31 @@ export default function MapPage() {
         )}
       </div>
 
-      {/* 카테고리 탭 */}
-      <div className="flex items-center gap-1.5 px-4 py-2 bg-sidebar border-b border-border-main shrink-0 overflow-x-auto">
+      {/* 장르(v2) 카테고리 탭 */}
+      <div className="flex items-center gap-1.5 px-4 py-2 bg-sidebar border-b border-border-subtle shrink-0 overflow-x-auto scrollbar-none">
         {CATEGORIES.map(c => (
           <button key={c.key} onClick={() => setCategory(c.key)}
             className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition ${
               category === c.key
-                ? 'bg-[#FF6F0F] text-white'
+                ? 'bg-[#FF6F0F] text-white shadow-sm'
                 : 'bg-card border border-border-subtle text-tertiary hover:text-primary'
             }`}>
             <span>{c.emoji}</span><span>{c.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* 용도(style) 탭 */}
+      <div className="flex items-center gap-1.5 px-4 py-2 bg-sidebar border-b border-border-main shrink-0 overflow-x-auto scrollbar-none">
+        <span className="text-[10px] text-dim font-semibold shrink-0 mr-1">용도</span>
+        {STYLES.map(s => (
+          <button key={s.key} onClick={() => setStyle(s.key)}
+            className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition ${
+              style === s.key
+                ? 'bg-[#3B82F6] text-white shadow-sm'
+                : 'bg-card border border-border-subtle text-tertiary hover:text-primary'
+            }`}>
+            <span>{s.emoji}</span><span>{s.label}</span>
           </button>
         ))}
       </div>
@@ -1056,6 +1094,24 @@ export default function MapPage() {
                   </span>
                 )}
               </>}
+              {(category !== 'all' || style !== 'all') && (
+                <div className="mt-1 pt-1 border-t border-border-subtle space-y-1">
+                  {category !== 'all' && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[9px] font-bold text-[#FF6F0F]">장르</span>
+                      <span className="text-[10px] text-secondary">{CATEGORIES.find(c => c.key === category)?.emoji} {category}</span>
+                      <button onClick={() => setCategory('all')} className="text-dim hover:text-muted ml-auto"><X size={9} /></button>
+                    </div>
+                  )}
+                  {style !== 'all' && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[9px] font-bold text-[#3B82F6]">용도</span>
+                      <span className="text-[10px] text-secondary">{STYLES.find(s => s.key === style)?.emoji} {style}</span>
+                      <button onClick={() => setStyle('all')} className="text-dim hover:text-muted ml-auto"><X size={9} /></button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
