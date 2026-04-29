@@ -9,8 +9,20 @@ interface Props {
   onClose: () => void;
 }
 
+function toMobileUrl(raw: string): string {
+  try {
+    const u = new URL(raw);
+    if (u.hostname === 'blog.naver.com') {
+      u.hostname = 'm.blog.naver.com';
+      return u.toString();
+    }
+  } catch { /* invalid url — fall through */ }
+  return raw;
+}
+
 export default function BlogViewerModal({ url, title, onClose }: Props) {
   const iframeRef  = useRef<HTMLIFrameElement>(null);
+  const mobileUrl  = toMobileUrl(url);
   const [loading,  setLoading]  = useState(true);
   const [blocked,  setBlocked]  = useState(false);
   const [key,      setKey]      = useState(0);
@@ -56,7 +68,7 @@ export default function BlogViewerModal({ url, title, onClose }: Props) {
             {title && (
               <p className="text-sm text-white/70 font-medium truncate">{title}</p>
             )}
-            <p className="text-[11px] text-white/30 truncate">{url}</p>
+            <p className="text-[11px] text-white/30 truncate">{mobileUrl}</p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <button
@@ -67,7 +79,7 @@ export default function BlogViewerModal({ url, title, onClose }: Props) {
               <RefreshCw size={14} />
             </button>
             <a
-              href={url}
+              href={mobileUrl}
               target="_blank"
               rel="noopener noreferrer"
               title="새 탭에서 열기"
@@ -97,7 +109,7 @@ export default function BlogViewerModal({ url, title, onClose }: Props) {
               <AlertCircle size={32} className="text-amber-400/60" />
               <p className="text-sm">이 페이지는 미리보기가 차단되어 있습니다.</p>
               <a
-                href={url}
+                href={mobileUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#03C75A]/15 hover:bg-[#03C75A]/25 border border-[#03C75A]/30 text-[#03C75A] text-sm font-semibold transition"
@@ -109,7 +121,7 @@ export default function BlogViewerModal({ url, title, onClose }: Props) {
             <iframe
               key={key}
               ref={iframeRef}
-              src={url}
+              src={mobileUrl}
               onLoad={handleLoad}
               onError={handleError}
               className="w-full h-full border-0"
