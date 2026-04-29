@@ -51,14 +51,14 @@ export async function POST() {
   const sb = adminSb();
 
   // 전체 레코드 페이지네이션 조회 (Supabase 기본 1000행 제한 우회)
-  type Row = { id: string; category: string | null; kakao_category: string | null; source: string | null };
+  type Row = { id: string; name: string | null; category: string | null; kakao_category: string | null; source: string | null };
   const rows: Row[] = [];
   const PAGE = 1000;
   let page = 0;
   while (true) {
     const { data, error } = await sb
       .from('restaurants')
-      .select('id, category, kakao_category, source')
+      .select('id, name, category, kakao_category, source')
       .range(page * PAGE, (page + 1) * PAGE - 1);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     if (!data || data.length === 0) break;
@@ -74,11 +74,13 @@ export async function POST() {
   for (let i = 0; i < rows.length; i += BATCH) {
     const batch = rows.slice(i, i + BATCH);
 
-    const patches = batch.map(r => {
-      const mid = r.source === 'kakao' ? kakaoMid(r.kakao_category) : null;
-      const unniepick_category = normalize(mid ?? r.category);
-      return { id: r.id, unniepick_category };
-    });
+    const patches = batch
+      .filter(r => r.id && r.name)
+      .map(r => {
+        const mid = r.source === 'kakao' ? kakaoMid(r.kakao_category) : null;
+        const unniepick_category = normalize(mid ?? r.category);
+        return { id: r.id, name: r.name!, unniepick_category };
+      });
 
     const { error: upsertErr } = await sb
       .from('restaurants')
