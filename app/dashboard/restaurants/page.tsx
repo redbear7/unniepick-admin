@@ -2371,6 +2371,42 @@ function DetailModal({ r, onClose, registered, onRegister, registering, onUpdate
             <Info label="좌표" value={r.latitude && r.longitude ? `${r.latitude}, ${r.longitude}` : null} />
           </div>
 
+          {/* 업종카테고리 */}
+          <Section title="업종카테고리" icon={<Tag className="w-4 h-4" />}>
+            <div className="space-y-2 text-sm">
+              {/* 카카오 */}
+              {(r as any).kakao_category && (
+                <div className="flex items-start gap-2">
+                  <span className="shrink-0 mt-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-yellow-500/15 text-yellow-400 border border-yellow-500/30">K</span>
+                  <div className="flex flex-wrap gap-1">
+                    {((r as any).kakao_category as string).split('>').map((part: string, i: number, arr: string[]) => (
+                      <span key={i} className="flex items-center gap-1">
+                        <span className={`px-2 py-0.5 rounded text-xs ${i === arr.length - 1 ? 'bg-yellow-500/15 text-yellow-300 border border-yellow-500/25' : 'bg-fill-subtle text-muted'}`}>
+                          {part.trim()}
+                        </span>
+                        {i < arr.length - 1 && <span className="text-dim text-xs">›</span>}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {/* 네이버 */}
+              {r.category && (
+                <div className="flex items-start gap-2">
+                  <span className="shrink-0 mt-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-600/20 text-green-400 border border-green-600/30">N</span>
+                  <span className="px-2 py-0.5 rounded text-xs bg-green-600/10 text-green-300 border border-green-600/20">{r.category}</span>
+                </div>
+              )}
+              {/* 언니픽 정규화 */}
+              <div className="flex items-start gap-2">
+                <span className="shrink-0 mt-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#FF6F0F]/15 text-[#FF6F0F] border border-[#FF6F0F]/30">U</span>
+                <span className={`px-2 py-0.5 rounded text-xs border ${(r as any).unniepick_category ? 'bg-[#FF6F0F]/10 text-[#FF6F0F] border-[#FF6F0F]/25' : 'bg-fill-subtle text-dim border-border-subtle'}`}>
+                  {(r as any).unniepick_category ?? '미정규화'}
+                </span>
+              </div>
+            </div>
+          </Section>
+
           {/* 외부 링크 버튼 */}
           <div className="flex gap-2 flex-wrap">
             {r.naver_place_url && (
