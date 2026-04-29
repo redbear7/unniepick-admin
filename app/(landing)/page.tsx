@@ -29,11 +29,6 @@ interface AiResult {
   rank: number; name: string; cat: string; rating: number; reviews: number;
   why: string; coupon?: { disc: string; title: string; desc: string };
 }
-interface AiMockItem {
-  chips: { text: string; color: string }[];
-  intent: string; count: number; results: AiResult[];
-}
-
 const MOCK_STORES: StoreItem[] = [
   { id:1,  name:'빈스커피 상남점', emoji:'☕', cat:'cafe',    lat:35.2295, lng:128.6838, coupon:'아메리카노 500원 할인', timesale:false, dist:'143m' },
   { id:2,  name:'헤어스튜디오K',   emoji:'✂️', cat:'beauty',  lat:35.2308, lng:128.6875, coupon:'커트 20% 할인',        timesale:false, dist:'380m' },
@@ -70,33 +65,6 @@ const PICK_POOL = [
   { icon:'🏊',  text:'수영장 첫 방문 할인' },
 ];
 
-const AI_MOCK: Record<string, AiMockItem> = {
-  '아메리카노 500원 할인': {
-    chips: [{ text:'카페', color:'#FF6F0F' }, { text:'할인쿠폰', color:'#FF6F0F' }],
-    intent: '아메리카노 할인 쿠폰이 있는 카페', count: 8,
-    results: [
-      { rank:1, name:'빈스커피 상남점', cat:'카페', rating:4.7, reviews:312,
-        why:'아메리카노 500원 할인 쿠폰 보유. 스탬프 카드 운영 중.',
-        coupon: { disc:'500원', title:'아메리카노 할인', desc:'HOT/ICE 선택 가능' } },
-      { rank:2, name:'모카팩토리', cat:'카페', rating:4.5, reviews:198,
-        why:'버블티 2+1 쿠폰 진행 중. 오후 타임세일.',
-        coupon: { disc:'2+1', title:'버블티 2+1', desc:'오후 2~6시 한정' } },
-    ],
-  },
-  '헤어샵 할인쿠폰': {
-    chips: [{ text:'뷰티·미용', color:'#C026D3' }, { text:'할인쿠폰', color:'#FF6F0F' }],
-    intent: '헤어샵 할인 쿠폰이 있는 미용실', count: 12,
-    results: [
-      { rank:1, name:'헤어스튜디오K', cat:'뷰티·미용', rating:4.8, reviews:245,
-        why:'커트 20% 할인쿠폰 보유. "친절해요" 리뷰 다수.',
-        coupon: { disc:'20%', title:'커트+드라이 할인', desc:'예약 고객 한정' } },
-      { rank:2, name:'네일팝', cat:'뷰티·미용', rating:4.6, reviews:187,
-        why:'젤네일 25% 타임세일 진행 중. 13~17시 한정.',
-        coupon: { disc:'25%', title:'젤네일 타임세일', desc:'13:00~17:00 한정' } },
-    ],
-  },
-};
-
 const CATEGORIES = [
   { key:'all',     label:'전체',     emoji:'🗺️' },
   { key:'cafe',    label:'카페',     emoji:'☕' },
@@ -119,8 +87,6 @@ function shuffled<T>(arr: T[]): T[] {
   }
   return a;
 }
-function wait(ms: number) { return new Promise(r => setTimeout(r, ms)); }
-
 /* ──────────────────────────────────────────────────────────────── */
 /* Main Page                                                         */
 /* ──────────────────────────────────────────────────────────────── */
@@ -340,23 +306,60 @@ export default function HomePage() {
     setAiCount(0);
     setAiResults([]);
 
-    const mock: AiMockItem = AI_MOCK[q] ?? {
-      chips: [{ text: q, color: '#FF6F0F' }],
-      intent: `"${q}"에 맞는 가게`,
-      count: 0, results: [],
-    };
+    try {
+      const res = await fetch('/api/restaurants/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: q }),
+      });
 
-    await wait(700);
-    setAiFilter({ chips: mock.chips, intent: mock.intent });
-    setAiStage('searching');
-    await wait(600);
-    setAiCount(mock.count);
-    setAiStage('ranking');
-    for (const r of mock.results) {
-      await wait(700);
-      setAiResults(prev => [...prev, r]);
+      if (!res.ok || !res.body) throw new Error('검색 실패');
+
+      const reader = res.body.getReader();
+      const dec = new TextDecoder();
+      let buf = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        const lines = buf.split('\n');
+        buf = lines.pop() ?? '';
+
+        for (const line of lines) {
+          if (!line.startsWith('data:')) continue;
+          try {
+            const event = JSON.parse(line.slice(5).trim());
+            if (event.type === 'filter') {
+              setAiFilter({ chips: event.chips ?? [], intent: event.rewritten_intent ?? q });
+              setAiStage('searching');
+            } else if (event.type === 'candidates') {
+              setAiCount(event.count);
+              setAiStage('ranking');
+            } else if (event.type === 'recommendation') {
+              setAiResults(prev => [...prev, {
+                rank:    event.rank,
+                name:    event.name,
+                cat:     event.category,
+                rating:  event.rating ?? 0,
+                reviews: event.review_count ?? 0,
+                why:     event.why,
+                coupon:  event.coupon ? {
+                  disc:  event.coupon.discount,
+                  title: event.coupon.title,
+                  desc:  event.coupon.description,
+                } : undefined,
+              } as AiResult]);
+            } else if (event.type === 'done') {
+              setAiStage('done');
+            }
+          } catch {}
+        }
+      }
+      setAiStage('done');
+    } catch {
+      setAiStage('done');
     }
-    setAiStage('done');
   };
 
   const onSubmit = (e: React.FormEvent) => {

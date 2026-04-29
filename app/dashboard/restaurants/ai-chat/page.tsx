@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import {
   Sparkles, Send, Search, Loader2, Check, Star, MapPin,
   MessageSquare, UtensilsCrossed, ExternalLink, Phone,
@@ -11,25 +11,24 @@ import {
 /* Types                                                                */
 /* ------------------------------------------------------------------ */
 
+interface FilterChip { text: string; color: string; }
+
 interface ParsedFilter {
-  location?: { gu?: string | null; dong?: string | null };
-  category_hints?: string[];
-  scene?: string;
-  amenity?: string[];
-  mood?: string[];
-  price_tier?: 'low' | 'mid' | 'high';
-  craving?: string[];
-  rewritten_intent?: string;
+  gu: string | null;
+  dong: string | null;
+  category: string | null;
+  style: string | null;
+  keywords: string[];
+  rewritten_intent: string;
+  chips: FilterChip[];
 }
 
 interface Coupon {
-  id: string;
   title: string;
   description: string;
-  discount: string;         // "20%" or "3,000원" or "무료"
-  conditions?: string;      // "2인 이상 주문 시"
-  valid_until: string;      // "2026-05-31"
-  is_exclusive?: boolean;   // 언니픽 독점
+  discount: string;
+  valid_until: string;
+  is_exclusive: boolean;
 }
 
 interface Recommendation {
@@ -37,22 +36,24 @@ interface Recommendation {
   restaurant_id: string;
   name: string;
   category: string;
-  rating?: number;
-  review_count?: number;
-  address?: string;
-  image_url?: string;
-  phone?: string;
-  naver_place_url?: string;
+  unniepick_style?: string | null;
+  rating?: number | null;
+  review_count?: number | null;
+  blog_count?: number;
+  address?: string | null;
+  image_url?: string | null;
+  phone?: string | null;
+  naver_place_url?: string | null;
+  kakao_place_url?: string | null;
   why: string;
   matched_signals: string[];
-  owner_pick?: string;
-  coupon?: Coupon;
+  coupon?: Coupon | null;
 }
 
 type StageStatus = 'idle' | 'parsing' | 'searching' | 'ranking' | 'done';
 
 /* ------------------------------------------------------------------ */
-/* Mock Data (AI 연동 전 테스트용)                                      */
+/* Example Queries                                                      */
 /* ------------------------------------------------------------------ */
 
 const EXAMPLE_QUERIES = [
@@ -66,162 +67,6 @@ const EXAMPLE_QUERIES = [
   '아이랑 갈만한 브런치',
 ];
 
-const MOCK_DATA: Record<string, { filter: ParsedFilter; candidateCount: number; recommendations: Recommendation[] }> = {
-  '상남동 상견례 룸 한식': {
-    filter: {
-      location: { gu: '성산구', dong: '상남동' },
-      category_hints: ['한식', '한정식'],
-      scene: '상견례',
-      amenity: ['룸', '단체석'],
-      mood: ['고급진', '조용한'],
-      price_tier: 'high',
-      rewritten_intent: '상남동에서 양가 상견례를 진행할 수 있는 룸이 있는 격식 있는 한식당',
-    },
-    candidateCount: 28,
-    recommendations: [
-      {
-        rank: 1,
-        restaurant_id: 'mock-1',
-        name: '서라벌한정식 상남본점',
-        category: '한정식',
-        rating: 4.8,
-        review_count: 312,
-        address: '창원 성산구 상남동 중앙대로 123',
-        image_url: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&q=80',
-        phone: '055-123-4567',
-        naver_place_url: 'https://map.naver.com',
-        why: 'VIP 독립룸 2개와 정통 한정식 코스를 갖춘 창원 상남동 대표 상견례 장소. 최근 3개월 블로그 후기 12건에서 "상견례", "부모님 모시고" 키워드가 다수 등장.',
-        matched_signals: ['"음식이 맛있어요" 267명', '"재료가 신선해요" 185명', '룸 태그', '한정식 카테고리'],
-        owner_pick: '25년 된 한옥 서까래 그대로 살린 공간',
-        coupon: {
-          id: 'cp-1',
-          title: '상견례 코스 특별가',
-          description: '양가 상견례 코스 예약 시',
-          discount: '15%',
-          conditions: '6인 이상 예약, 3일 전 예약 필수',
-          valid_until: '2026-06-30',
-          is_exclusive: true,
-        },
-      },
-      {
-        rank: 2,
-        restaurant_id: 'mock-2',
-        name: '한옥마당 상남점',
-        category: '한식',
-        rating: 4.7,
-        review_count: 198,
-        address: '창원 성산구 상남동 마디미로 45',
-        image_url: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=600&q=80',
-        phone: '055-234-5678',
-        naver_place_url: 'https://map.naver.com',
-        why: '프라이빗 다이닝룸 3개 보유, 전통 한정식 + 와인 페어링 제공. "조용한 분위기"와 "격식 있는 서비스" 리뷰 다수.',
-        matched_signals: ['"분위기가 좋아요" 142명', '"친절해요" 121명', '프라이빗룸', '예약가능'],
-        coupon: {
-          id: 'cp-2',
-          title: '와인 1병 무료',
-          description: '한정식 코스 2인 이상 주문 시',
-          discount: '무료',
-          conditions: '평일 저녁 한정',
-          valid_until: '2026-05-31',
-        },
-      },
-      {
-        rank: 3,
-        restaurant_id: 'mock-3',
-        name: '청기와 상남',
-        category: '한식',
-        rating: 4.6,
-        review_count: 156,
-        address: '창원 성산구 상남동 상남로 89',
-        image_url: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=600&q=80',
-        phone: '055-345-6789',
-        naver_place_url: 'https://map.naver.com',
-        why: '단체석 최대 20명 수용, 양가 상견례 코스 메뉴 별도 운영. 한복 대여 서비스 포함.',
-        matched_signals: ['단체석 태그', '"특별한 메뉴" 98명', '상견례 코스'],
-        owner_pick: '상견례 가족 사진 촬영 무료 제공',
-      },
-    ],
-  },
-  '오늘 매운 거 혼밥 1만원': {
-    filter: {
-      category_hints: ['분식', '중식', '한식'],
-      scene: '혼밥',
-      craving: ['매운거'],
-      price_tier: 'low',
-      rewritten_intent: '1만원 이하 혼자 먹기 편한 매운 메뉴',
-    },
-    candidateCount: 42,
-    recommendations: [
-      {
-        rank: 1,
-        restaurant_id: 'mock-4',
-        name: '신전떡볶이 상남점',
-        category: '분식',
-        rating: 4.5,
-        review_count: 523,
-        address: '창원 성산구 상남동 상남로 22',
-        image_url: 'https://images.unsplash.com/photo-1562967914-608f82629710?w=600&q=80',
-        why: '1인 세트 8,500원, 카운터석 6석으로 혼밥하기 편함. 매운맛 단계 조절 가능.',
-        matched_signals: ['"매워요" 187명', '1인석 태그', '8천원대'],
-        coupon: {
-          id: 'cp-3',
-          title: '주먹밥 무료 추가',
-          description: '매운 떡볶이 세트 주문 시',
-          discount: '무료',
-          conditions: '런치타임 11-14시',
-          valid_until: '2026-05-15',
-          is_exclusive: true,
-        },
-      },
-      {
-        rank: 2,
-        restaurant_id: 'mock-5',
-        name: '창원 마라탕 본점',
-        category: '중식',
-        rating: 4.6,
-        review_count: 289,
-        address: '창원 성산구 중앙동 중앙대로 156',
-        image_url: 'https://images.unsplash.com/photo-1552611052-33e04de081de?w=600&q=80',
-        why: '1인 마라탕 9천원, 본인 맵기 선택 가능. 저녁 늦게까지 영업하여 혼밥 자유로움.',
-        matched_signals: ['"혼밥 좋아요" 82명', '매운맛 3단계'],
-      },
-    ],
-  },
-  '진해 벚꽃뷰 카페': {
-    filter: {
-      location: { gu: '진해구' },
-      category_hints: ['카페'],
-      mood: ['뷰맛집', '인스타감성'],
-      rewritten_intent: '진해에서 벚꽃 뷰가 좋은 감성 카페',
-    },
-    candidateCount: 17,
-    recommendations: [
-      {
-        rank: 1,
-        restaurant_id: 'mock-6',
-        name: '여좌천뷰 카페',
-        category: '카페',
-        rating: 4.9,
-        review_count: 1042,
-        address: '창원 진해구 여좌동 여좌천로 12',
-        image_url: 'https://images.unsplash.com/photo-1511920170033-f8396924c348?w=600&q=80',
-        why: '여좌천 벚꽃길 바로 앞. 2층 통창에서 벚꽃 터널을 한눈에. 4월 군항제 기간 예약 필수.',
-        matched_signals: ['"뷰가 좋아요" 412명', '"벚꽃" 리뷰 89건', '루프탑 태그'],
-        owner_pick: '벚꽃 시즌 한정 라떼 3종',
-        coupon: {
-          id: 'cp-4',
-          title: '벚꽃 라떼 20% 할인',
-          description: '시즌 한정 라떼 메뉴 전체',
-          discount: '20%',
-          conditions: '군항제 기간 (~2026-04-14)',
-          valid_until: '2026-04-14',
-          is_exclusive: true,
-        },
-      },
-    ],
-  },
-};
-
 /* ------------------------------------------------------------------ */
 /* Main Page                                                            */
 /* ------------------------------------------------------------------ */
@@ -233,47 +78,83 @@ export default function AIChatPage() {
   const [candidateCount, setCandidateCount] = useState(0);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
-  async function simulateSearch(q: string) {
+  async function doSearch(q: string) {
+    if (!q.trim()) return;
+
+    abortRef.current?.abort();
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
+
     setStage('parsing');
     setFilter(null);
     setCandidateCount(0);
     setRecommendations([]);
 
-    // 목 데이터 매칭
-    const mock = MOCK_DATA[q.trim()] ?? generateGenericMock(q);
+    try {
+      const res = await fetch('/api/restaurants/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: q }),
+        signal: ctrl.signal,
+      });
 
-    // Stage 1: 파싱
-    await wait(800);
-    setFilter(mock.filter);
+      if (!res.ok || !res.body) throw new Error('검색 실패');
 
-    // Stage 2: 검색
-    setStage('searching');
-    await wait(600);
-    setCandidateCount(mock.candidateCount);
+      const reader = res.body.getReader();
+      const dec    = new TextDecoder();
+      let buf      = '';
 
-    // Stage 3: 랭킹 — 카드 하나씩 점진 추가
-    setStage('ranking');
-    for (const r of mock.recommendations) {
-      await wait(700);
-      setRecommendations((prev) => [...prev, r]);
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        const lines = buf.split('\n');
+        buf = lines.pop() ?? '';
+
+        for (const line of lines) {
+          if (!line.startsWith('data:')) continue;
+          try {
+            const event = JSON.parse(line.slice(5).trim());
+            if (event.type === 'filter') {
+              setFilter(event as ParsedFilter);
+              setStage('searching');
+            } else if (event.type === 'candidates') {
+              setCandidateCount(event.count);
+              setStage('ranking');
+            } else if (event.type === 'recommendation') {
+              setRecommendations(prev => [...prev, event as Recommendation]);
+            } else if (event.type === 'done') {
+              setStage('done');
+            } else if (event.type === 'error') {
+              throw new Error(event.message);
+            }
+          } catch {}
+        }
+      }
+      setStage('done');
+    } catch (e: any) {
+      if (e?.name !== 'AbortError') {
+        setStage('done');
+        alert(`검색 오류: ${e?.message ?? '알 수 없는 오류'}`);
+      }
     }
-
-    setStage('done');
   }
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!query.trim() || stage === 'parsing' || stage === 'searching' || stage === 'ranking') return;
-    simulateSearch(query);
+    doSearch(query);
   }
 
   function runExample(q: string) {
     setQuery(q);
-    simulateSearch(q);
+    doSearch(q);
   }
 
   function reset() {
+    abortRef.current?.abort();
     setQuery('');
     setStage('idle');
     setFilter(null);
@@ -294,7 +175,7 @@ export default function AIChatPage() {
             AI 맛집 추천
           </h1>
           <p className="text-sm text-muted mt-1">
-            자연어로 질문하면 창원 맛집을 상황에 맞춰 추천합니다 · <span className="text-amber-400">UI 시안 (목 데이터)</span>
+            자연어로 질문하면 창원 맛집을 상황에 맞춰 추천합니다 · <span className="text-green-400">실서비스 연결</span>
           </p>
         </div>
         {stage !== 'idle' && (
@@ -353,12 +234,7 @@ export default function AIChatPage() {
 
       {/* 진행 상황 */}
       {stage !== 'idle' && (
-        <ProgressPanel
-          stage={stage}
-          filter={filter}
-          candidateCount={candidateCount}
-          query={query}
-        />
+        <ProgressPanel stage={stage} filter={filter} candidateCount={candidateCount} />
       )}
 
       {/* 결과 */}
@@ -376,11 +252,11 @@ export default function AIChatPage() {
         </div>
       )}
 
-      {/* 빈 상태 (done인데 결과 없음) */}
+      {/* 빈 상태 */}
       {stage === 'done' && recommendations.length === 0 && (
         <div className="text-center py-16 text-muted">
           <p>조건에 맞는 맛집을 찾지 못했어요.</p>
-          <p className="text-sm mt-1">조건을 조금 완화해보세요.</p>
+          <p className="text-sm mt-1">조건을 조금 완화하거나 다른 키워드로 검색해보세요.</p>
         </div>
       )}
     </div>
@@ -391,45 +267,27 @@ export default function AIChatPage() {
 /* Progress Panel                                                       */
 /* ------------------------------------------------------------------ */
 
-function ProgressPanel({
-  stage, filter, candidateCount, query,
-}: {
+function ProgressPanel({ stage, filter, candidateCount }: {
   stage: StageStatus;
   filter: ParsedFilter | null;
   candidateCount: number;
-  query: string;
 }) {
   return (
     <div className="bg-card border border-border-main rounded-xl p-4 space-y-3">
-      <StageRow
-        label="쿼리 분석"
-        done={stage !== 'parsing' && !!filter}
-        active={stage === 'parsing'}
-      >
+      <StageRow label="쿼리 분석" done={stage !== 'parsing' && !!filter} active={stage === 'parsing'}>
         {filter && (
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {filter.location?.dong && (
-              <Chip icon={<MapPin className="w-3 h-3" />} color="blue">{filter.location.dong}</Chip>
+          <>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {filter.chips?.map((c, i) => (
+                <span key={i} className="px-2 py-0.5 text-xs rounded-full border flex items-center gap-1" style={{ color: c.color, borderColor: c.color + '50', background: c.color + '18' }}>
+                  {c.text}
+                </span>
+              ))}
+            </div>
+            {filter.rewritten_intent && (
+              <p className="text-xs text-muted mt-2 italic">💭 {filter.rewritten_intent}</p>
             )}
-            {filter.location?.gu && !filter.location?.dong && (
-              <Chip icon={<MapPin className="w-3 h-3" />} color="blue">{filter.location.gu}</Chip>
-            )}
-            {filter.scene && <Chip color="purple">{filter.scene}</Chip>}
-            {filter.category_hints?.map((c) => (
-              <Chip key={c} icon={<UtensilsCrossed className="w-3 h-3" />} color="orange">{c}</Chip>
-            ))}
-            {filter.amenity?.map((a) => <Chip key={a} color="green">{a}</Chip>)}
-            {filter.mood?.map((m) => <Chip key={m} color="pink">{m}</Chip>)}
-            {filter.craving?.map((c) => <Chip key={c} color="red">{c}</Chip>)}
-            {filter.price_tier && (
-              <Chip color="amber">
-                {filter.price_tier === 'low' ? '1만원↓' : filter.price_tier === 'mid' ? '1~3만원' : '3만원↑'}
-              </Chip>
-            )}
-          </div>
-        )}
-        {filter?.rewritten_intent && (
-          <p className="text-xs text-muted mt-2 italic">💭 {filter.rewritten_intent}</p>
+          </>
         )}
       </StageRow>
 
@@ -445,22 +303,13 @@ function ProgressPanel({
         )}
       </StageRow>
 
-      <StageRow
-        label="AI 추천 선별"
-        done={stage === 'done'}
-        active={stage === 'ranking'}
-      />
+      <StageRow label="AI 추천 선별" done={stage === 'done'} active={stage === 'ranking'} />
     </div>
   );
 }
 
-function StageRow({
-  label, done, active, children,
-}: {
-  label: string;
-  done: boolean;
-  active: boolean;
-  children?: React.ReactNode;
+function StageRow({ label, done, active, children }: {
+  label: string; done: boolean; active: boolean; children?: React.ReactNode;
 }) {
   return (
     <div className="flex items-start gap-3">
@@ -485,23 +334,6 @@ function StageRow({
   );
 }
 
-function Chip({ children, icon, color }: { children: React.ReactNode; icon?: React.ReactNode; color: 'blue' | 'purple' | 'orange' | 'green' | 'pink' | 'red' | 'amber' }) {
-  const map = {
-    blue: 'bg-blue-500/15 text-blue-400 border-blue-500/25',
-    purple: 'bg-purple-500/15 text-purple-400 border-purple-500/25',
-    orange: 'bg-[#FF6F0F]/15 text-[#FF6F0F] border-[#FF6F0F]/30',
-    green: 'bg-green-500/15 text-green-400 border-green-500/25',
-    pink: 'bg-pink-500/15 text-pink-400 border-pink-500/25',
-    red: 'bg-red-500/15 text-red-400 border-red-500/25',
-    amber: 'bg-amber-500/15 text-amber-400 border-amber-500/25',
-  };
-  return (
-    <span className={`px-2 py-0.5 text-xs rounded-full border flex items-center gap-1 ${map[color]}`}>
-      {icon} {children}
-    </span>
-  );
-}
-
 /* ------------------------------------------------------------------ */
 /* Recommendation Card                                                  */
 /* ------------------------------------------------------------------ */
@@ -510,7 +342,7 @@ function RecommendationCard({ r }: { r: Recommendation }) {
   const medalColor = r.rank === 1 ? 'bg-amber-500' : r.rank === 2 ? 'bg-slate-400' : r.rank === 3 ? 'bg-orange-700' : 'bg-fill-subtle';
 
   return (
-    <div className="bg-card border border-border-main rounded-xl overflow-hidden hover:border-[#FF6F0F]/50 transition group">
+    <div className="bg-card border border-border-main rounded-xl overflow-hidden hover:border-[#FF6F0F]/50 transition">
       <div className="flex flex-col md:flex-row">
         {/* 이미지 */}
         {r.image_url && (
@@ -524,18 +356,25 @@ function RecommendationCard({ r }: { r: Recommendation }) {
 
         {/* 내용 */}
         <div className="flex-1 p-5 space-y-3">
-          <div className="flex items-start justify-between gap-3">
-            <div>
+          <div className="flex items-start gap-3">
+            {!r.image_url && (
+              <div className={`w-8 h-8 rounded-full ${medalColor} flex items-center justify-center text-white font-bold shadow shrink-0`}>
+                {r.rank}
+              </div>
+            )}
+            <div className="flex-1">
               <h3 className="text-lg font-bold text-primary">{r.name}</h3>
-              <p className="text-sm text-muted flex items-center gap-2 mt-1">
+              <p className="text-sm text-muted flex items-center gap-2 mt-1 flex-wrap">
                 <span>{r.category}</span>
+                {r.unniepick_style && <span className="text-violet-400">{r.unniepick_style}</span>}
                 {r.rating != null && (
                   <span className="flex items-center gap-1 text-amber-400">
                     <Star className="w-3.5 h-3.5 fill-amber-400" /> {r.rating}
                   </span>
                 )}
-                {r.review_count != null && (
-                  <span>리뷰 {r.review_count.toLocaleString()}</span>
+                {r.review_count != null && <span>리뷰 {r.review_count.toLocaleString()}</span>}
+                {r.blog_count != null && r.blog_count > 0 && (
+                  <span className="text-sky-400">블로그 {r.blog_count}건</span>
                 )}
               </p>
             </div>
@@ -549,16 +388,6 @@ function RecommendationCard({ r }: { r: Recommendation }) {
             <p className="text-sm text-secondary leading-6">{r.why}</p>
           </div>
 
-          {/* 점장 자랑 */}
-          {r.owner_pick && (
-            <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-3 space-y-1">
-              <p className="text-xs text-amber-400 flex items-center gap-1 font-semibold">
-                <Info className="w-3 h-3" /> 사장님 자랑
-              </p>
-              <p className="text-sm text-secondary italic">"{r.owner_pick}"</p>
-            </div>
-          )}
-
           {/* 쿠폰 */}
           {r.coupon && <CouponCard coupon={r.coupon} />}
 
@@ -570,9 +399,7 @@ function RecommendationCard({ r }: { r: Recommendation }) {
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {r.matched_signals.map((s, i) => (
-                  <span key={i} className="text-[11px] bg-fill-subtle text-muted px-2 py-0.5 rounded">
-                    {s}
-                  </span>
+                  <span key={i} className="text-[11px] bg-fill-subtle text-muted px-2 py-0.5 rounded">{s}</span>
                 ))}
               </div>
             </div>
@@ -587,21 +414,18 @@ function RecommendationCard({ r }: { r: Recommendation }) {
             )}
             <div className="flex gap-1.5">
               {r.phone && (
-                <a
-                  href={`tel:${r.phone}`}
-                  className="px-2.5 py-1 text-xs bg-fill-subtle hover:bg-[#FF6F0F]/15 hover:text-[#FF6F0F] rounded-lg flex items-center gap-1 transition"
-                >
+                <a href={`tel:${r.phone}`} className="px-2.5 py-1 text-xs bg-fill-subtle hover:bg-[#FF6F0F]/15 hover:text-[#FF6F0F] rounded-lg flex items-center gap-1 transition">
                   <Phone className="w-3 h-3" /> 전화
                 </a>
               )}
               {r.naver_place_url && (
-                <a
-                  href={r.naver_place_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-2.5 py-1 text-xs bg-fill-subtle hover:bg-[#FF6F0F]/15 hover:text-[#FF6F0F] rounded-lg flex items-center gap-1 transition"
-                >
+                <a href={r.naver_place_url} target="_blank" rel="noopener noreferrer" className="px-2.5 py-1 text-xs bg-fill-subtle hover:bg-green-500/15 hover:text-green-400 rounded-lg flex items-center gap-1 transition">
                   <ExternalLink className="w-3 h-3" /> 네이버
+                </a>
+              )}
+              {r.kakao_place_url && (
+                <a href={r.kakao_place_url} target="_blank" rel="noopener noreferrer" className="px-2.5 py-1 text-xs bg-fill-subtle hover:bg-yellow-500/15 hover:text-yellow-400 rounded-lg flex items-center gap-1 transition">
+                  <ExternalLink className="w-3 h-3" /> 카카오
                 </a>
               )}
             </div>
@@ -619,103 +443,59 @@ function RecommendationCard({ r }: { r: Recommendation }) {
 function CouponCard({ coupon }: { coupon: Coupon }) {
   const [claimed, setClaimed] = useState(false);
 
-  const validDate = new Date(coupon.valid_until);
-  const daysLeft = Math.ceil((validDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+  const daysLeft = coupon.valid_until
+    ? Math.ceil((new Date(coupon.valid_until).getTime() - Date.now()) / 86400000)
+    : 999;
 
   return (
     <div className="relative overflow-hidden rounded-lg border-2 border-dashed border-[#FF6F0F]/40 bg-gradient-to-r from-[#FF6F0F]/10 to-amber-500/5">
-      {/* 티켓 모양 좌측 원형 notches */}
       <div className="absolute top-1/2 -left-2 w-4 h-4 rounded-full bg-card border border-[#FF6F0F]/40 -translate-y-1/2" />
       <div className="absolute top-1/2 -right-2 w-4 h-4 rounded-full bg-card border border-[#FF6F0F]/40 -translate-y-1/2" />
 
       <div className="p-3 flex items-center gap-3">
-        {/* 할인 큰 글씨 */}
         <div className="shrink-0 flex flex-col items-center justify-center bg-[#FF6F0F] text-white rounded-lg px-3 py-2 min-w-[72px]">
           <Ticket className="w-3 h-3 mb-0.5" />
           <p className="font-black text-lg leading-none">{coupon.discount}</p>
           <p className="text-[9px] opacity-80 mt-0.5">할인</p>
         </div>
-
-        {/* 내용 */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
             <p className="text-sm font-bold text-[#FF6F0F]">{coupon.title}</p>
             {coupon.is_exclusive && (
-              <span className="px-1.5 py-0 text-[9px] bg-amber-500/25 text-amber-400 rounded border border-amber-500/40 font-bold">
-                언니픽 독점
-              </span>
+              <span className="px-1.5 py-0 text-[9px] bg-amber-500/25 text-amber-400 rounded border border-amber-500/40 font-bold">언니픽 독점</span>
             )}
           </div>
-          <p className="text-xs text-secondary mt-0.5">{coupon.description}</p>
-          {coupon.conditions && (
-            <p className="text-[11px] text-muted mt-1">· {coupon.conditions}</p>
+          {coupon.description && <p className="text-xs text-secondary mt-0.5">{coupon.description}</p>}
+          {coupon.valid_until && (
+            <p className="text-[10px] text-muted mt-1">
+              {daysLeft > 0
+                ? <span className={daysLeft <= 7 ? 'text-red-400' : ''}>⏳ {daysLeft}일 남음 ({coupon.valid_until}까지)</span>
+                : <span className="text-red-400">만료됨</span>
+              }
+            </p>
           )}
-          <p className="text-[10px] text-muted mt-1">
-            {daysLeft > 0 ? (
-              <span className={daysLeft <= 7 ? 'text-red-400' : ''}>
-                ⏳ {daysLeft}일 남음 ({coupon.valid_until}까지)
-              </span>
-            ) : (
-              <span className="text-red-400">만료됨</span>
-            )}
-          </p>
         </div>
-
-        {/* 받기 버튼 */}
         <button
           onClick={() => setClaimed(true)}
           disabled={claimed || daysLeft <= 0}
           className={`shrink-0 px-3 py-2 rounded-lg text-xs font-semibold transition flex items-center gap-1 ${
-            claimed
-              ? 'bg-green-500/15 text-green-400 border border-green-500/30'
-              : daysLeft <= 0
-              ? 'bg-fill-subtle text-muted cursor-not-allowed'
-              : 'bg-[#FF6F0F] text-white hover:bg-[#FF6F0F]/90'
+            claimed ? 'bg-green-500/15 text-green-400 border border-green-500/30'
+            : daysLeft <= 0 ? 'bg-fill-subtle text-muted cursor-not-allowed'
+            : 'bg-[#FF6F0F] text-white hover:bg-[#FF6F0F]/90'
           }`}
         >
-          {claimed ? (
-            <>
-              <Check className="w-3.5 h-3.5" /> 받음
-            </>
-          ) : (
-            <>
-              <Gift className="w-3.5 h-3.5" /> 받기
-            </>
-          )}
+          {claimed ? <><Check className="w-3.5 h-3.5" /> 받음</> : <><Gift className="w-3.5 h-3.5" /> 받기</>}
         </button>
       </div>
 
-      {/* 점선 구분 */}
-      <div className="border-t border-dashed border-[#FF6F0F]/20 mx-10" />
-
-      {/* 받은 상태일 때 쿠폰 코드 */}
       {claimed && (
-        <div className="px-3 py-2 text-center bg-[#FF6F0F]/5">
+        <div className="border-t border-dashed border-[#FF6F0F]/20 mx-10 px-3 py-2 text-center bg-[#FF6F0F]/5">
           <p className="text-[10px] text-muted">매장에서 이 코드를 제시해주세요</p>
           <p className="font-mono font-bold text-[#FF6F0F] tracking-widest text-sm mt-0.5">
-            UNNIE-{coupon.id.toUpperCase()}-{Math.random().toString(36).slice(2, 6).toUpperCase()}
+            UNNIE-{Math.random().toString(36).slice(2, 8).toUpperCase()}
           </p>
         </div>
       )}
     </div>
   );
-}
-
-/* ------------------------------------------------------------------ */
-/* Utils                                                                */
-/* ------------------------------------------------------------------ */
-
-function wait(ms: number) {
-  return new Promise((r) => setTimeout(r, ms));
-}
-
-/** MOCK_DATA에 없는 쿼리는 포괄적 가짜 응답 생성 */
-function generateGenericMock(q: string) {
-  return {
-    filter: {
-      rewritten_intent: `"${q}"에 맞는 맛집 (목 데이터 — 실제 AI 연동 전)`,
-    } as ParsedFilter,
-    candidateCount: 0,
-    recommendations: [] as Recommendation[],
-  };
 }
