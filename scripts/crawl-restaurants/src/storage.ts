@@ -28,8 +28,6 @@ export interface RestaurantData {
   phone?: string;
   category?: string;
   rating?: number;
-  review_count?: number;
-  visitor_review_count?: number;
   latitude?: number;
   longitude?: number;
   image_url?: string;

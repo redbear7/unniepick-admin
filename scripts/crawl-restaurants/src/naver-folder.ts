@@ -226,8 +226,6 @@ async function fetchPlaceBasicInfo(page: import('playwright').Page, placeId: str
             latitude: val.y ? parseFloat(val.y) : undefined,
             longitude: val.x ? parseFloat(val.x) : undefined,
             image_url: val.imageUrl ?? val.thumUrl ?? '',
-            visitor_review_count: parseInt((val.visitorReviewCount ?? '0').replace(/,/g, '')) || 0,
-            review_count: parseInt((val.blogCafeReviewCount ?? val.totalReviewCount ?? '0').replace(/,/g, '')) || 0,
             naver_place_url: `https://map.naver.com/p/entry/place/${pid}`,
           } as any;
         }
@@ -309,8 +307,6 @@ for (let i = 0; i < newItems.length; i++) {
         phone: '',
         image_url: '',
         naver_place_url: `https://map.naver.com/p/entry/place/${item.placeId}`,
-        visitor_review_count: 0,
-        review_count: 0,
       };
     }
 

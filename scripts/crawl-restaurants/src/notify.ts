@@ -13,11 +13,10 @@ export async function notifyNewRestaurants(restaurants: RestaurantData[], keywor
   for (const r of restaurants.slice(0, 10)) {
     const name = escapeMarkdown(r.name);
     const cat = escapeMarkdown(r.category ?? '기타');
-    const reviews = r.visitor_review_count ?? 0;
     const addr = escapeMarkdown(r.address ?? '');
 
     text += `📍 *${name}* \\(${cat}\\)\n`;
-    text += `   리뷰 ${reviews}건`;
+    text += `   ${addr}`;
 
     if (r.review_keywords?.length) {
       const kw = r.review_keywords.slice(0, 2)

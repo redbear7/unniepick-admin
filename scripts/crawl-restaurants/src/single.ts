@@ -65,8 +65,6 @@ async function getFirstResult(page: Page, query: string): Promise<RestaurantData
         latitude: val.y ? parseFloat(val.y) : undefined,
         longitude: val.x ? parseFloat(val.x) : undefined,
         image_url: val.imageUrl ?? '',
-        visitor_review_count: parseInt((val.visitorReviewCount ?? '0').replace(/,/g, '')) || 0,
-        review_count: parseInt((val.blogCafeReviewCount ?? val.totalReviewCount ?? '0').replace(/,/g, '')) || 0,
         naver_place_url: `https://map.naver.com/p/entry/place/${m[1]}`,
       });
     }
@@ -207,7 +205,6 @@ try {
   console.log(`  카테고리: ${store.category}`);
   console.log(`  주소: ${store.address}`);
   console.log(`  전화: ${store.phone}`);
-  console.log(`  방문리뷰: ${store.visitor_review_count}건`);
   console.log(`  URL: ${store.naver_place_url}`);
 
   store.tags = [query];

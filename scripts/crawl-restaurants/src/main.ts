@@ -159,7 +159,7 @@ async function crawl(keywords: CrawlKeyword[]) {
     console.log(`🆕 신규 업체 ${newRestaurants.length}개 발견!`);
     console.log(`${'🆕'.repeat(20)}`);
     for (const r of newRestaurants) {
-      console.log(`  📍 ${r.name} (${r.category ?? '기타'}) ★${r.rating ?? '?'} 리뷰${r.visitor_review_count ?? 0}건`);
+      console.log(`  📍 ${r.name} (${r.category ?? '기타'}) ★${r.rating ?? '?'}`);
       console.log(`     ${r.address ?? ''}`);
       if (r.review_keywords?.length) {
         console.log(`     키워드: ${r.review_keywords.slice(0, 3).map((k) => `${k.keyword}(${k.count})`).join(', ')}`);
@@ -242,8 +242,6 @@ async function collectFromApollo(
           latitude: val.y ? parseFloat(val.y) : undefined,
           longitude: val.x ? parseFloat(val.x) : undefined,
           image_url: val.imageUrl ?? '',
-          visitor_review_count: parseInt((val.visitorReviewCount ?? '0').replace(/,/g, '')) || 0,
-          review_count: parseInt((val.blogCafeReviewCount ?? val.totalReviewCount ?? '0').replace(/,/g, '')) || 0,
           naver_place_url: `https://map.naver.com/p/entry/place/${m[1]}`,
         });
       }

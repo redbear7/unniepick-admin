@@ -153,8 +153,6 @@ export async function createDetailHandler(ctx: PlaywrightCrawlingContext): Promi
     phone: data.phone || undefined,
     category: data.category || undefined,
     rating: data.rating,
-    review_count: data.reviewCount,
-    visitor_review_count: data.visitorReviewCount,
     latitude: data.latitude,
     longitude: data.longitude,
     image_url: data.image_url || undefined,

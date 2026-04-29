@@ -104,8 +104,6 @@ export async function verifyWithNaver(
         latitude: naverData.y ? parseFloat(naverData.y) : r.latitude,
         longitude: naverData.x ? parseFloat(naverData.x) : r.longitude,
         rating: naverData.rating ? parseFloat(naverData.rating) : r.rating,
-        review_count: naverData.reviewCount || r.review_count,
-        visitor_review_count: naverData.visitorReviewCount || r.visitor_review_count,
         image_url: naverData.imageUrl || r.image_url,
         naver_place_url: `https://map.naver.com/p/entry/place/${naverData.placeId}`,
       });

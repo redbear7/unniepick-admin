@@ -275,10 +275,6 @@ function inferCharacteristics(
 
   const tags = [...new Set(matchKeywords(allText, CHARACTERISTIC_MAP))];
 
-  // 리뷰 수 기반
-  const vc = r.visitor_review_count ?? 0;
-  if (vc >= 200 && !tags.includes('인기맛집'))   tags.push('인기맛집');
-  if (vc >= 1000)                               tags.push('유명맛집');
   if (r.is_new_open)                            tags.push('신규오픈');
 
   return [...new Set(tags)];
