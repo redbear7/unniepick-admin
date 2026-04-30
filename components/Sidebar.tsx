@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase';
 import {
   LayoutDashboard, Store, FileText, Music, Ticket,
   Users, LogOut, ChevronRight, ScrollText, MapPin, PlaySquare, Zap, Map, ListMusic, Tag, Building2, Megaphone, Film, Video, KeyRound, Bell,
-  GripVertical, Pencil, Check, X, Settings, ImagePlus, PanelBottom, ClipboardList, UtensilsCrossed, BarChart3, Search, BookOpen, Sparkles, Brain, Gift, Star,
+  GripVertical, Pencil, Check, X, Settings, ImagePlus, PanelBottom, ClipboardList, UtensilsCrossed, BarChart3, Search, BookOpen, Sparkles, Brain, Gift, Star, Radio,
   FolderInput, MessageSquare, Layers,
 } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
@@ -37,7 +37,7 @@ import { CSS } from '@dnd-kit/utilities';
 
 const ICON_MAP: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
   LayoutDashboard, Store, FileText, Music, Ticket,
-  Users, ScrollText, MapPin, PlaySquare, Zap, Map, ListMusic, Tag, Building2, Megaphone, Film, Video, KeyRound, Bell, ImagePlus, PanelBottom, ClipboardList, UtensilsCrossed, BarChart3, Search, BookOpen, Sparkles, Brain, Gift, Star, MessageSquare, Layers,
+  Users, ScrollText, MapPin, PlaySquare, Zap, Map, ListMusic, Tag, Building2, Megaphone, Film, Video, KeyRound, Bell, ImagePlus, PanelBottom, ClipboardList, UtensilsCrossed, BarChart3, Search, BookOpen, Sparkles, Brain, Gift, Star, Radio, MessageSquare, Layers,
 };
 
 interface NavItem {
@@ -65,6 +65,8 @@ const DEFAULT_GROUPS: NavGroup[] = [
     id: 'campaign',
     label: '상권 캠페인',
     items: [
+      { id: 'campaign-home', href: '/dashboard/campaign',  icon: 'Sparkles',    label: '캠페인 홈' },
+      { id: 'live',      href: '/dashboard/live',      icon: 'Radio',       label: '실시간 활동' },
       { id: 'map',       href: '/dashboard/map',       icon: 'Map',         label: '상권 지도' },
       { id: 'coupons',   href: '/dashboard/coupons',   icon: 'Ticket',      label: '쿠폰 운영' },
       { id: 'shorts',    href: '/dashboard/shorts',    icon: 'Film',        label: '숏폼 생성' },
