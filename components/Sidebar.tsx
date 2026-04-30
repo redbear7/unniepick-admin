@@ -59,7 +59,20 @@ const DEFAULT_GROUPS: NavGroup[] = [
     label: '개요',
     items: [
       { id: 'dashboard', href: '/dashboard',     icon: 'LayoutDashboard', label: '대시보드' },
-      { id: 'map',       href: '/dashboard/map', icon: 'Map',             label: '지도' },
+    ],
+  },
+  {
+    id: 'campaign',
+    label: '상권 캠페인',
+    items: [
+      { id: 'map',       href: '/dashboard/map',       icon: 'Map',         label: '상권 지도' },
+      { id: 'coupons',   href: '/dashboard/coupons',   icon: 'Ticket',      label: '쿠폰 운영' },
+      { id: 'shorts',    href: '/dashboard/shorts',    icon: 'Film',        label: '숏폼 생성' },
+      { id: 'cardnews',  href: '/dashboard/cardnews',  icon: 'Video',       label: '카드뉴스' },
+      { id: 'ai-images', href: '/dashboard/ai-images', icon: 'ImagePlus',   label: 'AI 이미지' },
+      { id: 'banners',   href: '/dashboard/banners',   icon: 'PanelBottom', label: '앱 배너' },
+      { id: 'push',      href: '/dashboard/push',      icon: 'Bell',        label: '푸쉬 알림' },
+      { id: 'posts',     href: '/dashboard/posts',     icon: 'FileText',    label: '게시물' },
     ],
   },
   {
@@ -88,8 +101,6 @@ const DEFAULT_GROUPS: NavGroup[] = [
       { id: 'playlists',     href: '/dashboard/playlists',     icon: 'Music',      label: '플레이리스트' },
       { id: 'references',    href: '/dashboard/references',    icon: 'PlaySquare', label: '레퍼런스 음악' },
       { id: 'announcements', href: '/dashboard/announcements', icon: 'Megaphone',  label: 'AI음성안내' },
-      { id: 'cardnews',      href: '/dashboard/cardnews',      icon: 'Video',      label: '카드뉴스' },
-      { id: 'shorts',        href: '/dashboard/shorts',        icon: 'Film',       label: '숏폼 생성' },
       { id: 'tags',          href: '/dashboard/tags',          icon: 'Tag',        label: '태그관리' },
     ],
   },
@@ -98,14 +109,9 @@ const DEFAULT_GROUPS: NavGroup[] = [
     label: '고객 & 마케팅',
     items: [
       { id: 'users',   href: '/dashboard/users',   icon: 'Users',    label: '회원 관리' },
-      { id: 'push',    href: '/dashboard/push',    icon: 'Bell',     label: '푸쉬 알림' },
       { id: 'owners',  href: '/dashboard/owners',  icon: 'KeyRound', label: '사장님 PIN 관리' },
       { id: 'notices', href: '/dashboard/notices', icon: 'ScrollText', label: '공지사항' },
-      { id: 'posts',   href: '/dashboard/posts',   icon: 'FileText', label: '게시물 관리' },
-      { id: 'coupons',        href: '/dashboard/coupons',        icon: 'Ticket',      label: '쿠폰 관리' },
       { id: 'review-claims', href: '/dashboard/review-claims', icon: 'Star',        label: '리뷰 인증 쿠폰' },
-      { id: 'banners',       href: '/dashboard/banners',       icon: 'PanelBottom', label: '배너 관리' },
-      { id: 'ai-images',     href: '/dashboard/ai-images',     icon: 'ImagePlus',   label: 'AI 이미지 생성' },
       { id: 'points',        href: '/dashboard/points',        icon: 'Gift',        label: '영수증 리뷰' },
     ],
   },
@@ -129,19 +135,42 @@ function loadGroups(): NavGroup[] {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULT_GROUPS;
     const saved = JSON.parse(raw) as NavGroup[];
-    const allDefaultItems = DEFAULT_GROUPS.flatMap(g => g.items);
-    const savedItemIds = saved.flatMap(g => g.items.map(i => i.id));
-    const missing = allDefaultItems.filter(i => !savedItemIds.includes(i.id));
-    if (missing.length > 0) {
-      const result = saved.map(g => {
-        const origGroup = DEFAULT_GROUPS.find(dg => dg.id === g.id);
-        if (!origGroup) return g;
-        const groupMissing = missing.filter(m => origGroup.items.some(oi => oi.id === m.id));
-        return { ...g, items: [...g.items, ...groupMissing] };
+
+    const defaultItemById = new Map(DEFAULT_GROUPS.flatMap(g => g.items.map(i => [i.id, i])));
+    const defaultGroupById = new Map(DEFAULT_GROUPS.map(g => [g.id, g]));
+    const savedGroupById = new Map(saved.map(g => [g.id, g]));
+    const usedItemIds = new Set<string>();
+    const shouldMigrateCampaignItems = !savedGroupById.has('campaign');
+    const campaignItemIds = new Set(DEFAULT_GROUPS.find(g => g.id === 'campaign')?.items.map(i => i.id) ?? []);
+
+    const mergedExistingGroups = saved
+      .filter(g => defaultGroupById.has(g.id))
+      .map(g => {
+        const defaultGroup = defaultGroupById.get(g.id)!;
+        const cleanedItems = g.items
+          .filter(i =>
+            defaultItemById.has(i.id)
+            && !usedItemIds.has(i.id)
+            && !(shouldMigrateCampaignItems && campaignItemIds.has(i.id)),
+          )
+          .map(i => {
+            usedItemIds.add(i.id);
+            return { ...defaultItemById.get(i.id)!, label: i.label || defaultItemById.get(i.id)!.label };
+          });
+        const missingDefaultItems = defaultGroup.items.filter(i => !usedItemIds.has(i.id));
+        missingDefaultItems.forEach(i => usedItemIds.add(i.id));
+        return { ...g, label: g.label || defaultGroup.label, items: [...cleanedItems, ...missingDefaultItems] };
       });
-      return result;
-    }
-    return saved;
+
+    const newDefaultGroups = DEFAULT_GROUPS
+      .filter(g => !savedGroupById.has(g.id))
+      .map(g => {
+        const items = g.items.filter(i => !usedItemIds.has(i.id));
+        items.forEach(i => usedItemIds.add(i.id));
+        return { ...g, items };
+      });
+
+    return [...mergedExistingGroups, ...newDefaultGroups].filter(g => g.items.length > 0);
   } catch {
     return DEFAULT_GROUPS;
   }
@@ -152,13 +181,11 @@ function loadGroups(): NavGroup[] {
 /* ------------------------------------------------------------------ */
 
 function MoveCategoryPopover({
-  item,
   groups,
   currentGroupId,
   onMove,
   onClose,
 }: {
-  item: NavItem;
   groups: NavGroup[];
   currentGroupId: string;
   onMove: (targetGroupId: string) => void;
@@ -329,7 +356,6 @@ function SortableNavItem({
 
             {isMoveOpen && (
               <MoveCategoryPopover
-                item={item}
                 groups={groups}
                 currentGroupId={currentGroupId}
                 onMove={(targetGroupId) => onMove(item.id, targetGroupId)}
@@ -351,7 +377,7 @@ export default function Sidebar() {
   const pathname = usePathname();
   const router   = useRouter();
 
-  const [groups,          setGroups]          = useState<NavGroup[]>(DEFAULT_GROUPS);
+  const [groups,          setGroups]          = useState<NavGroup[]>(() => loadGroups());
   const [editMode,        setEditMode]        = useState(false);
   const [preEditSnap,     setPreEditSnap]     = useState<NavGroup[] | null>(null);
   const [editingGroupId,  setEditingGroupId]  = useState<string | null>(null);
@@ -361,8 +387,6 @@ export default function Sidebar() {
   const [activeId,        setActiveId]        = useState<string | null>(null);
   const [moveOpenId,      setMoveOpenId]      = useState<string | null>(null);
   const [userName,        setUserName]        = useState<string>('');
-
-  useEffect(() => { setGroups(loadGroups()); }, []);
 
   useEffect(() => {
     const supabase = createClient();
@@ -376,14 +400,6 @@ export default function Sidebar() {
       if (row?.name) setUserName(row.name);
     });
   }, []);
-
-  // 편집 모드 종료 시 이동 팝오버 + 아이템 편집 닫기
-  useEffect(() => {
-    if (!editMode) {
-      setMoveOpenId(null);
-      setEditingItemId(null);
-    }
-  }, [editMode]);
 
   const saveGroups = (next: NavGroup[]) => {
     setGroups(next);
@@ -614,6 +630,8 @@ export default function Sidebar() {
             onClick={() => {
               if (editMode) {
                 setPreEditSnap(null);
+                setMoveOpenId(null);
+                setEditingItemId(null);
               } else {
                 setPreEditSnap(groups.map(g => ({ ...g, items: [...g.items] })));
               }
@@ -639,6 +657,8 @@ export default function Sidebar() {
                 setPreEditSnap(null);
                 setEditMode(false);
                 setEditingGroupId(null);
+                setMoveOpenId(null);
+                setEditingItemId(null);
               }}
               title="편집 취소 (원래 순서로 복원)"
               className="p-2.5 rounded-lg text-muted hover:bg-card hover:text-red-400 transition"
