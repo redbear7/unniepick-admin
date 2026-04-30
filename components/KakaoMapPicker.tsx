@@ -26,6 +26,28 @@ interface Props {
 // 기본 중심 — 창원시 진해구
 const DEFAULT = { lat: 35.1479, lng: 128.6679 };
 
+function createMarkerImage(maps: any, mode: 'rest' | 'pressed' = 'rest') {
+  const isPressed = mode === 'pressed';
+  const svg = `
+    <svg width="44" height="52" viewBox="0 0 44 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="22" cy="46" rx="${isPressed ? 7 : 10}" ry="${isPressed ? 2.5 : 4}" fill="rgba(15,23,42,${isPressed ? 0.12 : 0.22})"/>
+      <g transform="translate(0 ${isPressed ? -8 : 0})">
+        <path d="M22 4C14.268 4 8 10.268 8 18c0 10.078 11.222 19.392 13.258 21.003a1.2 1.2 0 0 0 1.484 0C24.778 37.392 36 28.078 36 18 36 10.268 29.732 4 22 4Z" fill="#FF6F0F"/>
+        <path d="M22 11.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13Z" fill="white"/>
+      </g>
+    </svg>
+  `.trim();
+
+  return new maps.MarkerImage(
+    `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
+    new maps.Size(44, 52),
+    {
+      offset: new maps.Point(22, 46),
+      alt: 'location pin',
+    },
+  );
+}
+
 export default function KakaoMapPicker({
   lat, lng, onChange, readonly = false, height = '220px',
 }: Props) {
@@ -33,9 +55,27 @@ export default function KakaoMapPicker({
   const mapRef       = useRef<any>(null);
   const markerRef    = useRef<any>(null);
   const skipSync     = useRef(false);   // 외부 prop 변경 vs 드래그 충돌 방지
+  const markerMode   = useRef<'rest' | 'pressed'>('rest');
+  const pressTimer   = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [errMsg, setErrMsg] = useState('');
+
+  const setMarkerMode = (maps: any, mode: 'rest' | 'pressed') => {
+    if (!markerRef.current) return;
+    if (markerMode.current === mode) return;
+    markerMode.current = mode;
+    markerRef.current.setImage(createMarkerImage(maps, mode));
+  };
+
+  const pulseMarker = (maps: any) => {
+    if (pressTimer.current) clearTimeout(pressTimer.current);
+    setMarkerMode(maps, 'pressed');
+    pressTimer.current = setTimeout(() => {
+      setMarkerMode(maps, 'rest');
+      pressTimer.current = null;
+    }, 220);
+  };
 
   /* ─── 지도 초기화 ─── */
   useEffect(() => {
@@ -59,12 +99,26 @@ export default function KakaoMapPicker({
           position: center,
           map,
           draggable: !readonly,
+          image: createMarkerImage(maps, 'rest'),
         });
         markerRef.current = marker;
 
         if (!readonly) {
+          maps.event.addListener(marker, 'mousedown', () => {
+            setMarkerMode(maps, 'pressed');
+          });
+
+          maps.event.addListener(marker, 'mouseup', () => {
+            setMarkerMode(maps, 'rest');
+          });
+
+          maps.event.addListener(marker, 'dragstart', () => {
+            setMarkerMode(maps, 'pressed');
+          });
+
           // 핀 드래그 끝
           maps.event.addListener(marker, 'dragend', () => {
+            setMarkerMode(maps, 'rest');
             skipSync.current = true;
             const pos = marker.getPosition();
             onChange(pos.getLat(), pos.getLng());
@@ -75,6 +129,7 @@ export default function KakaoMapPicker({
           maps.event.addListener(map, 'click', (e: any) => {
             const ll = e.latLng;
             marker.setPosition(ll);
+            pulseMarker(maps);
             skipSync.current = true;
             onChange(ll.getLat(), ll.getLng());
             setTimeout(() => { skipSync.current = false; }, 100);
@@ -87,7 +142,10 @@ export default function KakaoMapPicker({
       }
     })();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      if (pressTimer.current) clearTimeout(pressTimer.current);
+    };
   // 마운트 시 1회만
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -142,7 +200,7 @@ export default function KakaoMapPicker({
       {status === 'ready' && !readonly && (
         <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between pointer-events-none">
           <span className="px-2 py-1 bg-black/60 backdrop-blur-sm rounded-lg text-[10px] text-white/70">
-            핀을 드래그하거나 지도를 클릭해 위치를 조정하세요
+            핀을 끌거나 지도를 눌러 위치를 조정하세요
           </span>
           <button
             onClick={resetToCurrentLocation}

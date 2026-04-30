@@ -9,6 +9,11 @@ import {
 } from 'lucide-react';
 import { openPostcode } from '@/lib/daum-postcode';
 import KakaoMapPicker from '@/components/KakaoMapPicker';
+import {
+  getCategoryEmoji,
+  matchUnniepickCategory,
+  useUnniepickCategoryOptions,
+} from '@/hooks/useUnniepickCategoryOptions';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type CouponType    = 'free_item' | 'percent' | 'amount';
@@ -53,7 +58,6 @@ interface SearchPlace {
   longitude:    number | null;
   place_url:    string | null;
 }
-type KakaoPlace = SearchPlace & { kakao_id: string };
 
 type SearchEngine = 'naver' | 'kakao';
 
@@ -63,34 +67,6 @@ interface CouponSuggestion {
   discount_value: number;
   free_item_name: string | null;
   reason:         string;
-}
-
-// ── Constants ─────────────────────────────────────────────────────────────────
-const CATEGORIES = [
-  { key: 'cafe',    emoji: '☕',  label: '카페' },
-  { key: 'food',    emoji: '🍽️', label: '음식점' },
-  { key: 'beauty',  emoji: '✂️',  label: '미용실' },
-  { key: 'nail',    emoji: '💅',  label: '네일샵' },
-  { key: 'fashion', emoji: '👗',  label: '의류' },
-  { key: 'fitness', emoji: '💪',  label: '헬스/운동' },
-  { key: 'mart',    emoji: '🛒',  label: '마트/편의' },
-  { key: 'etc',     emoji: '🏪',  label: '기타' },
-];
-
-const KAKAO_CAT_KEY: Record<string, string> = {
-  '카페': 'cafe', '베이커리': 'cafe', '제과': 'cafe',
-  '한식': 'food', '중식': 'food', '일식': 'food', '양식': 'food',
-  '분식': 'food', '술집': 'food', '패스트푸드': 'food',
-  '미용실': 'beauty', '헤어': 'beauty',
-  '네일': 'nail', '의류': 'fashion',
-  '헬스': 'fitness', '마트': 'mart', '편의점': 'mart',
-};
-function kakaoRawToCatKey(raw: string): string {
-  const parts = raw.split('>').map(s => s.trim()).reverse();
-  for (const part of parts)
-    for (const [k, v] of Object.entries(KAKAO_CAT_KEY))
-      if (part.includes(k)) return v;
-  return 'etc';
 }
 
 const COUPON_TYPES: { key: CouponType; icon: React.ReactNode; label: string }[] = [
@@ -139,6 +115,7 @@ interface ApplyModalProps {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 export default function ApplyModal({ isOpen, onClose }: ApplyModalProps) {
+  const { options: categoryOptions } = useUnniepickCategoryOptions();
   const [step,       setStep]       = useState(0);
   const [form,       setForm]       = useState<FormData>({ ...INITIAL_FORM, couponExpiry: defaultExpiry() });
   const [submitting, setSubmitting] = useState(false);
@@ -151,14 +128,20 @@ export default function ApplyModal({ isOpen, onClose }: ApplyModalProps) {
   const [searchResults, setSearchResults] = useState<SearchPlace[] | null>(null);
   const [searching,     setSearching]     = useState(false);
   const [searchError,   setSearchError]   = useState('');
+  const [nearbyPlace,   setNearbyPlace]   = useState<SearchPlace | null>(null);
+  const [nearbyRadius,  setNearbyRadius]  = useState<number | null>(null);
+  const [nearbyLoading, setNearbyLoading] = useState(false);
+  const [nearbyError,   setNearbyError]   = useState('');
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Step 5: AI 추천
   const [suggestions,    setSuggestions]    = useState<CouponSuggestion[] | null>(null);
   const [suggestLoading, setSuggestLoading] = useState(false);
   const [advancedOpen,   setAdvancedOpen]   = useState(false);
+  const [locationEdited, setLocationEdited] = useState(false);
 
   // 모달 열릴 때 상태 초기화
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (isOpen) {
       setStep(0);
@@ -168,11 +151,16 @@ export default function ApplyModal({ isOpen, onClose }: ApplyModalProps) {
       setSearchQuery('');
       setSearchResults(null);
       setSearchError('');
+      setNearbyPlace(null);
+      setNearbyRadius(null);
+      setNearbyError('');
       setSuggestions(null);
       setAdvancedOpen(false);
       setEngine('naver');
+      setLocationEdited(false);
     }
   }, [isOpen]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // 모달 열려 있을 때 바디 스크롤 잠금
   useEffect(() => {
@@ -184,17 +172,48 @@ export default function ApplyModal({ isOpen, onClose }: ApplyModalProps) {
     return () => { document.body.style.overflow = ''; };
   }, [isOpen]);
 
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    if (!isOpen || step !== 0 || nearbyPlace || nearbyLoading) return;
+    if (!navigator.geolocation) return;
+
+    let cancelled = false;
+    setNearbyLoading(true);
+    setNearbyError('');
+
+    navigator.geolocation.getCurrentPosition(
+      async ({ coords }) => {
+        try {
+          const res = await fetch(`/api/nearby-place?x=${coords.longitude}&y=${coords.latitude}`);
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error ?? '근처 가게를 찾지 못했어요.');
+          if (!cancelled) {
+            setNearbyPlace(data.place ?? null);
+            setNearbyRadius(typeof data.radius === 'number' ? data.radius : null);
+          }
+        } catch (e) {
+          if (!cancelled) setNearbyError((e as Error).message);
+        } finally {
+          if (!cancelled) setNearbyLoading(false);
+        }
+      },
+      () => {
+        if (!cancelled) {
+          setNearbyLoading(false);
+          setNearbyError('');
+        }
+      },
+      { enableHighAccuracy: true, timeout: 5000, maximumAge: 120000 },
+    );
+
+    return () => { cancelled = true; };
+  }, [isOpen, nearbyLoading, nearbyPlace, step]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
   const set = useCallback(<K extends keyof FormData>(key: K, val: FormData[K]) =>
     setForm(prev => ({ ...prev, [key]: val })), []);
 
-  // Step 5 진입 시 AI 추천 자동 실행
-  useEffect(() => {
-    if (step !== 5 || suggestions !== null) return;
-    fetchSuggestions();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step]);
-
-  const fetchSuggestions = async () => {
+  const fetchSuggestions = useCallback(async () => {
     setSuggestLoading(true);
     try {
       const res = await fetch('/api/applications/coupon-suggest', {
@@ -210,7 +229,15 @@ export default function ApplyModal({ isOpen, onClose }: ApplyModalProps) {
       if (data.suggestions) setSuggestions(data.suggestions);
     } catch { /* fallback 유지 */ }
     finally { setSuggestLoading(false); }
-  };
+  }, [form.address, form.category, form.storeName]);
+
+  // Step 5 진입 시 AI 추천 자동 실행
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    if (step !== 5 || suggestions !== null) return;
+    fetchSuggestions();
+  }, [fetchSuggestions, step, suggestions]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const applySuggestion = (s: CouponSuggestion) => {
     setForm(prev => ({
@@ -255,7 +282,7 @@ export default function ApplyModal({ isOpen, onClose }: ApplyModalProps) {
     setForm(prev => ({
       ...prev,
       storeName:     place.place_name,
-      category:      kakaoRawToCatKey(place.category_raw),
+      category:      matchUnniepickCategory(place.category_raw, categoryOptions.map(option => option.value)),
       address:       place.road_address ?? place.address,
       addressDetail: '',
       storePhone:    place.phone ?? '',
@@ -264,6 +291,7 @@ export default function ApplyModal({ isOpen, onClose }: ApplyModalProps) {
       kakaoPlaceUrl: place.place_url,
     }));
     setSuggestions(null);
+    setLocationEdited(false);
     setStep(1);
   };
 
@@ -280,6 +308,7 @@ export default function ApplyModal({ isOpen, onClose }: ApplyModalProps) {
         kakaoPlaceUrl: null,
       };
     });
+    setLocationEdited(false);
   };
 
   // ── Validation ─────────────────────────────────────────────────────────────
@@ -369,7 +398,9 @@ export default function ApplyModal({ isOpen, onClose }: ApplyModalProps) {
   const hasSavedCoordinates = form.latitude !== null && form.longitude !== null;
   const coordinateStatus = form.address
     ? hasSavedCoordinates
-      ? { label: '좌표 자동확인됨', tone: 'ready' as const, detail: '관리자 화면에서 바로 지도 확인이 가능해요' }
+      ? locationEdited
+        ? { label: '위치 수정됨', tone: 'ready' as const, detail: '지금 맞춘 핀 위치로 저장돼요' }
+        : { label: '좌표 자동확인됨', tone: 'ready' as const, detail: '핀을 끌거나 지도를 눌러 위치를 조정할 수 있어요' }
       : { label: '제출 시 주소로 자동 매칭', tone: 'pending' as const, detail: '검색 결과가 없거나 주소를 수정한 경우에도 자동 보정돼요' }
     : null;
 
@@ -430,6 +461,48 @@ export default function ApplyModal({ isOpen, onClose }: ApplyModalProps) {
                   </div>
 
                   <div className="px-5 pb-6 overflow-y-auto">
+                    {(nearbyLoading || nearbyPlace) && (
+                      <div className="mb-4 rounded-2xl border border-[#FF6F0F]/15 bg-[#FFF5EE] p-4">
+                        <div className="flex items-start gap-3">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#FF6F0F]/10 text-lg">
+                            👋
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[11px] font-bold text-[#FF6F0F]">현재 위치 기반 추천</p>
+                            {nearbyLoading ? (
+                              <p className="mt-1 text-sm font-semibold text-gray-700">사장님 근처 가게를 찾는 중이에요…</p>
+                            ) : nearbyPlace ? (
+                              <>
+                                <p className="mt-1 text-sm font-semibold text-gray-900">
+                                  사장님! <span className="text-[#FF6F0F]">{nearbyPlace.place_name}</span> 사장님이세요?
+                                </p>
+                                <p className="mt-1 truncate text-[11px] text-gray-500">
+                                  {nearbyPlace.road_address ?? nearbyPlace.address}
+                                  {nearbyRadius ? ` · ${nearbyRadius}m 안에서 찾았어요` : ''}
+                                </p>
+                                <div className="mt-3 flex gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSelectPlace(nearbyPlace)}
+                                    className="rounded-xl bg-[#FF6F0F] px-3 py-2 text-xs font-bold text-white"
+                                  >
+                                    네, 제 가게예요
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setNearbyPlace(null)}
+                                    className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-600"
+                                  >
+                                    아니요, 검색할게요
+                                  </button>
+                                </div>
+                              </>
+                            ) : null}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {/* 검색 엔진 탭 */}
                     <div className="flex gap-1.5 mb-3 p-1 bg-gray-100 rounded-2xl">
                       <button
@@ -477,7 +550,7 @@ export default function ApplyModal({ isOpen, onClose }: ApplyModalProps) {
                             : <Search size={18} className={engine === 'naver' ? 'text-white' : 'text-[#3A1D1D]'} />}
                         </button>
                       </div>
-                      {searchError && <p className="mt-2 text-xs text-red-500 px-1">{searchError}</p>}
+                      {(searchError || nearbyError) && <p className="mt-2 text-xs text-red-500 px-1">{searchError || nearbyError}</p>}
                     </div>
 
                     {/* 검색 결과 */}
@@ -487,7 +560,7 @@ export default function ApplyModal({ isOpen, onClose }: ApplyModalProps) {
                           <button key={idx} onClick={() => handleSelectPlace(place)}
                             className={`w-full flex items-start gap-3 p-4 bg-white border-2 border-gray-100 rounded-2xl text-left transition group ${hoverCls}`}>
                             <span className="w-9 h-9 rounded-xl bg-gray-50 flex items-center justify-center shrink-0 text-base transition">
-                              {CATEGORIES.find(c => c.key === kakaoRawToCatKey(place.category_raw))?.emoji ?? '🏪'}
+                              {getCategoryEmoji(matchUnniepickCategory(place.category_raw, categoryOptions.map(option => option.value)))}
                             </span>
                             <div className="flex-1 min-w-0">
                               <p className="font-semibold text-gray-900 text-sm">{place.place_name}</p>
@@ -581,12 +654,12 @@ export default function ApplyModal({ isOpen, onClose }: ApplyModalProps) {
                     {/* STEP 2 */}
                     {step === 2 && (
                       <div className="grid grid-cols-4 gap-3">
-                        {CATEGORIES.map(c => (
-                          <button key={c.key} onClick={() => set('category', c.key)}
+                        {categoryOptions.map(c => (
+                          <button key={c.value} onClick={() => set('category', c.value)}
                             className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all ${
-                              form.category === c.key ? 'border-[#FF6F0F] bg-orange-50' : 'border-gray-100 bg-white hover:border-gray-200'}`}>
+                              form.category === c.value ? 'border-[#FF6F0F] bg-orange-50' : 'border-gray-100 bg-white hover:border-gray-200'}`}>
                             <span className="text-2xl">{c.emoji}</span>
-                            <span className={`text-xs font-semibold ${form.category === c.key ? 'text-[#FF6F0F]' : 'text-gray-600'}`}>{c.label}</span>
+                            <span className={`text-xs font-semibold ${form.category === c.value ? 'text-[#FF6F0F]' : 'text-gray-600'}`}>{c.label}</span>
                           </button>
                         ))}
                       </div>
@@ -627,13 +700,16 @@ export default function ApplyModal({ isOpen, onClose }: ApplyModalProps) {
                             <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
                               <div className="flex items-center justify-between border-b border-gray-100 px-4 py-2.5">
                                 <p className="text-xs font-bold text-gray-700">등록 위치 미리보기</p>
-                                <span className="text-[10px] font-semibold text-emerald-600">지도 확인 가능</span>
+                                <span className="text-[10px] font-semibold text-emerald-600">위치가 틀리면 핀을 꾸욱 눌러서 이동하세요.</span>
                               </div>
                               <KakaoMapPicker
                                 lat={form.latitude}
                                 lng={form.longitude}
-                                onChange={() => {}}
-                                readonly
+                                onChange={(lat, lng) => {
+                                  set('latitude', lat);
+                                  set('longitude', lng);
+                                  setLocationEdited(true);
+                                }}
                                 height="180px"
                               />
                             </div>
@@ -934,7 +1010,7 @@ export default function ApplyModal({ isOpen, onClose }: ApplyModalProps) {
                           <ul className="space-y-2 text-sm">
                             {[
                               { label: '가게명',   value: form.storeName },
-                              { label: '카테고리', value: `${CATEGORIES.find(c => c.key === form.category)?.emoji} ${CATEGORIES.find(c => c.key === form.category)?.label ?? ''}` },
+                              { label: '카테고리', value: form.category ? `${getCategoryEmoji(form.category)} ${form.category}` : '' },
                               { label: '주소',     value: form.address },
                               { label: '쿠폰',     value: `🎟️ ${form.couponTitle}`, orange: true },
                             ].map(row => (

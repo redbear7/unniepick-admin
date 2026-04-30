@@ -3,6 +3,11 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, Delete, Store, User, Ticket, CheckCircle2, Zap, FileText, Navigation, Search, X, Sparkles } from 'lucide-react';
+import {
+  getCategoryEmoji,
+  matchUnniepickCategory,
+  useUnniepickCategoryOptions,
+} from '@/hooks/useUnniepickCategoryOptions';
 
 const SESSION_HOURS = 8;
 const PIN_LENGTH = 4;
@@ -28,37 +33,9 @@ type CouponSuggestion = {
   expected_effect?: string | null;
 };
 
-const CATEGORIES = [
-  { key: 'cafe', emoji: '☕', label: '카페' },
-  { key: 'food', emoji: '🍽️', label: '음식점' },
-  { key: 'beauty', emoji: '✂️', label: '미용실' },
-  { key: 'nail', emoji: '💅', label: '네일샵' },
-  { key: 'fashion', emoji: '👗', label: '의류' },
-  { key: 'fitness', emoji: '💪', label: '운동' },
-  { key: 'mart', emoji: '🛒', label: '마트' },
-  { key: 'etc', emoji: '🏪', label: '기타' },
-];
-
-const CATEGORY_MAP: Record<string, string> = {
-  '카페': 'cafe', '베이커리': 'cafe', '제과': 'cafe',
-  '한식': 'food', '중식': 'food', '일식': 'food', '양식': 'food', '분식': 'food', '술집': 'food', '패스트푸드': 'food',
-  '미용실': 'beauty', '헤어': 'beauty',
-  '네일': 'nail', '의류': 'fashion',
-  '헬스': 'fitness', '운동': 'fitness', '마트': 'mart', '편의점': 'mart',
-};
-
-function rawToCategory(raw: string) {
-  const parts = raw.split('>').map(s => s.trim()).reverse();
-  for (const part of parts) {
-    for (const [keyword, key] of Object.entries(CATEGORY_MAP)) {
-      if (part.includes(keyword)) return key;
-    }
-  }
-  return 'etc';
-}
-
 export default function OwnerLoginPage() {
   const router = useRouter();
+  const { options: categoryOptions } = useUnniepickCategoryOptions();
 
   const [step, setStep]   = useState<'phone' | 'pin'>('phone');
   const [mode, setMode]   = useState<'login' | 'join'>('login');
@@ -203,7 +180,7 @@ export default function OwnerLoginPage() {
 
   const selectPlace = (place: SearchPlace) => {
     setStoreName(place.place_name);
-    setCategory(rawToCategory(place.category_raw));
+    setCategory(matchUnniepickCategory(place.category_raw, categoryOptions.map(option => option.value)));
     setAddress(place.road_address ?? place.address);
     setStorePhone(place.phone ?? '');
     setStoreLatLng(
@@ -500,7 +477,7 @@ export default function OwnerLoginPage() {
                       >
                         <div className="flex items-start gap-2">
                           <span className="mt-0.5 text-base">
-                            {CATEGORIES.find(c => c.key === rawToCategory(place.category_raw))?.emoji ?? '🏪'}
+                            {getCategoryEmoji(matchUnniepickCategory(place.category_raw, categoryOptions.map(option => option.value)))}
                           </span>
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-sm font-bold text-white">{place.place_name}</p>
@@ -527,18 +504,18 @@ export default function OwnerLoginPage() {
               <div>
                 <span className="mb-2 block text-xs text-white/50">카테고리</span>
                 <div className="grid grid-cols-4 gap-2">
-                  {CATEGORIES.map(c => (
+                  {categoryOptions.map(c => (
                     <button
-                      key={c.key}
+                      key={c.value}
                       type="button"
-                      onClick={() => { setCategory(c.key); setError(''); }}
+                      onClick={() => { setCategory(c.value); setError(''); }}
                       className={`flex flex-col items-center gap-1 rounded-xl border px-2 py-2 text-xs font-bold transition ${
-                        category === c.key
+                        category === c.value
                           ? 'border-[#FF6F0F]/70 bg-[#FF6F0F]/15 text-[#FFB37A]'
                           : 'border-white/10 bg-white/5 text-white/55 hover:bg-white/10'
                       }`}
                     >
-                      <span>{c.emoji}</span>
+                      <span>{c.emoji ?? getCategoryEmoji(c.label)}</span>
                       <span className="truncate">{c.label}</span>
                     </button>
                   ))}
