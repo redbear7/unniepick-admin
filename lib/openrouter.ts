@@ -1,9 +1,9 @@
 /**
  * OpenRouter API 공통 유틸
- * 모델: deepseek/deepseek-chat-v3-0324 (AI 요약과 동일)
+ * 기본 모델: deepseek/deepseek-chat-v3-0324 (AI 요약과 동일)
  */
 
-const MODEL   = 'deepseek/deepseek-chat-v3-0324';
+const DEFAULT_MODEL = 'deepseek/deepseek-chat-v3-0324';
 const BASE_URL = 'https://openrouter.ai/api/v1';
 const HEADERS  = {
   'Content-Type':  'application/json',
@@ -15,6 +15,10 @@ function getKey(): string {
   const key = process.env.OPENROUTER_API_KEY;
   if (!key) throw new Error('OPENROUTER_API_KEY 없음');
   return key;
+}
+
+export function openrouterModel() {
+  return process.env.OPENROUTER_MODEL || DEFAULT_MODEL;
 }
 
 /** 단순 텍스트 생성 */
@@ -34,7 +38,7 @@ export async function openrouterChat(
     method: 'POST',
     headers: { ...HEADERS, Authorization: `Bearer ${getKey()}` },
     body: JSON.stringify({
-      model:       MODEL,
+      model:       openrouterModel(),
       messages,
       temperature: options?.temperature ?? 0.7,
       max_tokens:  options?.maxTokens   ?? 1024,
@@ -66,7 +70,7 @@ export async function openrouterStream(
     method: 'POST',
     headers: { ...HEADERS, Authorization: `Bearer ${getKey()}` },
     body: JSON.stringify({
-      model:       MODEL,
+      model:       openrouterModel(),
       messages:    fullMessages,
       temperature: 0.7,
       stream:      true,

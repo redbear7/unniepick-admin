@@ -5,11 +5,7 @@ import { useOwnerSession } from '@/components/OwnerShell';
 import { KeyRound, Delete, CheckCircle2, AlertCircle } from 'lucide-react';
 
 const MAX_CHANGES = 2;
-
-function currentMonth() {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-}
+const PIN_LENGTH = 4;
 
 type Step = 'current' | 'new' | 'confirm';
 
@@ -20,12 +16,12 @@ const STEP_LABEL: Record<Step, string> = {
 };
 
 const STEP_DESC: Record<Step, string> = {
-  current: '현재 사용 중인 6자리 PIN을 입력하세요.',
-  new:     '새로운 6자리 PIN을 입력하세요.',
+  current: '현재 사용 중인 4자리 PIN을 입력하세요.',
+  new:     '새로운 4자리 PIN을 입력하세요.',
   confirm: '새 PIN을 한 번 더 입력하세요.',
 };
 
-function PinDots({ value, max = 6 }: { value: string; max?: number }) {
+function PinDots({ value, max = PIN_LENGTH }: { value: string; max?: number }) {
   return (
     <div className="flex items-center justify-center gap-3 my-6">
       {Array.from({ length: max }).map((_, i) => (
@@ -96,11 +92,11 @@ export default function OwnerPinPage() {
       setActivePin(p => p.slice(0, -1));
       return;
     }
-    if (activePin.length >= 6) return;
+    if (activePin.length >= PIN_LENGTH) return;
     const next = activePin + key;
     setActivePin(next);
 
-    if (next.length === 6) {
+    if (next.length === PIN_LENGTH) {
       // auto-advance
       setTimeout(() => handleConfirm(next), 120);
     }

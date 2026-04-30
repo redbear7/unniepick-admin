@@ -6,6 +6,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { logActivity } from '@/lib/server/activity';
 
 function adminClient() {
   return createClient(
@@ -55,6 +56,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: insertErr.message }, { status: 500 });
   }
 
+  await logActivity(sb, {
+    event_type: 'review_claimed',
+    actor_type: 'user',
+    user_id,
+    store_id,
+    coupon_id: coupon_id ?? null,
+    source_table: 'review_claims',
+    source_id: claim.id,
+    title: '방문 인증 접수',
+    detail: '리뷰 인증이 접수되어 쿠폰 발급 여부를 확인합니다.',
+    metadata: { status: 'approved' },
+  }).catch(e => console.error('[activity/review_claimed]', e.message));
+
   // 쿠폰 즉시 발급
   let couponIssued = false;
   if (coupon_id) {
@@ -81,6 +95,17 @@ export async function POST(req: NextRequest) {
             .from('coupons')
             .update({ issued_count: (coupon.issued_count ?? 0) + 1 })
             .eq('id', coupon_id);
+          await logActivity(sb, {
+            event_type: 'coupon_saved',
+            actor_type: 'user',
+            user_id,
+            store_id,
+            coupon_id,
+            source_table: 'coupon_issues',
+            title: '쿠폰 저장 완료',
+            detail: '방문 인증 보상 쿠폰이 발급됐습니다.',
+            metadata: { reason: 'review_claim' },
+          }).catch(err => console.error('[activity/coupon_saved]', err.message));
           couponIssued = true;
         }
       } else {

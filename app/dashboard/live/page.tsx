@@ -63,6 +63,18 @@ interface ReviewClaimRow {
   coupons: { title: string | null } | null;
 }
 
+interface ApiActivityRow {
+  id: string;
+  event_type: string;
+  actor_type: string;
+  area: string | null;
+  title: string | null;
+  detail: string | null;
+  geofence_id: string | null;
+  radius_m: number | null;
+  created_at: string | null;
+}
+
 const AREA_KEYWORDS = [
   '상남동',
   '용호동',
@@ -132,6 +144,15 @@ function eventDate(e: LiveEvent) {
   return Number.isFinite(n) ? n : 0;
 }
 
+function typeFromEventType(eventType: string): ActivityType {
+  if (eventType.includes('coupon_used') || eventType.includes('route')) return 'use';
+  if (eventType.includes('shorts')) return 'shorts';
+  if (eventType.includes('store') || eventType.includes('coupon_created')) return 'owner';
+  if (eventType.includes('geofence')) return 'geo';
+  if (eventType.includes('coupon')) return 'coupon';
+  return 'store';
+}
+
 export default function LiveActivityPage() {
   const [events, setEvents] = useState<LiveEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -167,8 +188,22 @@ export default function LiveActivityPage() {
     const stores = (storeRes.data ?? []) as unknown as StoreRow[];
     const posts = (postRes.data ?? []) as unknown as StorePostRow[];
     const claims = (claimRes.data ?? []) as unknown as ReviewClaimRow[];
+    const activityRows = await fetch('/api/activity?limit=24')
+      .then(res => res.ok ? res.json() : null)
+      .then(json => (json?.events ?? []) as ApiActivityRow[])
+      .catch(() => []);
 
-    const next: LiveEvent[] = [
+    const explicitEvents: LiveEvent[] = activityRows.map(row => ({
+      id: `activity:${row.id}:${new Date(row.created_at ?? Date.now()).getTime()}`,
+      type: typeFromEventType(row.event_type),
+      title: row.title ?? '새 활동',
+      area: row.area ?? '창원 상권',
+      time: relativeTime(row.created_at),
+      detail: row.detail ?? (row.geofence_id ? `${row.geofence_id} · 반경 ${row.radius_m ?? '-'}m` : row.event_type),
+      privacy: '공개 피드용 익명 이벤트',
+    }));
+
+    const fallbackEvents: LiveEvent[] = [
       ...coupons.map(coupon => {
         const issued = coupon.issued_count ?? 0;
         const used = coupon.used_count ?? 0;
@@ -219,6 +254,10 @@ export default function LiveActivityPage() {
         privacy: '개인 좌표 저장 없이 상권 진입 여부만 활용',
       },
     ];
+
+    const next = explicitEvents.length > 0
+      ? [...explicitEvents, fallbackEvents[fallbackEvents.length - 1]]
+      : fallbackEvents;
 
     setEvents(next.sort((a, b) => eventDate(b) - eventDate(a)).slice(0, 24));
     setLastSync(new Date());

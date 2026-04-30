@@ -15,6 +15,10 @@ function adminClient() {
   );
 }
 
+function normalizeText(value: unknown) {
+  return String(value ?? '').replace(/\s+/g, '').toLowerCase();
+}
+
 /** 특정 user_id의 Expo 푸시 토큰 조회 */
 async function getPushToken(sb: ReturnType<typeof adminClient>, userId: string): Promise<string | null> {
   const { data } = await sb
@@ -52,7 +56,7 @@ async function sendExpoPush(
 }
 
 export async function POST(req: NextRequest) {
-  const { id } = await req.json() as { id?: string };
+  const { id, allow_duplicate: allowDuplicate } = await req.json() as { id?: string; allow_duplicate?: boolean };
   if (!id) return NextResponse.json({ error: 'id가 필요합니다' }, { status: 400 });
 
   const sb = adminClient();
@@ -72,6 +76,33 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: '이미 승인된 신청입니다' }, { status: 409 });
   }
 
+  const appName = normalizeText(app.store_name);
+  const appAddress = normalizeText(app.address);
+  const { data: existingStores, error: duplicateErr } = await sb
+    .from('stores')
+    .select('id, name, address')
+    .eq('is_active', true);
+
+  if (duplicateErr) {
+    return NextResponse.json({ error: `중복 가게 확인 실패: ${duplicateErr.message}` }, { status: 500 });
+  }
+
+  const duplicateStore = existingStores?.find(store => {
+    const storeName = normalizeText(store.name);
+    const storeAddress = normalizeText(store.address);
+    const sameName = storeName === appName;
+    const similarName = appName.length >= 3 && (storeName.includes(appName) || appName.includes(storeName));
+    const sameAddress = Boolean(appAddress && storeAddress && (storeAddress.includes(appAddress) || appAddress.includes(storeAddress)));
+    return sameName || (similarName && sameAddress);
+  });
+
+  if (duplicateStore && !allowDuplicate) {
+    return NextResponse.json(
+      { error: `이미 등록된 가게와 중복일 수 있습니다: ${duplicateStore.name}` },
+      { status: 409 },
+    );
+  }
+
   // 2. stores 테이블에 insert (service_role → RLS 우회)
   const { data: store, error: insertErr } = await sb
     .from('stores')
@@ -79,10 +110,10 @@ export async function POST(req: NextRequest) {
       name:             app.store_name,
       category:         app.category,
       address:          app.address,
-      phone:            app.phone,
+      phone:            app.phone ?? app.owner_phone ?? null,
       description:      app.description ?? null,
-      latitude:         app.latitude ?? null,
-      longitude:        app.longitude ?? null,
+      latitude:         app.latitude ?? app.gps_latitude ?? null,
+      longitude:        app.longitude ?? app.gps_longitude ?? null,
       is_active:        true,
       instagram_url:    app.instagram_url ?? null,
       naver_place_url:  app.naver_place_url ?? null,
@@ -103,9 +134,10 @@ export async function POST(req: NextRequest) {
   const { error: updateErr } = await sb
     .from('store_applications')
     .update({
-      status:      'approved',
-      store_id:    store.id,
-      reviewed_at: new Date().toISOString(),
+      status:              'approved',
+      verification_status: 'approved',
+      store_id:            store.id,
+      reviewed_at:         new Date().toISOString(),
     })
     .eq('id', id);
 

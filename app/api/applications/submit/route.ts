@@ -45,6 +45,8 @@ interface SubmitBody {
   longitude?:      number | null;
   owner_name:      string;
   owner_phone:     string;
+  has_agency?:     boolean;
+  agency_name?:    string | null;
   coupon_draft:    CouponDraft;
 }
 
@@ -83,6 +85,8 @@ export async function POST(req: NextRequest) {
       longitude:      body.longitude ?? null,
       owner_name:     body.owner_name.trim(),
       owner_phone:    body.owner_phone.trim(),
+      has_agency:     body.has_agency ?? false,
+      agency_name:    body.has_agency ? body.agency_name?.trim() || null : null,
       coupon_draft:   body.coupon_draft,
       status:         'pending',
     })

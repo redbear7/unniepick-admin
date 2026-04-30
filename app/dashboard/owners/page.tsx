@@ -18,7 +18,7 @@
  * ─────────────────────────────────────────────
  */
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase';
 import {
   KeyRound, UserCheck, UserX, RefreshCw, Plus,
@@ -74,7 +74,7 @@ async function hashPin(pin: string): Promise<string> {
 }
 
 function randomPin() {
-  return String(Math.floor(100000 + Math.random() * 900000));
+  return String(Math.floor(1000 + Math.random() * 9000));
 }
 
 export default function OwnersPage() {
@@ -102,7 +102,7 @@ export default function OwnersPage() {
   const [modalError, setModalErr] = useState('');
   const [copied, setCopied]       = useState(false);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     // role='owner' 사용자 목록
     const { data: users } = await sb
@@ -127,9 +127,12 @@ export default function OwnersPage() {
       pin: pinMap[u.id] ?? null,
     })));
     setLoading(false);
-  };
+  }, [sb]);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    const timer = window.setTimeout(() => { void load(); }, 0);
+    return () => window.clearTimeout(timer);
+  }, [load]);
 
   const loadStores = async () => {
     setLoadingStores(true);
@@ -144,7 +147,8 @@ export default function OwnersPage() {
   const toggleStore = (id: string) => {
     setSelectedStores(prev => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   };
@@ -209,7 +213,7 @@ export default function OwnersPage() {
 
   const handleSavePin = async () => {
     if (!targetUser) return;
-    if (!/^\d{6}$/.test(pin)) { setModalErr('6자리 숫자 PIN을 입력해주세요.'); return; }
+    if (!/^\d{4}$/.test(pin)) { setModalErr('4자리 숫자 PIN을 입력해주세요.'); return; }
 
     setSaving(true);
     setModalErr('');
@@ -262,7 +266,7 @@ export default function OwnersPage() {
         </div>
         <div>
           <h1 className="text-lg font-bold text-primary">사장님 PIN 관리</h1>
-          <p className="text-xs text-muted mt-0.5">role=owner 회원에게 6자리 PIN을 부여합니다.</p>
+          <p className="text-xs text-muted mt-0.5">role=owner 회원에게 4자리 PIN을 부여합니다.</p>
         </div>
       </div>
 
@@ -302,7 +306,7 @@ export default function OwnersPage() {
           {showSeed && (
             <div className="px-4 pb-4 space-y-3 border-t border-yellow-500/20">
               <p className="text-xs text-yellow-400/70 pt-3">
-                샘플 매장을 선택하면 더미 owner 회원이 생성됩니다. PIN: <strong className="text-yellow-300 font-mono">000000</strong>, <strong className="text-yellow-300 font-mono">000001</strong> … 순서 배정
+                샘플 매장을 선택하면 더미 owner 회원이 생성됩니다. PIN: <strong className="text-yellow-300 font-mono">0000</strong>, <strong className="text-yellow-300 font-mono">0001</strong> … 순서 배정
               </p>
 
               {loadingStores ? (
@@ -508,16 +512,16 @@ export default function OwnersPage() {
             </div>
 
             <div>
-              <label className="block text-xs text-white/50 mb-1.5">6자리 PIN</label>
+              <label className="block text-xs text-white/50 mb-1.5">4자리 PIN</label>
               <div className="relative">
                 <input
                   type={showPin ? 'text' : 'password'}
                   inputMode="numeric"
-                  maxLength={6}
+                  maxLength={4}
                   value={pin}
-                  onChange={e => { setPin(e.target.value.replace(/\D/g, '').slice(0, 6)); setModalErr(''); }}
+                  onChange={e => { setPin(e.target.value.replace(/\D/g, '').slice(0, 4)); setModalErr(''); }}
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-lg tracking-[0.4em] placeholder:text-white/20 focus:outline-none focus:border-[#FF6F0F]/60 pr-20"
-                  placeholder="000000"
+                  placeholder="0000"
                 />
                 <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                   <button type="button" onClick={copyPin} className="p-1.5 text-white/30 hover:text-white/70 transition">
@@ -548,7 +552,7 @@ export default function OwnersPage() {
               </button>
               <button
                 onClick={handleSavePin}
-                disabled={saving || pin.length !== 6}
+                disabled={saving || pin.length !== 4}
                 className="flex-1 py-2.5 rounded-xl bg-[#FF6F0F] text-white font-bold text-sm hover:bg-[#e86200] transition disabled:opacity-40 flex items-center justify-center gap-2"
               >
                 {saving ? <Loader2 size={14} className="animate-spin" /> : <KeyRound size={14} />}

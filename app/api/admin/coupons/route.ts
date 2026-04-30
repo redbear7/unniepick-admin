@@ -9,6 +9,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { logActivity } from '@/lib/server/activity';
 
 function adminSb() {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -45,7 +46,8 @@ export async function POST(req: NextRequest) {
       time_start, time_end, stackable, is_featured,
     } = body;
 
-    const { data, error } = await adminSb()
+    const sb = adminSb();
+    const { data, error } = await sb
       .from('coupons')
       .insert({
         store_id,
@@ -70,6 +72,20 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    await logActivity(sb, {
+      event_type: 'coupon_created',
+      actor_type: 'owner',
+      store_id,
+      coupon_id: data.id,
+      source_table: 'coupons',
+      source_id: data.id,
+      title: '사장님 쿠폰 발행',
+      detail: data.title,
+      metadata: {
+        discount_type,
+        total_quantity: Number(total_quantity ?? 0),
+      },
+    }).catch(e => console.error('[activity/coupon_created]', e.message));
     return NextResponse.json({ ok: true, data });
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 500 });

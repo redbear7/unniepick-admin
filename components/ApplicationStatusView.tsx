@@ -32,6 +32,8 @@ interface CouponDraft {
   time_end?:        string | null;
   stackable?:       boolean;
   per_person_limit?: boolean;
+  source?:          string | null;
+  expected_effect?: string | null;
 }
 
 interface Application {
@@ -48,6 +50,9 @@ interface Application {
   phone:          string | null;
   owner_name:     string;
   owner_phone:    string;
+  has_agency?:    boolean | null;
+  agency_name?:   string | null;
+  verification_status?: 'pending' | 'auto_checked' | 'approved' | 'rejected' | null;
   coupon_draft:   CouponDraft | null;
 }
 
@@ -93,6 +98,13 @@ function couponValueLabel(c: CouponDraft) {
 
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+function verificationLabel(status?: Application['verification_status']) {
+  if (status === 'approved') return '서류 확인 완료';
+  if (status === 'rejected') return '확인 반려';
+  if (status === 'auto_checked') return '자동 확인';
+  return '검수 대기';
 }
 
 // ── Main Component ────────────────────────────────────────────────────────────
@@ -215,9 +227,17 @@ export default function ApplicationStatusView({ token, isNew = false }: Props) {
           <Row icon={<User size={15} className="text-gray-400" />}
             label="이름"
             value={app.owner_name} />
+          {app.has_agency && (
+            <Row icon={<Users size={15} className="text-gray-400" />}
+              label="신청 방식"
+              value={app.agency_name ? `광고대행사 (${app.agency_name})` : '광고대행사 대리 신청'} />
+          )}
           <Row icon={<Phone size={15} className="text-gray-400" />}
             label="연락처"
             value={app.owner_phone} />
+          <Row icon={<Check size={15} className="text-gray-400" />}
+            label="검수 상태"
+            value={verificationLabel(app.verification_status)} />
         </div>
 
         {/* 쿠폰 정보 */}
@@ -263,7 +283,15 @@ export default function ApplicationStatusView({ token, isNew = false }: Props) {
                   label="사용 시간"
                   value={`${app.coupon_draft.time_start} ~ ${app.coupon_draft.time_end}`} />
               )}
+              {app.coupon_draft.expected_effect && (
+                <Row icon={<Check size={15} className="text-gray-400" />}
+                  label="기대 효과"
+                  value={app.coupon_draft.expected_effect} />
+              )}
               <div className="flex flex-wrap gap-1.5 pt-1">
+                {app.coupon_draft.source === 'owner_join_ai_suggest' && (
+                  <Chip>AI 추천 쿠폰</Chip>
+                )}
                 {app.coupon_draft.per_person_limit && (
                   <Chip>1인 1회 제한</Chip>
                 )}

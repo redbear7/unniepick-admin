@@ -33,8 +33,8 @@ export async function POST(req: NextRequest) {
   if (!phone || !pin) {
     return NextResponse.json({ error: '전화번호와 PIN을 입력해주세요.' }, { status: 400 });
   }
-  if (!/^\d{6}$/.test(pin)) {
-    return NextResponse.json({ error: 'PIN은 6자리 숫자입니다.' }, { status: 400 });
+  if (!/^\d{4}$/.test(pin)) {
+    return NextResponse.json({ error: 'PIN은 4자리 숫자입니다.' }, { status: 400 });
   }
 
   const sb = supabase();

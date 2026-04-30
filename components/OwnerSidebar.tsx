@@ -1,14 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import {
-  LayoutDashboard, KeyRound, LogOut, ChevronRight, Store, Bell, Ticket, BarChart3,
+  LayoutDashboard, KeyRound, LogOut, ChevronRight, Store, Bell, Ticket, BarChart3, Zap,
 } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 
 const NAV_ITEMS = [
   { href: '/owner/dashboard',              icon: LayoutDashboard, label: '대시보드' },
+  { href: '/owner/dashboard/quick',        icon: Zap,             label: '빠른 참여' },
   { href: '/owner/dashboard/notices',      icon: Bell,            label: '공지사항' },
   { href: '/owner/dashboard/store',        icon: Store,           label: '가게 정보' },
   { href: '/owner/dashboard/coupons',      icon: Ticket,          label: '쿠폰 관리' },

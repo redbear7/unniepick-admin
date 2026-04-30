@@ -136,7 +136,7 @@ export default function CampaignPage() {
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {[
           { icon: Ticket, label: '사용자 첫 행동', value: '10초', sub: '상권 선택 → 쿠폰 받기' },
-          { icon: Users, label: '사장님 참여', value: '30초', sub: '가게명, 혜택, 사진 1장' },
+          { icon: Users, label: '사장님 참여', value: '30초', sub: '가게명, 혜택, 등록증/번호, GPS 선택' },
           { icon: Radio, label: '라이브 신호', value: '실시간', sub: '쿠폰 저장, QR 사용, 사장님 등록' },
           { icon: MapPin, label: 'GPS 활용', value: '상권 반경', sub: '개인 좌표 대신 지오펜스' },
         ].map(({ icon: Icon, label, value, sub }) => (
@@ -330,11 +330,12 @@ export default function CampaignPage() {
           <div className="space-y-3">
             {[
               ['콘텐츠', '상남동 쿠폰 50개, 숏폼 30편, 앱 배너 5개'],
-              ['가게', '사장님 30초 참여 신청 또는 운영자 검수 가게 30곳'],
+              ['가게', '사업자번호만으로도 신청 허용, 등록증 사진과 GPS는 관리자 검수 참고'],
               ['사용자', '파일럿 300명, 카카오 공유 링크, 인스타 릴스, 쿠폰 받기 CTA'],
               ['데이터', '노출, 클릭, 쿠폰 저장, QR 사용, 사장님 활동, 숏폼 요청 로그'],
               ['위치', '상권 지오펜스, 가게 300m 반경, 위치 권한 미동의 대체 흐름'],
               ['운영', '오류 신고, 가격 수정, 쿠폰 비공개 처리 플로우'],
+              ['V2 검증', '사업자번호 진위 확인, 등록증 OCR, 주소-GPS 매칭, 중복 가게 차단'],
             ].map(([label, desc]) => (
               <div key={label} className="flex items-start gap-3 rounded-2xl border border-border-subtle bg-fill-subtle/40 p-4">
                 <CheckCircle2 size={17} className="mt-0.5 shrink-0 text-green-400" />

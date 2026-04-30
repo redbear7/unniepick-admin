@@ -30,8 +30,8 @@ export async function POST(req: NextRequest) {
   if (!owner_pin_id || !current_pin || !new_pin) {
     return NextResponse.json({ error: '필수 값이 누락되었습니다.' }, { status: 400 });
   }
-  if (!/^\d{6}$/.test(new_pin)) {
-    return NextResponse.json({ error: '새 PIN은 6자리 숫자여야 합니다.' }, { status: 400 });
+  if (!/^\d{4}$/.test(new_pin)) {
+    return NextResponse.json({ error: '새 PIN은 4자리 숫자여야 합니다.' }, { status: 400 });
   }
   if (current_pin === new_pin) {
     return NextResponse.json({ error: '현재 PIN과 동일한 PIN으로 변경할 수 없습니다.' }, { status: 400 });

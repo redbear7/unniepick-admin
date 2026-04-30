@@ -39,7 +39,7 @@ export async function GET(
     .select(
       'id, review_token, status, admin_note, created_at, reviewed_at, ' +
       'store_name, category, address, address_detail, phone, ' +
-      'owner_name, owner_phone, coupon_draft',
+      'owner_name, owner_phone, has_agency, agency_name, verification_status, coupon_draft',
     )
     .eq('review_token', token)
     .single();

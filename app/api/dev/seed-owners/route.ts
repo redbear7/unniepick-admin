@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
   const results: Array<{ store: string; owner_name: string; phone: string; pin: string; status: string }> = [];
 
   for (const store of stores) {
-    const pin = String(pinCounter).padStart(6, '0');
+    const pin = String(pinCounter % 10000).padStart(4, '0');
     const ownerName = `${store.name} 사장님`;
     const phoneNum = `010${String(pinCounter).padStart(8, '0')}`;
 
