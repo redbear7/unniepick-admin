@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { AlertTriangle, ExternalLink, FileText, MapPin, Trash2, X } from 'lucide-react';
+import { AlertTriangle, ArrowUpDown, ExternalLink, FileText, MapPin, Search, Trash2, X } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 
 type CouponDraft = {
@@ -49,6 +49,7 @@ type StoreSummary = {
 
 type TabFilter = 'all' | 'pending' | 'approved' | 'rejected';
 type SignalFilter = 'all' | 'agency' | 'ai' | 'gps' | 'duplicate';
+type SortFilter = 'priority' | 'latest' | 'oldest' | 'store';
 
 const STATUS_LABEL: Record<string, string> = {
   pending: '대기중',
@@ -127,6 +128,18 @@ function duplicateStore(app: Application, stores: StoreSummary[]) {
   }) ?? null;
 }
 
+function applicationPriority(app: Application, stores: StoreSummary[]) {
+  let score = 0;
+  if (app.status === 'pending') score += 40;
+  if (duplicateStore(app, stores)) score += 30;
+  if (app.has_agency) score += 12;
+  if (app.coupon_draft?.source === 'owner_join_ai_suggest') score += 8;
+  if (gpsInfo(app)) score += 6;
+  if (app.business_license_path) score += 8;
+  else if (app.business_registration_number) score += 4;
+  return score;
+}
+
 // ── 삭제 확인 모달 ──────────────────────────────────────────────────────────
 function DeleteConfirmModal({
   app,
@@ -202,6 +215,8 @@ export default function ApplicationsPage() {
   const [stores, setStores] = useState<StoreSummary[]>([]);
   const [tab, setTab] = useState<TabFilter>('all');
   const [signalFilter, setSignalFilter] = useState<SignalFilter>('all');
+  const [sortFilter, setSortFilter] = useState<SortFilter>('priority');
+  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
@@ -328,6 +343,30 @@ export default function ApplicationsPage() {
     return true;
   });
 
+  const searched = filtered.filter(app => {
+    const q = normalizeText(searchQuery);
+    if (!q) return true;
+    return [
+      app.store_name,
+      app.address,
+      app.owner_name,
+      app.owner_phone,
+      app.agency_name,
+      app.business_registration_number,
+      app.coupon_draft?.title ?? '',
+    ].some(value => normalizeText(value).includes(q));
+  });
+
+  const sorted = [...searched].sort((a, b) => {
+    if (sortFilter === 'latest') return +new Date(b.created_at) - +new Date(a.created_at);
+    if (sortFilter === 'oldest') return +new Date(a.created_at) - +new Date(b.created_at);
+    if (sortFilter === 'store') return a.store_name.localeCompare(b.store_name, 'ko');
+
+    const scoreDiff = applicationPriority(b, stores) - applicationPriority(a, stores);
+    if (scoreDiff !== 0) return scoreDiff;
+    return +new Date(b.created_at) - +new Date(a.created_at);
+  });
+
   const tabCounts = {
     all:      applications.length,
     pending:  applications.filter(a => a.status === 'pending').length,
@@ -356,6 +395,13 @@ export default function ApplicationsPage() {
     { key: 'ai', label: `AI 쿠폰 ${signalCounts.ai}` },
     { key: 'gps', label: `GPS 제출 ${signalCounts.gps}` },
     { key: 'duplicate', label: `중복 의심 ${signalCounts.duplicate}` },
+  ];
+
+  const SORT_TABS: { key: SortFilter; label: string }[] = [
+    { key: 'priority', label: '우선 검토' },
+    { key: 'latest', label: '최신순' },
+    { key: 'oldest', label: '오래된순' },
+    { key: 'store', label: '가게명순' },
   ];
 
   return (
@@ -416,13 +462,41 @@ export default function ApplicationsPage() {
         ))}
       </div>
 
+      <div className="mb-6 flex flex-col gap-3 xl:flex-row xl:items-center">
+        <div className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-2">
+          <Search size={15} className="shrink-0 text-zinc-500" />
+          <input
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="가게명, 대행사명, 사업자번호, 연락처 검색"
+            className="min-w-0 flex-1 bg-transparent text-sm text-white placeholder:text-zinc-500 focus:outline-none"
+          />
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {SORT_TABS.map(t => (
+            <button
+              key={t.key}
+              onClick={() => setSortFilter(t.key)}
+              className={`inline-flex items-center gap-1 rounded-full px-3 py-2 text-xs font-semibold transition-colors ${
+                sortFilter === t.key
+                  ? 'bg-white text-zinc-900'
+                  : 'bg-zinc-900 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
+              }`}
+            >
+              <ArrowUpDown size={12} />
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* 테이블 */}
       <div className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-16 text-zinc-400">
             로딩 중...
           </div>
-        ) : filtered.length === 0 ? (
+        ) : sorted.length === 0 ? (
           <div className="flex items-center justify-center py-16 text-zinc-500 text-sm">
             신청 내역이 없습니다.
           </div>
@@ -441,7 +515,7 @@ export default function ApplicationsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800">
-              {filtered.map(app => (
+              {sorted.map(app => (
                 <tr
                   key={app.id}
                   className="hover:bg-zinc-800/50 transition-colors"
