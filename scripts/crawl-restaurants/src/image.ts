@@ -40,7 +40,7 @@ async function enhanceWithSharp(buffer: Buffer, meta: sharp.Metadata): Promise<B
       brightness: 1.08,                  // 8% 밝게
       saturation: 1.15,                  // 15% 채도↑ (음식 색감)
     })
-    .sharpen({ sigma: 1.2, flat: 1.0, jagged: 2.0 })  // 선명도
+    .sharpen({ sigma: 1.2, m1: 1.0, m2: 2.0 })  // 선명도
     .jpeg({ quality: JPEG_QUALITY, mozjpeg: true, progressive: true })
     .toBuffer();
 }
