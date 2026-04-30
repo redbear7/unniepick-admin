@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { sendSms } from '@/lib/sms';
 import { logActivity } from '@/lib/server/activity';
+import { geocodeAddress } from '@/lib/server/kakao-local';
 
 function adminClient() {
   return createClient(
@@ -79,7 +80,21 @@ export async function POST(req: NextRequest) {
   const gpsLat = Number(body.gps_latitude);
   const gpsLng = Number(body.gps_longitude);
   const gpsAccuracy = Number(body.gps_accuracy_m);
-  const hasPlaceLatLng = Number.isFinite(latitude) && Number.isFinite(longitude);
+  let placeLat = Number.isFinite(latitude) ? latitude : null;
+  let placeLng = Number.isFinite(longitude) ? longitude : null;
+  if ((placeLat === null || placeLng === null) && address) {
+    try {
+      const geocoded = await geocodeAddress(address);
+      if (geocoded) {
+        placeLat = geocoded.latitude;
+        placeLng = geocoded.longitude;
+      }
+    } catch (geoError) {
+      console.warn('[owner/join] geocode failed:', (geoError as Error).message);
+    }
+  }
+
+  const hasPlaceLatLng = placeLat !== null && placeLng !== null;
   const hasGps = Number.isFinite(gpsLat) && Number.isFinite(gpsLng);
 
   if (!ownerName) return NextResponse.json({ error: '사장님 성함을 입력해주세요.' }, { status: 400 });
@@ -106,8 +121,8 @@ export async function POST(req: NextRequest) {
       address: address || '미입력',
       address_detail: addressDetail || null,
       phone: storePhone || null,
-      latitude: hasPlaceLatLng ? latitude : null,
-      longitude: hasPlaceLatLng ? longitude : null,
+      latitude: hasPlaceLatLng ? placeLat : null,
+      longitude: hasPlaceLatLng ? placeLng : null,
       message: '사장님 30초 참여 신청',
       coupon_draft: couponDraftFromSuggestion(benefit, body.coupon_suggestion),
       status: 'pending',

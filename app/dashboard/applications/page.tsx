@@ -90,17 +90,24 @@ function numericValue(value: number | string | null | undefined) {
   return Number.isFinite(n) ? n : null;
 }
 
-function gpsInfo(app: Application) {
-  const lat = numericValue(app.gps_latitude);
-  const lng = numericValue(app.gps_longitude);
+function locationInfo(app: Application) {
+  const placeLat = numericValue(app.latitude);
+  const placeLng = numericValue(app.longitude);
+  const gpsLat = numericValue(app.gps_latitude);
+  const gpsLng = numericValue(app.gps_longitude);
   const accuracy = numericValue(app.gps_accuracy_m);
+  const lat = placeLat ?? gpsLat;
+  const lng = placeLng ?? gpsLng;
   if (lat === null || lng === null) return null;
+  const label = encodeURIComponent(app.store_name?.trim() || '가게 위치');
+  const source = placeLat !== null && placeLng !== null ? 'place' : 'gps';
 
   return {
     lat,
     lng,
     accuracy,
-    mapsUrl: `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`,
+    source,
+    mapsUrl: `https://map.kakao.com/link/map/${label},${lat},${lng}`,
   };
 }
 
@@ -134,7 +141,7 @@ function applicationPriority(app: Application, stores: StoreSummary[]) {
   if (duplicateStore(app, stores)) score += 30;
   if (app.has_agency) score += 12;
   if (app.coupon_draft?.source === 'owner_join_ai_suggest') score += 8;
-  if (gpsInfo(app)) score += 6;
+  if (locationInfo(app)) score += 6;
   if (app.business_license_path) score += 8;
   else if (app.business_registration_number) score += 4;
   return score;
@@ -209,6 +216,81 @@ function DeleteConfirmModal({
   );
 }
 
+function RejectReasonModal({
+  app,
+  reason,
+  onReasonChange,
+  onConfirm,
+  onCancel,
+  loading,
+}: {
+  app: Application;
+  reason: string;
+  onReasonChange: (value: string) => void;
+  onConfirm: () => void;
+  onCancel: () => void;
+  loading: boolean;
+}) {
+  const presets = [
+    '사업자 확인 정보가 부족합니다.',
+    '이미 등록된 가게와 중복됩니다.',
+    '가게명 또는 주소 확인이 필요합니다.',
+    '혜택 내용이 실제 운영 기준과 맞지 않습니다.',
+  ];
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onCancel} />
+      <div className="relative z-10 w-full max-w-md rounded-2xl border border-zinc-700 bg-zinc-900 p-6 shadow-2xl">
+        <button
+          onClick={onCancel}
+          className="absolute right-4 top-4 text-zinc-500 hover:text-zinc-300 transition-colors"
+        >
+          <X size={18} />
+        </button>
+        <h3 className="text-lg font-bold text-white">반려 사유 입력</h3>
+        <p className="mt-1 text-sm text-zinc-400">{app.store_name} 신청자에게 보여줄 사유를 남겨주세요.</p>
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          {presets.map((preset) => (
+            <button
+              key={preset}
+              onClick={() => onReasonChange(preset)}
+              className="rounded-full bg-zinc-800 px-3 py-1.5 text-xs font-semibold text-zinc-300 hover:bg-zinc-700 hover:text-white"
+            >
+              {preset}
+            </button>
+          ))}
+        </div>
+
+        <textarea
+          value={reason}
+          onChange={(e) => onReasonChange(e.target.value)}
+          placeholder="예: 사업자번호는 확인되었지만 등록증 또는 가게 주소 확인이 더 필요합니다."
+          className="mt-4 h-32 w-full rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-red-400/60"
+        />
+
+        <div className="mt-5 flex gap-3">
+          <button
+            onClick={onCancel}
+            disabled={loading}
+            className="flex-1 rounded-xl bg-zinc-800 py-2.5 text-sm font-semibold text-zinc-300 hover:bg-zinc-700 disabled:opacity-50"
+          >
+            취소
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={loading || !reason.trim()}
+            className="flex-1 rounded-xl bg-red-600 py-2.5 text-sm font-bold text-white hover:bg-red-700 disabled:opacity-50"
+          >
+            {loading ? '반려 중...' : '반려 저장'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── 메인 페이지 ─────────────────────────────────────────────────────────────
 export default function ApplicationsPage() {
   const [applications, setApplications] = useState<Application[]>([]);
@@ -223,6 +305,8 @@ export default function ApplicationsPage() {
   // 삭제 모달 상태
   const [deleteTarget, setDeleteTarget] = useState<Application | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [rejectTarget, setRejectTarget] = useState<Application | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
 
   const supabase = createClient();
 
@@ -284,23 +368,28 @@ export default function ApplicationsPage() {
     }
   }
 
-  async function handleReject(app: Application) {
-    if (!confirm(`"${app.store_name}" 신청을 반려하시겠습니까?`)) return;
-    setActionLoading(app.id);
+  async function confirmReject() {
+    if (!rejectTarget || !rejectReason.trim()) return;
+    setActionLoading(rejectTarget.id);
     try {
       const { error } = await supabase
         .from('store_applications')
         .update({
           status: 'rejected',
           verification_status: 'rejected',
+          admin_note: rejectReason.trim(),
         })
-        .eq('id', app.id);
+        .eq('id', rejectTarget.id);
 
       if (error) throw error;
 
       setApplications(prev =>
-        prev.map(a => a.id === app.id ? { ...a, status: 'rejected', verification_status: 'rejected' } : a)
+        prev.map(a => a.id === rejectTarget.id
+          ? { ...a, status: 'rejected', verification_status: 'rejected', admin_note: rejectReason.trim() }
+          : a)
       );
+      setRejectTarget(null);
+      setRejectReason('');
     } catch (err) {
       console.error('반려 처리 오류:', err);
       alert('반려 처리 중 오류가 발생했습니다.');
@@ -338,7 +427,7 @@ export default function ApplicationsPage() {
   const filtered = statusFiltered.filter(app => {
     if (signalFilter === 'agency') return Boolean(app.has_agency);
     if (signalFilter === 'ai') return app.coupon_draft?.source === 'owner_join_ai_suggest';
-    if (signalFilter === 'gps') return Boolean(gpsInfo(app));
+    if (signalFilter === 'gps') return Boolean(locationInfo(app));
     if (signalFilter === 'duplicate') return Boolean(duplicateStore(app, stores)) && app.status !== 'approved';
     return true;
   });
@@ -385,7 +474,7 @@ export default function ApplicationsPage() {
     all: applications.length,
     agency: applications.filter(app => app.has_agency).length,
     ai: applications.filter(app => app.coupon_draft?.source === 'owner_join_ai_suggest').length,
-    gps: applications.filter(app => Boolean(gpsInfo(app))).length,
+    gps: applications.filter(app => Boolean(locationInfo(app))).length,
     duplicate: applications.filter(app => Boolean(duplicateStore(app, stores)) && app.status !== 'approved').length,
   };
 
@@ -393,7 +482,7 @@ export default function ApplicationsPage() {
     { key: 'all', label: `전체 신호 ${signalCounts.all}` },
     { key: 'agency', label: `대행사 ${signalCounts.agency}` },
     { key: 'ai', label: `AI 쿠폰 ${signalCounts.ai}` },
-    { key: 'gps', label: `GPS 제출 ${signalCounts.gps}` },
+    { key: 'gps', label: `좌표 제출 ${signalCounts.gps}` },
     { key: 'duplicate', label: `중복 의심 ${signalCounts.duplicate}` },
   ];
 
@@ -413,6 +502,16 @@ export default function ApplicationsPage() {
           onConfirm={handleDeleteConfirm}
           onCancel={() => setDeleteTarget(null)}
           loading={deleteLoading}
+        />
+      )}
+      {rejectTarget && (
+        <RejectReasonModal
+          app={rejectTarget}
+          reason={rejectReason}
+          onReasonChange={setRejectReason}
+          onConfirm={confirmReject}
+          onCancel={() => { setRejectTarget(null); setRejectReason(''); }}
+          loading={actionLoading === rejectTarget.id}
         />
       )}
 
@@ -597,25 +696,28 @@ export default function ApplicationsPage() {
                         </div>
                       )}
                       {(() => {
-                        const gps = gpsInfo(app);
-                        if (!gps) {
+                        const location = locationInfo(app);
+                        if (!location) {
                           return (
                             <span className="inline-flex w-fit items-center gap-1 rounded-full bg-zinc-700/60 px-2 py-1 text-[11px] font-semibold text-zinc-400">
-                              <MapPin size={12} /> GPS 미제출
+                              <MapPin size={12} /> 좌표 없음
                             </span>
                           );
                         }
                         return (
                           <a
-                            href={gps.mapsUrl}
+                            href={location.mapsUrl}
                             target="_blank"
                             rel="noreferrer"
                             className="inline-flex w-fit items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-1 text-[11px] font-semibold text-emerald-300 hover:bg-emerald-500/25"
-                            title={`${gps.lat.toFixed(6)}, ${gps.lng.toFixed(6)}`}
+                            title={`${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}`}
                           >
                             <MapPin size={12} />
                             지도 확인
-                            {gps.accuracy !== null && ` · ${Math.round(gps.accuracy)}m`}
+                            <span className="text-[10px] text-emerald-200/80">
+                              · {location.source === 'place' ? '신청좌표' : 'GPS'}
+                            </span>
+                            {location.source === 'gps' && location.accuracy !== null && ` · ${Math.round(location.accuracy)}m`}
                             <ExternalLink size={11} />
                           </a>
                         );
@@ -666,7 +768,7 @@ export default function ApplicationsPage() {
                             {actionLoading === app.id ? '...' : '승인'}
                           </button>
                           <button
-                            onClick={() => handleReject(app)}
+                            onClick={() => { setRejectTarget(app); setRejectReason(app.admin_note ?? ''); }}
                             disabled={actionLoading === app.id}
                             className="bg-red-600/20 hover:bg-red-600/30 disabled:opacity-50 text-red-400 px-3 py-1 rounded text-sm font-medium transition-colors"
                           >

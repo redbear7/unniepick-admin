@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { sendSms } from '@/lib/sms';
+import { geocodeAddress } from '@/lib/server/kakao-local';
 
 function adminClient() {
   return createClient(
@@ -71,6 +72,20 @@ export async function POST(req: NextRequest) {
   }
   if (!c.expires_at) return NextResponse.json({ error: '쿠폰 유효기간을 입력해주세요' }, { status: 400 });
 
+  let latitude = typeof body.latitude === 'number' ? body.latitude : null;
+  let longitude = typeof body.longitude === 'number' ? body.longitude : null;
+  if ((!Number.isFinite(latitude) || !Number.isFinite(longitude)) && body.address?.trim()) {
+    try {
+      const geocoded = await geocodeAddress(body.address.trim());
+      if (geocoded) {
+        latitude = geocoded.latitude;
+        longitude = geocoded.longitude;
+      }
+    } catch (geoError) {
+      console.warn('[applications/submit] geocode failed:', (geoError as Error).message);
+    }
+  }
+
   const sb = adminClient();
 
   const { data, error } = await sb
@@ -81,8 +96,8 @@ export async function POST(req: NextRequest) {
       address:        body.address.trim(),
       address_detail: body.address_detail ?? null,
       phone:          body.phone ?? null,
-      latitude:       body.latitude ?? null,
-      longitude:      body.longitude ?? null,
+      latitude:       Number.isFinite(latitude) ? latitude : null,
+      longitude:      Number.isFinite(longitude) ? longitude : null,
       owner_name:     body.owner_name.trim(),
       owner_phone:    body.owner_phone.trim(),
       has_agency:     body.has_agency ?? false,

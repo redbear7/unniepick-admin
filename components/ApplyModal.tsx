@@ -8,6 +8,7 @@ import {
   Users, ShoppingBag, Layers, Building2,
 } from 'lucide-react';
 import { openPostcode } from '@/lib/daum-postcode';
+import KakaoMapPicker from '@/components/KakaoMapPicker';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type CouponType    = 'free_item' | 'percent' | 'amount';
@@ -266,6 +267,21 @@ export default function ApplyModal({ isOpen, onClose }: ApplyModalProps) {
     setStep(1);
   };
 
+  const handleAddressSelect = (nextAddress: string) => {
+    setForm(prev => {
+      const sameAddress = prev.address.trim() === nextAddress.trim();
+      if (sameAddress) return { ...prev, address: nextAddress };
+
+      return {
+        ...prev,
+        address: nextAddress,
+        latitude: null,
+        longitude: null,
+        kakaoPlaceUrl: null,
+      };
+    });
+  };
+
   // ── Validation ─────────────────────────────────────────────────────────────
   const canNext = (): boolean => {
     switch (step) {
@@ -350,6 +366,12 @@ export default function ApplyModal({ isOpen, onClose }: ApplyModalProps) {
     6: { title: '사장님 정보를 입력해주세요',         subtitle: '검토 결과를 이 번호로 알려드려요' },
   };
   const isLast = step === TOTAL_STEPS;
+  const hasSavedCoordinates = form.latitude !== null && form.longitude !== null;
+  const coordinateStatus = form.address
+    ? hasSavedCoordinates
+      ? { label: '좌표 자동확인됨', tone: 'ready' as const, detail: '관리자 화면에서 바로 지도 확인이 가능해요' }
+      : { label: '제출 시 주소로 자동 매칭', tone: 'pending' as const, detail: '검색 결과가 없거나 주소를 수정한 경우에도 자동 보정돼요' }
+    : null;
 
   return (
     <>
@@ -573,12 +595,57 @@ export default function ApplyModal({ isOpen, onClose }: ApplyModalProps) {
                     {/* STEP 3 */}
                     {step === 3 && (
                       <div className="space-y-4">
-                        <button onClick={() => openPostcode(addr => set('address', addr))}
+                        <button onClick={() => openPostcode(handleAddressSelect)}
                           className={`w-full flex items-center gap-3 px-4 py-4 rounded-2xl border-2 text-left transition-all ${
                             form.address ? 'border-[#FF6F0F] bg-orange-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
                           <MapPin size={20} className={form.address ? 'text-[#FF6F0F]' : 'text-gray-400'} />
                           <span className={`text-sm font-medium ${form.address ? 'text-gray-900' : 'text-gray-400'}`}>{form.address || '주소 검색하기'}</span>
                         </button>
+                        {coordinateStatus && (
+                          <div className={`rounded-2xl border px-4 py-3 ${
+                            coordinateStatus.tone === 'ready'
+                              ? 'border-emerald-200 bg-emerald-50'
+                              : 'border-amber-200 bg-amber-50'
+                          }`}>
+                            <div className="flex items-center gap-2">
+                              <MapPin size={15} className={coordinateStatus.tone === 'ready' ? 'text-emerald-600' : 'text-amber-600'} />
+                              <p className={`text-xs font-bold ${
+                                coordinateStatus.tone === 'ready' ? 'text-emerald-700' : 'text-amber-700'
+                              }`}>
+                                {coordinateStatus.label}
+                              </p>
+                            </div>
+                            <p className={`mt-1 text-[11px] ${
+                              coordinateStatus.tone === 'ready' ? 'text-emerald-700/80' : 'text-amber-700/80'
+                            }`}>
+                              {coordinateStatus.detail}
+                            </p>
+                          </div>
+                        )}
+                        {form.address && (
+                          hasSavedCoordinates ? (
+                            <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
+                              <div className="flex items-center justify-between border-b border-gray-100 px-4 py-2.5">
+                                <p className="text-xs font-bold text-gray-700">등록 위치 미리보기</p>
+                                <span className="text-[10px] font-semibold text-emerald-600">지도 확인 가능</span>
+                              </div>
+                              <KakaoMapPicker
+                                lat={form.latitude}
+                                lng={form.longitude}
+                                onChange={() => {}}
+                                readonly
+                                height="180px"
+                              />
+                            </div>
+                          ) : (
+                            <div className="rounded-2xl border border-dashed border-amber-200 bg-amber-50 px-4 py-5">
+                              <p className="text-xs font-bold text-amber-700">지도 썸네일은 제출 후 자동 연결돼요</p>
+                              <p className="mt-1 text-[11px] leading-relaxed text-amber-700/80">
+                                직접 입력한 주소이거나 검색 좌표가 없는 경우, 제출 시 주소 기준으로 자동 매칭해서 관리자 화면에 지도 확인 링크가 생성됩니다.
+                              </p>
+                            </div>
+                          )
+                        )}
                         {form.address && (
                           <input autoFocus value={form.addressDetail} onChange={e => set('addressDetail', e.target.value)}
                             onKeyDown={e => e.key === 'Enter' && canNext() && handleNext()}
